@@ -111,7 +111,55 @@ historique de déploiement ARM ni aucun état Terraform ou Pulumi ([DEC-46](03-d
 n'écrit une nouvelle version du secret que si la valeur a changé ; les applications qui le référencent
 sont alors redémarrées pour relire la référence.
 
-## 7. Import depuis un fichier
+## 7. Mots de passe et clés d'administration
+
+L'authentification locale est permise mais déconseillée ([DEC-51](03-decisions.md)). Quand elle est
+activée, IFS organise la vie du secret sans jamais en connaître la valeur.
+
+| Secret | Ressources | Origine |
+|---|---|---|
+| Mot de passe administrateur | SqlServer (`EntraEtSql`), PostgreSqlFlexibleServer (`EntraEtMotDePasse`) | Choisie dans la ressource : `Généré` (défaut) ou `Secret de pipeline` |
+| Identifiants admin du registre | ContainerRegistry (utilisateur admin activé) | Générés par Azure |
+| Clés d'accès | StorageAccount (clé partagée), ServiceBusNamespace (authentification locale) | Générées par Azure, exposées comme sorties sensibles |
+
+**RG-PAR-16 — Key Vault de stockage.** Toute ressource qui active un mot de passe ou un compte admin
+désigne un Key Vault du projet (ou existant) qui le reçoit. Nom de secret par défaut :
+`<nom logique>-admin-password` (ou `-admin-username` / `-admin-password` pour le registre).
+
+**RG-PAR-17 — Mot de passe généré.** Au déploiement de la cible, avant le code d'infrastructure, une étape
+de la release :
+1. lit le secret dans le Key Vault ;
+2. s'il n'existe pas, génère un mot de passe conforme à la politique Azure du service (longueur 32,
+   quatre classes de caractères) et l'écrit dans le Key Vault ;
+3. le transmet au code d'infrastructure comme entrée sensible.
+
+Les déploiements suivants relisent le même secret : le mot de passe ne change pas.
+
+**RG-PAR-18 — Mot de passe fourni.** En alimentation `Secret de pipeline`, la valeur vient du magasin de
+secrets CI ([section 6](#6-secrets-de-pipeline)). La release l'écrit dans le Key Vault, puis la transmet au
+code d'infrastructure.
+
+**RG-PAR-19 — Transmission au code d'infrastructure.**
+- Bicep : paramètre `@secure()`.
+- Terraform : attribut en écriture seule quand le fournisseur le propose (exemple :
+  `administrator_login_password_wo` avec sa version) ; sinon attribut classique, la valeur est alors dans
+  l'état protégé ([EXG-20](27-exigences-non-fonctionnelles.md)) et un constat `Info` le signale.
+- Pulumi : valeur secrète, chiffrée dans l'état.
+
+**RG-PAR-20 — Identifiants du registre.** Si l'utilisateur admin d'un registre est activé, la release copie
+le nom d'utilisateur et le mot de passe dans le Key Vault désigné après chaque déploiement.
+
+**UC-PAR-04 — Renouveler un mot de passe** *(lot 2)* (`modele.modifier`). Le prochain déploiement de la
+cible génère un nouveau mot de passe, l'écrit dans le Key Vault, puis l'applique. Les applications qui le
+lisent par référence Key Vault sont redémarrées.
+
+**RG-PAR-21 — Usage par les applications.** Une application peut lire un mot de passe ou une clé par un
+paramètre de source « Secret Key Vault » ([section 3](#3-sources-de-valeur)), en alimentation « géré hors
+IFS » vers le secret ci-dessus. L'écran rappelle que l'accès par identité ([16 § 6](16-liaisons-identites-et-acces.md))
+est préférable. *(Lot 2 : accès aux données par utilisateur SQL dédié à mot de passe, créé par le script
+post-déploiement, plutôt que par le compte administrateur.)*
+
+## 8. Import depuis un fichier
 
 **UC-PAR-01 — Importer des paramètres.** L'utilisateur dépose un fichier ; IFS propose les paramètres
 extraits, qu'il valide un par un ou en bloc.
@@ -128,10 +176,10 @@ Chaque entrée devient un paramètre littéral. Les entrées suspectes ([RG-PAR-
 sont proposées par défaut comme secrets de pipeline, **sans leur valeur** : le fichier n'est pas
 conservé et la valeur n'est jamais enregistrée.
 
-## 8. Cas d'utilisation
+## 9. Cas d'utilisation
 
-- **UC-PAR-02** — Ajouter, modifier, supprimer un paramètre (contributeur).
+- **UC-PAR-02** — Ajouter, modifier, supprimer un paramètre (`modele.modifier`).
 - **UC-PAR-03** — Lister les paramètres d'une application ou d'un magasin, explicites et implicites,
   avec leur valeur effective par environnement (les secrets montrent leur référence, jamais une valeur).
-- **UC-PAR-04** — Voir les sorties disponibles d'une ressource, avec leur description et leur caractère
+- **UC-PAR-05** — Voir les sorties disponibles d'une ressource, avec leur description et leur caractère
   sensible.

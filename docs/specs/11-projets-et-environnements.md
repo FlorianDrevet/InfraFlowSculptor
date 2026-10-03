@@ -15,9 +15,11 @@ conventions (nommage, tags) et le plan de publication.
 | Nommage | Gabarit par défaut, gabarits par type, abréviations ([13](13-nommage.md)). | Voir [13 § 3](13-nommage.md) |
 | Tags | Section 5. | Aucun |
 | Tags système | Activés ou non ([DEC-33](03-decisions.md)). | Activés |
-| Langage d'infrastructure | `Bicep` ; `Terraform` *(lot 2)* ; `Pulumi` *(lot 3)* ([DEC-43](03-decisions.md)). Changeable ([DEC-48](03-decisions.md)). | `Bicep` |
+| Langage d'infrastructure | `Bicep` ; `Terraform` *(lot 3)* ; `OpenTofu`, `Pulumi` avec son langage (TypeScript, C#, Python, Go, Java, YAML) *(lot 4)* ([DEC-43](03-decisions.md), [DEC-62](03-decisions.md), [DEC-63](03-decisions.md)). Changeable ([DEC-48](03-decisions.md)). | `Bicep` |
+| Source des modules | `AVM registre public` ; `AVM embarqués`, `Modules IFS` *(lot 2)* ; `Modules du client` *(lot 3)* ; pour Pulumi, `Ressources directes` ou `Composants IFS` *(lot 4)*. Surcharge possible par type ([DEC-54](03-decisions.md), [21 § 6.5](21-generation-et-revisions.md)). | `AVM registre public` |
+| Version du catalogue | Dernière publiée, ou épinglée 90 jours au plus ([DEC-57](03-decisions.md)). | Dernière |
 | Backend d'état Pulumi | `Azure Storage` (créé par le kit) ou `Pulumi Cloud` (+ organisation Pulumi). Pulumi uniquement. | `Azure Storage` |
-| Plateforme CI | `AzureDevOps`, `GitHubActions` ; `GitLabCI` *(lot 3)* ([DEC-47](03-decisions.md)). Changeable ([DEC-48](03-decisions.md)). | — (obligatoire) |
+| Plateforme CI | `AzureDevOps` ; `GitHubActions` *(lot 2)* ; `GitLabCI` *(lot 3)* ([DEC-47](03-decisions.md), [DEC-62](03-decisions.md)). Changeable ([DEC-48](03-decisions.md)). | — (obligatoire) |
 | Exécuteurs par défaut | Selon la plateforme : nom d'un pool d'agents (Azure DevOps), liste de libellés de runners (GitHub), liste de tags (GitLab). Vide = exécuteurs hébergés Linux de la plateforme. | Vide |
 | Relecteurs par défaut | Utilisateurs ou groupes du fournisseur git ajoutés aux pull requests ([24](24-depots-et-publication.md)). | Aucun |
 | Plan de publication | [24](24-depots-et-publication.md). | Rempli par le préréglage choisi |
@@ -54,14 +56,14 @@ constats par gravité, dernière révision, dernière publication, favoris d'abo
 **UC-PRJ-03 — Consulter un projet** : composants et leur ordre de déploiement, environnements, nommage,
 tags, plan de publication, membres, constats, révisions.
 
-**UC-PRJ-04 — Supprimer un projet** (propriétaire). L'utilisateur saisit le nom du projet pour
+**UC-PRJ-04 — Supprimer un projet** (`projet.administrer`). L'utilisateur saisit le nom du projet pour
 confirmer. Le projet est conservé 30 jours, restaurable (**UC-PRJ-05**), puis purgé. Ni les dépôts git
 ni les ressources Azure ne sont touchés.
 
-**UC-PRJ-06 — Changer de langage d'infrastructure ou de plateforme CI** (propriétaire). IFS affiche les
+**UC-PRJ-06 — Changer de langage d'infrastructure ou de plateforme CI** (`projet.administrer`). IFS affiche les
 conséquences ([DEC-48](03-decisions.md)) : fichiers remplacés à la prochaine publication, kit à
 réexécuter, approbateurs à ressaisir (changement de plateforme), migration assistée (changement de
-langage après publication, *lot 2*). Le changement s'applique à la prochaine révision.
+langage après publication, *lot 3*). Le changement s'applique à la prochaine révision.
 
 ## 4. Environnements
 
@@ -81,6 +83,9 @@ composants `PerEnvironment` ([12](12-composants-et-groupes-de-ressources.md)).
 | Exécuteurs | Surcharge des exécuteurs du projet pour cet environnement. | Ceux du projet |
 | Tags | Section 5. | Aucun |
 | Description | 500 caractères max. | Vide |
+| Fenêtres de déploiement *(lot 2)* | Plages de jours et d'heures, fuseau horaire ; un déploiement hors fenêtre attend la suivante ([DEC-77](03-decisions.md)). | Aucune |
+| Délai d'attente *(lot 2)* | Minutes d'attente obligatoire avant tout déploiement dans la cible (0 à 1440). | 0 |
+| Stratégie DNS privée *(lot 2)* | [18 § 8.2](18-reseau-et-exposition.md). | — |
 
 **RG-ENV-01 — Identifiant.** Toute donnée par environnement (surcharges, présence, valeurs de
 paramètres, identifiants de ressources existantes, groupes Entra) est rattachée à l'identifiant de
@@ -93,13 +98,13 @@ l'ordre. Déplacer réordonne.
 change les noms ou l'emplacement de ses ressources. Si une révision a été publiée, IFS liste les
 ressources concernées et exige une confirmation explicite.
 
-**UC-ENV-01 — Ajouter un environnement** (propriétaire). Les composants `PerEnvironment` qui suivent
+**UC-ENV-01 — Ajouter un environnement** (`environnements.gerer` ; `environnements.proteges.gerer` s'il est protégé). Les composants `PerEnvironment` qui suivent
 « tous les environnements » le ciblent aussitôt. Les ressources y sont présentes avec leurs valeurs par
 défaut ; les ressources existantes y sont **absentes** jusqu'à saisie de leur identifiant.
 
-**UC-ENV-02 — Modifier un environnement** (propriétaire).
+**UC-ENV-02 — Modifier un environnement** (`environnements.gerer` ; `environnements.proteges.gerer` pour une cible protégée ou pour changer la protection).
 
-**UC-ENV-03 — Supprimer un environnement** (propriétaire). IFS liste ce qui sera supprimé (surcharges,
+**UC-ENV-03 — Supprimer un environnement** (`environnements.gerer` ; `environnements.proteges.gerer` s'il est protégé). IFS liste ce qui sera supprimé (surcharges,
 valeurs de paramètres, présences, identifiants de ressources existantes, ciblage par les composants).
 Après confirmation, tout est supprimé. Un composant `PerEnvironment` qui ne cible plus aucun
 environnement produit une erreur de validation.
@@ -122,3 +127,29 @@ déclarer un tag utilisateur avec l'une de ces clés est refusé.
 
 **RG-PRJ-08 — Généré.** Les tags effectifs sont écrits en clair dans le fichier de paramètres de chaque
 environnement.
+
+## 6. Export, import et modèles ([DEC-56](03-decisions.md))
+
+**UC-PRJ-07 — Exporter un projet** (`projet.administrer`). IFS produit un document JSON versionné
+(`ifs-project/v1`) qui contient tout le modèle :
+- projet, environnements, composants, groupes de ressources, ressources ;
+- liaisons, paramètres applicatifs, nommage, tags, plan de publication ;
+- étapes de pipeline.
+
+Il ne contient ni membres, ni historique, ni révisions, ni secret (IFS n'en a pas). Les identifiants
+d'abonnement et de ressources existantes y figurent : l'export est journalisé.
+
+**UC-PRJ-08 — Importer un projet** (droit de créer des projets dans l'organisation). L'import crée un
+nouveau projet :
+- les codes en conflit sont proposés à la modification ;
+- les connexions git sont choisies parmi celles de l'organisation ;
+- la validation s'exécute aussitôt.
+
+Un document d'une version de schéma antérieure est migré automatiquement ; une version plus récente
+qu'IFS ne connaît pas est refusée.
+
+**UC-PRJ-09 — Modèles de projet et de composant** *(lot 2)*. Un administrateur d'organisation enregistre un
+projet ou un composant comme **modèle** : abonnements et identifiants retirés, valeurs à saisir marquées.
+Créer un projet ou un composant depuis un modèle passe par l'assistant, qui demande les valeurs
+marquées. IFS fournit aussi des modèles de départ (« API conteneur + base SQL », « Function App + file
+Service Bus », « site statique + API »).

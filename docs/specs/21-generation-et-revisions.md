@@ -22,7 +22,7 @@ d'une **révision** immuable, traçable et comparable ([DEC-20](03-decisions.md)
 | Résumé des changements | Différence de **plan de déploiement** avec la révision précédente : ressources ajoutées, modifiées (propriétés, environnements), retirées, noms Azure modifiés, rôles ajoutés ou retirés ; puis fichiers modifiés. |
 | Publications | Destinations où la révision a été publiée, avec résultat ([24](24-depots-et-publication.md)). |
 
-**UC-GEN-01 — Générer une révision** (contributeur, ou jeton `generate`). Toujours sur le projet
+**UC-GEN-01 — Générer une révision** (`generer`, ou jeton de portée `generate`). Toujours sur le projet
 entier. Refusé s'il y a une erreur de validation. Si le modèle, le catalogue, le langage et la plateforme
 n'ont pas changé depuis la dernière révision, aucune révision n'est créée et la dernière est renvoyée.
 
@@ -113,7 +113,7 @@ répartit dans les destinations ([DEC-21](03-decisions.md), [24](24-depots-et-pu
   install/                           (kit d'installation, voir 23)
   manifest.json                      (écrit par la publication, par destination)
 .github/workflows/                   (GitHub Actions uniquement, toujours à la racine du dépôt, voir RG-PUB-17)
-README.ifs.md                        (contenu du dépôt, comment déployer, points d'extension)
+README.ifs.md                        (architecture, diagramme, noms par environnement, déploiement, retour arrière, points d'extension ; DEC-75)
 ```
 
 **RG-GEN-08 — En-tête.** Chaque fichier généré commence par un commentaire : « Généré par
@@ -164,7 +164,7 @@ langage. Un avertissement est un défaut d'IFS ([RG-GEN-04](#2-révision)).
 - Contrôles : `bicep build`, `bicep build-params`, linter avec sa configuration par défaut, `bicep format`
   sans différence.
 
-### 6.3 Terraform (lot 2)
+### 6.3 Terraform (lot 3) et OpenTofu (lot 4)
 
 | Fichier | Rôle |
 |---|---|
@@ -182,9 +182,11 @@ langage. Un avertissement est un défaut d'IFS ([RG-GEN-04](#2-révision)).
 - Références externes : sources de données (`data`).
 - Contrôles : `terraform fmt -check`, `terraform init -backend=false`, `terraform validate`, `tflint` avec
   l'ensemble de règles Azure.
-- Compatibilité OpenTofu : voir [PO-08](04-perimetre-et-lots.md).
+- OpenTofu ([DEC-63](03-decisions.md)) : même structure ; registre `registry.opentofu.org`, version minimale
+  d'OpenTofu, chiffrement de l'état par une clé Key Vault (bloc `encryption`), contrôles `tofu fmt`,
+  `tofu validate`.
 
-### 6.4 Pulumi TypeScript (lot 3)
+### 6.4 Pulumi (lot 4)
 
 | Fichier | Rôle |
 |---|---|
@@ -199,6 +201,42 @@ langage. Un avertissement est un défaut d'IFS ([RG-GEN-04](#2-révision)).
 - Références externes : fonctions `get`.
 - Détacher : option `retainOnDelete` sur toutes les ressources si la règle du composant est « détacher ».
 - Contrôles : `tsc --noEmit` en mode strict, `prettier --check`.
+
+Le tableau ci-dessus décrit TypeScript. Les autres langages Pulumi ([DEC-63](03-decisions.md)) suivent la
+même découpe (projet, configuration par cible, programme, configuration typée, dépendances épinglées) :
+
+| Langage | Programme | Dépendances | Contrôles |
+|---|---|---|---|
+| C# | `Program.cs`, `Config.cs` | `.csproj` (`Pulumi`, `Pulumi.AzureNative`) | `dotnet build` avec avertissements traités comme erreurs, `dotnet format --verify-no-changes` |
+| Python | `__main__.py`, `config.py` | `requirements.txt` épinglé | `mypy --strict`, `ruff check` |
+| Go | `main.go`, `config.go` | `go.mod` | `go vet`, `gofmt -l` |
+| Java | `App.java`, `Config.java` | `pom.xml` | `mvn -B compile` |
+| YAML | `Pulumi.yaml` (ressources déclarées) | — | `pulumi preview` sur une pile de test |
+
+### 6.5 Source des modules ([DEC-54](03-decisions.md))
+
+| Source | Ce que contient la destination | Lot |
+|---|---|---|
+| AVM registre public | Références aux modules vérifiés épinglés (`br/public:…`, `registry.terraform.io/Azure/avm-res-…`) | 1 (Bicep), 2 (Terraform) |
+| AVM embarqués | Copie des modules vérifiés épinglés sous `modules/avm/`, référencés par chemin relatif ; fichiers gérés comme les autres | 2 |
+| Modules IFS | Un module compact par type utilisé, sous `modules/ifs/`, qui expose exactement les propriétés du descripteur ; fichiers gérés | 2 |
+| Modules du client | Références aux modules du client (registre privé ou dépôt git), selon un **contrat de correspondance** déclaré par type : entrée du module pour chaque propriété du descripteur, sorties fournies, version | 3 |
+
+**RG-GEN-21 — Surcharge par type.** La source s'applique à tout le projet, avec surcharge possible par type
+(exemple : AVM partout, sauf Key Vault en module du client).
+
+**RG-GEN-22 — Contrat des modules du client** *(lot 3)*. IFS ne voit pas le code des modules du client. Le
+contrat déclaré est vérifié par le pipeline de PR (compilation, `validate`). Une propriété du descripteur
+sans entrée correspondante dans le contrat est une erreur `VAL-GEN-CONTRAT` : rien n'est ignoré en silence
+([P3](01-principes.md)).
+
+**RG-GEN-23 — Changement de source.** Après publication, changer la source ne recrée aucune ressource :
+- Terraform : IFS génère les blocs `moved` d'une adresse de module à l'autre ;
+- Bicep : les ressources gardent leur identifiant Azure et la pile les reprend.
+
+**RG-GEN-24 — Accès au registre.** Avec la source « AVM registre public », les exécuteurs doivent joindre
+le registre public (`mcr.microsoft.com` pour Bicep, `registry.terraform.io` pour Terraform). Si les
+exécuteurs n'ont pas d'accès Internet, choisir « AVM embarqués » ou « Modules IFS ».
 
 ## 7. Code d'infrastructure additionnel (point d'extension)
 

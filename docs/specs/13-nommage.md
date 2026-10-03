@@ -38,12 +38,14 @@ Un gabarit par type vise un type du catalogue ou `ResourceGroup`.
 
 ## 3. Valeurs initiales
 
-À la création d'un projet, l'assistant propose :
+À la création d'un projet, l'assistant propose trois préréglages ([DEC-60](03-decisions.md)), avec un
+aperçu sur des exemples :
 
-| Portée | Gabarit |
-|---|---|
-| Par défaut | `{abbr}-{project}-{name}-{env}` |
-| `ResourceGroup` | `rg-{project}-{component}-{name}-{env}` |
+| Préréglage | Gabarit par défaut | Gabarit `ResourceGroup` |
+|---|---|---|
+| **Compact** (défaut) | `{abbr}-{project}-{name}-{env}` | `rg-{project}-{component}-{name}-{env}` |
+| **CAF** (Cloud Adoption Framework) | `{abbr}-{project}-{name}-{env}-{region}` | `rg-{project}-{component}-{name}-{env}-{region}` |
+| **Personnalisé** | Saisi | Saisi |
 
 Ces valeurs vivent à un seul endroit (le descripteur du projet par défaut) et sont modifiables dans
 l'assistant. Il n'existe pas de gabarit « recommandé » caché : l'assainissement (section 5) suffit à
@@ -127,7 +129,7 @@ ressources du projet ou du composant, avec les constats de longueur et de collis
 
 ## 8. Cas d'utilisation
 
-- **UC-NOM-01** — Définir le gabarit par défaut du projet (contributeur).
+- **UC-NOM-01** — Définir le gabarit par défaut du projet (`conventions.gerer` ; les UC-NOM-02 et 03 au niveau composant exigent `composants.gerer`, UC-NOM-04 `modele.modifier`).
 - **UC-NOM-02** — Définir ou retirer un gabarit par type, au niveau projet ou composant.
 - **UC-NOM-03** — Définir ou retirer une abréviation par type, au niveau projet ou composant.
 - **UC-NOM-04** — Définir ou retirer un nom forcé pour une ressource et un environnement.

@@ -45,7 +45,7 @@ origine. Il ne se modifie ni ne se supprime directement : il disparaît quand so
 | **Journalisation** | ApplicationInsights → LogAnalytics (obligatoire) ; ContainerAppsEnvironment → LogAnalytics | 0..1 ou 1 | — | Configuration de la ressource pour écrire dans l'espace. |
 | **Diagnostics** | Toute ressource qui supporte les diagnostics → LogAnalytics | 0..1 | Exclusion possible | Paramètre de diagnostic « tous les journaux, toutes les métriques ». Implicite depuis l'espace par défaut du composant ([DEC-42](03-decisions.md)). |
 | **Télémétrie** | WebApp, FunctionApp, ContainerApp → ApplicationInsights | 0..1 | Identité (si authentification locale désactivée) | Paramètre implicite `APPLICATIONINSIGHTS_CONNECTION_STRING`. Si l'authentification locale de la cible est désactivée : rôle Monitoring Metrics Publisher et paramètre `APPLICATIONINSIGHTS_AUTHENTICATION_STRING`. |
-| **Tirage d'image** | WebApp, FunctionApp (mode Container), ContainerApp → ContainerRegistry | 1 en mode Container | Identité affectée (obligatoire) | Rôle `AcrPull` pour cette identité sur le registre ; configuration du tirage par cette identité. |
+| **Tirage d'image** | WebApp, FunctionApp (mode Container), ContainerApp → ContainerRegistry | 1 en mode Container | Identité affectée (obligatoire) | Rôle `AcrPull` pour cette identité sur le registre (Container Registry Repository Reader limité au dépôt d'image si le registre est en mode de permissions par dépôt) ; configuration du tirage par cette identité. |
 | **Stockage hôte** | FunctionApp → StorageAccount | 1, obligatoire | Identité | Rôles fixés par le descripteur (Storage Blob Data Owner, Queue Data Contributor, Table Data Contributor) ; paramètres implicites `AzureWebJobsStorage__*` par identité ; conteneur de déploiement implicite pour `FC1`. |
 | **Lecture de configuration** | WebApp, FunctionApp, ContainerApp → AppConfiguration | 0..n | Identité ; nom de la variable d'adresse (défaut `AZURE_APPCONFIG_ENDPOINT`) | Rôle App Configuration Data Reader ; paramètre implicite portant l'adresse ; rôle Key Vault Secrets User sur chaque Key Vault référencé par des clés de ce magasin. |
 | **Accès** | Ressource dotée d'une identité, ou UserAssignedIdentity → toute ressource non enfant | 0..n | Rôles (≥ 1), portée, identité utilisée | Attributions de rôles (section 5). |
@@ -124,7 +124,7 @@ Role Based Access Control Administrator, **limité par condition** à ces rôles
 | Nom | Unique dans le projet, 1 à 80 caractères. |
 | Identifiant d'objet | Par environnement (et par cible propre de composant `Single`), facultatif. |
 
-**UC-LIA-01 — Déclarer un groupe Entra** (contributeur) et **lui attribuer des rôles** sur des
+**UC-LIA-01 — Déclarer un groupe Entra** (`conventions.gerer`) et **lui attribuer des rôles** sur des
 ressources (exemple : « Développeurs » lecteur en dev, rien en prod).
 
 **RG-LIA-19 — Environnement sans identifiant.** Si le groupe n'a pas d'identifiant pour un environnement,

@@ -16,6 +16,7 @@ commun à tous les environnements.
 | Description | 1 000 caractères max. | Vide |
 | Mode de déploiement | `PerEnvironment` ou `Single`. Verrouillé après la première publication. | `PerEnvironment` |
 | Environnements ciblés | `PerEnvironment` : « tous » ou une liste d'au moins un environnement. | Tous |
+| Abonnement par environnement | `PerEnvironment` : pour chaque environnement, surcharge facultative de l'abonnement et de la connexion de déploiement ([DEC-69](03-decisions.md)) ; la région reste celle de l'environnement. Usage type : composant de connectivité dans l'abonnement de connectivité de chaque environnement. Le kit d'installation crée une identité et une connexion par couple (environnement, abonnement). | Ceux de l'environnement |
 | Cible propre | `Single` uniquement : section 3. | — |
 | Nommage | Surcharges facultatives du nommage du projet ([13](13-nommage.md)). | Aucune |
 | Tags | [11 § 5](11-projets-et-environnements.md). | Aucun |
@@ -49,21 +50,21 @@ ressource est déployée ou retirée du modèle.
 
 ## 4. Cycle de vie
 
-**UC-CMP-01 — Créer un composant** (contributeur). Saisie : nom, code, mode, environnements ou cible
+**UC-CMP-01 — Créer un composant** (`composants.gerer`). Saisie : nom, code, mode, environnements ou cible
 propre. Le plan de publication attribue une destination selon sa règle par défaut
-([24 § 4](24-depots-et-publication.md)). Un contributeur peut donc créer et livrer un composant sans
-intervention d'un propriétaire.
+([24 § 4](24-depots-et-publication.md)). Un composant peut donc être créé et livré sans
+intervention de la personne qui gère le plan de publication.
 
-**UC-CMP-02 — Modifier un composant** (contributeur). Changer le code après publication suit la même
+**UC-CMP-02 — Modifier un composant** (`composants.gerer`). Changer le code après publication suit la même
 confirmation d'impact que [RG-PRJ-01](11-projets-et-environnements.md), et déplace les fichiers dans
 les destinations (les anciens sont supprimés à la publication suivante via le manifeste).
 
-**UC-CMP-03 — Dupliquer un composant** (contributeur). Nouveau nom et code obligatoires. Sont copiés :
+**UC-CMP-03 — Dupliquer un composant** (`composants.gerer`). Nouveau nom et code obligatoires. Sont copiés :
 groupes de ressources, ressources, surcharges, présences, enfants, liaisons internes (vers les copies),
 liaisons externes (vers les mêmes cibles), paramètres applicatifs. Ne sont pas copiés : les
 identifiants des ressources existantes, l'historique.
 
-**UC-CMP-04 — Supprimer un composant** (propriétaire). Refusé tant que des ressources d'autres
+**UC-CMP-04 — Supprimer un composant** (`composants.gerer`). Refusé tant que des ressources d'autres
 composants ont des liaisons vers ses ressources ; IFS les liste. Après suppression, la publication
 suivante retire ses fichiers des destinations. Les ressources Azure suivent la règle « ressources
 retirées » de leur dernière unité de déploiement (pile ou état) : rien n'est supprimé dans Azure par IFS,
@@ -84,7 +85,7 @@ région du groupe, sauf type global ([DEC-09](03-decisions.md)).
 **RG-CMP-04 — Déploiement.** Un groupe de ressources est créé dans chaque cible du composant où au
 moins une de ses ressources est présente.
 
-**UC-CMP-05 — Créer, modifier, supprimer un groupe de ressources** (contributeur). La suppression est
+**UC-CMP-05 — Créer, modifier, supprimer un groupe de ressources** (`modele.modifier`). La suppression est
 refusée s'il contient des ressources.
 
 **UC-CMP-06 — Déplacer une ressource** vers un autre groupe de ressources **du même composant**. IFS

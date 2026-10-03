@@ -239,6 +239,8 @@ propriétaire. Une retouche manuelle du client était écrasée sans avertisseme
 
 ### DEC-25 — Applications : build minimal et points d'extension
 
+> **Remplacée par [DEC-50](#dec-50--pipelines-applicatifs-riches-par-catalogue-détapes)** : les étapes riches reviennent, par un catalogue d'étapes ; les points d'extension sont conservés.
+
 **Constat.** La v0 tentait de gérer tests, couverture, Sonar, lint et analyse de dépendances pour sept piles, avec une détection automatique partielle. C'est un autre produit.
 
 **Décision.**
@@ -247,6 +249,8 @@ propriétaire. Une retouche manuelle du client était écrasée sans avertisseme
 - Seule exception : le scan de l'image conteneur, option visible et activée par défaut.
 
 ### DEC-26 — Aucun mot de passe dans le modèle
+
+> **Remplacée par [DEC-51](#dec-51--authentification-locale-permise-déconseillée)** : Entra reste le défaut recommandé ; mots de passe et clés sont permis, signalés comme déconseillés.
 
 **Décision.**
 - Les applications tirent leurs images avec une identité managée affectée par l'utilisateur ; l'utilisateur admin des registres est toujours désactivé.
@@ -302,6 +306,8 @@ La validation refuse toute configuration incomplète.
 - Un agent peut préparer une **proposition de modification** qu'un humain relit et applique.
 
 ### DEC-32 — Pas d'import ARM ; import d'un groupe de ressources Azure au lot 3
+
+> **Remplacée par [DEC-49](#dec-49--limport-revient-en-dernier-lot)** : l'import ARM revient au lot 3, avec Bicep et groupe de ressources Azure.
 
 **Constat.** L'import ARM v0 n'avait pas d'écran, perdait les réglages par environnement et mettait tout dans un seul groupe de ressources.
 
@@ -379,6 +385,8 @@ La validation refuse toute configuration incomplète.
 
 ### DEC-43 — Azure seulement, plusieurs langages d'infrastructure
 
+> **Lots revus par [DEC-62](#dec-62--priorité-absolue-à-bicep-et-azure-devops)** : les numéros de lot cités ci-dessous sont remplacés par ceux de DEC-62.
+
 **Constat.** La première version de la v1 limitait la sortie au Bicep ([DEC-14](#dec-14--les-modules-bicep-sont-les-azure-verified-modules), [DEC-15](#dec-15--déploiement-par-azure-deployment-stacks)). Beaucoup d'équipes Azure travaillent en Terraform, certaines en Pulumi. Imposer Bicep exclut ces clients ou les oblige à changer d'outil.
 
 **Décision.**
@@ -453,6 +461,8 @@ Remplace [DEC-15](#dec-15--déploiement-par-azure-deployment-stacks).
 
 ### DEC-47 — Plusieurs plateformes CI
 
+> **Lots revus par [DEC-62](#dec-62--priorité-absolue-à-bicep-et-azure-devops)** : les numéros de lot cités ci-dessous sont remplacés par ceux de DEC-62.
+
 Remplace [DEC-24](#dec-24--azure-devops-en-v1-modèle-de-pipeline-neutre).
 
 **Décision.**
@@ -480,6 +490,8 @@ Remplace [DEC-24](#dec-24--azure-devops-en-v1-modèle-de-pipeline-neutre).
 
 ### DEC-48 — Un langage et une plateforme par projet, changeables
 
+> **Lots revus par [DEC-62](#dec-62--priorité-absolue-à-bicep-et-azure-devops)** : les numéros de lot cités ci-dessous sont remplacés par ceux de DEC-62.
+
 **Décision.**
 - Le langage d'infrastructure et la plateforme CI se choisissent à la création du projet. En v1, un projet n'en a qu'un de chaque : pas de mélange par composant ([PO-07](04-perimetre-et-lots.md)).
 - **Changer de plateforme CI** : la révision suivante produit les pipelines et le kit de la nouvelle plateforme. Les objets de l'ancienne sont listés comme orphelins dans la liste de contrôle.
@@ -491,3 +503,423 @@ Remplace [DEC-24](#dec-24--azure-devops-en-v1-modèle-de-pipeline-neutre).
   La liste de contrôle décrit la bascule : déployer avec le nouveau langage, désactiver les anciens pipelines, retirer l'ancienne pile ou l'ancien état en mode détaché.
 
 **Conséquences.** Un client n'est jamais enfermé dans son premier choix ; la migration réutilise les noms calculés, identiques d'un langage à l'autre.
+
+---
+
+## Arbitrages après revue (2026-10-03)
+
+### DEC-49 — L'import revient, en dernier lot
+
+Remplace [DEC-32](#dec-32--pas-dimport-arm--import-dun-groupe-de-ressources-azure-au-lot-3).
+
+**Décision.**
+- Le lot 3 propose l'**import** d'une infrastructure existante depuis trois sources : un modèle ARM JSON, des fichiers Bicep (compilés en ARM par IFS), un groupe de ressources Azure (avec la connexion Azure en lecture).
+- Contrairement à la v0, l'import :
+  - passe par un écran de revue ;
+  - répartit les ressources dans des composants et des groupes de ressources ;
+  - reconstitue les surcharges par environnement quand on fournit une source par environnement ;
+  - reprend identités, rôles et paramètres ;
+  - peut cibler un projet existant.
+- Le résultat est une **proposition de modification** ([DEC-31](#dec-31--mcp-dérivé-de-lapi-avec-propositions-de-modification)) relue avant application.
+
+**Conséquences.** Voir [29](29-import.md).
+
+### DEC-50 — Pipelines applicatifs riches, par catalogue d'étapes
+
+Remplace [DEC-25](#dec-25--applications--build-minimal-et-points-dextension).
+
+**Constat.** La v0 gérait tests, couverture, Sonar, lint et analyse des dépendances, mais codés en dur et partiellement. Le besoin client est réel ; c'est la méthode qui ne tenait pas.
+
+**Décision.**
+- Les étapes de qualité et de sécurité des pipelines applicatifs (tests, couverture et seuil, lint, analyse des dépendances, SonarQube/SonarCloud, analyse des secrets, scan d'image, SBOM, tests post-déploiement) sont décrites dans un **catalogue d'étapes** versionné, comme le catalogue de ressources ([DEC-13](#dec-13--le-catalogue-est-un-ensemble-de-descripteurs-versionnés)).
+- Chaque étape déclare ses paramètres, ses valeurs par défaut par pile et sa traduction par plateforme.
+- Chaque étape est d'abord une **commande en ligne** (outil de la pile) ; les fonctions natives de la plateforme ne servent qu'à **publier** les résultats. Cela garde la matrice piles × étapes × plateformes maîtrisable.
+- Les points d'extension restent : ils couvrent tout ce que le catalogue ne couvre pas.
+
+**Conséquences.**
+- Lot 1 : build, scan d'image, points d'extension.
+- Lot 2 : catalogue d'étapes pour .NET, Node/Angular, Python, Java, et suggestions par détection dans le dépôt.
+- Lot 3 : PHP, Go.
+
+Voir [19](19-applications-build-et-deploiement.md).
+
+### DEC-51 — Authentification locale permise, déconseillée
+
+Remplace [DEC-26](#dec-26--aucun-mot-de-passe-dans-le-modèle).
+
+**Constat.** Beaucoup d'applications existantes utilisent encore un login SQL, une clé de stockage ou un utilisateur admin de registre. Les interdire bloque des clients ; les proposer sur un pied d'égalité affaiblit la sécurité.
+
+**Décision.**
+- Les types qui le supportent ont une propriété **Authentification** dont la valeur par défaut, et recommandée, est Entra seule. Exemples : SQL, PostgreSQL, registre, stockage, Service Bus, App Configuration.
+- Activer l'authentification locale (mot de passe, clé, compte admin) :
+  - est possible ;
+  - est signalé « déconseillé » à l'écran, avec l'alternative Entra ;
+  - produit l'avertissement `VAL-SEC-AUTH-LOCALE`, acquittable.
+- **IFS ne connaît toujours aucune valeur** ([DEC-04](#dec-04--service-en-ligne-hébergé-dans-lue-sans-secret-applicatif)). Un mot de passe d'administration est :
+  - soit **généré par la release** au premier déploiement et stocké dans un Key Vault choisi ;
+  - soit fourni comme secret de pipeline.
+
+  Il est transmis au code d'infrastructure comme entrée sensible. En Terraform, IFS utilise les attributs en écriture seule quand le fournisseur les propose (exemple : `administrator_login_password_wo`) ; sinon la valeur est dans l'état protégé et un constat `Info` le dit.
+- Les tirages d'image par IFS restent faits par identité ([RG-LIA-09](16-liaisons-identites-et-acces.md)), même si le compte admin du registre est activé pour d'autres usages.
+
+**Conséquences.** Voir [15](15-catalogue.md), [17 § 7](17-parametres-applicatifs-et-secrets.md).
+
+### DEC-52 — Des droits fins : permissions, rôles, portées, équipes
+
+**Constat.** Trois rôles de projet (propriétaire, contributeur, lecteur) obligeaient le propriétaire à tout configurer.
+
+**Décision.**
+- Les droits sont des **permissions** élémentaires ([10 § 4](10-organisations-et-acces.md)).
+- IFS fournit des **rôles prédéfinis** qui les regroupent : lecteur, auditeur, développeur, contributeur, responsable des déploiements, architecte plateforme, administrateur de projet, propriétaire.
+- Un rôle est attribué à un membre ou à une **équipe** de l'organisation.
+- Sa **portée** est le projet entier ou une liste de composants : une équipe produit modifie ses composants sans toucher au reste.
+- *(Lot 2)* : rôles personnalisés définis par l'organisation ; équipes synchronisées avec des groupes Entra ; publication à deux personnes.
+
+### DEC-53 — Qui écrit la configuration d'une application
+
+**Constat.** Deux pipelines touchent une même application : celui de l'infrastructure, qui la crée et la configure, et le pipeline applicatif, qui livre son code. Si les deux écrivent ses paramètres, le dernier passé gagne :
+- un redéploiement d'infrastructure efface un paramètre posé par la livraison applicative, ou l'inverse ;
+- on ne sait plus quelle valeur est en service ;
+- les références de secrets et les rôles câblés par IFS peuvent être écrasés.
+
+**Décision.**
+
+| Élément de l'application | Propriétaire |
+|---|---|
+| Existence, plan, SKU, mise à l'échelle, identités, réseau, domaines | Pipeline d'infrastructure |
+| Paramètres applicatifs : variables d'environnement, références Key Vault, clés App Configuration | Pipeline d'infrastructure |
+| Code (paquet) ou image en service | Pipeline applicatif |
+| Valeurs qui doivent changer sans redéploiement (feature flags, réglages fonctionnels) | App Configuration, lue à l'exécution par l'application |
+
+Seule exception : le déploiement d'infrastructure reconduit l'image en service au lieu de la remplacer ([RG-APP-02](19-applications-build-et-deploiement.md)).
+
+**Conséquences.**
+- Changer un paramètre = modifier le modèle → révision → pull request → release d'infrastructure. Le code n'est pas relivré.
+- Un code qui attend un nouveau paramètre : l'infrastructure est déployée d'abord (le paramètre ajouté est ignoré par l'ancien code), puis le code est livré. Le résumé de révision le signale : « à déployer avant la prochaine livraison de `api` ».
+- Un paramètre modifié à la main dans le portail est remplacé au déploiement d'infrastructure suivant ; l'aperçu (what-if, plan) le montre avant.
+- L'option inverse (paramètres écrits par le pipeline applicatif) est écartée : les paramètres sortiraient du modèle, de la validation, de la revue et du câblage implicite.
+
+### DEC-54 — Source des modules au choix
+
+> **Lots revus par [DEC-62](#dec-62--priorité-absolue-à-bicep-et-azure-devops)** : les numéros de lot cités ci-dessous sont remplacés par ceux de DEC-62.
+
+Complète [DEC-45](#dec-45--modules-et-fournisseurs-par-langage).
+
+**Décision.** Le projet choisit la source des modules de son code d'infrastructure, avec surcharge possible par type :
+
+| Source | Contenu | Pour qui | Lot |
+|---|---|---|---|
+| **AVM du registre public** (défaut) | Référence au module vérifié épinglé | La plupart des équipes | 1 (Bicep), 2 (Terraform) |
+| **AVM embarqués** | Copie des AVM épinglés dans le dépôt (`modules/avm/`) | Exécuteurs sans accès au registre public, audit, maîtrise totale | 2 |
+| **Modules IFS** | Modules compacts écrits par IFS, un par type utilisé, qui couvrent exactement les propriétés du descripteur, dans `modules/` | Équipes qui veulent un code court, lisible et sans dépendance externe | 2 |
+| **Modules du client** | Modules du registre privé du client (registre Bicep, registre Terraform privé, dépôt git), branchés par un **contrat de correspondance** déclaré dans IFS : entrées attendues, sorties fournies | Entreprises dont les modules internes sont imposés | 3 |
+
+Pulumi n'a pas de modules vérifiés : sources « ressources directes » (défaut) ou « composants IFS » (`ComponentResource`, lot 3).
+
+**Conséquences.**
+- La parité ([EXG-19](27-exigences-non-fonctionnelles.md)) est testée pour chaque source livrée.
+- Changer de source après publication : en Terraform, IFS génère des blocs `moved` pour que les ressources ne soient pas recréées ; en Bicep, les ressources gardent leur identifiant Azure et la pile les reprend.
+
+### DEC-55 — IFS suit les déploiements
+
+**Constat.** IFS ne savait pas si ses révisions étaient déployées ni si les déploiements réussissaient. L'indicateur principal de la vision n'était pas mesurable.
+
+**Décision.**
+- IFS lit, par les connexions qu'il a déjà, les exécutions des pipelines qu'il gère :
+  - application GitHub : permission de lecture sur Actions, événements `workflow_run` ;
+  - principal de service Azure DevOps : lecture des builds.
+- Chaque pipeline généré porte le numéro de révision. IFS sait donc, par composant et par cible, quelle révision est déployée, laquelle attend une approbation, laquelle a échoué.
+- Aucun accès à Azure n'est nécessaire.
+
+**Conséquences.** Voir [28](28-suivi-des-deploiements.md). La liste de contrôle se coche seule quand un premier déploiement réussit.
+
+### DEC-56 — Export, import et modèles de projet
+
+**Décision.**
+- Un projet s'**exporte** en un document JSON versionné (modèle complet, sans aucun secret, puisqu'IFS n'en a pas) et s'**importe** dans une organisation.
+- *(Lot 2)* Les organisations peuvent enregistrer des **modèles de projet** et des **modèles de composant** (exemple : « API Container App + base SQL + file Service Bus ») réutilisables, et IFS fournit des modèles de départ.
+
+**Conséquences.** Le modèle lui-même est sans verrou, pas seulement la sortie ([P10](01-principes.md)). Voir [11 § 6](11-projets-et-environnements.md).
+
+### DEC-57 — Exploitation d'IFS : catalogue publié par cycle, accès support consenti
+
+**Décision.**
+- Le catalogue (ressources et étapes) suit un cycle **brouillon → validation automatique → publication → dépréciation**. La validation automatique consiste à déployer le projet de référence dans toutes les variantes livrées.
+- Les projets suivent la dernière version publiée. Un propriétaire peut épingler une version 90 jours au plus. Cela tranche l'ancien [PO-02](04-perimetre-et-lots.md).
+- Le personnel d'IFS n'a **aucun accès permanent** aux données des clients. Un accès support :
+  - est demandé ;
+  - est approuvé par un administrateur de l'organisation ;
+  - dure 72 heures au plus ;
+  - est en lecture seule par défaut ;
+  - est journalisé dans le journal d'audit du client.
+
+**Conséquences.** Voir [40](40-exploitation-ifs.md).
+
+### DEC-58 — Le lot 1 est livré en trois jalons, tranche verticale d'abord
+
+> **Lots revus par [DEC-62](#dec-62--priorité-absolue-à-bicep-et-azure-devops)** : les numéros de lot cités ci-dessous sont remplacés par ceux de DEC-62.
+
+**Constat.** Le lot 1 est gros. Livrer tout en largeur retarderait la preuve de la promesse.
+
+**Décision.**
+- **Jalon 1 — tranche verticale** : le projet de référence de bout en bout en Bicep + Azure DevOps, avec les seuls types qu'il utilise, l'organisation, les rôles prédéfinis, la validation, les révisions, la publication, le kit et le suivi des déploiements.
+- **Jalon 2 — largeur** : GitHub Actions, types restants du lot 1, import de paramètres, comparaison de révisions, équipes et portées par composant.
+- **Jalon 3 — outillage** : serveur MCP et propositions, vue graphe, recherche globale, journal d'audit complet avec export.
+
+**Conséquences.** Voir [04 § 2](04-perimetre-et-lots.md).
+
+### DEC-59 — Comptes Microsoft personnels acceptés
+
+**Décision.**
+- La connexion accepte les comptes professionnels Entra ID **et** les comptes Microsoft personnels. Le coût est faible et les essais individuels deviennent possibles.
+- Une organisation peut restreindre ses membres à un ou plusieurs tenants Entra.
+
+### DEC-60 — Préréglages de nommage
+
+**Décision.** L'assistant propose trois préréglages de gabarit par défaut :
+- **Compact** (défaut) : `{abbr}-{project}-{name}-{env}` ;
+- **CAF** : `{abbr}-{project}-{name}-{env}-{region}`, aligné sur le Cloud Adoption Framework ;
+- **Personnalisé**.
+
+### DEC-61 — Les ressources détachées sont suivies
+
+**Décision.** Quand le suivi des déploiements ([DEC-55](#dec-55--ifs-suit-les-déploiements)) confirme qu'une révision qui détache des ressources est déployée, IFS les inscrit dans l'**inventaire des ressources détachées** de la cible :
+- nom, type, groupe, date, révision ;
+- commande de suppression proposée.
+
+L'utilisateur les marque « supprimées » ou « conservées ». Aucune ressource ne devient orpheline sans trace.
+
+---
+
+## Seconde revue : priorités, historique, IA, réseau, déploiements, et fin des points ouverts (2026-10-03)
+
+### DEC-62 — Priorité absolue à Bicep et Azure DevOps
+
+Remplace les numéros de lot cités dans [DEC-43](#dec-43--azure-seulement-plusieurs-langages-dinfrastructure), [DEC-47](#dec-47--plusieurs-plateformes-ci), [DEC-48](#dec-48--un-langage-et-une-plateforme-par-projet-changeables), [DEC-54](#dec-54--source-des-modules-au-choix) et [DEC-58](#dec-58--le-lot-1-est-livré-en-trois-jalons-tranche-verticale-dabord).
+
+**Décision.**
+
+| Lot | Langages | Plateformes CI | Thème |
+|---|---|---|---|
+| 1 | Bicep | Azure DevOps | Premier déploiement réussi (3 jalons) |
+| 2 | Bicep | Azure DevOps, **GitHub Actions** | Production d'entreprise : réseau privé, IA, stratégies de déploiement, gouvernance, historique |
+| 3 | **Terraform** (+ migration Bicep ↔ Terraform) | + GitLab CI | Ouverture, import, ressources complémentaires |
+| 4 | **OpenTofu**, **Pulumi** (TypeScript, C#, Python, Go, Java, YAML) | — | Langages complémentaires, multi-région, AKS, instance dédiée |
+
+Le garde-fou du lot 1 est renforcé : un prototype d'émetteur Terraform **et** un prototype d'émetteur GitHub Actions, non livrés, valident la neutralité du plan de déploiement.
+
+### DEC-63 — OpenTofu et tous les langages Pulumi au lot 4
+
+Tranche [PO-08 et PO-09](04-perimetre-et-lots.md).
+
+**Décision.**
+- **OpenTofu** est un langage cible à part entière : même HCL que Terraform, mais versions minimales, registre (`registry.opentofu.org`) et tests propres. Les fonctions propres à OpenTofu (chiffrement natif de l'état) sont utilisées : l'état OpenTofu est chiffré par une clé Key Vault.
+- **Pulumi** est produit dans les six langages : TypeScript, C#, Python, Go, Java et YAML. Les émetteurs partagent une même traduction du plan de déploiement vers les ressources Azure Native ; seule la syntaxe change.
+
+### DEC-64 — Historique du modèle, versions et restauration
+
+**Constat.** Les révisions historisent la sortie, pas le modèle. Une erreur de saisie ne se défaisait qu'à la main, et on ne pouvait pas voir l'état du modèle à une date passée.
+
+**Décision.**
+- Chaque modification du modèle produit un **jeu de modifications** immuable : auteur, date, origine, message, changements avant/après par objet et par propriété. Le modèle a une version qui s'incrémente.
+- On peut **étiqueter** une version, **consulter** le modèle tel qu'il était à n'importe quelle version, **comparer** deux versions, **annuler** un jeu de modifications et **restaurer** tout ou partie du modèle à une version.
+- Une annulation ou une restauration n'efface rien : elle produit un nouveau jeu de modifications (ou une proposition en cas de conflit).
+- *(Lot 2)* **Brouillons** : des espaces de travail où l'on prépare des modifications sans toucher au modèle principal, puis qu'on soumet comme proposition.
+
+**Conséquences.** Voir [31](31-historique-et-versions.md). Revenir en arrière sur l'infrastructure = restaurer le modèle, générer, publier, déployer.
+
+### DEC-65 — Qui a modifié quoi, partout
+
+Complète [DEC-34](#dec-34--journal-daudit).
+
+**Décision.**
+- Chaque objet affiche son auteur de création et sa dernière modification.
+- Chaque propriété affiche au survol qui l'a modifiée en dernier, quand, et par quel jeu de modifications.
+- L'historique fonctionnel (jeux de modifications, restaurables, conservés toute la vie du projet) et le journal d'audit (toutes les actions sensibles, immuable, 13 mois) sont complémentaires et liés : chaque événement d'audit de modification renvoie à son jeu de modifications.
+
+### DEC-66 — Priorités du catalogue
+
+**Décision.** Les types sont classés par importance pour une application d'entreprise courante :
+
+| Priorité | Types | Lot |
+|---|---|---|
+| Socle applicatif | Log Analytics, Application Insights, Key Vault, identité managée, stockage, plan App Service, Web App, Function App, registre, environnement Container Apps, Container App, SQL (serveur, base), PostgreSQL, Service Bus, App Configuration, **Static Web App**, **Azure Managed Redis** | 1 |
+| Réseau et sécurité | VNet et subnets, appairage, NSG, table de routage, passerelle NAT, IP publique, zone DNS privée, zone DNS publique, point de terminaison privé (généré), pool d'exécuteurs privé | 2 (vague A) |
+| IA | Compte et projets Microsoft Foundry, déploiements de modèles, AI Search, Cosmos DB | 2 (vague B) |
+| Exposition, intégration, exploitation | Front Door et WAF, Application Gateway et WAF, API Management, Event Grid, Event Hubs, Container Apps Jobs, groupes d'actions, alertes, tests de disponibilité, budgets | 2 (vague C) |
+| Complémentaires | MySQL, SignalR, Web PubSub, Communication Services (e-mail), Logic Apps Standard, Container Instances, Azure Firewall, DNS Private Resolver, Bastion, Managed Grafana | 3 |
+| Conteneurs orchestrés | AKS (cluster seulement ; le déploiement d'applications dans AKS reste hors périmètre) | 4 |
+
+Azure Managed Redis et Static Web Apps entrent au lot 1 : un cache et un front-end statique font partie de la plupart des applications.
+
+### DEC-67 — Applications d'IA : Microsoft Foundry
+
+**Décision.** IFS modélise les applications d'IA générative sur **Microsoft Foundry** :
+- ressource Foundry (compte Azure AI Services avec gestion de projets) ;
+- projets ;
+- déploiements de modèles avec capacité par environnement ;
+- connexions identité-à-identité vers AI Search, stockage et Cosmos DB ;
+- configuration « standard » des agents (données des agents dans les ressources du client), réseau privé des agents.
+
+Les projets « hub » de l'ancienne génération ne sont pas modélisés. Une application consomme un modèle par une liaison qui accorde le rôle et fournit l'adresse et le nom du déploiement.
+
+**Conséquences.** Voir [32](32-ia-et-foundry.md). Lot 2, vague B.
+
+### DEC-68 — Réseau privé d'entreprise complet
+
+Complète [DEC-28](#dec-28--réseau-privé-complet-ou-rien-lot-2).
+
+**Décision.** Le lot 2 (vague A, en tête) couvre :
+- topologies simple et **hub and spoke**, avec **appairages** (y compris vers un hub existant d'un autre abonnement) ;
+- **zones DNS privées** centralisées et leurs liens, générées automatiquement à partir des points de terminaison privés ;
+- **passerelle NAT**, **tables de routage** (vers un pare-feu existant), NSG ;
+- **zone DNS publique** (enregistrements des domaines personnalisés générés) ;
+- **exécuteurs privés** pour les pipelines : Managed DevOps Pools (Azure DevOps), réseau privé des runners hébergés GitHub.
+
+Azure Firewall et DNS Private Resolver comme ressources : lot 3.
+
+**Conséquences.** Voir [18](18-reseau-et-exposition.md).
+
+### DEC-69 — Abonnement par composant et par environnement
+
+**Constat.** Un environnement n'a qu'un abonnement. Un composant « connectivité » qui vit, pour chaque environnement, dans l'abonnement de connectivité (modèle Azure Landing Zones) ne pouvait pas être modélisé.
+
+**Décision.** Un composant `PerEnvironment` peut surcharger, pour chaque environnement, l'**abonnement** et la **connexion de déploiement** de la cible. La région reste celle de l'environnement.
+
+### DEC-70 — Stratégies de déploiement applicatif
+
+Complète [DEC-53](#dec-53--qui-écrit-la-configuration-dune-application).
+
+**Décision.** Chaque application choisit une stratégie de livraison :
+
+| Stratégie | Types | Mécanisme Azure |
+|---|---|---|
+| Directe (défaut) | Tous | Remplacement ; sans coupure si l'application a des sondes de disponibilité (Container Apps) ou plusieurs instances |
+| Mise à jour progressive des instances | Function App Flex | Stratégie de mise à jour `RollingUpdate` |
+| Slot et bascule | Web App, Function App (plans avec slots) | Déploiement dans un slot, contrôle de santé, échange |
+| Bleu/vert | Container App | Révisions multiples, étiquettes, bascule du trafic |
+| Progressive (canary) | Container App ; Web App et Function App par routage de trafic vers le slot | Paliers de trafic avec observation et contrôle de santé |
+
+**La répartition du trafic et le contenu des slots appartiennent au pipeline applicatif.** L'infrastructure crée les slots et règle le mode de révision, puis reconduit le trafic en service, comme l'image ([RG-APP-02](19-applications-build-et-deploiement.md)).
+
+**Conséquences.** Voir [19 § 9](19-applications-build-et-deploiement.md). Lot 2.
+
+### DEC-71 — Politiques d'organisation
+
+**Décision.** *(Lot 2)*
+- Une organisation définit des **politiques** que tous ses projets respectent : régions autorisées, types ou SKU interdits, exposition publique interdite en cible protégée, authentification locale interdite en cible protégée, tags obligatoires, redondance minimale en cible protégée, préfixe de nommage imposé.
+- Une politique produit des constats (`Erreur` ou `Avertissement`).
+- Une dérogation par projet est possible, justifiée, datée, approuvée par un administrateur.
+
+**Conséquences.** Voir [33 § 2](33-gouvernance-couts-et-supervision.md).
+
+### DEC-72 — Estimation des coûts et budgets
+
+**Décision.** *(Lot 2)*
+- IFS estime le coût mensuel de chaque ressource, composant, environnement et projet à partir de l'API publique des prix Azure (sans accès aux abonnements). Les hypothèses d'usage sont explicites (exemple : Go ingérés par jour).
+- Le résumé de chaque révision indique la variation estimée.
+- Les **budgets** Azure sont modélisables, avec seuils et alertes.
+
+**Conséquences.** Voir [33 § 3](33-gouvernance-couts-et-supervision.md).
+
+### DEC-73 — Supervision comme du code
+
+**Décision.** *(Lot 2)*
+- Groupes d'actions, alertes de métriques et de journaux, tests de disponibilité sont modélisables.
+- Chaque type propose des **alertes recommandées** (exemple : erreurs 5xx d'une application, messages en lettres mortes d'une file), activables par composant avec des seuils par environnement.
+
+**Conséquences.** Voir [33 § 4](33-gouvernance-couts-et-supervision.md).
+
+### DEC-74 — Contrôle de dérive par pipeline planifié
+
+Révise le hors périmètre de [04](04-perimetre-et-lots.md) sans revenir sur [DEC-04](#dec-04--service-en-ligne-hébergé-dans-lue-sans-secret-applicatif).
+
+**Décision.** *(Lot 2)*
+- Un pipeline planifié, généré par IFS, exécute chaque jour l'aperçu (what-if, plan) de chaque composant dans chaque cible et publie un résumé.
+- IFS lit ce résumé par le suivi des déploiements et signale toute **dérive** (écart entre Azure et la dernière révision déployée).
+- IFS ne lit toujours pas Azure lui-même et ne corrige rien automatiquement.
+
+### DEC-75 — Documentation d'architecture générée
+
+**Décision.** Chaque révision produit un `README.ifs.md` par destination contenant :
+- les composants et leur ordre de déploiement ;
+- un **diagramme Mermaid** des ressources et des liaisons ;
+- le tableau des noms Azure par environnement, des rôles attribués et des paramètres (sans valeur secrète) ;
+- les procédures de déploiement et de retour arrière.
+
+Lot 1, jalon 3.
+
+### DEC-76 — Commentaires et mentions
+
+**Décision.** *(Lot 2)*
+- On peut commenter un objet du modèle, une proposition ou une révision, et mentionner un membre (`@nom`), qui est notifié.
+- Un fil de commentaires se résout.
+- Les commentaires d'une proposition font partie de sa revue.
+
+### DEC-77 — Fenêtres de déploiement
+
+**Décision.** *(Lot 2)*
+- Une cible peut déclarer des **fenêtres de déploiement** (jours, heures, fuseau) et un **délai d'attente** avant déploiement.
+- Le kit les traduit dans la plateforme : contrôle « heures ouvrées » d'Azure DevOps ; règle de délai d'attente et branche de déploiement de GitHub.
+
+### DEC-78 — Modèle commercial
+
+Tranche [PO-01](04-perimetre-et-lots.md).
+
+**Décision.** Trois plans. Les prix sont des **valeurs de lancement**, révisables par une nouvelle décision :
+
+| Plan | Pour qui | Limites | Prix de lancement |
+|---|---|---|---|
+| **Découverte** | Essai, individus | 1 projet, 2 environnements, 25 ressources ; génération et téléchargement ; publication vers 1 dépôt ; pas de MCP en écriture | Gratuit |
+| **Équipe** | Équipes et PME | 20 projets, 500 ressources par projet ; toutes les fonctions des lots livrés, sauf celles du plan Entreprise | 39 € par membre actif et par mois (3 minimum) |
+| **Entreprise** | Grands comptes, intégrateurs | Volumes contractuels ; politiques d'organisation, rôles personnalisés, équipes synchronisées avec Entra, publication à deux personnes, SLA 99,9 %, support prioritaire, instance dédiée en option ([DEC-79](#dec-79--instance-dédiée-et-région-dhébergement)) | Sur devis, à partir de 1 500 € par mois |
+
+- Un **membre actif** est un membre qui a modifié le modèle, généré ou publié dans le mois. Les lecteurs, auditeurs et approbateurs sont gratuits.
+- Le **mode découverte** permet de modéliser, valider et télécharger sans aucune connexion git.
+
+### DEC-79 — Instance dédiée et région d'hébergement
+
+Tranche [PO-03](04-perimetre-et-lots.md).
+
+**Décision.**
+- Le service mutualisé est hébergé **uniquement dans l'Union européenne**.
+- Au lot 4, le plan Entreprise propose une **instance dédiée** : même version, déployée et opérée par l'équipe IFS dans un abonnement dédié, dans la région choisie par le client.
+- IFS ne fournit pas de version installable par le client.
+
+### DEC-80 — Multi-région
+
+Tranche [PO-04](04-perimetre-et-lots.md).
+
+**Décision.** *(Lot 4)*
+- Un environnement peut déclarer des **régions secondaires**.
+- Un composant marqué **multi-région** est déployé une fois par couple (environnement, région), chaque instance étant une unité de déploiement distincte ; ses gabarits doivent contenir `{region}`.
+- Une liaison d'un composant multi-région vers un composant multi-région vise l'instance de la même région ; vers un composant mono-région, la région principale.
+- Le routage global (Front Door) et la réplication des données (Cosmos DB multi-région, géo-réplication SQL) se modélisent explicitement.
+- Les stages de release déploient la région principale, puis les secondaires.
+
+### DEC-81 — Attributions de rôle à portée externe
+
+Tranche [PO-06](04-perimetre-et-lots.md).
+
+**Décision.** En Bicep, une attribution de rôle dont la portée est dans un autre abonnement que celui de la cible est **toujours** déployée par une **pile dédiée**, créée dans l'abonnement de la portée par la release du composant consommateur, et nommée `ifs-<projet>-<composant>-<cible>-ext-<abonnement court>`. Cette solution fonctionne quel que soit le comportement des piles pour les modules d'un autre abonnement ; le prototype n'est plus nécessaire pour décider.
+
+### DEC-82 — Un seul langage par projet
+
+Tranche [PO-07](04-perimetre-et-lots.md).
+
+**Décision.**
+- Un projet a un seul langage d'infrastructure, définitivement : un seul format d'état, un seul kit, un seul jeu de pipelines.
+- Deux équipes qui veulent des langages différents font deux projets ; un projet peut référencer les ressources de l'autre comme ressources existantes.
+- La migration assistée ([DEC-48](#dec-48--un-langage-et-une-plateforme-par-projet-changeables)) couvre le changement complet.
+
+### DEC-83 — Télémétrie produit
+
+Tranche [PO-10](04-perimetre-et-lots.md).
+
+**Décision.**
+- IFS mesure l'usage de ses fonctions (événements, durées, erreurs) avec un identifiant d'utilisateur pseudonymisé, sans aucun contenu du modèle (ni noms, ni valeurs, ni identifiants Azure). Conservation 13 mois.
+- Un administrateur d'organisation peut la désactiver ; seuls les journaux nécessaires à la sécurité et à la facturation restent.
+
+### DEC-84 — Reprise des projets de l'ancienne application
+
+**Décision.** Un **convertisseur ponctuel** lit la base de l'ancienne application (v0) et produit, pour chaque projet, un export au format `ifs-project/v1` ([DEC-56](#dec-56--export-import-et-modèles-de-projet)), importable dans la nouvelle. La conversion fait de son mieux : ce qui n'a pas d'équivalent est listé dans un rapport. Outil interne, livré au jalon 3 du lot 1, pas une fonction du produit.

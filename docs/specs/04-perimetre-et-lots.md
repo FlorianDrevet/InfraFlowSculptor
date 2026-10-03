@@ -1,105 +1,150 @@
 # 04 — Périmètre et lots
 
-Le lot 1 est le plus petit produit qui tient la promesse de [00 § 4](00-vision.md) : un projet de
-taille courante, du modèle au premier déploiement réussi, sans retouche manuelle. Tout ce qui n'y
-contribue pas directement est repoussé.
+La priorité absolue est **Bicep + Azure DevOps** ([DEC-62](03-decisions.md)). Le lot 1 est le plus petit
+produit qui tient la promesse de [00 § 4](00-vision.md) : un projet de taille courante, du modèle au premier
+déploiement réussi, sans retouche manuelle. Les lots suivants élargissent sans jamais revenir sur ce
+socle.
 
-## 1. Matrice de support
+## 1. Matrices de support
 
-La cible est **toujours Azure** ([DEC-43](03-decisions.md)). Les langages et plateformes arrivent par lot :
+La cible est **toujours Azure** ([DEC-43](03-decisions.md)).
 
-| | Azure DevOps Pipelines | GitHub Actions | GitLab CI |
-|---|---|---|---|
-| **Bicep** | Lot 1 | Lot 1 | Lot 3 |
-| **Terraform** | Lot 2 | Lot 2 | Lot 3 |
-| **Pulumi (TypeScript)** | Lot 3 | Lot 3 | Lot 3 |
+| Langage d'infrastructure | Lot |
+|---|---|
+| Bicep | 1 |
+| Terraform | 3 |
+| OpenTofu | 4 |
+| Pulumi : TypeScript, C#, Python, Go, Java, YAML | 4 |
+
+| Plateforme CI | Lot |
+|---|---|
+| Azure DevOps Pipelines | 1 |
+| GitHub Actions | 2 |
+| GitLab CI | 3 |
 
 | Fournisseur git | Lot |
 |---|---|
-| GitHub | 1 |
-| Azure Repos | 1 |
+| Azure Repos, GitHub | 1 |
 | GitLab | 3 |
 
-**Pourquoi cet ordre.**
-- Deux plateformes CI dès le lot 1 obligent l'abstraction des pipelines à être réelle dès le départ.
-  GitHub Actions est aussi la plateforme la plus demandée avec des dépôts GitHub, déjà supportés.
-- Terraform au lot 2 couvre la majorité des équipes Azure qui ne sont pas sur Bicep.
-- Pulumi et GitLab touchent des publics plus restreints : lot 3.
+| Source des modules ([DEC-54](03-decisions.md)) | Lot |
+|---|---|
+| AVM registre public (Bicep) | 1 |
+| AVM embarqués, modules IFS (Bicep) | 2 |
+| Mêmes sources pour Terraform, modules du client | 3 |
+| OpenTofu, Pulumi (ressources directes, composants IFS) | 4 |
 
-**Garde-fou du lot 1.** Pour que le plan de déploiement ne soit pas façonné par Bicep
-([DEC-44](03-decisions.md)), le lot 1 inclut un **prototype d'émetteur Terraform**, non livré, qui doit
-produire depuis le projet de référence un code Terraform déployable. Tout ce que ce prototype ne peut pas
-traduire sans décision métier révèle un défaut du plan de déploiement, à corriger dans le lot 1.
+**Garde-fou du lot 1.** Pour que le plan de déploiement ne soit façonné ni par Bicep ni par Azure DevOps
+([DEC-44](03-decisions.md)), le lot 1 inclut deux **prototypes non livrés** : un émetteur Terraform et un
+émetteur GitHub Actions, qui doivent produire depuis le projet de référence une sortie déployable. Tout ce
+qu'ils ne peuvent pas traduire sans décision métier révèle un défaut du plan de déploiement, à corriger
+dans le lot 1.
 
-## 2. Lot 1 — Premier déploiement réussi
+## 2. Lot 1 — Premier déploiement réussi (Bicep, Azure DevOps)
+
+### 2.1 Jalon 1 — Tranche verticale
+
+Objectif : le projet de référence ([90](90-projet-de-reference.md)) déployé de bout en bout.
 
 | Domaine | Contenu | Document |
 |---|---|---|
-| Accès | Organisations, membres, invitations, rôles d'organisation et de projet, jetons d'API, journal d'audit | [10](10-organisations-et-acces.md) |
-| Projet | Assistant de création (langage, plateforme), environnements (protégés, approbateurs), tags, tags système | [11](11-projets-et-environnements.md) |
-| Composants | Modes `PerEnvironment` et `Single`, groupes de ressources, ordre de déploiement, duplication | [12](12-composants-et-groupes-de-ressources.md) |
-| Nommage | Gabarits à deux niveaux, assainissement, unicité, nom forcé, explication du nom | [13](13-nommage.md) |
-| Ressources | Propriétés et surcharges, présence, ressources existantes, enfants, suppression avec impact | [14](14-modele-des-ressources.md) |
-| Catalogue | 16 types du lot 1 ([15 § 3](15-catalogue.md)), descripteurs avec prise en charge par langage | [15](15-catalogue.md) |
-| Câblage | Liaisons, câblage implicite, RBAC, accès aux données SQL et PostgreSQL, journalisation par défaut | [16](16-liaisons-identites-et-acces.md) |
-| Paramètres | Variables d'environnement, clés App Configuration, secrets Key Vault, secrets de pipeline, import depuis fichier | [17](17-parametres-applicatifs-et-secrets.md) |
-| Réseau | Exposition publique et publique restreinte (liste d'adresses IP) | [18](18-reseau-et-exposition.md) |
-| Applications | Build conteneur et code, promotion d'image, points d'extension, contrôle de santé | [19](19-applications-build-et-deploiement.md) |
-| Validation | Moteur et règles du lot 1 | [20](20-validation.md) |
-| Génération | Révisions, plan de déploiement, émetteur Bicep (AVM, piles de déploiement), diff entre révisions | [21](21-generation-et-revisions.md) |
-| Pipelines | Émetteurs Azure DevOps et GitHub Actions : infrastructure (PR, CI, release avec aperçu) et applications | [22](22-pipelines.md) |
-| Installation | Script Azure, pipeline d'installation Azure DevOps, script GitHub, liste de contrôle | [23](23-kit-installation.md) |
-| Publication | Connexions GitHub et Azure DevOps, plan de publication, manifeste, pull requests | [24](24-depots-et-publication.md) |
-| Agent IA | Serveur MCP complet, propositions de modification | [25](25-agent-ia-mcp.md) |
-| Interface | Écrans du lot 1, vue graphe en lecture, recherche globale | [26](26-interface.md) |
+| Accès | Organisation, invitations, rôles prédéfinis (portée projet), jetons d'API, journal d'audit (écriture, consultation simple) | [10](10-organisations-et-acces.md) |
+| Projet | Assistant, environnements protégés et approbateurs, tags, tags système, préréglages de nommage | [11](11-projets-et-environnements.md), [13](13-nommage.md) |
+| Modèle | Composants `PerEnvironment` et `Single`, ressources, surcharges, présence, ressources existantes, liaisons, câblage implicite, accès aux données, paramètres applicatifs, secrets de pipeline, exposition publique et restreinte | [12](12-composants-et-groupes-de-ressources.md) à [18](18-reseau-et-exposition.md) |
+| Historique | Jeux de modifications, auteur par objet et par propriété | [31](31-historique-et-versions.md) |
+| Catalogue | Les 11 types du projet de référence | [15](15-catalogue.md) |
+| Applications | Build conteneur et code, scan d'image, points d'extension, contrôle de santé, stratégie directe | [19](19-applications-build-et-deploiement.md) |
+| Production | Validation, révisions, plan de déploiement, émetteur Bicep (AVM), émetteur Azure DevOps, kit d'installation, publication par pull request | [20](20-validation.md) à [24](24-depots-et-publication.md) |
+| Suivi | Suivi des déploiements, inventaire des ressources détachées | [28](28-suivi-des-deploiements.md) |
+| Exploitation | Cycle de publication du catalogue, accès support consenti, suspension d'organisation | [40](40-exploitation-ifs.md) |
 
-## 3. Lot 2 — Production d'entreprise et Terraform
+### 2.2 Jalon 2 — Largeur
 
 | Contenu | Document |
 |---|---|
-| **Émetteur Terraform** (AVM Terraform, `azurerm`/`azapi`, état dans Azure Storage, blocs `removed`) | [21](21-generation-et-revisions.md), [22](22-pipelines.md), [23](23-kit-installation.md) |
-| **Migration assistée de langage** (Bicep ↔ Terraform), changement de plateforme CI | [DEC-48](03-decisions.md) |
-| Réseau privé : VNet, subnets, NSG, zones DNS privées, points de terminaison privés, intégration sortante | [18](18-reseau-et-exposition.md) |
-| Domaines personnalisés avec vérification au déploiement | [18](18-reseau-et-exposition.md) |
-| Types : Cosmos DB, Event Hubs, Azure Managed Redis, Azure AI Services | [15](15-catalogue.md) |
-| Portées RBAC sur les enfants (conteneur blob, file, topic) | [16](16-liaisons-identites-et-acces.md) |
-| Connexion Azure facultative en lecture : disponibilité des noms par l'API Azure, sélection des ressources existantes | [13](13-nommage.md), [14](14-modele-des-ressources.md) |
-| Configuration des environnements GitHub par l'application GitHub d'IFS | [23](23-kit-installation.md) |
-| Slots de déploiement App Service | [19](19-applications-build-et-deploiement.md) |
-| Suivi de l'état des pull requests publiées | [24](24-depots-et-publication.md) |
-| Vue graphe éditable (création de liaisons par glisser-déposer) | [26](26-interface.md) |
+| Les 7 autres types du lot 1 : PostgreSQL, Web App, Function App, plan App Service, stockage, Static Web App, Azure Managed Redis | [15](15-catalogue.md) |
+| Authentification locale déconseillée et mots de passe générés | [DEC-51](03-decisions.md), [17 § 7](17-parametres-applicatifs-et-secrets.md) |
+| Équipes, portée des rôles par composant, abonnement par composant et environnement | [10](10-organisations-et-acces.md), [12](12-composants-et-groupes-de-ressources.md) |
+| Versions étiquetées, consultation à une version, comparaison, annulation, restauration | [31](31-historique-et-versions.md) |
+| Import de paramètres depuis un fichier, comparaison de révisions | [17](17-parametres-applicatifs-et-secrets.md), [21](21-generation-et-revisions.md) |
+| Comptes Microsoft personnels | [DEC-59](03-decisions.md) |
 
-## 4. Lot 3 — Extension
+### 2.3 Jalon 3 — Outillage
 
-| Contenu |
-|---|
-| **Émetteur Pulumi TypeScript** (Azure Native, état dans Azure Storage ou Pulumi Cloud) |
-| **GitLab** : dépôts et émetteur GitLab CI |
-| Import depuis un groupe de ressources Azure, avec écran de revue ([DEC-32](03-decisions.md)) |
-| Types : Front Door, API Management, Static Web Apps, Container Instances |
+| Contenu | Document |
+|---|---|
+| Serveur MCP complet, propositions de modification | [25](25-agent-ia-mcp.md) |
+| Vue graphe en lecture, recherche globale, notifications | [26](26-interface.md) |
+| Journal d'audit complet (filtres, export) | [10 § 8](10-organisations-et-acces.md) |
+| Export et import d'un projet (JSON), convertisseur depuis la v0 | [11 § 6](11-projets-et-environnements.md), [DEC-84](03-decisions.md) |
+| Documentation d'architecture générée | [DEC-75](03-decisions.md) |
+| Plans Découverte et Équipe, mode découverte | [DEC-78](03-decisions.md) |
 
-## 5. Hors périmètre (décidé)
+## 3. Lot 2 — Production d'entreprise (Bicep, Azure DevOps, GitHub Actions)
+
+Le lot 2 est livré en vagues, dans cet ordre.
+
+| Vague | Contenu | Document |
+|---|---|---|
+| **A — Réseau privé** | VNet, subnets, appairages hub and spoke, NSG, tables de routage, passerelle NAT, zones DNS privées et publiques, points de terminaison privés, intégration sortante, exécuteurs privés (Managed DevOps Pools, runners GitHub en réseau privé), domaines personnalisés | [18](18-reseau-et-exposition.md) |
+| **B — IA** | Microsoft Foundry (compte, projets, déploiements de modèles, connexions, agents en configuration standard), AI Search, Cosmos DB | [32](32-ia-et-foundry.md) |
+| **C — Livraison** | Stratégies de déploiement (slot et bascule, bleu/vert, progressive, mise à jour progressive Flex), catalogue d'étapes (.NET, Node/Angular, Python, Java), détection depuis le dépôt, fenêtres de déploiement | [19](19-applications-build-et-deploiement.md) |
+| **D — GitHub** | Émetteur GitHub Actions, partie GitHub du kit, suivi des déploiements GitHub, configuration des environnements GitHub par l'application | [22](22-pipelines.md), [23](23-kit-installation.md) |
+| **E — Gouvernance et exploitation** | Politiques d'organisation, estimation des coûts, budgets, supervision (alertes recommandées), contrôle de dérive, plan Entreprise (rôles personnalisés, équipes synchronisées avec Entra, publication à deux personnes, politique de liaisons entrantes) | [33](33-gouvernance-couts-et-supervision.md), [10](10-organisations-et-acces.md) |
+| **F — Exposition et intégration** | Front Door et WAF, Application Gateway et WAF, API Management, Event Grid, Event Hubs, Container Apps Jobs ; portées RBAC sur les enfants | [15](15-catalogue.md), [16](16-liaisons-identites-et-acces.md) |
+| **G — Collaboration et confort** | Brouillons, commentaires et mentions, modèles de projet et de composant, sources de modules (AVM embarqués, modules IFS), renouvellement des mots de passe, connexion Azure en lecture (disponibilité des noms, sélection des ressources existantes, quotas de modèles), vue graphe éditable, webhooks et notifications Teams/Slack, suivi de l'état des pull requests | [31](31-historique-et-versions.md), [11](11-projets-et-environnements.md), [21](21-generation-et-revisions.md) |
+
+## 4. Lot 3 — Ouverture
+
+| Contenu | Document |
+|---|---|
+| **Émetteur Terraform** et migration assistée Bicep ↔ Terraform | [21](21-generation-et-revisions.md), [DEC-48](03-decisions.md) |
+| **GitLab** : dépôts et émetteur GitLab CI | [22](22-pipelines.md), [24](24-depots-et-publication.md) |
+| **Import** depuis ARM, Bicep ou un groupe de ressources Azure | [29](29-import.md) |
+| Modules du client avec contrat de correspondance | [21 § 6.5](21-generation-et-revisions.md) |
+| Catalogue d'étapes PHP et Go | [19 § 6](19-applications-build-et-deploiement.md) |
+| Types complémentaires : MySQL, SignalR, Web PubSub, Communication Services, Logic Apps Standard, Container Instances, Azure Firewall, DNS Private Resolver, Bastion, Managed Grafana | [15](15-catalogue.md) |
+
+## 5. Lot 4 — Langages complémentaires et grande échelle
+
+| Contenu | Document |
+|---|---|
+| **OpenTofu** | [DEC-63](03-decisions.md) |
+| **Pulumi** en TypeScript, C#, Python, Go, Java et YAML | [DEC-63](03-decisions.md) |
+| Multi-région | [DEC-80](03-decisions.md) |
+| AKS (cluster) | [DEC-66](03-decisions.md) |
+| Instance dédiée (plan Entreprise) | [DEC-79](03-decisions.md) |
+
+## 6. Hors périmètre (décidé)
 
 - **Autres clouds** (AWS, GCP) et tout modèle multi-cloud.
-- Déploiement exécuté par IFS lui-même.
-- Lecture de l'état réel Azure ou des états Terraform/Pulumi pour détecter la dérive.
-- Multi-région (plusieurs régions pour un même environnement, reprise sur sinistre active).
+- Déploiement exécuté par IFS lui-même ; approbation, annulation ou correction automatique depuis IFS.
+- Lecture directe de l'état réel Azure ou des états Terraform/Pulumi par IFS (la dérive passe par un
+  pipeline du client, [DEC-74](03-decisions.md)).
+- Déploiement d'applications dans AKS (Helm, manifestes Kubernetes).
 - Rôles Azure personnalisés.
 - Édition collaborative en temps réel.
 - Gestion des valeurs de secrets par IFS.
+- Version installable par le client ([DEC-79](03-decisions.md)).
+- Environnements éphémères par pull request pour toute l'infrastructure (seules les préversions natives
+  de Static Web Apps sont proposées) : le coût et la durée de création d'une infrastructure complète par
+  pull request ne sont pas raisonnables pour la cible du produit.
 
-## 6. Points ouverts
+## 7. Anciens points ouverts : tous tranchés
 
-Ces points n'ont pas encore de décision. Ils n'empêchent pas de démarrer le lot 1.
+| Point | Décision |
+|---|---|
+| PO-01 Modèle commercial | [DEC-78](03-decisions.md) |
+| PO-02 Montée de version du catalogue | [DEC-57](03-decisions.md) |
+| PO-03 Instance dédiée | [DEC-79](03-decisions.md) |
+| PO-04 Multi-région | [DEC-80](03-decisions.md) |
+| PO-05 Rôle « Publicateur » | [DEC-52](03-decisions.md) |
+| PO-06 Attributions à portée externe | [DEC-81](03-decisions.md) |
+| PO-07 Plusieurs langages par projet | [DEC-82](03-decisions.md) |
+| PO-08 OpenTofu | [DEC-63](03-decisions.md) |
+| PO-09 Langages Pulumi | [DEC-63](03-decisions.md) |
+| PO-10 Télémétrie produit | [DEC-83](03-decisions.md) |
 
-| # | Question | Échéance |
-|---|---|---|
-| PO-01 | Modèle commercial : plans, limites (nombre de projets, de ressources), essai gratuit. | Avant ouverture commerciale |
-| PO-02 | Politique de montée de version des modules et fournisseurs : automatique à chaque version du catalogue, ou choisie par projet ? | Avant fin du lot 1 |
-| PO-03 | Instance dédiée (hébergée chez un client) : demande réelle, et à quel prix ? | Après les premiers clients |
-| PO-04 | Multi-région : quel modèle (environnement multi-région, ou composant décliné par région) ? | Lot 3 |
-| PO-05 | Faut-il un rôle de projet « Publicateur » (peut publier sans modifier le modèle) ? | Retours des premiers clients |
-| PO-06 | Les attributions de rôle à portée externe (autre abonnement, [RG-LIA-17](16-liaisons-identites-et-acces.md)) peuvent-elles être gérées par la pile de déploiement Bicep du composant, ou faut-il un déploiement séparé ? À vérifier par un prototype sur le projet de référence. Terraform et Pulumi le permettent par fournisseur avec alias. | Début du lot 1 |
-| PO-07 | Mélanger les langages par composant dans un même projet (exemple : socle en Terraform, services en Bicep) ? Techniquement possible, puisque les références entre composants passent par les noms calculés ; à décider sur demande réelle. | Après le lot 2 |
-| PO-08 | Compatibilité OpenTofu de la sortie Terraform : garantie testée, ou simple meilleur effort ? | Lot 2 |
-| PO-09 | Pulumi : autres langages que TypeScript (C#, Python) ? | Après le lot 3 |
+Il ne reste **aucun point ouvert**. Les valeurs du catalogue (SKU, versions, longueurs de noms, codes de
+région, rôles) restent revérifiées contre la documentation Microsoft au moment d'implémenter chaque type
+([40 § 3](40-exploitation-ifs.md)) : c'est une tâche de réalisation, pas une décision.

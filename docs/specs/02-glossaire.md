@@ -9,7 +9,11 @@ apparaître à l'écran.
 | Terme | Nom technique | Définition |
 |---|---|---|
 | **Organisation** | Organization | Espace d'un client : ses membres, ses connexions git, ses projets, son journal d'audit. Frontière d'isolation des données. |
-| **Membre d'organisation** | OrganizationMember | Utilisateur rattaché à une organisation, avec un rôle d'organisation. |
+| **Membre d'organisation** | OrganizationMember | Utilisateur rattaché à une organisation, avec un ou plusieurs rôles d'organisation. |
+| **Équipe** | Team | Groupe de membres d'une organisation, qui reçoit des rôles de projet comme un membre. |
+| **Permission** | Permission | Droit élémentaire sur un projet (`modele.modifier`, `publier`…). Certaines peuvent être limitées à des composants. |
+| **Rôle** | Role | Ensemble nommé de permissions : prédéfini (Développeur, Architecte plateforme…) ou personnalisé. |
+| **Portée** (d'un rôle) | RoleScope | Le projet entier, ou une liste de composants. |
 | **Projet** | Project | Un produit ou un périmètre : ses environnements, ses conventions, ses composants, son plan de publication, son équipe. |
 | **Code** (d'un projet, d'un environnement, d'un composant) | Code | Identifiant court, en minuscules, stable, utilisé dans les noms Azure, les dossiers et les noms de pipelines. |
 | **Environnement** | Environment | Étape de la chaîne de promotion (dev, test, prod…) : un abonnement, une région, une connexion de déploiement, éventuellement une protection. |
@@ -20,6 +24,8 @@ apparaître à l'écran.
 | **Langage d'infrastructure** | IacLanguage | Langage du code produit pour un projet : Bicep, Terraform, Pulumi (TypeScript). |
 | **Plateforme CI** | CiPlatform | Plateforme qui exécute les pipelines d'un projet : Azure DevOps Pipelines, GitHub Actions, GitLab CI. |
 | **Plan de déploiement** | DeploymentPlan | Représentation neutre, calculée par IFS, de ce qui doit être déployé pour chaque composant et chaque cible : ressources, valeurs, noms, rôles, dépendances, étapes de pipeline. |
+| **Source des modules** | ModuleSource | Origine des modules du code produit : AVM du registre public, AVM embarqués, modules IFS, modules du client. |
+| **Authentification locale** | LocalAuthentication | Accès à une ressource par mot de passe, clé ou compte admin, plutôt que par Entra. Permise, déconseillée. |
 | **Émetteur** | Emitter | Traducteur du plan de déploiement vers un langage d'infrastructure ou une plateforme CI. Ne prend aucune décision métier. |
 | **Connexion de déploiement** | DeploymentConnection | Moyen par lequel les pipelines s'authentifient à Azure pour une cible, toujours par fédération d'identité : service connection (Azure DevOps), identifiant fédéré par environnement (GitHub, GitLab). |
 | **Unité de déploiement** | DeploymentUnit | Ce qui suit le cycle de vie d'un composant dans une cible : pile de déploiement (Bicep), état (Terraform), pile Pulumi. |
@@ -47,6 +53,8 @@ apparaître à l'écran.
 | **Principal** | Principal | Ce qui reçoit un rôle : identité système d'une ressource, identité managée affectée par l'utilisateur, ou groupe Entra. |
 | **Attribution de rôle** | RoleAssignment | Principal + rôle + portée. |
 | **Accès aux données** | DataAccess | Droit d'une identité dans une base SQL ou PostgreSQL, créé par script après déploiement. |
+| **Catalogue d'étapes** | StepCatalog | Ensemble versionné des descripteurs d'étapes de pipeline (tests, couverture, Sonar…), avec valeurs par pile et traduction par plateforme. |
+| **Étape** | PipelineStep | Étape de qualité ou de sécurité d'un pipeline applicatif, issue du catalogue d'étapes ; bloquante ou informative. |
 | **Application** | Application | Ressource déployable par un pipeline applicatif : Web App, Function App, Container App. |
 | **Paramètre applicatif** | AppSetting | Valeur fournie à une application : variable d'environnement d'une application, ou clé d'une App Configuration. |
 | **Source de valeur** | ValueSource | Origine d'un paramètre applicatif : littérale, sortie de ressource, secret Key Vault. |
@@ -66,6 +74,20 @@ apparaître à l'écran.
 | **Kit d'installation** | InstallKit | Script Azure commun, partie propre à la plateforme CI (pipeline d'installation Azure DevOps, script GitHub…) et liste de contrôle, qui préparent Azure et la plateforme CI. |
 | **Jeton d'API** | ApiToken | Jeton créé par un utilisateur pour appeler l'API ou le serveur MCP. Ne pas confondre avec un jeton git. |
 | **Proposition de modification** | ChangeProposal | Ensemble de modifications du modèle préparé par un agent ou un utilisateur, appliqué après relecture humaine. |
+| **Suivi des déploiements** | DeploymentTracking | Lecture par IFS des exécutions des pipelines qu'il gère, pour savoir quelle révision est déployée où. |
+| **Ressource détachée** | DetachedResource | Ressource retirée du modèle, restée dans Azure sans être gérée, inscrite à l'inventaire de sa cible. |
+| **Export de projet** | ProjectExport | Document JSON versionné contenant tout le modèle d'un projet. |
+| **Modèle de projet / de composant** | ProjectTemplate / ComponentTemplate | Projet ou composant réutilisable, avec des valeurs à saisir. |
+| **Import** | Import | Reprise d'une infrastructure existante (ARM, Bicep, groupe de ressources) sous forme de proposition de modification. |
+| **Accès support** | SupportAccess | Accès temporaire du personnel d'IFS aux données d'une organisation, approuvé par un de ses administrateurs. |
+| **Jeu de modifications** | ChangeSet | Ensemble immuable des changements apportés au modèle par une action, avec auteur, date, origine et valeurs avant/après. |
+| **Version du modèle** | ModelVersion | Numéro croissant de l'état du modèle d'un projet ; une **version étiquetée** porte un nom. |
+| **Brouillon** | Draft | Espace de travail où l'on prépare des modifications sans toucher au modèle principal, soumis ensuite comme proposition. |
+| **Stratégie de déploiement** | DeploymentStrategy | Façon de livrer une application : directe, slot et bascule, bleu/vert, progressive. |
+| **Politique d'organisation** | OrganizationPolicy | Règle imposée par une organisation à ses projets, avec dérogations datées. |
+| **Dérive** | Drift | Écart entre Azure et la dernière révision déployée, détecté par un pipeline planifié. |
+| **Hub, spoke** | Hub, Spoke | Topologie réseau : un VNet central (hub) partagé, appairé aux VNets des applications (spokes). |
+| **Compte Foundry, projet Foundry** | FoundryAccount, FoundryProject | Ressource Azure AI Services qui héberge les modèles déployés, et ses projets. |
 | **Journal d'audit** | AuditLog | Historique horodaté de toutes les modifications et actions sensibles. |
 
 ## 2. Termes abandonnés

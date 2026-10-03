@@ -1,4 +1,4 @@
-# 30 — Projet de référence
+# 90 — Projet de référence
 
 Ce projet est la **spécification par l'exemple** du lot 1 et son **test d'acceptation**
 ([EXG-16](27-exigences-non-fonctionnelles.md)). Il exerce les deux modes de composant, les liaisons entre
@@ -252,7 +252,7 @@ Environnements `shop-dev`, `shop-prd` (approbation), `shop-shared` (approbation)
 
 ### 3.5 Autres variantes
 
-**Bicep + GitHub Actions (lot 1).** Dépôts `shop-infra` et `shop-app` sur GitHub. Différences avec la
+**Bicep + GitHub Actions (lot 2).** Dépôts `shop-infra` et `shop-app` sur GitHub. Différences avec la
 variante de référence :
 
 ```
@@ -274,7 +274,7 @@ chaque dépôt qui déploie. Secret `MAIN_PAYMENTS_API_KEY` attendu dans les env
 `shop-prd` du dépôt `shop-infra`. Identifiants fédérés : `repo:contoso/shop-infra:environment:shop-<cible>`
 et `repo:contoso/shop-app:environment:shop-<cible>`.
 
-**Terraform (lot 2).** Le dossier `infra/` de chaque composant devient :
+**Terraform (lot 3)**, et OpenTofu (lot 4) à l'identique. Le dossier `infra/` de chaque composant devient :
 
 ```
 orders/infra/
@@ -287,7 +287,7 @@ orders/infra/
 Le kit crée en plus un stockage d'état par cible (`stifsshopdev`, `stifsshopprd`, `stifsshopshared`). Le
 registre de l'abonnement C est déclaré par une source de données sur un fournisseur avec alias.
 
-**Pulumi TypeScript (lot 3).** Le dossier `infra/` de chaque composant devient :
+**Pulumi (lot 4)**, ici en TypeScript ; les autres langages Pulumi suivent la même découpe. Le dossier `infra/` de chaque composant devient :
 
 ```
 orders/infra/
@@ -314,7 +314,34 @@ Le kit crée en plus, par cible, le stockage d'état et la clé Key Vault de chi
 6. Une deuxième révision qui ajoute une file Service Bus produit une pull request dont le résumé ne cite
    que cet ajout ; une modification manuelle préalable de `orders/infra/main.bicep` est détectée et
    présentée en diff avant publication.
-7. Les critères 1 à 6 sont vérifiés pour chaque variante livrée (section 3.5), et la comparaison des
+7. Après le critère 3, le suivi des déploiements d'IFS affiche « révision 1 déployée » pour `core`,
+   `platform` et `orders` dans toutes leurs cibles, et la liste de contrôle est entièrement cochée
+   ([28](28-suivi-des-deploiements.md)).
+8. Les critères 1 à 7 sont vérifiés pour chaque variante livrée (section 3.5), et la comparaison des
    ressources déployées entre variantes ne montre aucun écart non toléré ([EXG-19](27-exigences-non-fonctionnelles.md)).
-8. Une troisième révision qui **retire** la file ajoutée au critère 6 la détache dans toutes les variantes :
-   la file existe toujours dans Azure, et n'est plus gérée par la pile ou par l'état ([DEC-46](03-decisions.md)).
+9. Une troisième révision qui **retire** la file ajoutée au critère 6 la détache dans toutes les variantes :
+   la file existe toujours dans Azure, et n'est plus gérée par la pile ou par l'état ([DEC-46](03-decisions.md)) ; elle figure dans l'inventaire des
+   ressources détachées de chaque cible ([DEC-61](03-decisions.md)).
+
+## 5. Extension du projet de référence pour le lot 2
+
+Le lot 2 a son propre test d'acceptation, construit sur le même modèle :
+
+| Ajout | Ce qu'il exerce |
+|---|---|
+| Composant `connectivity` (`PerEnvironment`, abonnement de connectivité par environnement) : hub VNet, zones DNS privées gérées par IFS, table de routage vers une IP de pare-feu fictive en dev | Hub and spoke, [DEC-69](03-decisions.md), [18 § 4](18-reseau-et-exposition.md) |
+| Composant `tooling` déployé en premier : Managed DevOps Pool dans un subnet du hub | Exécuteurs privés, [18 § 9](18-reseau-et-exposition.md) |
+| Spoke VNet dans `core` et `orders`, appairés au hub ; en prd, `kv`, `appcs`, `sql`, `sbns` en exposition privée ; environnement Container Apps intégré au spoke | Points de terminaison privés, DNS, consommateurs intégrés |
+| Compte Foundry et projet dans `core`, déploiement d'un modèle de conversation (capacité réduite en dev) ; `ca api` relié en « utilisation d'IA » | [32](32-ia-et-foundry.md) |
+| Stratégie bleu/vert pour `api` en prd | [19 § 9](19-applications-build-et-deploiement.md) |
+| Alertes recommandées activées sur `orders`, budget mensuel en prd, pipeline de dérive activé | [33](33-gouvernance-couts-et-supervision.md) |
+| Variante GitHub Actions | [22](22-pipelines.md) |
+
+Critères supplémentaires :
+1. aucune ressource privée n'est joignable depuis Internet en prd ;
+2. l'application témoin joint toutes ses dépendances et le modèle d'IA par réseau privé ;
+3. une livraison bleu/vert suivie d'un retour arrière ne coupe aucune requête du test de charge léger
+   exécuté pendant la bascule ;
+4. une modification faite à la main dans le portail apparaît comme dérive le lendemain ;
+5. le coût estimé de chaque environnement s'écarte de moins de 20 % du coût réel observé sur un mois de
+   fonctionnement à charge minimale.

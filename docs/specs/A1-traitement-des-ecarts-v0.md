@@ -118,12 +118,12 @@ La rétro-spécification v0 (ancien dépôt `infra-pipeline-editor`, `docs/specs
 | EC-APP-06 Pas d'output cross-config explicite | Résolu | [RG-PAR-06](17-parametres-applicatifs-et-secrets.md). |
 | EC-APP-07 `Combined` ne combine rien | Supprimé | — |
 | EC-APP-08 Deux énumérations du mode | Supprimé | — |
-| EC-APP-09 Options générées mais pas saisissables | Résolu | Promotion déduite du modèle ([RG-APP-03](19-applications-build-et-deploiement.md)) ; pas d'option cachée ([22 § 5](22-pipelines.md)). |
-| EC-APP-10 Scans de sécurité forcés | Résolu | Option visible, activée par défaut. |
-| EC-APP-11 Détection partielle | Supprimé | [DEC-25](03-decisions.md) : points d'extension ; suggestions limitées ([UC-APP-02](19-applications-build-et-deploiement.md)). |
+| EC-APP-09 Options générées mais pas saisissables | Résolu | Promotion déduite du modèle ([RG-APP-07](19-applications-build-et-deploiement.md)) ; options riches par catalogue d'étapes au lot 2 ([DEC-50](03-decisions.md)) ; pas d'option cachée ([22 § 5](22-pipelines.md)). |
+| EC-APP-10 Scans de sécurité forcés | Résolu | Étape « scan de l'image » du catalogue d'étapes : visible, activée par défaut, bloquante ou non. |
+| EC-APP-11 Détection partielle | Lot 2 | [DEC-50](03-decisions.md) : détection limitée au chemin du code source, valeurs par défaut par pile ([UC-APP-01](19-applications-build-et-deploiement.md)). |
 | EC-APP-12 « Image validée » non vérifiée | Supprimé | IFS construit les images qu'il déploie. |
-| EC-APP-13 Premier environnement implicite | Résolu | Registre de build explicite et affiché ([RG-APP-03](19-applications-build-et-deploiement.md)) ; plus de variable de build par environnement. |
-| EC-APP-14 Navigation de dépôt au niveau projet seulement | Résolu | [UC-APP-01](19-applications-build-et-deploiement.md). |
+| EC-APP-13 Premier environnement implicite | Résolu | Registre de build explicite et affiché ([RG-APP-07](19-applications-build-et-deploiement.md)) ; plus de variable de build par environnement. |
+| EC-APP-14 Navigation de dépôt au niveau projet seulement | Résolu | [UC-APP-02](19-applications-build-et-deploiement.md). |
 
 ## Réseau (NET)
 
@@ -190,7 +190,12 @@ La rétro-spécification v0 (ancien dépôt `infra-pipeline-editor`, `docs/specs
 
 | Écart v0 | Statut | Traitement v1 |
 |---|---|---|
-| EC-IMP-01 à EC-IMP-06 | Supprimé / Lot 3 | [DEC-32](03-decisions.md) : import ARM retiré ; import d'un groupe de ressources Azure au lot 3, avec écran de revue, répartition par environnement, reprise des identités, rôles et paramètres. |
+| EC-IMP-01 Pas d'écran | Lot 3 | [29](29-import.md) : écran de revue de l'import ([DEC-49](03-decisions.md)). |
+| EC-IMP-02 Nouveau projet uniquement | Lot 3 | Import vers un nouveau projet ou un projet existant, sous forme de proposition. |
+| EC-IMP-03 Un seul resource group | Lot 3 | Répartition en composants et groupes de ressources à la revue. |
+| EC-IMP-04 ARM JSON seulement | Lot 3 | Sources ARM JSON, Bicep (compilé), groupe de ressources Azure. |
+| EC-IMP-05 Réglages par environnement perdus | Lot 3 | Une source par environnement ; différences converties en surcharges. Identités, rôles et paramètres repris. |
+| EC-IMP-06 Abonnement vide | Lot 3 | Environnements choisis ou créés explicitement à la revue. |
 
 ## MCP
 
@@ -209,7 +214,7 @@ La rétro-spécification v0 (ancien dépôt `infra-pipeline-editor`, `docs/specs
 | EC-UI-01 Paramètres de projet fictifs | Résolu | [DEC-35](03-decisions.md). |
 | EC-UI-02 Préférences non synchronisées | Résolu | [RG-UI-07](26-interface.md). |
 | EC-UI-03 Pas de vue graphe | Résolu / Lot 2 | Lecture au lot 1, édition au lot 2. |
-| EC-UI-04 Pas d'écran d'import ARM | Supprimé / Lot 3 | Voir IMP. |
+| EC-UI-04 Pas d'écran d'import ARM | Lot 3 | Voir IMP. |
 | EC-UI-05 Pas de recherche globale | Résolu | [RG-UI-06](26-interface.md). |
 
 ## Problèmes de fond relevés à la revue (hors liste v0)
@@ -223,11 +228,11 @@ La rétro-spécification v0 (ancien dépôt `infra-pipeline-editor`, `docs/specs
 | Ressource existante identifiée par calcul de nom | [DEC-18](03-decisions.md) |
 | Pas d'ordre de déploiement entre configurations | [DEC-40](03-decisions.md) |
 | Réseau privé dangereux (pas d'intégration sortante, pas de DNS) | [DEC-28](03-decisions.md) |
-| Mots de passe SQL et identifiants admin de registre | [DEC-26](03-decisions.md) |
+| Mots de passe SQL et identifiants admin de registre | [DEC-51](03-decisions.md) : permis, déconseillés, jamais connus d'IFS |
 | Accès aux bases de données à créer à la main | [16 § 6](16-liaisons-identites-et-acces.md) |
 | Valeurs Azure obsolètes au catalogue | [DEC-41](03-decisions.md) |
 | Pas de journalisation des ressources (paramètres de diagnostic) | [DEC-42](03-decisions.md) |
-| Le déploiement d'infrastructure peut écraser l'image de l'application | [RG-APP-10](19-applications-build-et-deploiement.md) |
+| Le déploiement d'infrastructure peut écraser l'image de l'application | [RG-APP-02](19-applications-build-et-deploiement.md), [DEC-53](03-decisions.md) |
 | Pas de niveau organisation, pas d'audit, pas de modèle SaaS défini | [DEC-03](03-decisions.md), [DEC-34](03-decisions.md), [DEC-04](03-decisions.md) |
 | Vocabulaire surchargé (« configuration ») | [DEC-02](03-decisions.md), [02](02-glossaire.md) |
 | Sortie limitée à Bicep et à Azure DevOps | [DEC-43](03-decisions.md) à [DEC-48](03-decisions.md) : Bicep, Terraform, Pulumi ; Azure DevOps, GitHub Actions, GitLab CI ; Azure seulement |

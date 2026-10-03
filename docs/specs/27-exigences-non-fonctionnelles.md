@@ -62,11 +62,18 @@ déclenche une alerte à l'équipe IFS.
 
 **EXG-14 — Navigateurs.** Les deux dernières versions majeures de Chrome, Edge, Firefox et Safari.
 
+**EXG-21 — Limites de l'API.** Par jeton ou utilisateur : 600 lectures et 120 écritures par minute,
+10 générations et 5 publications par minute, en plus des limites du plan. Réponse « trop de requêtes » avec
+le délai d'attente.
+
+**EXG-22 — Historique.** Consulter le modèle à une version passée, ou comparer deux versions d'un projet de
+300 ressources, répond en moins de 3 secondes (p95), quel que soit le nombre de jeux de modifications.
+
 **EXG-15 — API.** API REST versionnée (`/v1`), décrite en OpenAPI, réponses d'erreur au format
 `application/problem+json` avec code de règle et erreurs par champ. Toute fonction de l'écran est
 disponible par l'API.
 
-**EXG-16 — Tests d'acceptation de la sortie.** Le projet de référence ([30](30-projet-de-reference.md)) est
+**EXG-16 — Tests d'acceptation de la sortie.** Le projet de référence ([90](90-projet-de-reference.md)) est
 généré à chaque build d'IFS, **pour chaque combinaison langage × plateforme livrée** ([04 § 1](04-perimetre-et-lots.md)) ;
 sa sortie est comparée à des fichiers de référence. Chaque mise à jour du catalogue ou d'un émetteur
 déploie réellement le projet de référence, dans chaque langage livré, sur un abonnement de test, avec un

@@ -40,6 +40,10 @@ disponible en MCP sans travail supplémentaire.
 | `describe_resource_type` | Descripteur d'un type : propriétés, valeurs, liaisons, sorties, rôles. |
 | `validate_project` | Constats de validation. |
 | `explain_name` | Calcul détaillé du nom Azure d'une ressource. |
+| `get_deployment_status` | État des déploiements d'un projet, d'un composant ou d'une application ([28](28-suivi-des-deploiements.md)). |
+| `preview_import`, `create_import_proposal` | Import d'une infrastructure existante *(lot 3)* ([29](29-import.md)). |
+| `list_changesets`, `get_model_at_version`, `compare_versions`, `revert_changeset`, `restore_version` | Historique du modèle ([31](31-historique-et-versions.md)) ; annulation et restauration passent par une proposition si la portée n'est pas `write`. |
+| `estimate_costs` | Estimation des coûts d'un projet, d'un composant ou d'une révision *(lot 2)* ([33 § 3](33-gouvernance-couts-et-supervision.md)). |
 | `get_deployment_plan` | Plan de déploiement neutre d'un composant et d'une cible ([21 § 3](21-generation-et-revisions.md)), indépendant du langage et de la plateforme. |
 | `preview_change` | Applique un ensemble de commandes « à blanc » : constats et résumé des changements, sans rien enregistrer. |
 | `create_change_proposal` | Crée une proposition de modification (section 4). |
@@ -69,7 +73,7 @@ applicatif type), `review_findings` (corriger les constats d'un projet).
 **UC-MCP-01 — Créer une proposition** (portée `propose`). L'agent prépare les commandes ; IFS calcule
 l'aperçu. Rien n'est modifié.
 
-**UC-MCP-02 — Relire et appliquer une proposition** (contributeur, dans l'écran). L'utilisateur voit le
+**UC-MCP-02 — Relire et appliquer une proposition** (`propositions.appliquer`, dans l'écran). L'utilisateur voit le
 résumé, les constats et le détail des commandes, puis applique (toutes les commandes en une
 transaction) ou rejette avec un commentaire.
 
@@ -81,5 +85,5 @@ appliquée telle quelle.
 projet.
 
 **RG-MCP-10 — Mode direct.** Avec la portée `write`, un agent peut appliquer des commandes sans
-proposition. Le propriétaire d'un projet peut interdire ce mode pour son projet : les agents n'ont alors
+proposition. Une personne qui a `projet.administrer` peut interdire ce mode pour son projet : les agents n'ont alors
 que `propose`.

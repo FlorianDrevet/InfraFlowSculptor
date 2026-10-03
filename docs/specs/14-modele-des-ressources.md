@@ -98,7 +98,7 @@ une liste au lieu de saisir l'identifiant.
 
 ## 7. Cycle de vie
 
-**UC-RES-01 — Ajouter une ressource** (contributeur) :
+**UC-RES-01 — Ajouter une ressource** (`modele.modifier`) :
 1. type (catalogue filtré par recherche et catégorie) ;
 2. nom logique, groupe de ressources, existante ou non ;
 3. propriétés obligatoires et liaisons obligatoires du type (exemple : plan d'hébergement) ;
@@ -115,7 +115,7 @@ obligatoire ; propriétés, surcharges, enfants, liaisons sortantes et paramètr
 **UC-RES-04 — Consulter une ressource** : valeurs effectives, noms Azure, liaisons entrantes et
 sortantes (explicites et implicites), paramètres, constats, historique.
 
-**UC-RES-05 — Supprimer une ressource** (contributeur) :
+**UC-RES-05 — Supprimer une ressource** (`modele.modifier`) :
 - IFS liste les liaisons entrantes, les paramètres applicatifs qui la citent et les éléments implicites
   qui disparaîtront.
 - Si une liaison entrante est **obligatoire** pour sa source (exemple : le plan d'une Web App), la

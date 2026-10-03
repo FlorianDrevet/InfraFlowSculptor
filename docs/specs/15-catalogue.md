@@ -28,6 +28,11 @@ Chaque type est décrit par un descripteur versionné qui contient :
 | Prise en charge par langage | Pour Bicep, Terraform et Pulumi : pris en charge ou non (type entier, propriété ou valeur) ([DEC-43](03-decisions.md)). |
 | Génération par langage | Bicep : module AVM et version. Terraform : module AVM Terraform ou ressource `azurerm`/`azapi`, versions. Pulumi : ressource Azure Native. Pour chacun : correspondance propriété → entrée du module ou de la ressource ([DEC-45](03-decisions.md)). |
 | Dépréciations | Valeurs dépréciées, date de dépréciation, date de refus. |
+| Zones DNS privées | Zones `privatelink.*` par `groupId` ([18 § 8](18-reseau-et-exposition.md)). |
+| Règles réseau requises | Règles NSG implicites par usage de subnet. |
+| Alertes recommandées | Métriques, seuils par défaut, gravité ([33 § 4](33-gouvernance-couts-et-supervision.md)). |
+| Tarification | Correspondance avec les compteurs de l'API des prix Azure et hypothèses d'usage par défaut ([33 § 3](33-gouvernance-couts-et-supervision.md)). |
+| Dérive | Propriétés modifiées par Azure lui-même, ignorées par le contrôle de dérive. |
 
 ## 2. Conventions des tableaux
 
@@ -35,6 +40,13 @@ Chaque type est décrit par un descripteur versionné qui contient :
 - **V** : verrouillée après publication.
 - **I** : irréversible (le sens autorisé est indiqué).
 - *Fixe* : valeur imposée par IFS, non modifiable.
+- **D** : valeur **déconseillée** ([DEC-51](03-decisions.md)). Elle est permise, marquée « déconseillé » à
+  l'écran avec l'alternative recommandée, et produit l'avertissement acquittable `VAL-SEC-AUTH-LOCALE`.
+
+**Authentification locale et mots de passe.** Quand un type active une authentification locale (mot de
+passe d'administration, compte admin, clé), le secret n'est jamais connu d'IFS. Il est soit généré par la
+release au premier déploiement, soit fourni comme secret de pipeline, puis stocké dans un Key Vault
+désigné ([17 § 7](17-parametres-applicatifs-et-secrets.md)).
 
 Les champs communs ([14 § 2](14-modele-des-ressources.md)) ne sont pas répétés.
 
@@ -45,9 +57,12 @@ Les champs communs ([14 § 2](14-modele-des-ressources.md)) ne sont pas répét�
 | Observabilité | Log Analytics, Application Insights |
 | Sécurité | Key Vault, identité managée |
 | Données | Compte de stockage, serveur Azure SQL, base Azure SQL, PostgreSQL serveur flexible |
-| Calcul | Plan App Service, Web App, Function App, environnement Container Apps, Container App |
+| Calcul | Plan App Service, Web App, Function App, environnement Container Apps, Container App, Static Web App |
 | Plateforme | Registre de conteneurs, App Configuration |
+| Cache | Azure Managed Redis |
 | Messagerie | Service Bus |
+
+Les priorités qui ont fixé ce périmètre sont dans [DEC-66](03-decisions.md).
 
 ### 3.1 LogAnalyticsWorkspace — espace Log Analytics
 
@@ -112,7 +127,7 @@ Abréviation `st` · nom 3–24, minuscules et chiffres uniquement · unicité :
 |---|---|---|---|
 | Redondance | `Standard_LRS`, `Standard_ZRS`, `Standard_GRS`, `Standard_GZRS`, `Standard_RAGRS`, `Standard_RAGZRS` | `Standard_LRS` | S |
 | Niveau d'accès par défaut | `Hot`, `Cool`, `Cold` | `Hot` | S |
-| Accès par clé partagée | Booléen | Non | S |
+| Accès par clé partagée | Booléen ; `Oui` est **D** | Non | S |
 | Espace de noms hiérarchique (Data Lake) | Booléen | Non | V |
 | Suppression réversible des blobs (jours) | 0 (désactivée) ou 1 à 365 | 7 | S |
 | Suppression réversible des conteneurs (jours) | 0 ou 1 à 365 | 7 | S |
@@ -196,8 +211,15 @@ Abréviation `cr` · nom 5–50, alphanumérique uniquement · unicité : global
 | SKU | `Basic`, `Standard`, `Premium` | `Standard` | S |
 | Redondance de zone | Booléen ; `Premium` | Non | V |
 | Rétention des manifestes non tagués (jours) | 0 (désactivée) à 365 ; `Premium` | 0 | S |
+| Mode de permissions | `Registre` (rôles AcrPull/AcrPush) ou `Par dépôt` (rôles Container Registry Repository Reader/Writer/Contributor, avec condition sur le dépôt) | `Registre` | V |
+| Utilisateur admin | Booléen ; `Oui` est **D**. Les identifiants sont copiés par la release dans le Key Vault désigné. | Non | S |
 
-*Fixe* : utilisateur admin désactivé, tirage anonyme désactivé ([DEC-26](03-decisions.md)).
+*Fixe* : tirage anonyme désactivé. Les applications du projet tirent toujours leurs images par identité
+([RG-LIA-09](16-liaisons-identites-et-acces.md)), même si l'utilisateur admin est activé.
+
+En mode `Par dépôt`, `AcrPull`, `AcrPush` et `AcrDelete` ne sont pas pris en compte par Azure : les rôles
+implicites de tirage et de poussée deviennent Repository Reader et Repository Writer, limités au dépôt
+d'image de l'application.
 Sorties : `loginServer`, `name`, `id`. Rôles : AcrPull, AcrPush, AcrDelete, Reader.
 Exposition : publique, restreinte et privée réservées au SKU `Premium` (privée *lot 2*, `registry`).
 
@@ -241,8 +263,11 @@ Abréviation `sql` · nom 1–63, minuscules, chiffres, tirets, sans tiret en bo
 | Propriété | Valeurs | Défaut | Attributs |
 |---|---|---|---|
 | Administrateur Entra | Groupe Entra : nom affiché et identifiant d'objet | — (obligatoire) | S |
+| Authentification | `EntraSeule` (recommandé) ou `EntraEtSql` (**D**) | `EntraSeule` | S |
+| Login administrateur SQL | Si `EntraEtSql` : 1 à 128 caractères, sans les noms réservés (`admin`, `administrator`, `sa`, `root`, `dbmanager`, `loginmanager`, `guest`, `public`…) | `sqladmin` | V |
+| Mot de passe administrateur | Si `EntraEtSql` : alimentation `Généré` ou `Secret de pipeline`, et Key Vault de stockage ([17 § 7](17-parametres-applicatifs-et-secrets.md)) | `Généré` | — |
 
-*Fixe* : authentification Entra seule ([DEC-26](03-decisions.md)), TLS 1.2.
+*Fixe* : TLS 1.2.
 Le kit d'installation ajoute l'identité de déploiement de chaque cible au groupe administrateur, ou
 l'inscrit dans la liste de contrôle ([23](23-kit-installation.md)) : elle en a besoin pour créer les
 accès aux données.
@@ -282,8 +307,11 @@ Abréviation `psql` · nom 3–63, minuscules, chiffres, tirets · unicité : gl
 | Sauvegarde géo-redondante | Booléen | Non | V |
 | Haute disponibilité | `Désactivée`, `RedondanteEnZone`, `MêmeZone` ; refusée en Burstable | `Désactivée` | S |
 | Administrateur Entra | Groupe Entra | — (obligatoire) | S |
+| Authentification | `EntraSeule` (recommandé) ou `EntraEtMotDePasse` (**D**) | `EntraSeule` | S |
+| Login administrateur | Si mot de passe : 1 à 63 caractères, sans les noms réservés (`azure_superuser`, `admin`, `root`, `postgres`…) | `pgadmin` | V |
+| Mot de passe administrateur | Comme SQL | `Généré` | — |
 
-*Fixe* : authentification par mot de passe désactivée, TLS 1.2.
+*Fixe* : TLS 1.2.
 
 | Enfant | Champs | Règles |
 |---|---|---|
@@ -300,7 +328,7 @@ Abréviation `sbns` · nom 6–50, lettres, chiffres, tirets, commence par une l
 |---|---|---|---|
 | SKU | `Basic`, `Standard`, `Premium` ; `Basic` refusé s'il existe des topics | `Standard` | S |
 | Unités de messagerie (`Premium`) | 1, 2, 4, 8, 16 | 1 | S |
-| Désactiver l'authentification locale | Booléen | Oui | S |
+| Désactiver l'authentification locale | Booléen ; `Non` est **D** | Oui | S |
 
 *Fixe* : TLS 1.2.
 
@@ -322,7 +350,7 @@ Abréviation `appcs` · nom 5–50, lettres, chiffres, tirets · unicité : glob
 | Propriété | Valeurs | Défaut | Attributs |
 |---|---|---|---|
 | SKU | `Free`, `Standard`, `Premium` | `Standard` | S |
-| Désactiver l'authentification locale | Booléen | Oui | S |
+| Désactiver l'authentification locale | Booléen ; `Non` est **D** | Oui | S |
 | Protection contre la purge | Booléen ; hors `Free` | Non | S, I (non → oui) |
 | Rétention après suppression (jours) | 1 à 7 ; hors `Free` | 7 | V |
 
@@ -335,18 +363,72 @@ l'émetteur active en plus le mode d'accès « pass-through » au plan de donné
 Sorties : `endpoint`, `name`, `id`. Rôles : App Configuration Data Reader, App Configuration Data Owner,
 Reader. Exposition : publique, privée *(lot 2, `configurationStores`)*.
 
+### 3.17 StaticWebApp — application web statique
+
+Abréviation `stapp` · nom 1–40, lettres, chiffres, tirets · unicité : groupe de ressources (domaine par défaut généré par Azure).
+
+| Propriété | Valeurs | Défaut | Attributs |
+|---|---|---|---|
+| SKU | `Free`, `Standard` | `Standard` | S |
+| Environnements de préversion | `Activés`, `Désactivés` (préversions par pull request) | `Désactivés` | S |
+| API liée | Liaison facultative **back-end** vers une Web App, Function App ou Container App du projet (SKU `Standard`) | — | — |
+| Exposition | Publique, privée *(lot 2, `staticSites`, SKU `Standard`)* | Publique | S |
+
+Application ([19](19-applications-build-et-deploiement.md)) : build du front-end (profil Node ou Angular),
+déploiement par le jeton de déploiement de la ressource, lu par la release dans Azure, jamais stocké par IFS.
+Domaines personnalisés : comme les autres applications ([18 § 11](18-reseau-et-exposition.md)).
+Sorties : `defaultHostname`, `name`, `id`. Rôles : Contributor, Reader.
+
+### 3.18 ManagedRedis — Azure Managed Redis
+
+Azure Managed Redis (`Microsoft.Cache/redisEnterprise`). Azure Cache for Redis est en fin de vie et n'est
+pas proposé. Abréviation `amr` · nom 1–60, lettres, chiffres, tirets · unicité globale.
+
+| Propriété | Valeurs | Défaut | Attributs |
+|---|---|---|---|
+| SKU | Familles `Balanced`, `MemoryOptimized`, `ComputeOptimized`, `FlashOptimized`, tailles selon le catalogue | `Balanced_B1` | S |
+| Haute disponibilité | Booléen | Oui | S |
+| Authentification | `Entra seule` (recommandé) ou `Entra et clés d'accès` (**D**) | `Entra seule` | S |
+| Politique d'éviction | `NoEviction`, `AllKeysLRU`, `AllKeysLFU`, `AllKeysRandom`, `VolatileLRU`, `VolatileLFU`, `VolatileRandom`, `VolatileTTL` | `VolatileLRU` | S |
+| Persistance | `Aucune`, `RDB`, `AOF` | `Aucune` | S |
+| Exposition | Publique, privée *(lot 2, `redisEnterprise`)* | Publique | S |
+
+Sorties : `hostName`, `port`, `name`, `id`. Sortie sensible : clé d'accès, si les clés sont activées.
+Accès aux données : liaison **accès** avec une politique d'accès Redis (`Default` en lecture et écriture),
+générée comme attribution de politique d'accès à la base pour l'identité.
+
 ## 4. Types des lots suivants
+
+Les types sont rangés selon les priorités de [DEC-66](03-decisions.md).
 
 | Type | Lot | Points clés |
 |---|---|---|
-| VirtualNetwork (`vnet`) + subnets (`snet`, enfants) | 2 | Espaces d'adressage et préfixes surchargeables par environnement, délégations, contrôles CIDR ([18](18-reseau-et-exposition.md)). |
-| NetworkSecurityGroup (`nsg`) | 2 | Règles (priorité, sens, accès, protocole, ports, préfixes ou tags de service). |
-| PrivateDnsZone | 2 | Nom fixé par le descripteur (`privatelink.*`), type global, liens VNet. |
-| CosmosDbAccount (`cosmos`) | 2 | API NoSQL uniquement (V) ; bases et conteneurs comme enfants (clé de partition V) ; débit serverless, provisionné ou autoscale ; accès aux données par rôles SQL Cosmos (hors RBAC ARM). |
-| EventHubsNamespace (`evhns`) | 2 | Event hubs et groupes de consommateurs comme enfants ; authentification locale désactivée par défaut. |
-| ManagedRedis (`amr`) | 2 | Azure Managed Redis (Azure Cache for Redis est en fin de vie) ; authentification Entra. |
-| AIServices (`ais`) | 2 | Compte Azure AI Services ; sous-domaine personnalisé = nom Azure (requis pour l'authentification Entra) ; authentification locale désactivée par défaut. |
-| FrontDoor, ApiManagement, StaticWebApp, ContainerInstance | 3 | — |
+| VirtualNetwork (`vnet`) + subnets (`snet`) | 2 · A | Espaces d'adressage, préfixes et usages des subnets, délégations, contrôles d'adressage ([18](18-reseau-et-exposition.md)). |
+| Appairage (liaison) | 2 · A | Les deux côtés générés, hub existant possible ([18 § 5](18-reseau-et-exposition.md)). |
+| NetworkSecurityGroup (`nsg`) | 2 · A | Règles saisies et règles implicites par usage. |
+| RouteTable (`rt`) | 2 · A | Routes vers un pare-feu existant. |
+| NatGateway (`ng`), PublicIpAddress (`pip`) | 2 · A | IP de sortie stable. |
+| PrivateDnsZone | 2 · A | Implicites en stratégie « zones gérées par IFS » ; nom fixé par le descripteur ; liens VNet. |
+| DnsZone (`dnsz`) | 2 · A | Zone publique, enregistrements, enregistrements de domaines générés. |
+| ManagedDevOpsPool (`mdp`), GitHubNetworkSettings | 2 · A | Exécuteurs privés ([18 § 9](18-reseau-et-exposition.md)). |
+| FoundryAccount (`aif`), FoundryProject (`aifp`), déploiements de modèles | 2 · B | [32](32-ia-et-foundry.md). |
+| SearchService (`srch`) | 2 · B | [32 § 2.4](32-ia-et-foundry.md). |
+| CosmosDbAccount (`cosmos`) | 2 · B | API NoSQL (V) ; bases et conteneurs comme enfants (clé de partition V) ; débit serverless, provisionné ou autoscale ; accès aux données par rôles de données Cosmos (hors RBAC ARM) ; authentification locale **D**. |
+| FrontDoor (`afd`) + politique WAF (`waf`) | 2 · F | Points de terminaison, groupes d'origines liés aux applications, règles de routage, WAF géré par défaut en prévention. |
+| ApplicationGateway (`agw`) + politique WAF | 2 · F | Exige un subnet dédié ; écouteurs, back-ends liés aux applications. |
+| ApiManagement (`apim`) | 2 · F | SKU (`Developer`, `BasicV2`, `StandardV2`, `PremiumV2`) ; back-ends liés aux applications ; identité pour Key Vault. Les API et leurs politiques restent hors IFS. |
+| EventGrid : rubrique (`evgt`), rubrique système (`egst`), abonnements | 2 · F | Abonnements vers une Function App, une file Service Bus ou un webhook, par identité. |
+| EventHubsNamespace (`evhns`) | 2 · F | Event hubs et groupes de consommateurs comme enfants ; authentification locale **D**. |
+| ContainerAppJob (`caj`) | 2 · F | Déclencheur manuel, planifié (cron) ou par événement ; mêmes réglages de conteneur et d'image que Container App. |
+| ActionGroup (`ag`), alertes, test de disponibilité, Budget | 2 · E | [33](33-gouvernance-couts-et-supervision.md). |
+| MySqlFlexibleServer (`mysql`) | 3 | Comme PostgreSQL. |
+| SignalR (`sigr`), WebPubSub (`wps`) | 3 | — |
+| CommunicationServices (`acs`) + Email | 3 | Domaines d'envoi, vérification DNS par zone modélisée. |
+| LogicAppStandard (`logic`) | 3 | Hébergé sur un plan Workflow Standard ; les workflows restent du code applicatif. |
+| ContainerInstance (`ci`) | 3 | — |
+| AzureFirewall (`afw`) + politique, DnsPrivateResolver (`dnspr`), Bastion (`bas`) | 3 | Complètent le hub ([18 § 12](18-reseau-et-exposition.md)). |
+| ManagedGrafana (`amg`) | 3 | — |
+| AksCluster (`aks`) | 4 | Cluster, pools de nœuds, identité de charge de travail ; le déploiement d'applications dans AKS est hors périmètre. |
 
 ## 5. Régions (version initiale)
 

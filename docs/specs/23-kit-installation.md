@@ -16,18 +16,21 @@ une partie **plateforme CI** ([DEC-47](03-decisions.md)).
 PowerShell + Azure CLI, à exécuter par une personne qui a les droits d'attribution de rôles sur les
 abonnements (Owner ou User Access Administrator).
 
-Pour chaque cible de déploiement (environnement, et cible propre de chaque composant `Single`) :
+Pour chaque cible de déploiement (environnement, cible propre de chaque composant `Single`, et chaque
+couple environnement × abonnement surchargé par un composant, [DEC-69](03-decisions.md)) :
 
 | Étape | Effet | Langage / plateforme |
 |---|---|---|
 | 1. Groupe de ressources technique | `rg-ifs-<projet>-<cible>`. | Tous |
 | 2. Identité de déploiement | Identité managée `id-ifs-deploy-<projet>-<cible>`. | Tous |
 | 3. Identifiants fédérés | Un par sujet autorisé à déployer dans la cible : service connection (Azure DevOps) ; `repo:<propriétaire>/<dépôt>:environment:<projet>-<cible>` pour chaque dépôt qui déploie dans la cible (GitHub) ; sujet du jeton GitLab *(lot 3)*. | Selon plateforme |
-| 4. Droits | `Contributor` sur l'abonnement ; `Role Based Access Control Administrator` **limité par condition** aux rôles attribués par la release ([RG-LIA-18](16-liaisons-identites-et-acces.md)) ; App Configuration Data Owner si des clés sont déployées ; Key Vault Secrets Officer sur les Key Vaults qui reçoivent des secrets de pipeline ; droits sur les portées externes (zones DNS, ressources existantes, registre d'un autre abonnement). | Tous |
+| 4. Droits | `Contributor` sur l'abonnement ; `Role Based Access Control Administrator` **limité par condition** aux rôles attribués par la release ([RG-LIA-18](16-liaisons-identites-et-acces.md)) ; App Configuration Data Owner si des clés sont déployées ; Key Vault Secrets Officer sur les Key Vaults qui reçoivent des secrets de pipeline ou des mots de passe d'administration ; droits sur les portées externes (zones DNS, ressources existantes, registre d'un autre abonnement). | Tous |
 | 5. Groupes administrateurs SQL et PostgreSQL | Ajout de l'identité au groupe Entra administrateur de chaque serveur. Si l'opérateur n'en a pas le droit : étape « à faire » dans la liste de contrôle, avec la commande exacte. | Tous |
 | 6. Stockage d'état | Compte de stockage `stifs<projet><cible>` dans le groupe technique : authentification par clé partagée désactivée, accès public anonyme désactivé, versioning et suppression réversible des blobs activés, conteneur `tfstate` ou `pulumi`. L'identité de déploiement reçoit Storage Blob Data Contributor sur le conteneur. | Terraform, Pulumi (backend Azure) |
 | 7. Clé de chiffrement des secrets d'état | Key Vault technique `kv-ifs-<projet>-<cible>` et clé RSA ; l'identité reçoit Key Vault Crypto User. | Pulumi |
 | 8. Service connection | Service connection Azure Resource Manager `ifs-<projet>-<cible>`, fédérée avec l'identité. | Azure DevOps |
+| 9. Portées réseau externes *(lot 2)* | Droits sur le VNet du hub existant (appairage distant) et sur les zones DNS privées existantes ; si l'opérateur n'a pas ces droits, étape « à faire » destinée à l'équipe du hub, avec les commandes exactes. | Tous |
+| 10. Pools d'exécuteurs privés *(lot 2)* | Inscription du fournisseur `Microsoft.DevOpsInfrastructure` ; Reader et Network Contributor sur le VNet du pool pour le principal de service du fournisseur, résolu dans le tenant. | Azure DevOps |
 
 **RG-INS-01 — Paramètres.** Le script demande seulement ce qu'il ne peut pas déduire du plan de
 publication (organisation Azure DevOps, identifiant du tenant). Il affiche ce qu'il va faire et demande
@@ -57,7 +60,8 @@ permissions à donner une fois au compte de service de build du projet.
 | 4. Groupes de variables | Un groupe `ifs-<projet>-<cible>` par cible, avec une variable secrète par secret de pipeline attendu ([17 § 6](17-parametres-applicatifs-et-secrets.md)). Variable absente : créée vide. Variable existante : **jamais modifiée**. Variable plus attendue : signalée, pas supprimée. |
 | 5. Définitions de pipelines | Création ou mise à jour de chaque définition ([RG-PIP-06](22-pipelines.md)) : nom, dossier `\<projet>\<composant>[\<application>]`, chemin YAML, dépôt, branche par défaut. |
 | 6. Autorisations | Autorise les pipelines générés à utiliser leurs service connections, environnements et groupes de variables. |
-| 7. Rapport | Créé, mis à jour, laissé, orphelins détectés. |
+| 7. Fenêtres et délais *(lot 2)* | Contrôle « heures ouvrées » et délai sur les environnements des cibles qui en déclarent. |
+| 8. Rapport | Créé, mis à jour, laissé, orphelins détectés. |
 
 Le pipeline d'installation est publié dans la destination de l'infrastructure du **premier composant**
 dans l'ordre de déploiement. Il crée les définitions de tous les pipelines du projet, quel que soit le
@@ -74,7 +78,8 @@ workflows n'ont pas de définition à créer : ils existent dès qu'ils sont dan
 | 2. Protection | Cibles protégées : relecteurs requis (utilisateurs ou équipes), déploiement limité à la branche par défaut. Réalignés sur le modèle. |
 | 3. Variables d'environnement | `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` (non secrètes) de la cible. |
 | 4. Secrets | GitHub ne permet pas de créer un secret vide : le script **liste** les secrets attendus absents de chaque environnement, avec la commande `gh secret set` correspondante. Il ne lit ni n'écrit aucune valeur. |
-| 5. Rapport | Créé, mis à jour, laissé, manquant. |
+| 5. Délais *(lot 2)* | Règle de délai d'attente des environnements des cibles qui en déclarent. |
+| 6. Rapport | Créé, mis à jour, laissé, manquant. |
 
 *(Lot 2 : configuration des environnements directement par l'application GitHub d'IFS, si le client lui
 accorde les permissions « environnements » et « variables ».)*

@@ -30,7 +30,7 @@ constat.
 liste les erreurs.
 
 **RG-VAL-02 — Pas de masquage d'erreur.** Une `Erreur` ne peut pas être ignorée. Un `Avertissement` peut
-être **acquitté** par un contributeur, avec un commentaire obligatoire ; l'acquittement est journalisé
+être **acquitté** par une personne qui a `modele.modifier` sur l'objet, avec un commentaire obligatoire ; l'acquittement est journalisé
 et tombe si l'objet change.
 
 **RG-VAL-03 — Performance.** La validation complète d'un projet de 300 ressources répond en moins de
@@ -72,8 +72,17 @@ et tombe si l'objet change.
 | `VAL-RES-ABSENTE-PARTOUT` | Avertissement | Ressource absente de tous les environnements. |
 | `VAL-CAT-DEPRECIE` | Avertissement, puis Erreur après la date de refus | Valeur dépréciée par le catalogue. |
 | `VAL-CAT-REGION` | Erreur | Type ou valeur indisponible dans la région effective. |
+| `VAL-GEN-CONTRAT` | Erreur | Module du client dont le contrat ne couvre pas une propriété du descripteur *(lot 3)*. |
 | `VAL-GEN-LANGAGE` | Erreur | Type, propriété ou valeur non pris en charge par l'émetteur du langage du projet (apparaît surtout après un changement de langage, [DEC-48](03-decisions.md)). |
 | `VAL-CAT-MISE-A-JOUR` | Info | Une version plus récente du catalogue modifierait la sortie (montée de module). |
+
+### Sécurité
+
+| Code | Gravité | Condition |
+|---|---|---|
+| `VAL-SEC-AUTH-LOCALE` | Avertissement (acquittable) | Authentification locale activée : mot de passe, compte admin, clé ([DEC-51](03-decisions.md)). Le constat propose l'alternative Entra. |
+| `VAL-SEC-SECRET-ETAT` | Info | Terraform : un mot de passe passe par un attribut classique, faute d'attribut en écriture seule ; il sera dans l'état protégé. |
+| `VAL-SEC-KEYVAULT-ABSENT` | Erreur | Authentification locale activée sans Key Vault de stockage désigné ([RG-PAR-16](17-parametres-applicatifs-et-secrets.md)). |
 
 ### Liaisons, accès, paramètres
 
@@ -94,6 +103,8 @@ et tombe si l'objet change.
 |---|---|---|
 | `VAL-APP-CODE-SOURCE` | Erreur | Application sans destination de code dans le plan de publication. |
 | `VAL-APP-PILE-PLAN` | Erreur | Pile ou mode incompatible avec le plan (exemple : Python sur Windows, conteneur sur `FC1`). |
+| `VAL-APP-ETAPE` | Erreur | Étape du catalogue activée sans valeur par défaut pour la pile ni commande saisie. |
+| `VAL-APP-STRATEGIE` | Erreur | Stratégie de déploiement impossible sur la ressource (exemple : slots sur un plan Basic ou Flex). |
 | `VAL-APP-EXTENSION` | Avertissement | Modèle d'étapes du client introuvable dans le dépôt de code (vérifié à la publication). |
 
 ### Réseau *(lot 2 sauf mention)*
@@ -103,11 +114,27 @@ et tombe si l'objet change.
 | `VAL-NET-IP-VIDE` (lot 1) | Erreur | Exposition restreinte sans plage IP. |
 | `VAL-NET-CIDR-HORS` | Erreur | Subnet hors des espaces d'adressage. |
 | `VAL-NET-CIDR-CHEVAUCHE` | Erreur | Subnets qui se chevauchent. |
-| `VAL-NET-VNET-CHEVAUCHE` | Avertissement | VNets d'un même environnement qui se chevauchent. |
+| `VAL-NET-VNET-CHEVAUCHE` | Erreur si les VNets sont appairés (directement ou par le même hub), Avertissement sinon | VNets d'un même environnement qui se chevauchent. |
+| `VAL-NET-APPAIRAGE-ENV` | Erreur | Appairage entre VNets d'environnements différents, hors hub `Single`. |
+| `VAL-NET-AGENT-CYCLE` | Erreur | Pool d'exécuteurs privé utilisé par le composant qui le déploie, ou par un composant déployé avant lui. |
 | `VAL-NET-SUBNET-TAILLE` | Erreur | Subnet trop petit pour son usage. |
 | `VAL-NET-DNS` | Erreur | Ressource privée sans stratégie DNS pour l'environnement. |
 | `VAL-NET-CONSOMMATEUR` | Erreur | Application qui consomme une ressource privée sans intégration sortante adaptée. |
-| `VAL-NET-AGENT` | Erreur | La release doit joindre une ressource privée avec des agents hébergés Microsoft. |
+| `VAL-NET-AGENT` | Erreur | La release doit joindre une ressource privée avec des exécuteurs qui n'atteignent pas le réseau. |
+
+### IA *(lot 2)*
+
+| Code | Gravité | Condition |
+|---|---|---|
+| `VAL-IA-QUOTA` | Erreur (avec connexion Azure), Info sinon | Capacité des déploiements de modèles supérieure au quota de l'abonnement, ou quota non vérifiable. |
+| `VAL-IA-COSMOS` | Erreur | Cosmos DB des agents en configuration standard sous 3 000 RU/s de débit total. |
+| `VAL-IA-CONFIG-STANDARD` | Erreur | Projet en configuration standard sans ses trois connexions (stockage, AI Search, Cosmos DB). |
+
+### Politiques d'organisation *(lot 2)*
+
+| Code | Gravité | Condition |
+|---|---|---|
+| `VAL-POL-REGLE` | Celle de la politique | Une politique d'organisation n'est pas respectée ; le constat nomme la politique et la règle ([33 § 2](33-gouvernance-couts-et-supervision.md)). |
 
 ### Publication
 

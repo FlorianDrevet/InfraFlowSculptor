@@ -77,14 +77,14 @@ Le commun (`.ifs/`, `README.ifs.md`) est écrit à la racine de chaque destinati
 | **Un dépôt par composant** | Pour chaque composant, un dépôt qui reçoit son infrastructure et ses applications. |
 
 **RG-PUB-05 — Règle par défaut.** Le plan garde la règle de son préréglage pour les **nouveaux
-composants** : un composant créé par un contributeur reçoit aussitôt sa destination. Pour « un dépôt par
-composant », la destination d'un nouveau composant reste à désigner par un propriétaire
+composants** : un nouveau composant reçoit aussitôt sa destination. Pour « un dépôt par
+composant », la destination d'un nouveau composant reste à désigner par une personne qui a `publication.gerer`
 (`VAL-PUB-DESTINATION`).
 
 **RG-PUB-06 — Pas de chevauchement.** Deux parties ne peuvent pas avoir le même dossier effectif dans un
 même dépôt. Deux destinations d'un même dépôt ne peuvent pas avoir des chemins de base imbriqués.
 
-**RG-PUB-07 — Modifier le plan.** Le propriétaire modifie toute ligne. Un changement de destination
+**RG-PUB-07 — Modifier le plan** (`publication.gerer`). Toute ligne est modifiable. Un changement de destination
 d'une partie déjà publiée affiche l'effet : la prochaine publication écrira au nouvel endroit, et les
 fichiers de l'ancien endroit seront retirés par une publication vers l'ancienne destination si
 l'utilisateur la demande. Rien n'est supprimé implicitement.
@@ -99,7 +99,7 @@ modifie ou supprime **que** des fichiers gérés, plus le manifeste lui-même.
 
 ## 6. Publication
 
-**UC-PUB-02 — Publier une révision** (contributeur, ou jeton `publish`). Saisie : révision (dernière par
+**UC-PUB-02 — Publier une révision** (`publier`, ou jeton de portée `publish`). Saisie : révision (dernière par
 défaut), destinations (toutes par défaut), mode (pull request par défaut, ou écriture directe sur une
 branche), message.
 
@@ -138,7 +138,7 @@ Les écritures sont indépendantes d'un dépôt à l'autre : le résultat est do
 destination (succès, échec, motif). Un dépôt en échec peut être republié seul.
 
 **RG-PUB-15 — Vérifications de contenu.** Avant écriture : modèles d'extension et code d'infrastructure additionnel
-référencés présents dans la branche cible ([RG-APP-12](19-applications-build-et-deploiement.md),
+référencés présents dans la branche cible ([RG-APP-14](19-applications-build-et-deploiement.md),
 [RG-GEN-17](21-generation-et-revisions.md)).
 
 **RG-PUB-16 — Message.** 1 à 500 caractères ; par défaut « IFS révision <n> ». Le commit est signé par
@@ -153,5 +153,5 @@ pas inclus.
 
 ## 7. Navigation dans un dépôt de code
 
-**UC-PUB-05 — Parcourir un dépôt** (lecture, contributeur) : branches, arborescence, recherche par nom,
+**UC-PUB-05 — Parcourir un dépôt** (`modele.modifier` ou `applications.gerer`) : branches, arborescence, recherche par nom,
 lecture d'un fichier texte de moins de 1 Mo. Sert aux chemins des applications ([19 § 7](19-applications-build-et-deploiement.md)).

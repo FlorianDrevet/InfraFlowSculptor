@@ -54,13 +54,14 @@ partagé nommé (modèle Azure DevOps, action composite GitHub).
 1. **Vérification des dépendances.** Pour chaque composant dont celui-ci dépend
    ([RG-CMP-05](12-composants-et-groupes-de-ressources.md)), les ressources ciblées existent dans la
    cible. Sinon échec : « déployez d'abord <composant> en <cible> » ([DEC-40](03-decisions.md)).
-2. **Vérification des secrets** ([RG-PAR-14](17-parametres-applicatifs-et-secrets.md)).
+2. **Vérification des secrets** ([RG-PAR-14](17-parametres-applicatifs-et-secrets.md)), puis lecture ou
+   génération des mots de passe d'administration ([RG-PAR-17](17-parametres-applicatifs-et-secrets.md)).
 3. **Lecture des images en service** des applications en mode Container
-   ([RG-APP-10](19-applications-build-et-deploiement.md)).
+   ([RG-APP-02](19-applications-build-et-deploiement.md)).
 4. **Aperçu** des changements ; résumé publié dans le rapport du run.
 5. **Approbation** si la cible est protégée ; l'approbateur voit l'aperçu.
 6. **Déploiement.**
-7. **Écriture des secrets de pipeline** dans leurs Key Vaults ; redémarrage des applications dont une
+7. **Écriture des secrets de pipeline** et des identifiants admin de registre dans leurs Key Vaults ; redémarrage des applications dont une
    référence de secret a changé de valeur ([RG-PAR-15](17-parametres-applicatifs-et-secrets.md)).
 8. **Scripts post-déploiement** : accès aux données ([16 § 6](16-liaisons-identites-et-acces.md)), avec
    ouverture et fermeture temporaires du pare-feu si nécessaire.
@@ -68,7 +69,7 @@ partagé nommé (modèle Azure DevOps, action composite GitHub).
 
 ### 3.2 Étapes propres au langage
 
-| Étape | Bicep | Terraform *(lot 2)* | Pulumi *(lot 3)* |
+| Étape | Bicep | Terraform, OpenTofu *(lots 3, 4)* | Pulumi *(lot 4)* |
 |---|---|---|---|
 | Préparation | — | `terraform init` avec `targets/<cible>.backend.hcl` | `npm ci`, connexion au backend d'état, sélection de la pile |
 | Aperçu | `what-if` de la pile | `terraform plan -out` ; le plan est conservé comme artefact du run | `pulumi preview --diff` |
@@ -83,7 +84,19 @@ Une cible protégée attend son approbation. Un échec arrête les stages suivan
 |---|---|---|
 | **PR** | Pull request, sur le code source de l'application. | Étapes « avant build » du client ; build ; étapes « après build » du client. Pas de publication d'artefact. |
 | **CI** | Commit sur la branche par défaut, mêmes chemins. | Étapes « avant build » ; build ([19 § 3](19-applications-build-et-deploiement.md)) ou image ([19 § 4](19-applications-build-et-deploiement.md)) avec scan ; étapes « après build » ; publication de l'artefact ou poussée de l'image. |
-| **Release** | Fin réussie de la CI. | Un stage par environnement de présence : vérification préalable, promotion d'image si nécessaire, approbation si protégé, déploiement, contrôle de santé ([19 § 5](19-applications-build-et-deploiement.md)). |
+| **Release** | Fin réussie de la CI. | Un stage par environnement de présence : vérification préalable, promotion d'image si nécessaire, approbation si protégé, déploiement selon la stratégie choisie (directe, slot et bascule, bleu/vert, progressive, [19 § 9](19-applications-build-et-deploiement.md)), contrôle de santé, tests post-déploiement. |
+
+### 4.1 Autres pipelines
+
+| Pipeline | Déclenchement | Rôle |
+|---|---|---|
+| **Dérive** *(lot 2)* | Planifié, chaque jour | Aperçu de la dernière révision déployée de chaque composant dans chaque cible, résumé publié pour IFS ([33 § 5](33-gouvernance-couts-et-supervision.md)). |
+| **Installation** (Azure DevOps) | Manuel | Kit d'installation ([23 § 3.1](23-kit-installation.md)). |
+
+**RG-PIP-10 — Fenêtres et délais** *(lot 2)*. Les fenêtres de déploiement et délais d'attente des cibles
+([DEC-77](03-decisions.md)) sont appliqués par la plateforme : contrôle « heures ouvrées » des environnements
+Azure DevOps ; règle de délai d'attente des environnements GitHub. Un déploiement hors fenêtre attend, il
+n'échoue pas.
 
 **RG-PIP-09 — Chemins de déclenchement.** La CI se déclenche sur le code source, le Dockerfile, le
 contexte de build et les modèles d'extension. Jamais sur les fichiers d'infrastructure.
@@ -97,7 +110,7 @@ contexte de build et les modèles d'extension. Jamais sur les fichiers d'infrast
 
 ## 6. Traduction par plateforme
 
-| Élément logique | Azure DevOps (lot 1) | GitHub Actions (lot 1) | GitLab CI (lot 3) |
+| Élément logique | Azure DevOps (lot 1) | GitHub Actions (lot 2) | GitLab CI (lot 3) |
 |---|---|---|---|
 | Emplacement des fichiers | `<composant>/infra/pipelines/`, `<composant>/apps/<app>/pipelines/` | `.github/workflows/ifs-<projet>-<composant>[-<app>]-<pr\|ci\|release>.yml` à la racine du dépôt | Fichiers sous `.ifs/gitlab/`, inclus depuis `.gitlab-ci.yml` ([RG-PUB-18](24-depots-et-publication.md)) |
 | Modèles partagés | `.ifs/templates/` (modèles YAML) | `.ifs/actions/` (actions composites) | `.ifs/gitlab/templates/` |
