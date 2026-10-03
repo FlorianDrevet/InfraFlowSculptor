@@ -31,7 +31,7 @@ d'audit, conservé pour sa durée de conservation avec pseudonymisation de l'aut
 
 | Catégorie | Finalité | Durée | Justification |
 |---|---|---|---|
-| Journal d'audit | Preuve et investigation de sécurité | 13 mois | Durée fixée par le produit, dans la fourchette recommandée par la CNIL pour les journaux |
+| Journal d'audit | Preuve et investigation de sécurité | 13 mois | Durée fixée par le produit pour couvrir un cycle annuel de revue des accès plus un mois de marge. Elle dépasse la durée générale recommandée par la CNIL (six mois à un an), ce que cette finalité justifie |
 | Journal interne de l'équipe IFS | Contrôle des accès internes | 2 ans | Durée fixée par le produit pour contrôler les accès internes ([RG-EXP-01](40-exploitation-ifs.md)) |
 | Historique du modèle | Comprendre et restaurer le modèle | Vie du projet | Service rendu ; expurgation possible ([RG-HIS-12](31-historique-et-versions.md)) |
 | Télémétrie produit | Amélioration du produit | 13 mois | [DEC-83](03-decisions.md) |

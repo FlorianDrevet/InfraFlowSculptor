@@ -119,8 +119,9 @@ sur des composants ne vaut que pour eux, **y compris pour les effets indirects**
   chaque objet touché.
 - Un membre limité au composant `orders` modifie ses ressources et lit les autres composants. Une liaison
   qui ne fait que lire une valeur d'un autre composant lui est permise ; une liaison qui ouvre un **accès**
-  à une ressource d'un autre composant devient une demande d'accès, relue par une personne qui a
-  `modele.modifier` sur ce composant ([RG-LIA-24](16-liaisons-identites-et-acces.md)).
+  à une ressource d'un autre composant devient une demande d'accès à double consentement : demandeur côté
+  source, approbateur côté cible, sans droits croisés ([RG-LIA-24](16-liaisons-identites-et-acces.md),
+  [DEC-104](03-decisions.md)).
 - Une suppression dont la cascade toucherait un autre composant est refusée ; IFS liste les objets et
   leurs responsables.
 - *(Lot 2)* Un composant peut ouvrir ses liaisons entrantes sans demande : à tous les composants ou à une
@@ -254,8 +255,9 @@ l'expiration ([26 § 4](26-interface.md)).
 
 **RG-ORG-22 — Conservation et accès.**
 - Conservation 13 mois, sans modification ni suppression possible. C'est une durée fixée par le produit
-  pour l'investigation de sécurité, dans la fourchette recommandée par la CNIL pour les journaux ; ce n'est
-  pas une obligation légale générale ([EXG-06](27-exigences-non-fonctionnelles.md)).
+  pour couvrir un cycle annuel complet de revue des accès et d'investigation, avec un mois de marge ; c'est
+  au-delà de la durée générale recommandée par la CNIL pour les journaux (six mois à un an), ce que cette
+  finalité justifie ; ce n'est pas une obligation légale ([EXG-06](27-exigences-non-fonctionnelles.md)).
 - Consultable avec `audit.lire` (projet), par l'administrateur ou l'auditeur d'organisation (tout).
 - Filtrable par auteur, objet, période ; exportable en CSV.
 

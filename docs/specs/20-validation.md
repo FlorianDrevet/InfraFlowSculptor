@@ -92,6 +92,7 @@ politiques Azure du client et disponibilité réelle ne sont connus qu'au déplo
 | `VAL-SEC-AUTH-LOCALE` | Avertissement (acquittable) | Authentification locale activée : mot de passe, compte admin, clé ([DEC-51](03-decisions.md)). Le constat propose l'alternative Entra. |
 | `VAL-SEC-SECRET-ETAT` | Info | Terraform : un mot de passe passe par un attribut classique, faute d'attribut en écriture seule ; il sera dans l'état protégé. |
 | `VAL-SEC-KEYVAULT-ABSENT` | Erreur | Authentification locale activée sans Key Vault de stockage désigné ([RG-PAR-16](17-parametres-applicatifs-et-secrets.md)). |
+| `VAL-SEC-GENERE-EXISTANT` | Erreur | Mot de passe `Généré` destiné à un Key Vault existant ([DEC-105](03-decisions.md)). |
 | `VAL-SEC-ORDRE` | Erreur | Key Vault alimenté par la release (secret de pipeline, mot de passe généré) qui n'est pas déployé avant un consommateur de ce secret ([RG-PAR-22](17-parametres-applicatifs-et-secrets.md)). |
 
 ### Liaisons, accès, paramètres
@@ -106,6 +107,7 @@ politiques Azure du client et disponibilité réelle ne sont connus qu'au déplo
 | `VAL-LIA-SQL-ADMIN` | Avertissement | Accès aux données défini alors que l'adhésion de l'identité de déploiement au groupe administrateur n'est pas confirmée dans la liste de contrôle. |
 | `VAL-PAR-SECRET-SUSPECT` | Avertissement | Valeur littérale dont le nom ressemble à un secret. |
 | `VAL-PAR-SECRET-CONFLIT` | Erreur | Même secret alimenté de deux façons. |
+| `VAL-PAR-SECRET-PROPRIETAIRE` | Erreur | Deux composants écrivent le même secret physique (même coffre résolu, même nom) dans une cible ([DEC-105](03-decisions.md)). |
 | `VAL-PAR-HORS-IFS` | Info | Secret « géré hors IFS » : il doit exister avant le déploiement. |
 
 ### Applications

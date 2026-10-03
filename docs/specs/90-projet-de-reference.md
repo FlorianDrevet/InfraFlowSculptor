@@ -153,9 +153,9 @@ Aucune erreur.
 
 | Identité | Droits |
 |---|---|
-| `id-ifs-deploy-shop-dev`, `-prd` | Donnés par le kit : Contributor (abonnement A, B) ; RBAC Administrator conditionné, en écriture et en suppression, à : AcrPull, App Configuration Data Reader, Key Vault Secrets User, Azure Service Bus Data Sender, Key Vault Secrets Officer, App Configuration Data Owner, Container Apps Contributor ; RBAC Administrator conditionné à AcrPull sur `crshopmainshared` (abonnement C) ; membre de `sg-shop-sql-admins` (<env>). Attribués par le déploiement de `core` : Key Vault Secrets Officer sur `kv-shop-main-<env>`, App Configuration Data Owner sur `appcs-shop-main-<env>` |
+| `id-ifs-deploy-shop-dev`, `-prd` | Donnés par le kit : Contributor et Azure Deployment Stack Owner (abonnement A, B) ; Storage Blob Data Contributor sur le conteneur `ifs-operations` de `stifsshop<env>` ; RBAC Administrator conditionné, en écriture et en suppression, à : AcrPull, App Configuration Data Reader, Key Vault Secrets User, Azure Service Bus Data Sender, Key Vault Secrets Officer, App Configuration Data Owner, Container Apps Contributor ; RBAC Administrator conditionné à AcrPull sur `crshopmainshared` (abonnement C) ; membre de `sg-shop-sql-admins` (<env>). Attribués par le déploiement de `core` : Key Vault Secrets Officer sur `kv-shop-main-<env>`, App Configuration Data Owner sur `appcs-shop-main-<env>` |
 | `id-ifs-app-shop-dev`, `-prd` | Aucun droit donné par le kit. Attribué par le déploiement de `orders` : Container Apps Contributor sur `ca-shop-api-<env>` |
-| `id-ifs-deploy-shop-shared` | Donnés par le kit : Contributor (abonnement C) ; RBAC Administrator conditionné à AcrPush |
+| `id-ifs-deploy-shop-shared` | Donnés par le kit : Contributor et Azure Deployment Stack Owner (abonnement C) ; RBAC Administrator conditionné à AcrPush |
 | `id-ifs-app-shop-shared` | Attribué par le déploiement de `platform` : AcrPush sur `crshopmainshared` (poussée de l'image par la CI) |
 
 ### 2.6 Secrets de pipeline
@@ -344,6 +344,8 @@ Le kit crée en plus, par cible, le stockage d'état et la clé Key Vault de chi
     ne crée ni second commit ni seconde pull request.
 17. **Corrélation** (S22) : une exécution déclenchée par un commit de fusion différent du commit de la
     pull request est rattachée à la bonne révision par l'empreinte du manifeste.
+18. Les scénarios critiques T01 à T04, T07 et T16 de [91](91-scenarios-critiques.md) réussissent sur la
+    variante de référence, cible `prd` protégée par le refus `denyDelete`.
 
 ## 5. Extension du projet de référence pour le lot 2
 

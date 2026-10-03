@@ -465,7 +465,7 @@ redondance de zone) d'une région. Un choix indisponible dans la région effecti
 | Groupe de ressources | Les groupes de ressources du composant. |
 | Attribution de rôle | Liaisons d'accès explicites et rôles implicites ([16](16-liaisons-identites-et-acces.md)). |
 | Paramètre de diagnostic | Liaisons de journalisation ([DEC-42](03-decisions.md)). |
-| Verrou `CanNotDelete` | Option du composant, cibles protégées. |
+| Refus de suppression de la pile (`denyDelete`) | Option « protection contre la suppression » du composant, cibles protégées ; aucun verrou de gestion ([DEC-99](03-decisions.md)). |
 | Unité de déploiement (pile Bicep, état Terraform, pile Pulumi) | Chaque composant × cible ([DEC-46](03-decisions.md)). |
 | Point de terminaison privé, groupe de zones DNS | Exposition privée *(lot 2)*. |
 | Secret Key Vault | Paramètres applicatifs alimentés par une sortie sensible ou un secret de pipeline ([17](17-parametres-applicatifs-et-secrets.md)). |

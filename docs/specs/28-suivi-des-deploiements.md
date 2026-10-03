@@ -23,7 +23,8 @@ Aucun accès aux abonnements Azure n'est nécessaire.
 (`ifs-report.json`, [DEC-91](03-decisions.md)) : révision, commit, empreinte du manifeste, cible, étapes
 terminées. IFS ne déduit jamais la révision du seul nom de l'exécution ; un commit de fusion différent de
 celui de la pull request est rattaché par l'empreinte du manifeste. Chaque pipeline généré porte en plus,
-dans son nom d'exécution et ses variables :
+dans son nom d'exécution et ses variables, des valeurs **lues à l'exécution dans le manifeste** (les
+fichiers de pipeline ne contiennent pas le numéro de révision, [DEC-94](03-decisions.md)) :
 - le projet ;
 - le composant (et l'application) ;
 - le numéro de révision ;
@@ -41,9 +42,9 @@ mention « hors révision ».
 
 | Information | Contenu |
 |---|---|
-| État | **Déployée** (toutes les étapes terminées), **partiellement appliquée** (le déploiement a modifié Azure, une étape suivante a échoué : révocations, secrets, clés, accès aux données ou domaines), **en échec avant modification**, **inconnu** (information indisponible). |
+| État | **Déployée** (toutes les opérations faites) ; **partiellement appliquée** (une opération de mutation a commencé sans se terminer, déploiement de l'unité compris : la liste « fait / restant / incertain » vient du journal) ; **en échec avant modification** (aucune mutation n'a commencé) ; **indéterminée** (ni rapport ni journal lisibles : réconciliation nécessaire) ; **inconnu** (plateforme CI non lue récemment) ; **retrait demandé**, **retiré** (décommissionnement, [DEC-106](03-decisions.md)). Les états viennent du journal d'opérations et du rapport ([DEC-100](03-decisions.md)). |
 | Révision déployée | Dernière révision dont toutes les étapes ont réussi, avec date et lien vers l'exécution. |
-| Dernier essai | Révision, étapes terminées, étape en échec, date, lien. Pour un état partiel : ce qui est appliqué, ce qui reste, et la reprise (relancer la release, idempotente). |
+| Dernier essai | **Fiche d'opération** : révision, opérations faites, restantes et incertaines, étape en échec, date, lien, personne ou rôle qui peut agir, et la reprise (relancer la release : elle reprend d'abord les opérations restantes du journal). |
 | En cours | Exécution en cours ou en attente d'approbation : depuis quand, approbateurs attendus. |
 | Écart | « À jour », « révision <n> publiée, non fusionnée », « fusionnée, non déployée », « en retard de <k> révisions ». |
 | Fraîcheur | Date de la dernière lecture réussie de la plateforme CI. Au-delà de 30 minutes sans lecture, l'état devient « inconnu » au lieu de rester affiché comme sûr. |
@@ -91,7 +92,8 @@ plateforme CI, où se font ces actions.
 
 | Champ | Contenu |
 |---|---|
-| Ressource | Nom Azure, type, groupe de ressources, abonnement, cible. |
+| Ressource | Nom Azure, type, groupe de ressources, abonnement, cible, et mention « non protégée » (la ressource a perdu le refus de suppression de la pile, [DEC-99](03-decisions.md)) avec la commande de verrouillage à exécuter par le client. |
+| Revue | Responsable, motif de conservation, date de la prochaine revue (rappel par notification) ; coût mensuel estimé au lot 2. |
 | Origine | Révision qui l'a détachée, date du déploiement, auteur du retrait. |
 | Commande | Commande Azure CLI de suppression, prête à copier. |
 | État | `Détachée`, `Supprimée` (déclaré par l'utilisateur), `Conservée` (avec un commentaire). |

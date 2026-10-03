@@ -153,10 +153,14 @@ nouveau projet :
 Un document d'une version de schéma antérieure est migré automatiquement ; une version plus récente
 qu'IFS ne connaît pas est refusée.
 
-**RG-PRJ-09 — L'import crée une copie.** Un projet importé est une copie, jamais la reprise d'un projet
-existant : il reçoit un nouveau code, donc d'autres noms, d'autres unités de déploiement et d'autres
-identités. Une ressource existante déjà référencée par un autre projet de l'organisation est signalée.
-Reprendre la gestion d'un déploiement existant passe par l'import d'infrastructure ([29](29-import.md)).
+**RG-PRJ-09 — L'import crée une copie isolée** ([DEC-108](03-decisions.md)). Un projet importé est une copie,
+jamais la reprise d'un projet existant : il reçoit un nouveau code, donc d'autres unités de déploiement et
+d'autres identités. Un nouveau code ne garantit pas de nouveaux noms Azure (noms forcés, gabarits sans
+`{project}`) : IFS recalcule les noms effectifs de chaque cible et les compare aux ressources gérées par
+tous les projets de l'organisation. Chaque collision est une erreur à résoudre avant la première
+publication : renommer, ou transformer la ressource en ressource existante. Une ressource existante déjà
+référencée par un autre projet est signalée. Reprendre la gestion d'un déploiement existant passe par
+l'import d'infrastructure ([29](29-import.md)).
 
 **UC-PRJ-09 — Modèles de projet et de composant** *(lot 2)*. Un administrateur d'organisation enregistre un
 projet ou un composant comme **modèle** : abonnements et identifiants retirés, valeurs à saisir marquées.

@@ -22,7 +22,7 @@ commun à tous les environnements.
 | Tags | [11 § 5](11-projets-et-environnements.md). | Aucun |
 | Espace de journaux par défaut | Ressource Log Analytics ([DEC-42](03-decisions.md)). | Aucun |
 | Ressources retirées | `Détacher` ou `Supprimer` ([DEC-46](03-decisions.md)), pour les ressources à données ou à état. `Supprimer` ne s'applique jamais à une cible protégée. Les objets d'autorisation et de configuration sont toujours supprimés ([DEC-85](03-decisions.md)). | `Détacher` |
-| Verrou de suppression | Pose un verrou `CanNotDelete` sur les groupes de ressources dans les cibles protégées. | Activé |
+| Protection contre la suppression | Dans les cibles protégées, refus de suppression `denyDelete` sur les ressources gérées par la pile, l'identité de déploiement exclue ; groupe Entra d'urgence exclu facultatif ([DEC-99](03-decisions.md)). Aucun verrou de gestion. | Activée |
 | Code d'infrastructure additionnel | Point d'extension ([21 § 7](21-generation-et-revisions.md)) : chemin d'un code écrit par le client, dans le langage du projet. | Aucun |
 
 ## 3. Composant `Single` et sa cible propre
@@ -65,11 +65,18 @@ groupes de ressources, ressources, surcharges, présences, enfants, liaisons int
 liaisons externes (vers les mêmes cibles), paramètres applicatifs. Ne sont pas copiés : les
 identifiants des ressources existantes, l'historique.
 
-**UC-CMP-04 — Supprimer un composant** (`composants.gerer`). Refusé tant que des ressources d'autres
-composants ont des liaisons vers ses ressources ; IFS les liste. Après suppression, la publication
-suivante retire ses fichiers des destinations. Les ressources Azure suivent la règle « ressources
-retirées » de leur dernière unité de déploiement (pile ou état) : rien n'est supprimé dans Azure par IFS,
-l'unité reste en place jusqu'à suppression manuelle (indiqué dans la liste de contrôle).
+**UC-CMP-04 — Supprimer un composant** (`composants.gerer`, [DEC-106](03-decisions.md)). Refusé tant que des
+ressources d'autres composants ont des liaisons vers ses ressources ; IFS les liste.
+- Un composant jamais publié est supprimé aussitôt.
+- Un composant déployé passe à l'état **retrait demandé**. La publication suivante remplace ses fichiers par
+  une forme de **décommissionnement** : sa release déploie une unité vide dans chaque cible (tout est
+  détaché, la protection levée), révoque toutes ses autorisations, et produit journal et rapport.
+- Le composant est **retiré** cible par cible quand le rapport le confirme ; ses fichiers quittent les
+  destinations à la publication qui suit la dernière confirmation. Une cible indisponible laisse le retrait
+  en attente, visible sur l'écran du projet.
+- Les ressources à données restent dans Azure, inscrites à l'inventaire des ressources détachées ; leur
+  suppression reste une décision du client.
+- Au pilote (jalon 0), la suppression d'un composant déployé n'est pas proposée.
 
 ## 5. Groupes de ressources
 

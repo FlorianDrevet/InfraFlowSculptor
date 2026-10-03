@@ -79,9 +79,13 @@ appliquée, elle produit un jeu d'origine `Restauration`.
 
 **RG-HIS-12 — Expurger une valeur** (administrateur d'organisation, [DEC-95](03-decisions.md)). Une valeur
 enregistrée par erreur (un secret collé dans une valeur littérale) est remplacée par une marque dans le
-modèle, tous les jeux de modifications, les révisions non publiées et les propositions. L'audit garde
-l'acte, l'auteur et l'objet, pas la valeur. L'écran rappelle que la valeur doit être renouvelée chez le
-client et qu'elle a pu être publiée dans un dépôt git, qu'IFS ne réécrit pas.
+modèle, tous les jeux de modifications, les révisions non publiées et les propositions. Les révisions qui
+contenaient la valeur, publiées ou non, sont marquées **contaminées** : leurs fichiers ne sont plus
+téléchargeables ni comparables dans IFS ; leurs métadonnées et l'incident restent visibles
+([DEC-107](03-decisions.md)). L'audit garde l'acte, l'auteur et l'objet, pas la valeur. L'écran rappelle que
+la valeur doit être renouvelée chez le client, et liste les dépôts, branches et commits où ces révisions
+ont été publiées, qu'IFS ne réécrit pas. Les expurgations sont réappliquées après toute restauration des
+sauvegardes d'IFS ([RG-EXP-11](40-exploitation-ifs.md)).
 
 **RG-HIS-08 — On n'efface jamais.** Annuler ou restaurer ajoute des jeux de modifications ; l'historique
 reste intact.

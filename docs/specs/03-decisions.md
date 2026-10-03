@@ -948,6 +948,8 @@ Tranche [PO-10](04-perimetre-et-lots.md).
 
 ### DEC-85 — Retirer un accès le révoque, même en production
 
+> **Complétée par [DEC-99](#dec-99--protéger-les-cibles-par-le-refus-de-suppression-de-la-pile-pas-par-des-verrous) et [DEC-100](#dec-100--un-journal-dopérations-durable-chez-le-client)** : protection sans verrou, journal écrit avant toute mutation.
+
 Complète [DEC-46](#dec-46--cycle-de-vie-et-état-par-langage).
 
 **Constat.** « Détacher » protège les données, mais une attribution de rôle est aussi une ressource : détachée, elle resterait active alors que le modèle la montre retirée.
@@ -956,7 +958,7 @@ Complète [DEC-46](#dec-46--cycle-de-vie-et-état-par-langage).
 - Le descripteur classe chaque ressource générée dans l'une de deux familles :
   - **ressources à données ou à état** (stockage, bases, coffres, registres, files, applications…) : elles suivent la règle du composant, détacher ou supprimer ([DEC-46](#dec-46--cycle-de-vie-et-état-par-langage)) ;
   - **objets d'autorisation et de configuration** (attributions de rôle, politiques d'accès Redis, utilisateurs de base créés par IFS, clés App Configuration, paramètres de diagnostic, règles de pare-feu, identifiants fédérés) : ils sont **toujours supprimés** quand ils sortent du modèle, y compris en cible protégée.
-- En Bicep, la pile détache tout ; une étape de la release supprime ensuite explicitement les objets d'autorisation et de configuration sortis de la pile, et inscrit chaque suppression dans le rapport de la release. En Terraform, ces objets ne reçoivent jamais de bloc `removed`. En Pulumi, jamais `retainOnDelete`.
+- En Bicep, la pile détache tout (`detachAll`) ; une étape de la release supprime ensuite explicitement les objets d'autorisation et de configuration sortis de la pile, ainsi que les ressources à données d'un composant en « supprimer » hors cible protégée. Ces suppressions sont inscrites au journal d'opérations **avant** la mise à jour de la pile ([DEC-100](#dec-100--un-journal-dopérations-durable-chez-le-client)), puis au rapport. En Terraform, ces objets ne reçoivent jamais de bloc `removed`. En Pulumi, jamais `retainOnDelete`.
 - Le résumé de chaque révision et l'aperçu de chaque release distinguent « accès révoqués » et « ressources détachées ».
 
 **Conséquences.** La révocation est prouvée par le rapport de la release ([DEC-91](#dec-91--preuve-de-livraison-et-référence-des-retraits)). Le projet de référence vérifie qu'une application perd effectivement l'accès retiré ([90](90-projet-de-reference.md)).
@@ -980,7 +982,7 @@ Complète [DEC-46](#dec-46--cycle-de-vie-et-état-par-langage).
 - Chaque cible a deux stages : **Aperçu**, qui n'utilise pas l'environnement protégé, puis **Déploiement**, sur l'environnement, avec l'approbation.
 - L'aperçu Bicep combine le what-if ARM du modèle à la portée de l'abonnement et la comparaison entre les ressources gérées par la pile et celles du nouveau modèle (ressources qui seront détachées ou supprimées, accès révoqués). Ses limites sont écrites dans le résumé. Terraform conserve le plan ; Pulumi conserve l'aperçu.
 - L'aperçu produit une **empreinte**. Le stage Déploiement recalcule l'aperçu ; si l'empreinte diffère de celle qui a été approuvée, il s'arrête sans rien modifier et demande de relancer la release.
-- Les stages d'infrastructure et d'applications d'une même cible partagent le verrou exclusif de l'environnement, en mode **séquentiel** : aucune exécution n'est abandonnée, et un déploiement d'application ne peut pas s'intercaler entre l'aperçu et le déploiement d'infrastructure.
+- Les stages d'infrastructure et d'applications d'une même cible partagent le verrou exclusif de l'environnement, en mode **séquentiel** : aucune exécution n'est abandonnée. Le stage Aperçu n'étant pas sous ce verrou, une livraison peut s'intercaler entre l'aperçu et le déploiement : elle est conservée par la relecture sous verrou de [DEC-102](#dec-102--ce-que-couvre-une-approbation).
 
 ### DEC-88 — Identités séparées pour l'infrastructure et la livraison des applications
 
@@ -991,6 +993,8 @@ Complète [DEC-46](#dec-46--cycle-de-vie-et-état-par-langage).
 - Les points d'extension du client s'exécutent avec la connexion du pipeline qui les appelle, jamais avec une connexion plus large.
 
 ### DEC-89 — Les effets indirects d'une commande exigent les permissions correspondantes
+
+> **Modifiée par [DEC-104](#dec-104--demande-daccès-à-double-consentement)** pour les demandes d'accès : double consentement.
 
 **Constat.** Une liaison créée dans un composant peut ouvrir un accès à une ressource d'un autre composant ; une suppression ou une restauration peut toucher des objets hors de la portée de son auteur.
 
@@ -1023,6 +1027,8 @@ Complète [DEC-46](#dec-46--cycle-de-vie-et-état-par-langage).
 
 ### DEC-92 — Version du catalogue figée par projet
 
+> **Modifiée par [DEC-107](#dec-107--exceptions-documentées-à-limmuabilité)** : un correctif publie une nouvelle version de correctif au lieu de modifier une version existante.
+
 Remplace le point « les projets suivent la dernière version publiée » de [DEC-57](#dec-57--exploitation-difs--catalogue-publié-par-cycle-accès-support-consenti).
 
 **Décision.**
@@ -1044,6 +1050,8 @@ Remplace le point « les projets suivent la dernière version publiée » de [DE
 **Décision.** L'en-tête des fichiers générés ne contient pas le numéro de révision. Une génération ne modifie que les fichiers dont le contenu change réellement ; la révision et les empreintes vivent dans le manifeste. Un composant sans changement fonctionnel garde des fichiers identiques et ne déclenche aucun pipeline.
 
 ### DEC-95 — Secret saisi par erreur
+
+> **Complétée par [DEC-107](#dec-107--exceptions-documentées-à-limmuabilité)** : révisions contaminées.
 
 **Décision.**
 - Avant tout enregistrement, IFS analyse les valeurs littérales (motifs de jetons connus, chaînes de connexion, forte entropie). Une valeur détectée est **refusée** à la saisie, avec la conversion en secret de pipeline proposée. L'utilisateur peut la forcer en déclarant qu'elle n'est pas secrète ; c'est journalisé.
@@ -1067,8 +1075,160 @@ Remplace le point « les projets suivent la dernière version publiée » de [DE
 
 ### DEC-98 — Un propriétaire unique pour chaque objet dérivé
 
+> **Modifiée par [DEC-103](#dec-103--laccès-aux-données-est-exécuté-par-le-composant-consommateur) et [DEC-105](#dec-105--secrets-dans-des-coffres-existants-et-propriétaire-unique-dun-secret-physique)** : utilisateurs de base par le composant consommateur, secrets par emplacement physique.
+
 **Décision.**
 - Une attribution de rôle est déployée par le composant de l'identité qui la reçoit. Une identité affectée ne sert qu'aux ressources de son composant (`VAL-LIA-IDENTITE-PARTAGEE`) : deux unités de déploiement ne gèrent jamais la même attribution.
 - Les droits des identités de déploiement et de livraison (créées par le kit, hors composants) sont déployés par le composant de la ressource visée.
 - Un secret (secret de pipeline, mot de passe généré) est écrit par le composant qui porte son Key Vault, ou par le composant consommateur si le coffre est une ressource existante ; une clé App Configuration par le composant qui porte son magasin ; un utilisateur de base par le composant de la base.
 - Une dépendance de **création** (hébergement, accès, données, lecture d'une sortie connue seulement après déploiement) ordonne les composants et ne doit pas former de cycle. Une sortie **calculable depuis le nom** (adresse d'un Key Vault, d'un Service Bus, d'un serveur SQL, domaine personnalisé) ne crée pas de dépendance d'ordre. Deux applications qui s'appellent mutuellement par de telles adresses restent possibles ; sinon, le cycle est signalé avec cette alternative.
+
+---
+
+## Contre-revue : protection, reprise, confiance et concurrence (2026-10-03)
+
+> Ces décisions traitent la [contre-revue](../reviews/2026-10-03-contre-revue-et-idees-fonctionnalites.md).
+> Chaque garantie est décrite par un scénario complet dans [91](91-scenarios-critiques.md) ; le traitement
+> constat par constat est dans [docs/reviews/2026-10-03-traitement-contre-revue.md](../reviews/2026-10-03-traitement-contre-revue.md).
+
+### DEC-99 — Protéger les cibles par le refus de suppression de la pile, pas par des verrous
+
+Remplace l'option « verrou de suppression » de [DEC-46](#dec-46--cycle-de-vie-et-état-par-langage) et [RG-GEN-20](21-generation-et-revisions.md).
+
+**Constat.** Un verrou `CanNotDelete` sur une ressource ou un groupe de ressources empêche aussi de supprimer les attributions RBAC à cette portée, et les ressources d'extension en héritent : il rend la révocation de [DEC-85](#dec-85--retirer-un-accès-le-révoque-même-en-production) impossible. Le lever le temps de la release exigerait de donner à l'identité de déploiement le droit de gérer les verrous, donc de les retirer pour tout.
+
+**Décision.**
+- IFS ne pose **aucun** verrou de gestion sur les ressources qu'il gère.
+- En Bicep, une cible protégée déploie ses piles avec le paramètre de refus `denyDelete`. Les principaux exclus sont l'identité de déploiement de la cible et, si le client le déclare, un groupe Entra d'urgence (cinq exclusions au plus, Azure). Toute autre personne, propriétaire de l'abonnement compris, ne peut supprimer ni les ressources gérées ni leurs attributions ; l'identité de déploiement, elle, peut révoquer.
+- Le kit donne à l'identité de déploiement le rôle Azure Deployment Stack Owner sur l'abonnement de la cible, nécessaire pour poser ces paramètres de refus.
+- Une ressource détachée sort de la pile et perd ce refus : l'inventaire des ressources détachées l'indique (« non protégée ») avec la commande pour la verrouiller, à exécuter par le client.
+- Terraform, OpenTofu et Pulumi (lots 3 et 4) n'ont pas d'équivalent : la protection d'une cible protégée y passe par l'outil (`prevent_destroy`, `protect`) sur les ressources à données, sans verrou Azure. La preuve P10 doit établir avant le lot 3 si une protection Azure compatible avec la révocation est possible.
+
+### DEC-100 — Un journal d'opérations durable chez le client
+
+Complète [DEC-85](#dec-85--retirer-un-accès-le-révoque-même-en-production), [DEC-86](#dec-86--séquencement-dune-release-dinfrastructure) et [DEC-91](#dec-91--preuve-de-livraison-et-référence-des-retraits).
+
+**Constat.** Un rapport produit en fin de release ne permet pas de reprendre une release interrompue : si l'agent disparaît entre le détachement d'un accès et sa suppression, la pile ne le gère plus et la relance ne le retrouve pas.
+
+**Décision.**
+- Le kit crée pour chaque cible, dans le groupe de ressources technique, un compte de stockage `stifs<projet><cible>` pour tous les langages (accès Entra uniquement, versioning, suppression réversible), avec un conteneur `ifs-operations`.
+- Chaque release écrit son **journal d'opérations** dans ce conteneur, par unité de déploiement et par cible, **avant toute mutation** : chaque opération prévue (déploiement de l'unité, révocation, suppression, écriture de plan de données) avec un identifiant stable et l'état `à faire`. Elle passe chaque opération à `commencée` puis `faite`.
+- Chaque release commence par lire le journal de son unité. Une opération `à faire` ou `commencée` d'une exécution précédente est reprise et terminée en premier, même si la release déploie une révision plus récente. L'aperçu l'affiche.
+- Le journal appartient au client : il survit à la perte de l'agent et ne dépend pas d'IFS. Le rapport de release en contient une copie.
+- États d'une cible : **déployée** ; **partiellement appliquée** (une opération qui modifie Azure a commencé et n'est pas terminée, y compris le déploiement de l'unité lui-même) ; **en échec avant modification** (aucune opération de mutation n'a commencé) ; **indéterminée** (pas de rapport final et journal illisible : réconciliation nécessaire, jamais « aucun changement » par déduction).
+
+### DEC-101 — Frontière de confiance des pipelines et capacités des connexions
+
+**Constat.** L'aperçu Bicep exige les mêmes permissions qu'un déploiement : une identité d'aperçu en lecture seule n'existe pas. L'approbation d'un environnement ne protège pas un stage qui ne l'utilise pas.
+
+**Décision.**
+- **Ce qui est de confiance** : le contenu de la branche par défaut des dépôts qui portent les pipelines générés. Sa modification passe par une pull request relue ; le kit vérifie la politique de relecture et la signale « à faire » si elle manque.
+- **Connexion d'infrastructure** de chaque cible : contrôles « contrôle de branche » (branche par défaut seulement) et « modèle requis » (le pipeline doit étendre le modèle de release IFS du dépôt) posés par le kit. Elle ne peut donc servir qu'à un pipeline IFS issu de la branche par défaut, ce qui couvre le stage Aperçu avant l'approbation. Les pipelines d'infrastructure n'ont **aucun** point d'extension de type étape ; le code d'infrastructure additionnel est déployé par la pile, donc visible dans l'aperçu approuvé.
+- **Connexion applicative** de chaque cible : mêmes contrôles ; pour une cible protégée, elle porte en plus le contrôle d'approbation de la cible. Les étapes du client (points d'extension) s'exécutent dans la CI avec la seule connexion applicative de la cible du registre de build.
+- Pipelines de pull request : aucune connexion.
+- Capacités, par usage : aperçu (connexion d'infrastructure, aucune mutation par construction du modèle IFS) ; build et poussée (connexion applicative de la cible du registre) ; livraison d'une application (connexion applicative de la cible, approuvée en cible protégée) ; déploiement d'infrastructure (connexion d'infrastructure, environnement approuvé).
+- GitHub Actions (lot 2) : le stage Aperçu s'exécute dans un environnement GitHub `<projet>-<cible>-apercu`, limité à la branche par défaut et sans relecteurs ; le kit crée l'identifiant fédéré correspondant. Le déploiement utilise l'environnement protégé `<projet>-<cible>`.
+
+### DEC-102 — Ce que couvre une approbation
+
+**Décision.**
+- L'**empreinte** approuvée est calculée sur les **effets** : changements prédits par ressource (hors bruit déclaré par le descripteur), ressources détachées ou supprimées, accès révoqués, écritures de plan de données (noms, jamais valeurs), opérations reprises du journal, révision, version du catalogue, cible. Elle exclut les horodatages et ce qui appartient au pipeline applicatif : image en service, répartition du trafic, routage vers un slot.
+- Le stage Déploiement relit **sous le verrou de la cible** l'image, le trafic et le routage en service, et les reconduit tels qu'ils sont à cet instant : une livraison intervenue entre l'aperçu et le déploiement est conservée, jamais remplacée par l'image lue à l'aperçu, et n'invalide pas l'approbation.
+- Il recalcule ensuite l'empreinte : si un effet a changé, il s'arrête sans rien modifier et une nouvelle approbation est nécessaire.
+
+### DEC-103 — L'accès aux données est exécuté par le composant consommateur
+
+Modifie [DEC-98](#dec-98--un-propriétaire-unique-pour-chaque-objet-dérivé) pour les utilisateurs de base.
+
+**Constat.** La base est déployée avant le consommateur ; l'identité système d'une application d'un autre composant n'existe pas encore quand la release de la base devrait créer son utilisateur.
+
+**Décision.** L'utilisateur de base et ses rôles appartiennent au composant **source** de la liaison d'accès aux données. Sa release les crée après son propre déploiement (l'identité existe, la base aussi, déployée avant) et les révoque quand la liaison disparaît. L'identité de déploiement de la cible est membre du groupe administrateur Entra du serveur ([DEC-90](#dec-90--accès-aux-données-sans-permission-dannuaire)) ; elle sert à toutes les unités de la cible.
+
+### DEC-104 — Demande d'accès à double consentement
+
+Modifie [DEC-89](#dec-89--les-effets-indirects-dune-commande-exigent-les-permissions-correspondantes) pour les demandes d'accès.
+
+**Décision.**
+- Une demande d'accès porte un effet précis : liaison, identité, rôle ou niveau, cible, et l'empreinte de ses effets.
+- Elle est appliquée quand deux consentements sont réunis : celui du **demandeur**, qui a `modele.modifier` sur le composant source, et celui d'un **approbateur**, qui a `modele.modifier` sur le composant cible. Aucun des deux n'a besoin de droits sur l'autre composant.
+- Les deux droits sont revérifiés au moment de l'application. Si l'effet change (destination, rôle, identité), l'approbation tombe et une nouvelle relecture est nécessaire.
+- Seule la liaison demandée et ses éléments implicites sont appliqués ; aucun droit d'édition n'est accordé. La demande est journalisée des deux côtés. Disponible avec les rôles par composant (lot 1, jalon 2) ; au pilote, l'éditeur coordinateur applique directement.
+
+### DEC-105 — Secrets dans des coffres existants et propriétaire unique d'un secret physique
+
+Modifie [DEC-98](#dec-98--un-propriétaire-unique-pour-chaque-objet-dérivé) pour les secrets.
+
+**Décision.**
+- Un secret est identifié par son emplacement **physique** résolu par cible : coffre (identifiant Azure ou nom calculé) et nom du secret. Un composant `Single` partagé par plusieurs environnements a donc un seul emplacement.
+- Chaque secret physique alimenté par IFS a **un seul écrivain**, déclaré : le composant qui porte le coffre ; pour un coffre existant, le composant désigné comme propriétaire du secret. Les autres composants le lisent comme « géré hors IFS ». Deux écrivains : erreur `VAL-PAR-SECRET-PROPRIETAIRE`.
+- Avec un coffre **existant**, un mot de passe d'administration ne peut pas être `Généré` : rien dans IFS ne le déploie avant le serveur. Il est `Secret de pipeline` (écrit avant le déploiement par le propriétaire du secret) ou `Géré hors IFS` (prérequis de la liste de contrôle). Sinon : erreur `VAL-SEC-GENERE-EXISTANT`.
+- IFS ne supprime jamais un secret : retirer un lecteur ou l'écrivain laisse la valeur en place, et la liste de contrôle signale les secrets qui ne sont plus utilisés.
+
+### DEC-106 — Décommissionner un composant
+
+Remplace la suppression décrite dans [UC-CMP-04](12-composants-et-groupes-de-ressources.md).
+
+**Décision.**
+- Supprimer un composant déployé le fait passer à l'état **retrait demandé**. Ses fichiers restent publiés sous une forme de **décommissionnement** : la release déploie dans chaque cible une unité vide (tout est détaché, la protection est levée avec la pile), révoque toutes ses autorisations et écrit son journal et son rapport.
+- Le composant passe à l'état **retiré** cible par cible, quand le rapport le confirme ; ses fichiers sont retirés des destinations à la publication qui suit la dernière confirmation. Une cible indisponible laisse le retrait en attente, visible.
+- Les ressources à données restent dans Azure et entrent dans l'inventaire des ressources détachées ; leur suppression reste une décision du client.
+- Au pilote (jalon 0), la suppression d'un composant déployé n'est pas proposée.
+
+### DEC-107 — Exceptions documentées à l'immuabilité
+
+Modifie [DEC-92](#dec-92--version-du-catalogue-figée-par-projet) et [DEC-95](#dec-95--secret-saisi-par-erreur).
+
+**Décision.**
+- **Catalogue.** Une version publiée ne change jamais. Un correctif publie une **version de correctif** (`2026.09.1`) avec son propre manifeste d'émetteurs et de modules épinglés. La version corrigée est marquée « retirée pour sécurité » avec une date de refus (préavis court pour un défaut de sécurité) : `VAL-CAT-DEPRECIE` passe en erreur à cette date. Une révision ancienne reste consultable et se régénère à l'identique pour comparaison, mais n'est plus publiable avec une version retirée.
+- **Révision contaminée.** Quand une valeur est expurgée, les révisions publiées ou non qui la contenaient sont marquées **contaminées** : leurs fichiers ne sont plus téléchargeables ni comparables dans IFS, leurs métadonnées et l'incident restent visibles. IFS liste les dépôts, branches et commits où ces révisions ont été publiées, que le client doit traiter. La valeur ne peut pas revenir par une restauration, puisqu'elle est remplacée dans l'historique. Après une restauration des sauvegardes d'IFS, les expurgations enregistrées sont réappliquées avant la réouverture.
+
+### DEC-108 — Une copie de projet est isolée des ressources gérées d'origine
+
+Corrige [RG-PRJ-09](11-projets-et-environnements.md).
+
+**Décision.** À l'import d'un projet, IFS recalcule les noms Azure effectifs de chaque cible (gabarits, noms forcés compris) et les compare aux ressources gérées par tous les projets de l'organisation. Chaque collision est une erreur à résoudre avant la première publication : renommer, ou transformer la ressource en ressource existante (référence sans gestion). Un transfert de gestion entre projets n'est pas proposé.
+
+### DEC-109 — Contrat des pipelines du client
+
+Complète [RG-APP-22](19-applications-build-et-deploiement.md).
+
+**Décision.**
+- Une application en « pipelines du client » n'exige ni code source ni réglages de build dans IFS.
+- Le contrat de livraison impose au pipeline du client d'exécuter ses déploiements dans l'environnement `<projet>-<cible>` de la plateforme, ce qui le place sous le verrou séquentiel de la cible, et d'utiliser la connexion applicative de la cible.
+- IFS fournit un modèle d'étape qui publie un rapport de livraison standard (`ifs-app-report.json` : application, cible, image ou paquet, empreinte, résultat). Quand il est présent, IFS l'utilise pour le suivi ; sinon l'écran dit que le suivi de cette application n'est pas disponible, et que le verrou commun ne peut pas être vérifié.
+
+### DEC-110 — Critères de sortie du pilote
+
+Complète [DEC-93](#dec-93--un-pilote-avant-le-lot-1-commercial-et-un-modèle-principal-toujours-générable).
+
+**Décision.** Le pilote dure 8 semaines au plus par équipe. On élargit si **tous** les critères sont atteints :
+- preuves P1 à P5 et P7 à P9 vérifiées ;
+- au moins 3 équipes ont réalisé toute la séquence de démonstration, reprise après incident comprise ;
+- temps actif jusqu'au premier déploiement ≤ 1 jour, et assistance de l'équipe IFS ≤ 4 heures par équipe après l'installation du kit ;
+- aucune retouche manuelle des fichiers gérés ;
+- au moins 2 équipes déclarent par écrit vouloir continuer, et la majorité estime le temps passé inférieur à sa méthode habituelle.
+
+Sinon : si les échecs viennent d'un même prérequis client (réseau privé, modules internes), on resserre le segment et on relance un pilote ; si les preuves techniques échouent, on corrige le mécanisme avant tout élargissement ; si l'intérêt manque, on arrête.
+
+### DEC-111 — Vérification de préparation par cible
+
+**Décision.** Le pipeline d'installation se termine par une **vérification** exécutée dans chaque cible, avec ses vraies connexions et ses exécuteurs : authentification de chaque identité, droit de déployer (what-if d'un modèle vide), présence des variables secrètes attendues, adhésion au groupe administrateur SQL, et, au lot 2, joignabilité des ressources privées. Son rapport est lu par IFS : la liste de contrôle distingue **vérifié** (avec date), **déclaré** et **à faire**. Une vérification de plus de 30 jours redevient « à revérifier ».
+
+### DEC-112 — Feuille de route des idées de la contre-revue
+
+**Décision.**
+
+| Idée | Suite |
+|---|---|
+| Fiche d'opération reprenable, retrait de composant, préparation par cible | Lot 1 ([DEC-100](#dec-100--un-journal-dopérations-durable-chez-le-client), [DEC-106](#dec-106--décommissionner-un-composant), [DEC-111](#dec-111--vérification-de-préparation-par-cible)) |
+| Rapport de livraison des pipelines du client | Lot 1, jalon 2 ([DEC-109](#dec-109--contrat-des-pipelines-du-client)) |
+| Revue des ressources détachées : responsable, motif, date de revue | Lot 1 ; coût estimé au lot 2 avec l'estimation des coûts |
+| Diagnostic guidé d'un déploiement échoué | Lot 2, vague E : catalogue de causes connues, sans IA d'abord |
+| Accès avec motif, responsable et date de revue | Lot 2, vague E : rappels et revue, jamais d'expiration automatique |
+| Versions éligibles au retour arrière | Lot 2, vague C |
+| Mise à jour des modèles déjà instanciés | Lot 2, vague G |
+| Dossier de transmission et de sortie | Lot 1, jalon 3, avec l'export |
+| Mode démonstration sans droits Azure | Lot 1, jalon 3, exclu des indicateurs d'activation |
+| Ensemble de versions validé pour une promotion, dérive transformée en proposition, dossier de preuve d'architecture | Lot 3, après preuve du besoin chez les clients |
+| Comparaison de deux variantes d'architecture | Non retenue : les brouillons et la comparaison de versions couvrent le besoin |
+| Correcteur autonome par IA, place de marché publique | Non retenus |

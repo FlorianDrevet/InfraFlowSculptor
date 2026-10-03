@@ -28,10 +28,10 @@ Une application est touchée par deux pipelines. Pour qu'ils ne s'écrasent jama
 **RG-APP-01 — Le pipeline applicatif ne touche pas à la configuration.** Il change uniquement le code ou
 l'image.
 
-**RG-APP-02 — L'infrastructure ne régresse pas la livraison.** Le déploiement d'infrastructure lit
-(stage Aperçu) et reconduit ce qui appartient au pipeline applicatif. Le verrou séquentiel de la cible
-([RG-PIP-05](22-pipelines.md)) empêche une livraison de s'intercaler entre cette lecture et le
-déploiement :
+**RG-APP-02 — L'infrastructure ne régresse pas la livraison.** Le déploiement d'infrastructure relit
+**sous le verrou de la cible**, au stage Déploiement, ce qui appartient au pipeline applicatif, et le
+reconduit tel qu'il est à cet instant ([RG-PIP-05](22-pipelines.md), [DEC-102](03-decisions.md)). Une
+livraison faite entre l'aperçu et le déploiement est donc conservée :
 - l'image en service (mode Container) ;
 - la répartition du trafic et les étiquettes des révisions (Container Apps) ;
 - la règle de routage vers un slot.
@@ -55,7 +55,7 @@ l'approbation. L'écran des paramètres de l'application le rappelle.
 |---|---|---|---|
 | Livraison | Tous | `Pipelines IFS` : IFS génère les pipelines applicatifs décrits ici. `Pipelines du client` : IFS n'en génère aucun (RG-APP-22). | `Pipelines IFS` |
 | Nom d'application | Tous | `^[a-z][a-z0-9-]{1,39}$`, unique dans le composant. Dossier et noms des pipelines applicatifs. | Nom logique de la ressource |
-| Code source | Tous | Chemin relatif dans le dépôt de code du composant ([24](24-depots-et-publication.md)). Déclencheur de la CI. | `src/<nom d'application>` |
+| Code source | Livraison `Pipelines IFS` | Chemin relatif dans le dépôt de code du composant ([24](24-depots-et-publication.md)). Déclencheur de la CI. Sans objet en `Pipelines du client`, comme les réglages de build et les étapes. | `src/<nom d'application>` |
 | Mode | WebApp, FunctionApp | `Code` ou `Container` (propriété de la ressource). ContainerApp : `Container`. | — |
 | Profil de build | Code | Déduit de la pile de la ressource (section 4). | — |
 | Commande de build | Code | Remplace la commande du profil. | Celle du profil |
@@ -74,8 +74,17 @@ pipelines. IFS génère alors seulement l'infrastructure, les paramètres et l'i
 cible, et publie le **contrat de livraison** de l'application dans `README.ifs.md` : identifiant client de
 l'identité applicative et service connection à utiliser, registre et dépôt d'image, nom Azure de
 l'application par environnement, chemin de santé, stratégie conseillée. Les règles de propriété de la
-section 2 restent valables : la chaîne du client ne modifie que le code ou l'image. Le suivi des
-déploiements de cette application ([28 § 3.2](28-suivi-des-deploiements.md)) n'est alors pas disponible.
+section 2 restent valables : la chaîne du client ne modifie que le code ou l'image.
+
+Le contrat impose au pipeline du client ([DEC-109](03-decisions.md)) :
+- d'exécuter ses déploiements dans l'environnement `<projet>-<cible>` de la plateforme, ce qui le place sous
+  le verrou séquentiel de la cible ([RG-PIP-05](22-pipelines.md)) ;
+- d'utiliser la connexion applicative de la cible, avec ses contrôles.
+
+IFS fournit un modèle d'étape qui publie un **rapport de livraison** standard (`ifs-app-report.json` :
+application, cible, image ou paquet, empreinte, résultat). Quand il est présent, IFS l'utilise pour le
+suivi ([28 § 3.2](28-suivi-des-deploiements.md)) ; sinon l'écran dit que le suivi de cette application
+n'est pas disponible et que le verrou commun ne peut pas être vérifié.
 
 ## 4. Build en mode Code
 

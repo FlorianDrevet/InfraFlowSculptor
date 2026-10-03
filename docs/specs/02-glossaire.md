@@ -80,7 +80,13 @@ apparaître à l'écran.
 | **Accès révoqué** | RevokedAccess | Objet d'autorisation supprimé par une release parce qu'il est sorti du modèle ; cité dans le rapport de la release. |
 | **Demande d'accès** | AccessRequest | Proposition créée quand une liaison ouvre un accès à une ressource d'un autre composant sans la permission sur ce composant ([DEC-89](03-decisions.md)). |
 | **Rapport de release** | ReleaseReport | Fichier `ifs-report.json` produit par chaque release : révision, commit, empreinte du manifeste, étapes terminées, ressources détachées, accès révoqués. Preuve de livraison lue par IFS ([DEC-91](03-decisions.md)). |
-| **Partiellement appliquée** | PartiallyApplied | État d'une cible dont le déploiement a modifié Azure mais dont une étape suivante a échoué ; une relance de la release reprend sans doublon. |
+| **Partiellement appliquée** | PartiallyApplied | État d'une cible où une opération de mutation a commencé sans se terminer, déploiement de l'unité compris ; une relance de la release reprend d'abord les opérations restantes du journal. |
+| **Indéterminée** | Undetermined | État d'une cible dont ni le rapport ni le journal ne sont lisibles : une réconciliation est nécessaire ; jamais présenté comme « aucun changement ». |
+| **Journal d'opérations** | OperationLog | Liste, tenue chez le client dans le stockage technique de la cible, des opérations d'une release (déploiement, révocations, suppressions, écritures), écrite avant toute mutation ; une release interrompue est reprise à partir de lui ([DEC-100](03-decisions.md)). |
+| **Refus de suppression** | DenyDelete | Paramètre d'une pile de déploiement en cible protégée : personne ne peut supprimer les ressources gérées ni leurs attributions, sauf les principaux exclus (identité de déploiement, groupe d'urgence). Remplace les verrous ([DEC-99](03-decisions.md)). |
+| **Retrait demandé / retiré** | Decommissioning / Decommissioned | États d'un composant supprimé alors qu'il était déployé, avant et après la confirmation de son décommissionnement dans chaque cible ([DEC-106](03-decisions.md)). |
+| **Révision contaminée** | ContaminatedRevision | Révision qui contenait une valeur expurgée : ses fichiers ne sont plus téléchargeables dans IFS ([DEC-107](03-decisions.md)). |
+| **Version de correctif** | CatalogPatchVersion | Nouvelle version du catalogue qui corrige une version publiée sans la modifier (`2026.09.1`) ([DEC-107](03-decisions.md)). |
 | **Identité applicative** | AppDeliveryIdentity | Identité `id-ifs-app-<projet>-<cible>`, créée par le kit, qui pousse les images et livre les applications, sans droit à l'abonnement ([DEC-88](03-decisions.md)). |
 | **Export de projet** | ProjectExport | Document JSON versionné contenant tout le modèle d'un projet. |
 | **Modèle de projet / de composant** | ProjectTemplate / ComponentTemplate | Projet ou composant réutilisable, avec des valeurs à saisir. |

@@ -61,8 +61,11 @@ paramètre.
 
 **RG-PAR-08 — Nom de secret.** 1 à 127 caractères, lettres, chiffres, tirets. Deux paramètres qui
 écrivent le même secret du même Key Vault avec des alimentations différentes sont en erreur
-`VAL-PAR-SECRET-CONFLIT`. Un secret n'a qu'un écrivain : le composant qui porte son Key Vault, ou le
-composant consommateur si le coffre est une ressource existante ([DEC-98](03-decisions.md)).
+`VAL-PAR-SECRET-CONFLIT`. Un secret est identifié par son emplacement **physique** résolu par cible (coffre
+et nom), et n'a qu'un écrivain ([DEC-105](03-decisions.md)) : le composant qui porte son Key Vault ; pour un
+coffre existant, le composant désigné comme propriétaire du secret. Les autres composants le lisent comme
+« géré hors IFS ». Deux écrivains du même secret physique : erreur `VAL-PAR-SECRET-PROPRIETAIRE`. IFS ne
+supprime jamais un secret ; un secret qui n'est plus utilisé est signalé dans la liste de contrôle.
 
 **RG-PAR-22 — Coffre avant consommateur.** Un Key Vault qui reçoit un secret de pipeline ou un mot de passe
 généré appartient à un composant déployé **avant** tout composant qui consomme ce secret, ou est une
@@ -130,8 +133,9 @@ vides et l'emplacement où les saisir.
 pipeline dans son Key Vault (Azure CLI, avec l'identité de déploiement) :
 - la release du composant qui porte le Key Vault l'écrit **après** son déploiement ; les consommateurs,
   déployés plus tard (RG-PAR-22), le trouvent donc dès leur création ;
-- si le Key Vault est une ressource existante, la release du composant consommateur l'écrit **avant** son
-  déploiement ([22 § 3.1](22-pipelines.md)).
+- si le Key Vault est une ressource existante, la release du composant propriétaire du secret l'écrit
+  **avant** son déploiement ([22 § 3.1](22-pipelines.md)) ; le stage Aperçu vérifie seulement que la
+  variable de pipeline a une valeur.
 
 La valeur ne passe jamais par le code d'infrastructure : elle n'apparaît dans aucun fichier, aucun
 historique de déploiement ARM ni aucun état Terraform ou Pulumi ([DEC-46](03-decisions.md)). L'étape
@@ -157,8 +161,9 @@ désigne un Key Vault du projet (ou existant) qui le reçoit. Nom de secret par 
 serveur (RG-PAR-22).
 1. La release du composant qui porte le Key Vault, après son déploiement, génère le mot de passe s'il
    n'existe pas encore (longueur 32, quatre classes de caractères, conforme à la politique Azure du
-   service) et l'écrit dans le coffre. Si le coffre est une ressource existante, c'est la release du
-   composant du serveur qui le fait, avant son déploiement.
+   service) et l'écrit dans le coffre. Avec un coffre **existant**, rien ne serait déployé avant le serveur :
+   le mot de passe ne peut pas être `Généré`, il est `Secret de pipeline` ou `Géré hors IFS`
+   (`VAL-SEC-GENERE-EXISTANT`, [DEC-105](03-decisions.md)).
 2. La release du composant du serveur lit le secret dans son stage Aperçu (il doit exister, sinon échec
    « déployez d'abord <composant du coffre> ») et le transmet au code d'infrastructure comme entrée
    sensible.

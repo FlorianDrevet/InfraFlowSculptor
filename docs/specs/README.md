@@ -26,7 +26,7 @@
 | 00 | [Vision](00-vision.md) | Problème, personas, promesse, alternatives, indicateurs |
 | 01 | [Principes](01-principes.md) | Règles de conception non négociables |
 | 02 | [Glossaire](02-glossaire.md) | Termes, noms techniques, termes abandonnés |
-| 03 | [Décisions](03-decisions.md) | Journal des décisions DEC-01 à DEC-98 |
+| 03 | [Décisions](03-decisions.md) | Journal des décisions DEC-01 à DEC-112 |
 | 04 | [Périmètre et lots](04-perimetre-et-lots.md) | Matrices de support, lot 1 en trois jalons, lots 2 à 4, hors périmètre, points ouverts tous tranchés |
 | 05 | [Modèle de données](05-modele-de-donnees.md) | Entités, relations, invariants transverses |
 | 06 | [Parcours utilisateur](06-parcours-utilisateur.md) | Parcours de bout en bout : premier déploiement, nouveau service, changement de paramètre… |
@@ -54,6 +54,7 @@
 | 32 | [IA et Foundry](32-ia-et-foundry.md) | Comptes et projets Foundry, déploiements de modèles, AI Search, agents |
 | 33 | [Gouvernance, coûts et supervision](33-gouvernance-couts-et-supervision.md) | Politiques d'organisation, coûts, budgets, alertes, dérive |
 | 90 | [Projet de référence](90-projet-de-reference.md) | Exemple complet et sortie attendue, par variante |
+| 91 | [Scénarios critiques](91-scenarios-critiques.md) | Révocation, reprise, concurrence, droits entre équipes : scénarios complets et preuves attendues |
 | 40 | [Exploitation d'IFS](40-exploitation-ifs.md) | Back-office : catalogue, accès support, organisations, incidents |
 | A1 | [Traitement des écarts v0](A1-traitement-des-ecarts-v0.md) | Chaque écart de l'ancienne version et sa résolution |
 

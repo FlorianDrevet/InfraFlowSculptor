@@ -291,5 +291,8 @@ données ou à état, ou objet d'autorisation et de configuration (attribution d
 utilisateur de base créé par IFS, clé App Configuration, paramètre de diagnostic, règle de pare-feu,
 identifiant fédéré).
 
-**RG-GEN-20 — Pas de blocage.** IFS ne pose aucun refus de modification dans Azure (piles Bicep sans
-`denySettings`). Les verrous `CanNotDelete` des cibles protégées viennent de l'option du composant.
+**RG-GEN-20 — Protection sans verrou** ([DEC-99](03-decisions.md)). IFS ne pose aucun verrou de gestion :
+un verrou `CanNotDelete` empêcherait aussi de révoquer les accès. En Bicep, une cible protégée déploie ses
+piles avec le refus `denyDelete`, dont sont exclus l'identité de déploiement et, s'il est déclaré, le groupe
+d'urgence du client. Les modifications restent permises (pas de `denyWriteAndDelete`). En Terraform et
+Pulumi, la protection passe par l'outil (`prevent_destroy`, `protect`) sur les ressources à données.

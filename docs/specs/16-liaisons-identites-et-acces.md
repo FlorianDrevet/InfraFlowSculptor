@@ -29,8 +29,11 @@ génération déclare la cible comme référence externe à partir de son nom ca
 **RG-LIA-24 — Accès vers un autre composant.** Une liaison qui produit un accès (accès, accès aux données,
 lecture de secret, lecture de configuration, tirage d'image, stockage hôte, usage d'IA) vers une
 ressource d'un autre composant exige `modele.modifier` sur le composant cible. Sans cette permission, elle
-devient une **demande d'accès** : une proposition de modification relue par une personne qui l'a
-([DEC-89](03-decisions.md)). Les éléments implicites qui produiraient un tel accès suivent la même règle.
+devient une **demande d'accès** à double consentement ([DEC-104](03-decisions.md)) : le demandeur a
+`modele.modifier` sur le composant source, l'approbateur l'a sur le composant cible, aucun n'a besoin de
+droits sur l'autre composant. Les deux droits sont revérifiés à l'application ; si la destination, le rôle
+ou l'identité changent, l'approbation tombe. Seule la liaison demandée et ses éléments implicites sont
+appliqués. Les éléments implicites qui produiraient un tel accès suivent la même règle.
 *(Lot 2 : un composant peut ouvrir ses liaisons entrantes sans demande, à tous ou à une liste.)*
 
 **RG-LIA-04 — Cardinalité et obligation.** Le descripteur fixe, par type de liaison, le nombre de
@@ -157,8 +160,9 @@ une commande exécutée dans la base. IFS les génère pour qu'aucun accès ne s
 | `LectureÉcriture` | `db_datareader`, `db_datawriter` | `SELECT, INSERT, UPDATE, DELETE` |
 | `Schéma` | `db_datareader`, `db_datawriter`, `db_ddladmin` | Propriétaire du schéma `public` |
 
-**RG-LIA-21 — Exécution.** Après le déploiement de chaque cible, la release exécute un script
-idempotent ([DEC-90](03-decisions.md)) :
+**RG-LIA-21 — Exécution.** L'accès aux données appartient au composant **source** de la liaison
+([DEC-103](03-decisions.md)) : la base est déployée avant lui, et son identité existe une fois son propre
+déploiement fait. Après ce déploiement, sa release exécute un script idempotent ([DEC-90](03-decisions.md)) :
 - il crée l'utilisateur Entra de chaque identité s'il n'existe pas, **sans consulter l'annuaire** :
   `CREATE USER [<nom>] WITH SID = <identifiant client>, TYPE = E` en Azure SQL,
   `pgaadauth_create_principal_with_oid` avec l'identifiant d'objet en PostgreSQL ; les identifiants sont
