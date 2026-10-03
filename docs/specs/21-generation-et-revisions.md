@@ -79,11 +79,14 @@ refuse ce qui n'est pas pris en charge (`VAL-GEN-LANGAGE`).
 | Émetteur | Lot |
 |---|---|
 | Bicep | 1 |
-| Terraform | 2 |
-| Pulumi TypeScript | 3 |
+| Terraform | 3 |
+| OpenTofu | 4 |
+| Pulumi (TypeScript, C#, Python, Go, Java, YAML) | 4 |
 | Azure DevOps Pipelines | 1 |
-| GitHub Actions | 1 |
+| GitHub Actions | 2 |
 | GitLab CI | 3 |
+
+Lots selon [DEC-62](03-decisions.md) et [04](04-perimetre-et-lots.md).
 
 ## 4. Ce qui est généré
 

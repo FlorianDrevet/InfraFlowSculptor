@@ -230,7 +230,7 @@ propriétaire. Une retouche manuelle du client était écrasée sans avertisseme
 
 ### DEC-24 — Azure DevOps en v1, modèle de pipeline neutre
 
-> **Remplacée par [DEC-47](#dec-47--plusieurs-plateformes-ci)** : GitHub Actions rejoint Azure DevOps au lot 1, GitLab CI arrive au lot 3.
+> **Remplacée par [DEC-47](#dec-47--plusieurs-plateformes-ci)** : GitHub Actions rejoint Azure DevOps, GitLab CI arrive ensuite (lots fixés par [DEC-62](#dec-62--priorité-absolue-à-bicep-et-azure-devops) : GitHub Actions au lot 2, GitLab CI au lot 3).
 
 **Décision.**
 - Les pipelines produits en v1 sont des pipelines YAML Azure DevOps.

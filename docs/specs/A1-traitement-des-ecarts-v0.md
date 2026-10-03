@@ -161,7 +161,7 @@ La rétro-spécification v0 (ancien dépôt `infra-pipeline-editor`, `docs/specs
 | EC-PIP-04 Pas de mise à jour | Résolu | Réconciliation ([23 § 3](23-kit-installation.md)). |
 | EC-PIP-05 Chemins de base ignorés | Résolu | [RG-PUB-04](24-depots-et-publication.md). |
 | EC-PIP-06 Validation MultiRepo réelle | Résolu | [EXG-17](27-exigences-non-fonctionnelles.md). |
-| EC-PIP-07 Azure DevOps uniquement | Résolu | GitHub Actions dès le lot 1, GitLab CI au lot 3 ([DEC-47](03-decisions.md)). |
+| EC-PIP-07 Azure DevOps uniquement | Résolu | GitHub Actions au lot 2, GitLab CI au lot 3 ([DEC-47](03-decisions.md), [DEC-62](03-decisions.md)). |
 | EC-PIP-08 Pas de what-if | Résolu | [22 § 3](22-pipelines.md). |
 
 ## Livraison git (GIT)
