@@ -442,6 +442,8 @@ Sans module vérifié pour un type, l'émetteur écrit la ressource directement 
 
 ### DEC-46 — Cycle de vie et état par langage
 
+> **Complétée par [DEC-85](#dec-85--retirer-un-accès-le-révoque-même-en-production) et [DEC-91](#dec-91--preuve-de-livraison-et-référence-des-retraits)** : les objets d'autorisation et de configuration sont toujours supprimés ; les retraits se calculent contre l'unité de déploiement, pas contre la dernière révision publiée.
+
 Remplace [DEC-15](#dec-15--déploiement-par-azure-deployment-stacks).
 
 **Décision.**
@@ -643,6 +645,8 @@ Pulumi n'a pas de modules vérifiés : sources « ressources directes » (défau
 
 ### DEC-57 — Exploitation d'IFS : catalogue publié par cycle, accès support consenti
 
+> **Modifiée par [DEC-92](#dec-92--version-du-catalogue-figée-par-projet)** : un projet reste sur sa version du catalogue ; la montée est explicite.
+
 **Décision.**
 - Le catalogue (ressources et étapes) suit un cycle **brouillon → validation automatique → publication → dépréciation**. La validation automatique consiste à déployer le projet de référence dans toutes les variantes livrées.
 - Les projets suivent la dernière version publiée. Un propriétaire peut épingler une version 90 jours au plus. Cela tranche l'ancien [PO-02](04-perimetre-et-lots.md).
@@ -656,6 +660,8 @@ Pulumi n'a pas de modules vérifiés : sources « ressources directes » (défau
 **Conséquences.** Voir [40](40-exploitation-ifs.md).
 
 ### DEC-58 — Le lot 1 est livré en trois jalons, tranche verticale d'abord
+
+> **Complétée par [DEC-93](#dec-93--un-pilote-avant-le-lot-1-commercial-et-un-modèle-principal-toujours-générable)** : un jalon 0 (pilote) précède le jalon 1 ; les brouillons arrivent au jalon 2.
 
 > **Lots revus par [DEC-62](#dec-62--priorité-absolue-à-bicep-et-azure-devops)** : les numéros de lot cités ci-dessous sont remplacés par ceux de DEC-62.
 
@@ -743,14 +749,15 @@ Complète [DEC-34](#dec-34--journal-daudit).
 
 | Priorité | Types | Lot |
 |---|---|---|
-| Socle applicatif | Log Analytics, Application Insights, Key Vault, identité managée, stockage, plan App Service, Web App, Function App, registre, environnement Container Apps, Container App, SQL (serveur, base), PostgreSQL, Service Bus, App Configuration, **Static Web App**, **Azure Managed Redis** | 1 |
+| Socle applicatif | Log Analytics, Application Insights, Key Vault, identité managée, stockage, plan App Service, Web App, Function App, registre, environnement Container Apps, Container App, SQL (serveur, base), PostgreSQL, Service Bus, App Configuration, **Azure Managed Redis** | 1 |
+| Front-end statique | **Static Web App**, avec son parcours applicatif | 2 (vague C) |
 | Réseau et sécurité | VNet et subnets, appairage, NSG, table de routage, passerelle NAT, IP publique, zone DNS privée, zone DNS publique, point de terminaison privé (généré), pool d'exécuteurs privé | 2 (vague A) |
 | IA | Compte et projets Microsoft Foundry, déploiements de modèles, AI Search, Cosmos DB | 2 (vague B) |
-| Exposition, intégration, exploitation | Front Door et WAF, Application Gateway et WAF, API Management, Event Grid, Event Hubs, Container Apps Jobs, groupes d'actions, alertes, tests de disponibilité, budgets | 2 (vague C) |
+| Exposition, intégration, exploitation | Front Door et WAF, Application Gateway et WAF, API Management, Event Grid, Event Hubs, Container Apps Jobs, groupes d'actions, alertes, tests de disponibilité, budgets | 2 (vagues E et F) |
 | Complémentaires | MySQL, SignalR, Web PubSub, Communication Services (e-mail), Logic Apps Standard, Container Instances, Azure Firewall, DNS Private Resolver, Bastion, Managed Grafana | 3 |
 | Conteneurs orchestrés | AKS (cluster seulement ; le déploiement d'applications dans AKS reste hors périmètre) | 4 |
 
-Azure Managed Redis et Static Web Apps entrent au lot 1 : un cache et un front-end statique font partie de la plupart des applications.
+Azure Managed Redis entre au lot 1 : un cache fait partie de la plupart des applications. Static Web Apps, prévu au lot 1 à l'origine, passe au lot 2 avec la vague C ([DEC-93](#dec-93--un-pilote-avant-le-lot-1-commercial-et-un-modèle-principal-toujours-générable)) : un type ne sort qu'avec son parcours complet (création, build, droits, livraison, retrait).
 
 ### DEC-67 — Applications d'IA : Microsoft Foundry
 
@@ -875,7 +882,15 @@ Tranche [PO-01](04-perimetre-et-lots.md).
 | **Entreprise** | Grands comptes, intégrateurs | Volumes contractuels ; politiques d'organisation, rôles personnalisés, équipes synchronisées avec Entra, publication à deux personnes, SLA 99,9 %, support prioritaire, instance dédiée en option ([DEC-79](#dec-79--instance-dédiée-et-région-dhébergement)) | Sur devis, à partir de 1 500 € par mois |
 
 - Un **membre actif** est un membre qui a modifié le modèle, généré ou publié dans le mois. Les lecteurs, auditeurs et approbateurs sont gratuits.
-- Le **mode découverte** permet de modéliser, valider et télécharger sans aucune connexion git.
+- Le **mode découverte** permet de modéliser, valider, générer et télécharger sans aucune connexion git ([RG-VAL-01](20-validation.md)).
+- **Règles de facturation** :
+  - un membre actif est compté pour le mois civil dès sa première modification, génération ou publication, même s'il part en cours de mois ;
+  - l'action d'un agent ou d'un jeton compte pour l'utilisateur qui porte le jeton ;
+  - un compteur des membres actifs et des limites du plan est visible par les administrateurs ;
+  - un dépassement de limite bloque la création concernée, jamais la lecture, la génération ni l'export ;
+  - passer à un plan inférieur au-delà de ses limites rend en lecture seule ce qui dépasse, sans rien supprimer ;
+  - un impayé ouvre 14 jours de grâce, puis la suspension ([UC-EXP-03](40-exploitation-ifs.md)) : lecture et export restent possibles ;
+  - le coût d'exploitation et de support par organisation active est mesuré pour suivre la marge.
 
 ### DEC-79 — Instance dédiée et région d'hébergement
 
@@ -923,3 +938,137 @@ Tranche [PO-10](04-perimetre-et-lots.md).
 ### DEC-84 — Reprise des projets de l'ancienne application
 
 **Décision.** Un **convertisseur ponctuel** lit la base de l'ancienne application (v0) et produit, pour chaque projet, un export au format `ifs-project/v1` ([DEC-56](#dec-56--export-import-et-modèles-de-projet)), importable dans la nouvelle. La conversion fait de son mieux : ce qui n'a pas d'équivalent est listé dans un rapport. Outil interne, livré au jalon 3 du lot 1, pas une fonction du produit.
+
+---
+
+## Troisième revue : cycle de vie, sécurité des effets et preuve de livraison (2026-10-03)
+
+> Ces décisions traitent la revue externe [docs/reviews/2026-10-03-revue-fonctionnelle-v1.md](../reviews/2026-10-03-revue-fonctionnelle-v1.md).
+> Le traitement constat par constat est dans [docs/reviews/2026-10-03-traitement-revue-v1.md](../reviews/2026-10-03-traitement-revue-v1.md).
+
+### DEC-85 — Retirer un accès le révoque, même en production
+
+Complète [DEC-46](#dec-46--cycle-de-vie-et-état-par-langage).
+
+**Constat.** « Détacher » protège les données, mais une attribution de rôle est aussi une ressource : détachée, elle resterait active alors que le modèle la montre retirée.
+
+**Décision.**
+- Le descripteur classe chaque ressource générée dans l'une de deux familles :
+  - **ressources à données ou à état** (stockage, bases, coffres, registres, files, applications…) : elles suivent la règle du composant, détacher ou supprimer ([DEC-46](#dec-46--cycle-de-vie-et-état-par-langage)) ;
+  - **objets d'autorisation et de configuration** (attributions de rôle, politiques d'accès Redis, utilisateurs de base créés par IFS, clés App Configuration, paramètres de diagnostic, règles de pare-feu, identifiants fédérés) : ils sont **toujours supprimés** quand ils sortent du modèle, y compris en cible protégée.
+- En Bicep, la pile détache tout ; une étape de la release supprime ensuite explicitement les objets d'autorisation et de configuration sortis de la pile, et inscrit chaque suppression dans le rapport de la release. En Terraform, ces objets ne reçoivent jamais de bloc `removed`. En Pulumi, jamais `retainOnDelete`.
+- Le résumé de chaque révision et l'aperçu de chaque release distinguent « accès révoqués » et « ressources détachées ».
+
+**Conséquences.** La révocation est prouvée par le rapport de la release ([DEC-91](#dec-91--preuve-de-livraison-et-référence-des-retraits)). Le projet de référence vérifie qu'une application perd effectivement l'accès retiré ([90](90-projet-de-reference.md)).
+
+### DEC-86 — Séquencement d'une release d'infrastructure
+
+**Constat.** Au premier déploiement, un coffre, ses droits, ses secrets et leurs consommateurs dépendent les uns des autres ; la spec ne fixait pas l'ordre.
+
+**Décision.**
+- Une release d'un composant dans une cible enchaîne, dans un ordre fixe : contrôle de l'aperçu approuvé, lecture des secrets nécessaires, déploiement de l'unité (pile, état), révocations, écritures de plan de données (secrets, mots de passe générés, clés App Configuration, accès aux données), domaines ([22 § 3](22-pipelines.md)).
+- **Les coffres alimentés par la release précèdent leurs consommateurs.** Un Key Vault qui reçoit un secret de pipeline ou un mot de passe généré appartient à un composant déployé avant tout composant qui consomme ce secret, ou est une ressource existante. Sinon : erreur `VAL-SEC-ORDRE`. L'assistant crée par défaut un composant socle qui porte les coffres.
+- Chaque étape est idempotente. Relancer une release reprend tout depuis le début et ne refait que ce qui manque. Les droits tout juste attribués sont attendus par réessais, 10 minutes au plus ; les autres erreurs ne sont pas réessayées.
+
+**Conséquences.** Le premier déploiement réussit depuis un abonnement vide sans seconde exécution corrective ; c'est un critère d'acceptation ([90](90-projet-de-reference.md)).
+
+### DEC-87 — L'approbateur voit l'aperçu de ce qui sera appliqué
+
+**Constat.** Azure DevOps évalue les approbations **avant** de démarrer un stage : un aperçu calculé dans le stage approuvé arrive trop tard. Le what-if n'est pas disponible pour les piles de déploiement.
+
+**Décision.**
+- Chaque cible a deux stages : **Aperçu**, qui n'utilise pas l'environnement protégé, puis **Déploiement**, sur l'environnement, avec l'approbation.
+- L'aperçu Bicep combine le what-if ARM du modèle à la portée de l'abonnement et la comparaison entre les ressources gérées par la pile et celles du nouveau modèle (ressources qui seront détachées ou supprimées, accès révoqués). Ses limites sont écrites dans le résumé. Terraform conserve le plan ; Pulumi conserve l'aperçu.
+- L'aperçu produit une **empreinte**. Le stage Déploiement recalcule l'aperçu ; si l'empreinte diffère de celle qui a été approuvée, il s'arrête sans rien modifier et demande de relancer la release.
+- Les stages d'infrastructure et d'applications d'une même cible partagent le verrou exclusif de l'environnement, en mode **séquentiel** : aucune exécution n'est abandonnée, et un déploiement d'application ne peut pas s'intercaler entre l'aperçu et le déploiement d'infrastructure.
+
+### DEC-88 — Identités séparées pour l'infrastructure et la livraison des applications
+
+**Décision.**
+- Le kit crée deux identités par cible : `id-ifs-deploy-<projet>-<cible>` (infrastructure : Contributor et administration RBAC conditionnée) et `id-ifs-app-<projet>-<cible>` (livraison des applications), chacune avec sa connexion de déploiement.
+- L'identité applicative ne reçoit que : `AcrPush` sur le registre de build, et le droit de mettre à jour chaque application qu'elle livre, à la portée de cette application. Ces droits sont attribués par le déploiement d'infrastructure.
+- Chaque connexion n'est autorisée que pour ses pipelines : infrastructure ou applications. Les pipelines de pull request n'ont **aucune** connexion Azure.
+- Les points d'extension du client s'exécutent avec la connexion du pipeline qui les appelle, jamais avec une connexion plus large.
+
+### DEC-89 — Les effets indirects d'une commande exigent les permissions correspondantes
+
+**Constat.** Une liaison créée dans un composant peut ouvrir un accès à une ressource d'un autre composant ; une suppression ou une restauration peut toucher des objets hors de la portée de son auteur.
+
+**Décision.**
+- IFS calcule tous les effets d'une commande avant de l'appliquer, y compris les éléments implicites, et vérifie la permission de l'auteur sur **chaque** objet touché.
+- Une liaison qui produit un accès (rôle, accès aux données, lecture de secret, lecture de configuration, tirage d'image, stockage hôte, usage d'IA) vers une ressource d'un autre composant exige `modele.modifier` sur le composant cible. Sinon elle devient une **demande d'accès** : une proposition que relit une personne qui a cette permission. *(Lot 2 : un composant peut ouvrir ses liaisons entrantes sans demande, à tous ou à une liste.)*
+- Une suppression en cascade qui toucherait un objet hors de la portée de l'auteur est refusée ; IFS liste les objets et leurs responsables.
+- Appliquer une proposition, une annulation ou une restauration exige, pour chaque effet, la permission qu'exigerait la modification directe. `propositions.appliquer` ne donne aucun droit supplémentaire.
+- On n'attribue qu'un rôle dont on détient toutes les permissions. Seul un propriétaire attribue le rôle Propriétaire.
+
+### DEC-90 — Accès aux données sans permission d'annuaire
+
+**Constat.** `CREATE USER … FROM EXTERNAL PROVIDER` exécuté par une identité de service oblige l'identité du serveur SQL à lire l'annuaire Entra (Microsoft Graph), un prérequis lourd que la spec ne décrivait pas.
+
+**Décision.**
+- Azure SQL : le script crée l'utilisateur avec `CREATE USER [<nom>] WITH SID = <identifiant client converti>, TYPE = E`, forme documentée qui ne consulte pas l'annuaire. L'identifiant client de chaque identité est une sortie du déploiement.
+- PostgreSQL : `pgaadauth_create_principal_with_oid`, avec l'identifiant d'objet, pour la même raison.
+- Seul prérequis restant : l'identité de déploiement est membre du groupe administrateur Entra du serveur (étape du kit, constat `VAL-LIA-SQL-ADMIN` tant qu'elle n'est pas confirmée).
+- Retirer un accès aux données retire les rôles **et** supprime l'utilisateur créé par IFS ([DEC-85](#dec-85--retirer-un-accès-le-révoque-même-en-production)). Un utilisateur qu'IFS n'a pas créé n'est jamais touché.
+
+### DEC-91 — Preuve de livraison et référence des retraits
+
+**Décision.**
+- Chaque release produit un **rapport** (`ifs-report.json`, artefact du run) : révision, commit, empreinte du manifeste, cible, étapes terminées, ressources détachées, accès révoqués, résultat. IFS le lit par la connexion de l'organisation. La correspondance entre une exécution et une révision repose sur le commit et l'empreinte du manifeste, jamais sur le seul nom du run.
+- L'état affiché par composant et cible distingue : **déployée** (toutes les étapes terminées), **partiellement appliquée** (le déploiement a modifié Azure, une étape suivante a échoué), **en échec avant modification**, **inconnu** (information indisponible), avec la date de la dernière lecture.
+- Les ressources retirées sont calculées au moment de l'application, contre ce que l'unité de déploiement gère réellement (pile Bicep, état Terraform, pile Pulumi), pas contre la dernière révision publiée. Une cible qui saute des révisions retire donc tout ce qui doit l'être.
+- Terraform : un bloc `removed` reste généré tant qu'au moins une cible du composant n'a pas rapporté de déploiement réussi d'une révision qui le contenait.
+- L'inventaire des ressources détachées est alimenté par les rapports, pas par une déduction.
+- Le suivi des pull requests (commit, fusion, fermeture) passe au lot 1.
+
+### DEC-92 — Version du catalogue figée par projet
+
+Remplace le point « les projets suivent la dernière version publiée » de [DEC-57](#dec-57--exploitation-difs--catalogue-publié-par-cycle-accès-support-consenti).
+
+**Décision.**
+- Un projet reste sur sa version du catalogue. Une nouvelle version est **proposée** avec la liste des fichiers et des valeurs qu'elle changerait ; la montée est une action explicite (`projet.administrer`), journalisée, qui produit un jeu de modifications d'origine `Mise à jour du catalogue`.
+- Une version reste utilisable 12 mois après la publication de la suivante. Ensuite la génération exige la montée.
+- Exception : un correctif de sécurité ou un retrait imposé par Azure est appliqué à toutes les versions supportées, annoncé aux administrateurs, et cité dans le résumé de la révision suivante.
+- Une révision ancienne se régénère à l'identique avec sa version du catalogue, tant que celle-ci est supportée.
+
+### DEC-93 — Un pilote avant le lot 1 commercial, et un modèle principal toujours générable
+
+**Décision.**
+- Le lot 1 commence par un **jalon 0 — pilote** ([04 § 2.0](04-perimetre-et-lots.md)) : Bicep, Azure DevOps, Azure Repos, un dépôt, deux environnements, une application conteneur, un catalogue réduit, avec 3 à 5 équipes pilotes qualifiées. Il démontre la séquence : création, première livraison, modification, ajout d'un accès, révocation, échec partiel, reprise.
+- Le passage aux jalons suivants est conditionné aux mesures du pilote (temps actif, interventions, retouches manuelles, support nécessaire).
+- Les prototypes Terraform et GitHub Actions du garde-fou ([DEC-62](#dec-62--priorité-absolue-à-bicep-et-azure-devops)) couvrent un sous-ensemble représentatif du projet de référence, pas tout le projet.
+- Au jalon 0 et au jalon 1, un projet a un éditeur coordinateur qui intègre les changements. Les **brouillons** passent du lot 2 au jalon 2 du lot 1 ; dès qu'ils existent, le modèle principal n'accepte plus une application qui ajoute une erreur de validation : le travail incomplet reste dans son brouillon et ne bloque ni ne pollue la livraison des autres.
+
+### DEC-94 — Des fichiers générés stables
+
+**Décision.** L'en-tête des fichiers générés ne contient pas le numéro de révision. Une génération ne modifie que les fichiers dont le contenu change réellement ; la révision et les empreintes vivent dans le manifeste. Un composant sans changement fonctionnel garde des fichiers identiques et ne déclenche aucun pipeline.
+
+### DEC-95 — Secret saisi par erreur
+
+**Décision.**
+- Avant tout enregistrement, IFS analyse les valeurs littérales (motifs de jetons connus, chaînes de connexion, forte entropie). Une valeur détectée est **refusée** à la saisie, avec la conversion en secret de pipeline proposée. L'utilisateur peut la forcer en déclarant qu'elle n'est pas secrète ; c'est journalisé.
+- Un administrateur d'organisation peut **expurger** une valeur déjà enregistrée : elle est remplacée par une marque dans le modèle, l'historique, les révisions non publiées et les propositions ; l'audit garde l'acte, pas la valeur. IFS rappelle que la valeur doit être renouvelée chez le client et qu'elle a pu être publiée dans un dépôt git, qu'IFS ne réécrit pas.
+
+### DEC-96 — Opérations sensibles des agents confirmées par un humain, côté serveur
+
+**Décision.**
+- Les commandes d'administration (membres, rôles, jetons, connexions, politiques, export, suppression de projet) ne sont pas exposées au MCP.
+- `publish_revision` crée une **demande de publication** qu'une personne qui a `publier` confirme dans l'écran, après avoir vu le résumé de la révision. Un projet peut autoriser la publication directe par agent (`projet.administrer`), uniquement en mode pull request.
+- Par défaut, les agents ont le mode proposition ; le mode direct ([RG-MCP-10](25-agent-ia-mcp.md)) s'active par projet.
+
+### DEC-97 — Statut des décisions et registre des preuves
+
+**Constat.** Une décision documentée clôt un débat ; elle ne démontre pas que le comportement est réalisable.
+
+**Décision.**
+- Chaque garantie critique porte un statut : **décidée**, **spécifiée**, **prototypée**, **vérifiée**.
+- Le registre des preuves ([04 § 7](04-perimetre-et-lots.md)) liste les prototypes à réussir avant le développement : création depuis un abonnement vide, révocation d'un accès en production, aperçu puis approbation, cible qui a sauté des révisions.
+- En cas de conflit entre documents : les décisions les plus récentes priment, puis les principes, puis les règles de gestion. Un conflit détecté est corrigé dans tous les documents par la même modification.
+
+### DEC-98 — Un propriétaire unique pour chaque objet dérivé
+
+**Décision.**
+- Une attribution de rôle est déployée par le composant de l'identité qui la reçoit. Une identité affectée ne sert qu'aux ressources de son composant (`VAL-LIA-IDENTITE-PARTAGEE`) : deux unités de déploiement ne gèrent jamais la même attribution.
+- Les droits des identités de déploiement et de livraison (créées par le kit, hors composants) sont déployés par le composant de la ressource visée.
+- Un secret (secret de pipeline, mot de passe généré) est écrit par le composant qui porte son Key Vault, ou par le composant consommateur si le coffre est une ressource existante ; une clé App Configuration par le composant qui porte son magasin ; un utilisateur de base par le composant de la base.
+- Une dépendance de **création** (hébergement, accès, données, lecture d'une sortie connue seulement après déploiement) ordonne les composants et ne doit pas former de cycle. Une sortie **calculable depuis le nom** (adresse d'un Key Vault, d'un Service Bus, d'un serveur SQL, domaine personnalisé) ne crée pas de dépendance d'ordre. Deux applications qui s'appellent mutuellement par de telles adresses restent possibles ; sinon, le cycle est signalé avec cette alternative.

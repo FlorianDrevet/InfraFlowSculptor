@@ -19,7 +19,8 @@ Chaque type est décrit par un descripteur versionné qui contient :
 | Enfants | Types d'enfants, leurs propriétés et leurs règles de nom. |
 | Identités | Supporte identité système, identités affectées (nombre max). |
 | Liaisons | Types de liaison acceptés en source, obligatoires ou non ([16](16-liaisons-identites-et-acces.md)). |
-| Sorties | Nom, description, sensible ou non, condition. |
+| Sorties | Nom, description, sensible ou non, condition, calculable depuis le nom ou non ([DEC-98](03-decisions.md)). |
+| Cycle de vie | Pour chaque ressource générée : ressource à données ou à état, ou objet d'autorisation et de configuration ([RG-GEN-25](21-generation-et-revisions.md)). |
 | Rôles | Rôles Azure intégrés applicables quand le type est **cible** d'une attribution : nom, identifiant, description, lien vers la documentation. Groupes de rôles équivalents (exemple : « lecture de secrets » = Secrets User, Secrets Officer, Administrator). |
 | Accès aux données | Rôles de données hors RBAC (bases de données), le cas échéant. |
 | Exposition réseau | Modes supportés, `groupIds` de point de terminaison privé, zone DNS privée, conditions (SKU). |
@@ -57,7 +58,7 @@ Les champs communs ([14 § 2](14-modele-des-ressources.md)) ne sont pas répét�
 | Observabilité | Log Analytics, Application Insights |
 | Sécurité | Key Vault, identité managée |
 | Données | Compte de stockage, serveur Azure SQL, base Azure SQL, PostgreSQL serveur flexible |
-| Calcul | Plan App Service, Web App, Function App, environnement Container Apps, Container App, Static Web App |
+| Calcul | Plan App Service, Web App, Function App, environnement Container Apps, Container App |
 | Plateforme | Registre de conteneurs, App Configuration |
 | Cache | Azure Managed Redis |
 | Messagerie | Service Bus |
@@ -354,16 +355,16 @@ Abréviation `appcs` · nom 5–50, lettres, chiffres, tirets · unicité : glob
 | Protection contre la purge | Booléen ; hors `Free` | Non | S, I (non → oui) |
 | Rétention après suppression (jours) | 1 à 7 ; hors `Free` | 7 | V |
 
-Les clés sont des paramètres applicatifs ([17](17-parametres-applicatifs-et-secrets.md)). Pour qu'elles
-puissent être déployées alors que l'authentification locale est désactivée, l'identité de déploiement
-reçoit le rôle App Configuration Data Owner ([23](23-kit-installation.md)). En Bicep, qui passe par ARM,
-l'émetteur active en plus le mode d'accès « pass-through » au plan de données ; Terraform et Pulumi
-écrivent les clés directement par le plan de données.
+Les clés sont des paramètres applicatifs ([17](17-parametres-applicatifs-et-secrets.md)). Dans tous les
+langages, elles ne sont pas des ressources du code d'infrastructure : la release les synchronise par le
+plan de données après le déploiement ([RG-PAR-23](17-parametres-applicatifs-et-secrets.md)), avec
+l'identité de déploiement, qui reçoit App Configuration Data Owner sur le magasin par le déploiement
+lui-même. L'authentification locale peut donc rester désactivée.
 
 Sorties : `endpoint`, `name`, `id`. Rôles : App Configuration Data Reader, App Configuration Data Owner,
 Reader. Exposition : publique, privée *(lot 2, `configurationStores`)*.
 
-### 3.17 StaticWebApp — application web statique
+### 3.17 StaticWebApp — application web statique *(lot 2, vague C)*
 
 Abréviation `stapp` · nom 1–40, lettres, chiffres, tirets · unicité : groupe de ressources (domaine par défaut généré par Azure).
 
@@ -374,8 +375,10 @@ Abréviation `stapp` · nom 1–40, lettres, chiffres, tirets · unicité : grou
 | API liée | Liaison facultative **back-end** vers une Web App, Function App ou Container App du projet (SKU `Standard`) | — | — |
 | Exposition | Publique, privée *(lot 2, `staticSites`, SKU `Standard`)* | Publique | S |
 
-Application ([19](19-applications-build-et-deploiement.md)) : build du front-end (profil Node ou Angular),
-déploiement par le jeton de déploiement de la ressource, lu par la release dans Azure, jamais stocké par IFS.
+Application ([19](19-applications-build-et-deploiement.md)) : mode Code uniquement, build du front-end
+(profil Node ou Angular), déploiement par le jeton de déploiement de la ressource, lu par la release dans
+Azure avec l'identité applicative, jamais stocké par IFS. Lot 2, vague C ([DEC-66](03-decisions.md)) : le
+type ne sort qu'avec son parcours applicatif complet.
 Domaines personnalisés : comme les autres applications ([18 § 11](18-reseau-et-exposition.md)).
 Sorties : `defaultHostname`, `name`, `id`. Rôles : Contributor, Reader.
 
@@ -395,7 +398,9 @@ pas proposé. Abréviation `amr` · nom 1–60, lettres, chiffres, tirets · uni
 
 Sorties : `hostName`, `port`, `name`, `id`. Sortie sensible : clé d'accès, si les clés sont activées.
 Accès aux données : liaison **accès** avec une politique d'accès Redis (`Default` en lecture et écriture),
-générée comme attribution de politique d'accès à la base pour l'identité.
+générée comme attribution de politique d'accès à la base pour l'identité
+([16 § 3](16-liaisons-identites-et-acces.md)). Cette attribution est un objet d'autorisation : elle est
+supprimée quand la liaison disparaît ([DEC-85](03-decisions.md)).
 
 ## 4. Types des lots suivants
 

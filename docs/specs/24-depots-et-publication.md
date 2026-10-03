@@ -24,8 +24,10 @@ accessibles est lue. Un échec empêche l'enregistrement.
 **RG-PUB-02 — Expiration.** Pour un jeton de repli : alerte e-mail aux administrateurs 15 et 3 jours
 avant l'expiration ; constat `VAL-PUB-CONNEXION` dans les projets qui l'utilisent.
 
-**RG-PUB-03 — Droits.** Les connexions sont gérées par les administrateurs d'organisation. Un projet
-choisit ses dépôts parmi ceux des connexions de son organisation.
+**RG-PUB-03 — Droits.** Les connexions sont gérées par les administrateurs d'organisation. Chaque connexion
+déclare les dépôts **ouverts** aux projets : à tous les projets, ou à une liste de projets, dépôt par dépôt
+(défaut : aucun). Un projet ne choisit, ne parcourt et n'écrit que dans les dépôts qui lui sont ouverts ;
+le droit est revérifié à chaque lecture et à chaque écriture.
 
 **UC-PUB-01 — Ajouter, tester, modifier, retirer une connexion.** Le retrait est refusé tant qu'un plan
 de publication l'utilise ; IFS liste les projets concernés.
@@ -105,7 +107,8 @@ branche), message.
 
 **RG-PUB-10 — Révision périmée.** Si la révision est périmée ([RG-GEN-02](21-generation-et-revisions.md)),
 l'écran propose de générer d'abord. Publier une révision périmée reste possible, avec confirmation
-explicite.
+explicite, sauf si elle viole une politique d'organisation **actuelle** ([33 § 2](33-gouvernance-couts-et-supervision.md)) :
+une révision ancienne ne contourne jamais une interdiction plus récente.
 
 **RG-PUB-11 — Préparation par destination.** Pour chaque destination, IFS lit la branche par défaut
 (ou la branche cible) et calcule :
@@ -127,7 +130,9 @@ y fait **un seul commit** (toutes ses destinations), et ouvre une pull request :
 - relecteurs par défaut du projet.
 
 S'il existe déjà une pull request IFS ouverte pour ce projet dans ce dépôt, sa branche est remplacée par
-la nouvelle révision et la description mise à jour, au lieu d'ouvrir une deuxième pull request.
+la nouvelle révision et la description mise à jour, au lieu d'ouvrir une deuxième pull request. Si cette
+pull request a déjà reçu une approbation, IFS demande une confirmation, le signale en commentaire, et
+laisse le fournisseur appliquer sa règle de réinitialisation des votes.
 
 **RG-PUB-13 — Mode direct.** Commit sur une branche choisie (créée depuis la branche par défaut si
 absente). Une branche protégée qui refuse l'écriture fait échouer la destination avec le message du
@@ -139,14 +144,28 @@ destination (succès, échec, motif). Un dépôt en échec peut être republié 
 
 **RG-PUB-15 — Vérifications de contenu.** Avant écriture : modèles d'extension et code d'infrastructure additionnel
 référencés présents dans la branche cible ([RG-APP-14](19-applications-build-et-deploiement.md),
-[RG-GEN-17](21-generation-et-revisions.md)).
+[RG-GEN-17](21-generation-et-revisions.md)). L'absence de l'un d'eux refuse la publication de la
+destination concernée, dans les deux cas.
+
+**RG-PUB-20 — Écriture sûre et idempotente.**
+- La préparation retient le commit de base de chaque branche. Avant d'écrire, IFS vérifie que la branche
+  n'a pas avancé ; sinon il recalcule la préparation et la présente à nouveau.
+- Chaque publication a un identifiant d'opération. Une nouvelle tentative (réseau coupé après le commit,
+  double clic) retrouve la branche, le commit et la pull request déjà créés au lieu de les dupliquer.
+- Le manifeste porte le code du projet et l'identifiant de l'organisation IFS. Un manifeste absent,
+  modifié à la main ou appartenant à un autre projet bloque l'écriture automatique de la destination :
+  IFS montre le conflit et demande une prise de propriété explicite.
+- Deux publications d'un même projet ne s'exécutent jamais en parallèle.
+- Les permissions sont revérifiées avant chaque écriture. Si l'auteur perd `publier` en cours de route, les
+  écritures non commencées sont annulées ; celles déjà faites sont rapportées, dépôt par dépôt.
 
 **RG-PUB-16 — Message.** 1 à 500 caractères ; par défaut « IFS révision <n> ». Le commit est signé par
 l'identité de la connexion, avec l'auteur IFS indiqué dans le message (`Published-by: <utilisateur>`).
 
 **UC-PUB-03 — Historique des publications** par destination : révision, date, auteur, commit, lien vers
-la pull request ou la branche, résultat. *(Lot 2 : état de la pull request — ouverte, fusionnée,
-fermée.)*
+la pull request ou la branche, résultat, et état de la pull request — ouverte, fusionnée (avec le commit
+de fusion), fermée ([DEC-91](03-decisions.md)). Une révision publiée dans une pull request jamais fusionnée
+n'est jamais considérée comme livrée.
 
 **UC-PUB-04 — Télécharger une révision** (archive) pour un usage hors publication. Le manifeste n'y est
 pas inclus.

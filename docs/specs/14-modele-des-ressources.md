@@ -50,6 +50,13 @@ de la ressource, sinon défaut du descripteur.
 le fichier de paramètres de l'environnement, y compris quand elle vaut le défaut ([DEC-12](03-decisions.md)).
 Aucune valeur n'est laissée au défaut implicite d'un module.
 
+**RG-RES-14 — Vide, absent, hérité.** Trois cas distincts, partout (écran, API, import de fichier) :
+**hérité** (aucune surcharge : la valeur de la ressource, ou le défaut du catalogue, s'applique) ;
+**vide** (une chaîne vide saisie volontairement, seulement si le descripteur l'accepte) ; **absent**
+(propriété facultative explicitement non renseignée). Retirer une surcharge revient à « hérité » ; l'API
+exige pour cela une commande explicite, jamais une valeur `null` implicite. Aucun réglage n'est perdu en
+silence : un import de fichier qui omettrait une valeur existante la laisse inchangée.
+
 **RG-RES-03 — Contrôle à la saisie.** Une valeur hors du descripteur est refusée par le serveur, quel que
 soit le client (écran, API, MCP). Les contraintes croisées sont contrôlées sur chaque valeur effective.
 
@@ -84,8 +91,10 @@ présente, un identifiant Azure complet :
 correspondre au type IFS choisi.
 
 **RG-RES-10 — Rôle.** Une ressource existante n'a ni propriétés, ni enfants, ni identités, ni paramètres
-applicatifs, ni exposition réseau. Elle peut seulement être **cible** de liaisons. L'écran n'affiche que
-ce qui s'applique.
+applicatifs. Elle peut seulement être **cible** de liaisons. Elle peut porter des **propriétés déclarées**
+utiles aux contrôles : exposition (publique, restreinte, privée), zone DNS privée, tenant. Elles sont
+affichées « déclaré, non vérifié » : IFS ne lit pas Azure pour les confirmer. L'écran n'affiche que ce qui
+s'applique.
 
 **RG-RES-11 — Génération.** Elle est déclarée comme référence à une ressource existante à partir de son
 identifiant (`existing` en Bicep, source de données en Terraform, fonction `get` en Pulumi) ; elle n'est jamais

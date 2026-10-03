@@ -1,9 +1,10 @@
 # 04 — Périmètre et lots
 
-La priorité absolue est **Bicep + Azure DevOps** ([DEC-62](03-decisions.md)). Le lot 1 est le plus petit
-produit qui tient la promesse de [00 § 4](00-vision.md) : un projet de taille courante, du modèle au premier
-déploiement réussi, sans retouche manuelle. Les lots suivants élargissent sans jamais revenir sur ce
-socle.
+La priorité absolue est **Bicep + Azure DevOps** ([DEC-62](03-decisions.md)). Le lot 1 est la première
+version commerciale : un projet de taille courante, du modèle au premier déploiement réussi puis à sa
+maintenance, sans retouche manuelle ([00 § 4](00-vision.md)). Il commence par un **pilote** (jalon 0) qui
+prouve la promesse avec quelques équipes avant d'élargir ([DEC-93](03-decisions.md)). Les lots suivants
+élargissent sans jamais revenir sur ce socle.
 
 ## 1. Matrices de support
 
@@ -36,11 +37,40 @@ La cible est **toujours Azure** ([DEC-43](03-decisions.md)).
 
 **Garde-fou du lot 1.** Pour que le plan de déploiement ne soit façonné ni par Bicep ni par Azure DevOps
 ([DEC-44](03-decisions.md)), le lot 1 inclut deux **prototypes non livrés** : un émetteur Terraform et un
-émetteur GitHub Actions, qui doivent produire depuis le projet de référence une sortie déployable. Tout ce
-qu'ils ne peuvent pas traduire sans décision métier révèle un défaut du plan de déploiement, à corriger
-dans le lot 1.
+émetteur GitHub Actions, qui doivent produire une sortie déployable pour un **sous-ensemble représentatif**
+du projet de référence (un composant `PerEnvironment` et un `Single`, une liaison d'accès entre composants,
+un secret de pipeline, un accès aux données, un retrait) ([DEC-93](03-decisions.md)). Tout ce qu'ils ne
+peuvent pas traduire sans décision métier révèle un défaut du plan de déploiement, à corriger dans le
+lot 1.
 
 ## 2. Lot 1 — Premier déploiement réussi (Bicep, Azure DevOps)
+
+### 2.0 Jalon 0 — Pilote
+
+Objectif : prouver, avec 3 à 5 équipes pilotes qualifiées qui créent un nouveau service Azure, qu'une
+équipe crée **puis fait évoluer** un service conforme à ses conventions, avec moins de travail manuel et
+sans retouche des fichiers gérés ([DEC-93](03-decisions.md)).
+
+| Dimension | Périmètre du pilote |
+|---|---|
+| Outils | Bicep, Azure DevOps, Azure Repos ; AVM du registre public, épinglés |
+| Cibles | Un tenant, deux environnements `dev` et `prd`, approbation en `prd`, exposition publique ou restreinte |
+| Dépôts | Un dépôt, publication par pull request uniquement |
+| Modèle | Un composant socle et un composant applicatif `PerEnvironment` ; conventions, surcharges, présence, ressources existantes |
+| Catalogue | Log Analytics, Application Insights, Key Vault, identité managée, registre de conteneurs, environnement Container Apps, Container App ; Azure SQL si un pilote en a besoin |
+| Application | Un conteneur témoin : identité managée, secret Key Vault, contrôle de santé qui vérifie ses dépendances, image identifiée par empreinte |
+| Collaboration | Propriétaire, contributeur, lecteur ; audit ; un éditeur coordinateur par projet |
+| Livraison | Validation, aperçu puis approbation, kit d'installation, suivi par cible avec états partiels, reprise, révocation effective |
+| Sortie | Archive du code et export du modèle ; déploiements autonomes si IFS est indisponible |
+
+**Séquence de démonstration**, mesurée à chaque étape (temps actif, interventions de l'équipe plateforme,
+retouches manuelles) : créer le service → livrer une première image → changer un paramètre → ajouter un
+accès → retirer cet accès et constater sa révocation → faire échouer une étape d'écriture de plan de
+données → relancer la release → relivrer une image précédente.
+
+**Condition de sortie** : les preuves P1 à P4 (section 7) sont obtenues, et les mesures du pilote
+justifient l'élargissement. Si les pilotes exigent le réseau privé, des modules internes ou l'import, le
+segment visé change avant d'élargir.
 
 ### 2.1 Jalon 1 — Tranche verticale
 
@@ -62,10 +92,10 @@ Objectif : le projet de référence ([90](90-projet-de-reference.md)) déployé 
 
 | Contenu | Document |
 |---|---|
-| Les 7 autres types du lot 1 : PostgreSQL, Web App, Function App, plan App Service, stockage, Static Web App, Azure Managed Redis | [15](15-catalogue.md) |
+| Les 6 autres types du lot 1 : PostgreSQL, Web App, Function App, plan App Service, stockage, Azure Managed Redis | [15](15-catalogue.md) |
 | Authentification locale déconseillée et mots de passe générés | [DEC-51](03-decisions.md), [17 § 7](17-parametres-applicatifs-et-secrets.md) |
 | Équipes, portée des rôles par composant, abonnement par composant et environnement | [10](10-organisations-et-acces.md), [12](12-composants-et-groupes-de-ressources.md) |
-| Versions étiquetées, consultation à une version, comparaison, annulation, restauration | [31](31-historique-et-versions.md) |
+| Versions étiquetées, consultation à une version, comparaison, annulation, restauration, **brouillons** ([DEC-93](03-decisions.md)) | [31](31-historique-et-versions.md) |
 | Import de paramètres depuis un fichier, comparaison de révisions | [17](17-parametres-applicatifs-et-secrets.md), [21](21-generation-et-revisions.md) |
 | Comptes Microsoft personnels | [DEC-59](03-decisions.md) |
 
@@ -88,11 +118,11 @@ Le lot 2 est livré en vagues, dans cet ordre.
 |---|---|---|
 | **A — Réseau privé** | VNet, subnets, appairages hub and spoke, NSG, tables de routage, passerelle NAT, zones DNS privées et publiques, points de terminaison privés, intégration sortante, exécuteurs privés (Managed DevOps Pools, runners GitHub en réseau privé), domaines personnalisés | [18](18-reseau-et-exposition.md) |
 | **B — IA** | Microsoft Foundry (compte, projets, déploiements de modèles, connexions, agents en configuration standard), AI Search, Cosmos DB | [32](32-ia-et-foundry.md) |
-| **C — Livraison** | Stratégies de déploiement (slot et bascule, bleu/vert, progressive, mise à jour progressive Flex), catalogue d'étapes (.NET, Node/Angular, Python, Java), détection depuis le dépôt, fenêtres de déploiement | [19](19-applications-build-et-deploiement.md) |
+| **C — Livraison** | Stratégies de déploiement (slot et bascule, bleu/vert, progressive, mise à jour progressive Flex), catalogue d'étapes (.NET, Node/Angular, Python, Java), détection depuis le dépôt, fenêtres de déploiement, Static Web App et son parcours applicatif | [19](19-applications-build-et-deploiement.md) |
 | **D — GitHub** | Émetteur GitHub Actions, partie GitHub du kit, suivi des déploiements GitHub, configuration des environnements GitHub par l'application | [22](22-pipelines.md), [23](23-kit-installation.md) |
 | **E — Gouvernance et exploitation** | Politiques d'organisation, estimation des coûts, budgets, supervision (alertes recommandées), contrôle de dérive, plan Entreprise (rôles personnalisés, équipes synchronisées avec Entra, publication à deux personnes, politique de liaisons entrantes) | [33](33-gouvernance-couts-et-supervision.md), [10](10-organisations-et-acces.md) |
 | **F — Exposition et intégration** | Front Door et WAF, Application Gateway et WAF, API Management, Event Grid, Event Hubs, Container Apps Jobs ; portées RBAC sur les enfants | [15](15-catalogue.md), [16](16-liaisons-identites-et-acces.md) |
-| **G — Collaboration et confort** | Brouillons, commentaires et mentions, modèles de projet et de composant, sources de modules (AVM embarqués, modules IFS), renouvellement des mots de passe, connexion Azure en lecture (disponibilité des noms, sélection des ressources existantes, quotas de modèles), vue graphe éditable, webhooks et notifications Teams/Slack, suivi de l'état des pull requests | [31](31-historique-et-versions.md), [11](11-projets-et-environnements.md), [21](21-generation-et-revisions.md) |
+| **G — Collaboration et confort** | Commentaires et mentions, modèles de projet et de composant, sources de modules (AVM embarqués, modules IFS), renouvellement des mots de passe, connexion Azure en lecture (disponibilité des noms, sélection des ressources existantes, quotas de modèles), vue graphe éditable, webhooks et notifications Teams/Slack | [31](31-historique-et-versions.md), [11](11-projets-et-environnements.md), [21](21-generation-et-revisions.md) |
 
 ## 4. Lot 3 — Ouverture
 
@@ -130,7 +160,9 @@ Le lot 2 est livré en vagues, dans cet ordre.
   de Static Web Apps sont proposées) : le coût et la durée de création d'une infrastructure complète par
   pull request ne sont pas raisonnables pour la cible du produit.
 
-## 7. Anciens points ouverts : tous tranchés
+## 7. Décisions prises et preuves à obtenir
+
+### 7.1 Anciens points ouverts : tous tranchés
 
 | Point | Décision |
 |---|---|
@@ -145,6 +177,24 @@ Le lot 2 est livré en vagues, dans cet ordre.
 | PO-09 Langages Pulumi | [DEC-63](03-decisions.md) |
 | PO-10 Télémétrie produit | [DEC-83](03-decisions.md) |
 
-Il ne reste **aucun point ouvert**. Les valeurs du catalogue (SKU, versions, longueurs de noms, codes de
-région, rôles) restent revérifiées contre la documentation Microsoft au moment d'implémenter chaque type
-([40 § 3](40-exploitation-ifs.md)) : c'est une tâche de réalisation, pas une décision.
+Il ne reste **aucune question sans réponse** dans la spec. Mais une décision documentée clôt un débat,
+elle ne prouve pas que le comportement est réalisable ([DEC-97](03-decisions.md)). Les garanties critiques
+portent donc un statut : **décidée**, **spécifiée**, **prototypée**, **vérifiée**.
+
+### 7.2 Registre des preuves
+
+Prototypes à réussir avant de développer le pilote, sur les outils retenus (Bicep, Azure DevOps, Azure
+Repos), depuis des abonnements de test vides :
+
+| Preuve | Ce qui doit être démontré | Statut |
+|---|---|---|
+| **P1 — Création depuis zéro** | Kit, puis releases de chaque composant dans l'ordre : succès en une seule exécution par composant, y compris coffre, droits, secret de pipeline, application et accès aux données ([DEC-86](03-decisions.md), [DEC-90](03-decisions.md)) | Spécifiée |
+| **P2 — Révocation en production** | Retrait d'une liaison d'accès en cible protégée : l'attribution est supprimée, l'application perd l'accès après propagation, la ressource et ses données restent ([DEC-85](03-decisions.md)) | Spécifiée |
+| **P3 — Aperçu puis approbation** | L'approbateur lit l'aperçu avant le stage protégé ; une modification concurrente entre aperçu et déploiement arrête la release sans rien modifier ([DEC-87](03-decisions.md)) | Spécifiée |
+| **P4 — Cible en retard** | Une cible qui saute une révision retire bien la ressource retirée entre-temps, et l'inventaire le reflète ([DEC-91](03-decisions.md)) | Spécifiée |
+| P5 — Échec partiel et reprise | Une étape d'écriture de plan de données échoue : l'état « partiellement appliquée » s'affiche, la relance termine sans doublon | Spécifiée |
+| P6 — Neutralité du plan | Les prototypes Terraform et GitHub Actions traduisent le sous-ensemble représentatif (section 1) | Spécifiée |
+
+Les valeurs du catalogue (SKU, versions, longueurs de noms, codes de région, rôles) restent revérifiées
+contre la documentation Microsoft au moment d'implémenter chaque type ([40 § 3](40-exploitation-ifs.md)) :
+c'est une tâche de réalisation, pas une décision.

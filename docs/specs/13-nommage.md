@@ -120,9 +120,12 @@ déjà utilisé dans Azure :
 ## 7. Changements
 
 **RG-NOM-10 — Impact.** Toute modification qui change au moins un nom Azure déjà publié (gabarit,
-abréviation, code de projet, de composant ou d'environnement, nom logique, nom forcé) affiche la liste
-des noms avant et après, et l'avertissement « Azure créera de nouvelles ressources ; les anciennes
-seront détachées ». La modification exige une confirmation explicite.
+abréviation, nom logique, nom forcé) affiche la liste des noms avant et après, et l'avertissement
+« Azure créera de nouvelles ressources », complété **par cible** selon le traitement effectif des
+anciennes : détachées (cible protégée ou composant en « détacher »), supprimées (composant en
+« supprimer », cible non protégée) ; leurs accès sont révoqués dans tous les cas ([DEC-85](03-decisions.md)).
+La modification exige une confirmation explicite. Les codes de projet, de composant et d'environnement
+sont verrouillés après publication ([RG-PRJ-01](11-projets-et-environnements.md)).
 
 **RG-NOM-11 — Aperçu.** L'écran de nommage affiche en direct le résultat des gabarits sur toutes les
 ressources du projet ou du composant, avec les constats de longueur et de collision.

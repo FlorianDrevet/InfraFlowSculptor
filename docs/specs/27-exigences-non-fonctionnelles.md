@@ -3,7 +3,7 @@
 ## Sécurité et isolation
 
 **EXG-01 — Isolation des organisations.** Toute donnée appartient à une organisation. Chaque requête,
-lecture comprise, filtre par organisation et vérifie le rôle sur le projet ([RG-ORG-11](10-organisations-et-acces.md)).
+lecture comprise, filtre par organisation et vérifie le rôle sur le projet ([RG-ORG-14](10-organisations-et-acces.md)).
 Une suite de tests automatisés vérifie, pour **chaque** route de l'API et chaque outil MCP, qu'un
 utilisateur d'une autre organisation ou d'un autre projet obtient « introuvable ». Une route sans ce
 test ne peut pas être livrée.
@@ -25,9 +25,20 @@ sont des versions épinglées ([DEC-45](03-decisions.md)).
 ## Données et conformité
 
 **EXG-06 — Hébergement et RGPD.** Données hébergées dans l'Union européenne. Données personnelles
-limitées au profil (nom, e-mail, identifiants Entra) et au journal d'audit. Export et effacement des
-données d'un utilisateur sur demande, sauf le journal d'audit, conservé pour sa durée légale avec
-pseudonymisation de l'auteur après départ.
+limitées au profil (nom, e-mail, identifiants Entra), au journal d'audit et aux contenus libres
+(commentaires, messages). Export et effacement des données d'un utilisateur sur demande, sauf le journal
+d'audit, conservé pour sa durée de conservation avec pseudonymisation de l'auteur après départ.
+
+| Catégorie | Finalité | Durée | Justification |
+|---|---|---|---|
+| Journal d'audit | Preuve et investigation de sécurité | 13 mois | Durée fixée par le produit, dans la fourchette recommandée par la CNIL pour les journaux |
+| Journal interne de l'équipe IFS | Contrôle des accès internes | 2 ans | Durée fixée par le produit pour contrôler les accès internes ([RG-EXP-01](40-exploitation-ifs.md)) |
+| Historique du modèle | Comprendre et restaurer le modèle | Vie du projet | Service rendu ; expurgation possible ([RG-HIS-12](31-historique-et-versions.md)) |
+| Télémétrie produit | Amélioration du produit | 13 mois | [DEC-83](03-decisions.md) |
+| Sauvegardes | Reprise | 35 jours | Les effacements s'y propagent à l'expiration |
+
+La liste des sous-traitants et des flux externes (fournisseurs git, Azure DevOps, e-mail) est publiée et
+tenue à jour.
 
 ## Performance
 
@@ -65,6 +76,12 @@ déclenche une alerte à l'équipe IFS.
 **EXG-21 — Limites de l'API.** Par jeton ou utilisateur : 600 lectures et 120 écritures par minute,
 10 générations et 5 publications par minute, en plus des limites du plan. Réponse « trop de requêtes » avec
 le délai d'attente.
+
+**EXG-23 — Équité entre organisations.** Les générations, publications et lectures des plateformes CI
+passent par des files par organisation, servies équitablement. Chaque plan fixe un budget par
+organisation (générations par heure, exécutions suivies, volume d'historique) ; un dépassement ralentit
+l'organisation concernée, la prévient, et ne dégrade jamais les autres. La file et sa position sont
+visibles dans l'écran.
 
 **EXG-22 — Historique.** Consulter le modèle à une version passée, ou comparer deux versions d'un projet de
 300 ressources, répond en moins de 3 secondes (p95), quel que soit le nombre de jeux de modifications.

@@ -17,7 +17,7 @@ nécessaires ([DEC-17](03-decisions.md)). Les accès se font par identité manag
 | Origine | `Explicite` (créée par l'utilisateur) ou `Implicite` (déduite d'un paramètre applicatif, d'une autre liaison ou d'un réglage de composant). |
 
 **RG-LIA-01 — Même projet.** Source et cible appartiennent au même projet. Une cible d'un autre projet
-est refusée comme introuvable ([RG-ORG-11](10-organisations-et-acces.md)).
+est refusée comme introuvable ([RG-ORG-13](10-organisations-et-acces.md)).
 
 **RG-LIA-02 — Pas sur soi-même.** Une ressource ne peut pas être sa propre cible.
 
@@ -25,6 +25,13 @@ est refusée comme introuvable ([RG-ORG-11](10-organisations-et-acces.md)).
 génération déclare la cible comme référence externe à partir de son nom calculé ([RG-GEN-11](21-generation-et-revisions.md)). Elle suit
 [RG-CMP-01](12-composants-et-groupes-de-ressources.md) (sens `PerEnvironment` → `Single`) et
 [RG-CMP-08](12-composants-et-groupes-de-ressources.md) (environnements cohérents).
+
+**RG-LIA-24 — Accès vers un autre composant.** Une liaison qui produit un accès (accès, accès aux données,
+lecture de secret, lecture de configuration, tirage d'image, stockage hôte, usage d'IA) vers une
+ressource d'un autre composant exige `modele.modifier` sur le composant cible. Sans cette permission, elle
+devient une **demande d'accès** : une proposition de modification relue par une personne qui l'a
+([DEC-89](03-decisions.md)). Les éléments implicites qui produiraient un tel accès suivent la même règle.
+*(Lot 2 : un composant peut ouvrir ses liaisons entrantes sans demande, à tous ou à une liste.)*
 
 **RG-LIA-04 — Cardinalité et obligation.** Le descripteur fixe, par type de liaison, le nombre de
 liaisons permises (0..1, 1, 0..n) et si elle est obligatoire. Une liaison obligatoire absente est une
@@ -48,9 +55,9 @@ origine. Il ne se modifie ni ne se supprime directement : il disparaît quand so
 | **Tirage d'image** | WebApp, FunctionApp (mode Container), ContainerApp → ContainerRegistry | 1 en mode Container | Identité affectée (obligatoire) | Rôle `AcrPull` pour cette identité sur le registre (Container Registry Repository Reader limité au dépôt d'image si le registre est en mode de permissions par dépôt) ; configuration du tirage par cette identité. |
 | **Stockage hôte** | FunctionApp → StorageAccount | 1, obligatoire | Identité | Rôles fixés par le descripteur (Storage Blob Data Owner, Queue Data Contributor, Table Data Contributor) ; paramètres implicites `AzureWebJobsStorage__*` par identité ; conteneur de déploiement implicite pour `FC1`. |
 | **Lecture de configuration** | WebApp, FunctionApp, ContainerApp → AppConfiguration | 0..n | Identité ; nom de la variable d'adresse (défaut `AZURE_APPCONFIG_ENDPOINT`) | Rôle App Configuration Data Reader ; paramètre implicite portant l'adresse ; rôle Key Vault Secrets User sur chaque Key Vault référencé par des clés de ce magasin. |
-| **Accès** | Ressource dotée d'une identité, ou UserAssignedIdentity → toute ressource non enfant | 0..n | Rôles (≥ 1), portée, identité utilisée | Attributions de rôles (section 5). |
+| **Accès** | Ressource dotée d'une identité, ou UserAssignedIdentity → toute ressource non enfant | 0..n | Rôles (≥ 1), portée, identité utilisée | Attributions de rôles (section 5). Vers Azure Managed Redis : attribution d'une politique d'accès Redis à la base, pour l'identité, au lieu d'un rôle Azure. |
 | **Accès aux données** | Ressource dotée d'une identité, ou UserAssignedIdentity → SqlDatabase, base enfant d'un PostgreSQL | 0..n | Niveau : `Lecture`, `LectureÉcriture`, `Schéma` ; identité utilisée | Script post-déploiement (section 6). |
-| **Dépendance de valeur** | Destinataire d'un paramètre applicatif → ressource dont il lit une sortie | implicite | — | Ordre de déploiement ; référence externe si autre composant. |
+| **Dépendance de valeur** | Destinataire d'un paramètre applicatif → ressource dont il lit une sortie | implicite | — | Ordre de déploiement, sauf si la sortie est calculable depuis le nom ([DEC-98](03-decisions.md)) ; référence externe si autre composant. |
 | **Lecture de secret** | Destinataire d'un paramètre applicatif → KeyVault | implicite | Identité | Rôle Key Vault Secrets User ([17](17-parametres-applicatifs-et-secrets.md)). |
 | **Point de terminaison privé** *(lot 2)* | Ressource exposée en privé → subnet | 1 par `groupId` | `groupId` | Point de terminaison privé, enregistrements DNS ([18](18-reseau-et-exposition.md)). |
 | **Intégration sortante** *(lot 2)* | WebApp, FunctionApp, ContainerAppsEnvironment → subnet délégué | 0..1 | — | Intégration réseau, routage de tout le trafic sortant. |
@@ -79,8 +86,10 @@ pour s'authentifier.
 **RG-LIA-11 — Détacher une identité.** Retirer une identité affectée d'une ressource, ou désactiver son
 identité système, est refusé tant qu'une liaison l'utilise. IFS liste ces liaisons.
 
-**RG-LIA-12 — Identité partagée.** Une UserAssignedIdentity peut servir à plusieurs ressources, y
-compris d'autres composants. L'écran de l'identité liste ses utilisateurs et ses rôles.
+**RG-LIA-12 — Identité partagée.** Une UserAssignedIdentity peut servir à plusieurs ressources **de son
+composant**. L'utiliser depuis un autre composant est une erreur `VAL-LIA-IDENTITE-PARTAGEE` : deux unités
+de déploiement géreraient alors les mêmes attributions ([DEC-98](03-decisions.md)). L'écran de l'identité
+liste ses utilisateurs et ses rôles.
 
 ## 5. Attributions de rôles
 
@@ -96,7 +105,8 @@ Access Administrator et Role Based Access Control Administrator ne le sont jamai
 
 **RG-LIA-14 — Déduplication.** Une attribution (principal, rôle, portée) n'est générée qu'une fois,
 même si plusieurs origines l'impliquent. Elle liste toutes ses origines et ne disparaît qu'avec la
-dernière.
+dernière. Elle est déployée par un seul composant : celui du principal ([DEC-98](03-decisions.md)) ;
+pour les identités de déploiement et de livraison, celui de la ressource visée.
 
 **RG-LIA-15 — Équivalences.** Un besoin implicite est satisfait par tout rôle du même groupe
 d'équivalence déjà attribué explicitement (exemple : « lecture de secrets » satisfaite par Secrets
@@ -114,8 +124,12 @@ un autre abonnement). Le kit d'installation en déduit les droits nécessaires �
 déploiement ([23](23-kit-installation.md)).
 
 **RG-LIA-18 — Droits de l'identité de déploiement.** IFS calcule, par cible de déploiement, la liste des
-rôles que la release doit attribuer. Le kit d'installation donne à l'identité de déploiement le rôle
-Role Based Access Control Administrator, **limité par condition** à ces rôles.
+rôles que la release doit attribuer ou retirer. Le kit d'installation donne à l'identité de déploiement le
+rôle Role Based Access Control Administrator, **limité par condition** à ces rôles, en écriture et en
+suppression. La liste comprend les droits de plan de données de l'identité de déploiement elle-même
+(Key Vault Secrets Officer sur les coffres qu'elle alimente, App Configuration Data Owner sur les magasins
+dont elle synchronise les clés) et ceux de l'identité applicative ([DEC-88](03-decisions.md)) : ils sont
+attribués par le déploiement, à la portée de la ressource, au moment où celle-ci existe.
 
 ### 5.2 Groupes Entra
 
@@ -144,30 +158,38 @@ une commande exécutée dans la base. IFS les génère pour qu'aucun accès ne s
 | `Schéma` | `db_datareader`, `db_datawriter`, `db_ddladmin` | Propriétaire du schéma `public` |
 
 **RG-LIA-21 — Exécution.** Après le déploiement de chaque cible, la release exécute un script
-idempotent :
-- il crée l'utilisateur Entra de chaque identité (`CREATE USER … FROM EXTERNAL PROVIDER` en SQL,
-  `pgaadauth_create_principal` en PostgreSQL) s'il n'existe pas ;
-- il ajuste ses droits au niveau voulu.
+idempotent ([DEC-90](03-decisions.md)) :
+- il crée l'utilisateur Entra de chaque identité s'il n'existe pas, **sans consulter l'annuaire** :
+  `CREATE USER [<nom>] WITH SID = <identifiant client>, TYPE = E` en Azure SQL,
+  `pgaadauth_create_principal_with_oid` avec l'identifiant d'objet en PostgreSQL ; les identifiants sont
+  des sorties du déploiement ;
+- il ajuste ses droits au niveau voulu ;
+- il marque les utilisateurs qu'il crée, pour ne jamais toucher un utilisateur créé par quelqu'un
+  d'autre.
 
 Le script s'exécute avec l'identité de déploiement, qui doit être membre du groupe administrateur Entra
-du serveur.
+du serveur. Aucune permission d'annuaire n'est demandée à l'identité du serveur.
 
 **RG-LIA-22 — Joignabilité.**
 - Exposition publique : la règle « services Azure » permet aux agents hébergés de joindre le serveur.
 - Exposition restreinte : la release ajoute une règle temporaire pour l'adresse de l'agent et la retire
-  à la fin, même en cas d'échec.
+  à la fin, même en cas d'échec. La règle porte un nom `ifs-temp-<identifiant du run>` ; chaque release
+  commence par supprimer les règles `ifs-temp-*` de plus de 2 heures, laissées par un exécuteur
+  interrompu ([RG-NET-03](18-reseau-et-exposition.md)).
 - Exposition privée *(lot 2)* : l'environnement doit utiliser des exécuteurs qui atteignent le réseau
   privé, sinon erreur `VAL-NET-AGENT`.
 
-**RG-LIA-23 — Retrait.** Retirer un accès aux données ne supprime pas l'utilisateur de la base : le
-script lui retire ses rôles. La suppression éventuelle reste une décision du client, rappelée dans la
-liste de contrôle.
+**RG-LIA-23 — Retrait.** Retirer un accès aux données retire ses rôles **et** supprime l'utilisateur créé
+par IFS ([DEC-85](03-decisions.md), [DEC-90](03-decisions.md)). Les objets que cet utilisateur possède
+(schéma, tables) bloquent la suppression : la release échoue alors en le disant, sans rien forcer, et la
+liste de contrôle donne la commande pour transférer la propriété.
 
 ## 7. Analyse d'impact
 
 **UC-LIA-02 — Voir l'impact d'un retrait.** Avant de retirer une liaison, un rôle, une identité ou une
 ressource, IFS liste depuis le graphe ce qui disparaît ou casse :
-- rôles et paramètres implicites retirés ;
+- rôles et paramètres implicites retirés, avec la mention « accès révoqué dans Azure au prochain
+  déploiement, y compris en production » ;
 - applications qui perdent l'accès à une ressource utilisée par leurs paramètres ;
 - liaisons obligatoires rompues (bloquant).
 

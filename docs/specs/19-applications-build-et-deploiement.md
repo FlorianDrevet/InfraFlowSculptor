@@ -2,7 +2,7 @@
 
 ## 1. Objectif
 
-Pour chaque **application** (WebApp, FunctionApp, ContainerApp non existante), produire les pipelines
+Pour chaque **application** (WebApp, FunctionApp, ContainerApp, et StaticWebApp au lot 2, non existante), produire les pipelines
 qui construisent le code une fois, le vérifient, puis déploient ce même artefact environnement par
 environnement, en respectant la chaîne de promotion et ses approbations.
 
@@ -28,8 +28,10 @@ Une application est touchée par deux pipelines. Pour qu'ils ne s'écrasent jama
 **RG-APP-01 — Le pipeline applicatif ne touche pas à la configuration.** Il change uniquement le code ou
 l'image.
 
-**RG-APP-02 — L'infrastructure ne régresse pas la livraison.** Le déploiement d'infrastructure lit et
-reconduit ce qui appartient au pipeline applicatif :
+**RG-APP-02 — L'infrastructure ne régresse pas la livraison.** Le déploiement d'infrastructure lit
+(stage Aperçu) et reconduit ce qui appartient au pipeline applicatif. Le verrou séquentiel de la cible
+([RG-PIP-05](22-pipelines.md)) empêche une livraison de s'intercaler entre cette lecture et le
+déploiement :
 - l'image en service (mode Container) ;
 - la répartition du trafic et les étiquettes des révisions (Container Apps) ;
 - la règle de routage vers un slot.
@@ -37,8 +39,11 @@ reconduit ce qui appartient au pipeline applicatif :
 Au tout premier déploiement, il utilise une image publique de démarrage fixée par le descripteur.
 
 **RG-APP-03 — Ordre quand le code attend un nouveau paramètre.** Le résumé d'une révision signale les
-paramètres ajoutés à une application : « à déployer avant la prochaine livraison de `<application>` ».
-Un paramètre ajouté est sans effet sur l'ancien code ; le déployer d'abord est toujours sûr.
+paramètres ajoutés, modifiés ou retirés d'une application : « à déployer avant la prochaine livraison de
+`<application>` ». Déployer d'abord un paramètre **ajouté** est sûr si le code en service ignore les
+paramètres qu'il ne connaît pas, ce qu'IFS ne peut pas vérifier. Pour un paramètre modifié ou retiré,
+l'écran recommande une évolution en deux temps : ajouter le nouveau paramètre, livrer le code qui
+l'utilise, puis retirer l'ancien.
 
 **RG-APP-04 — Modification manuelle.** Un paramètre modifié à la main dans le portail Azure est remplacé
 au déploiement d'infrastructure suivant. L'aperçu de la release (what-if, plan) le montre avant
@@ -48,6 +53,7 @@ l'approbation. L'écran des paramètres de l'application le rappelle.
 
 | Champ | Applicable | Règles | Défaut |
 |---|---|---|---|
+| Livraison | Tous | `Pipelines IFS` : IFS génère les pipelines applicatifs décrits ici. `Pipelines du client` : IFS n'en génère aucun (RG-APP-22). | `Pipelines IFS` |
 | Nom d'application | Tous | `^[a-z][a-z0-9-]{1,39}$`, unique dans le composant. Dossier et noms des pipelines applicatifs. | Nom logique de la ressource |
 | Code source | Tous | Chemin relatif dans le dépôt de code du composant ([24](24-depots-et-publication.md)). Déclencheur de la CI. | `src/<nom d'application>` |
 | Mode | WebApp, FunctionApp | `Code` ou `Container` (propriété de la ressource). ContainerApp : `Container`. | — |
@@ -62,6 +68,14 @@ l'approbation. L'écran des paramètres de l'application le rappelle.
 | Étapes | Tous | Étapes du catalogue activées et leurs paramètres (section 6). | Selon le profil |
 | Étapes du client | Tous | Points d'extension (section 7). | Aucune |
 | Contrôle de santé | Tous | Chemin HTTP appelé après déploiement ; succès = réponse 2xx sous 5 minutes. | Chemin de contrôle de santé de la ressource, s'il existe |
+
+**RG-APP-22 — Pipelines du client.** Une équipe qui a déjà sa chaîne de build et de livraison garde ses
+pipelines. IFS génère alors seulement l'infrastructure, les paramètres et l'identité applicative de chaque
+cible, et publie le **contrat de livraison** de l'application dans `README.ifs.md` : identifiant client de
+l'identité applicative et service connection à utiliser, registre et dépôt d'image, nom Azure de
+l'application par environnement, chemin de santé, stratégie conseillée. Les règles de propriété de la
+section 2 restent valables : la chaîne du client ne modifie que le code ou l'image. Le suivi des
+déploiements de cette application ([28 § 3.2](28-suivi-des-deploiements.md)) n'est alors pas disponible.
 
 ## 4. Build en mode Code
 
@@ -92,9 +106,11 @@ d'image activées (scan, SBOM) et la pousse dans le **registre de build** avec u
 | Un registre par environnement | Registre du **premier environnement de la chaîne**, affiché et modifiable | À chaque stage, import du tag dans le registre de l'environnement. |
 | Registre existant | Le registre existant de l'environnement choisi comme build | Comme ci-dessus. |
 
-**RG-APP-08 — Droits de la CI.** L'identité de la cible du registre de build reçoit le droit de pousser
-sur ce registre : `AcrPush`, ou Container Registry Repository Writer limité au dépôt d'image si le
-registre est en mode de permissions par dépôt ([15 § 3.9](15-catalogue.md)).
+**RG-APP-08 — Droits de la CI.** L'identité **applicative** de la cible du registre de build
+([DEC-88](03-decisions.md)) reçoit le droit de pousser sur ce registre : `AcrPush`, ou Container Registry
+Repository Writer limité au dépôt d'image si le registre est en mode de permissions par dépôt
+([15 § 3.9](15-catalogue.md)). L'identité d'infrastructure n'est jamais utilisée par un pipeline
+applicatif, et un pipeline de pull request n'a aucune connexion Azure.
 
 ## 6. Catalogue d'étapes ([DEC-50](03-decisions.md))
 
@@ -171,8 +187,10 @@ documentés, identiques sur toutes les plateformes : chemin du code source, conf
 sortie, environnement (après déploiement).
 
 **RG-APP-14 — Présence vérifiée.** À la publication, IFS vérifie que les étapes référencées existent dans
-la branche cible du dépôt de code. S'ils manquent : avertissement `VAL-APP-EXTENSION`, avec un modèle vide
-proposé en téléchargement.
+la branche cible du dépôt de code. Si elles manquent, la publication de cette destination est refusée
+(`VAL-APP-EXTENSION`, erreur à la publication), avec un modèle vide proposé en téléchargement : une
+publication n'annonce jamais un pipeline qui échouera. La génération, elle, n'est pas bloquée
+([RG-GEN-04](21-generation-et-revisions.md)).
 
 ## 8. Déploiement
 
@@ -190,6 +208,7 @@ l'environnement. Sinon il échoue avec « déployez d'abord l'infrastructure du 
 | WebApp | Déploiement du paquet (zip) | Mise à jour de l'image |
 | FunctionApp | Déploiement du paquet (zip, ou paquet Flex sur `FC1`) | Mise à jour de l'image |
 | ContainerApp | — | Nouvelle révision avec la nouvelle image |
+| StaticWebApp *(lot 2)* | Déploiement du contenu construit avec le jeton de déploiement, lu dans Azure par l'identité applicative au moment du stage | — |
 
 **RG-APP-18 — Contrôle de santé et tests post-déploiement.** Si un chemin de santé est défini, le stage
 appelle l'application et échoue sans réponse 2xx en 5 minutes. Les tests post-déploiement activés
@@ -202,7 +221,7 @@ environnement (exemple : directe en dev, bleu/vert en prod).
 
 | Stratégie | Types | Déroulé d'un stage | Retour arrière |
 |---|---|---|---|
-| **Directe** (défaut, lot 1) | Tous | Déploiement, contrôle de santé. Container Apps en mode de révision unique : la nouvelle révision ne reçoit le trafic qu'une fois ses sondes de disponibilité au vert, donc sans coupure si les sondes sont définies. | Relancer la release du build précédent. |
+| **Directe** (défaut, lot 1) | Tous ; la seule pour Static Web App, avec ses environnements de préversion | Déploiement, contrôle de santé. Container Apps en mode de révision unique : la nouvelle révision ne reçoit le trafic qu'une fois ses sondes de disponibilité au vert, donc sans coupure si les sondes sont définies. | Relancer la release du build précédent. |
 | **Mise à jour progressive des instances** | Function App sur `FC1` | Propriété d'infrastructure « stratégie de mise à jour » = `RollingUpdate` : les instances sont vidées et remplacées par lots, sans interrompre les exécutions en cours. | Relancer la release du build précédent. |
 | **Slot et bascule** | Web App, Function App sur un plan qui a des slots (Standard, Premium, Premium élastique) | 1. Déploiement dans le slot `staging` (créé par l'infrastructure, avec ses paramètres propres au slot). 2. Préchauffage et contrôle de santé sur l'adresse du slot. 3. Tests post-déploiement sur le slot. 4. Approbation de bascule si demandée. 5. Échange `staging` ↔ production. | Nouvel échange : l'ancienne version est restée dans le slot `staging`. |
 | **Bleu/vert** | Container App | 1. Nouvelle révision au suffixe déterministe (numéro de build), étiquette `green`, 0 % du trafic. 2. Contrôle de santé et tests sur l'adresse d'étiquette. 3. Approbation de bascule si demandée. 4. Trafic 100 % vers `green` ; l'ancienne révision devient `blue`. 5. Après le délai de conservation, les anciennes révisions sont désactivées. | Remettre 100 % du trafic sur `blue`. |

@@ -96,6 +96,11 @@ erreur bloquante de l'import, car le premier déploiement recréerait la ressour
 La liste de contrôle demande de vérifier l'aperçu (what-if, plan) avant la première approbation : il ne
 doit montrer que des mises à jour, aucune création ni suppression de ressource importée.
 
+**RG-IMP-10 — Une seule chaîne de gestion.** Le contrôle des noms ne suffit pas à garantir l'absence de
+perte. Avant la première release, la proposition d'import liste les propriétés non reprises, que le
+premier déploiement remettrait à la valeur du descripteur, et exige que l'ancienne chaîne de gestion
+(pile, état, pipeline existant) soit désactivée : deux chaînes ne gèrent jamais les mêmes ressources.
+
 ## 7. Cas d'utilisation
 
 - **UC-IMP-01** — Importer depuis une source (`composants.gerer` sur le projet cible, ou droit de créer

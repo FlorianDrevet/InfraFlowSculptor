@@ -22,13 +22,13 @@ couple environnement × abonnement surchargé par un composant, [DEC-69](03-deci
 | Étape | Effet | Langage / plateforme |
 |---|---|---|
 | 1. Groupe de ressources technique | `rg-ifs-<projet>-<cible>`. | Tous |
-| 2. Identité de déploiement | Identité managée `id-ifs-deploy-<projet>-<cible>`. | Tous |
-| 3. Identifiants fédérés | Un par sujet autorisé à déployer dans la cible : service connection (Azure DevOps) ; `repo:<propriétaire>/<dépôt>:environment:<projet>-<cible>` pour chaque dépôt qui déploie dans la cible (GitHub) ; sujet du jeton GitLab *(lot 3)*. | Selon plateforme |
-| 4. Droits | `Contributor` sur l'abonnement ; `Role Based Access Control Administrator` **limité par condition** aux rôles attribués par la release ([RG-LIA-18](16-liaisons-identites-et-acces.md)) ; App Configuration Data Owner si des clés sont déployées ; Key Vault Secrets Officer sur les Key Vaults qui reçoivent des secrets de pipeline ou des mots de passe d'administration ; droits sur les portées externes (zones DNS, ressources existantes, registre d'un autre abonnement). | Tous |
+| 2. Identités | Identité d'infrastructure `id-ifs-deploy-<projet>-<cible>` et identité applicative `id-ifs-app-<projet>-<cible>` ([DEC-88](03-decisions.md)). Vérification que l'abonnement appartient au tenant du projet. | Tous |
+| 3. Identifiants fédérés | Un par sujet autorisé, pour chaque identité : service connection d'infrastructure et service connection applicative (Azure DevOps) ; `repo:<propriétaire>/<dépôt>:environment:<projet>-<cible>` pour chaque dépôt qui déploie dans la cible (GitHub) ; sujet du jeton GitLab *(lot 3)*. Un identifiant qui ne correspond plus à aucun sujet attendu est **supprimé** (RG-INS-05). | Selon plateforme |
+| 4. Droits | Identité d'infrastructure : `Contributor` sur l'abonnement ; `Role Based Access Control Administrator` **limité par condition**, en écriture et en suppression, aux rôles attribués ou retirés par la release ([RG-LIA-18](16-liaisons-identites-et-acces.md)) ; droits sur les portées externes (zones DNS, ressources existantes, registre d'un autre abonnement). Les droits de plan de données sur les ressources du projet (Key Vault Secrets Officer, App Configuration Data Owner) ne sont **pas** donnés par le kit : les ressources n'existent pas encore ; le déploiement les attribue ([DEC-86](03-decisions.md)). Identité applicative : aucun droit à l'abonnement ; ses droits sont attribués par le déploiement ([RG-APP-08](19-applications-build-et-deploiement.md)). | Tous |
 | 5. Groupes administrateurs SQL et PostgreSQL | Ajout de l'identité au groupe Entra administrateur de chaque serveur. Si l'opérateur n'en a pas le droit : étape « à faire » dans la liste de contrôle, avec la commande exacte. | Tous |
 | 6. Stockage d'état | Compte de stockage `stifs<projet><cible>` dans le groupe technique : authentification par clé partagée désactivée, accès public anonyme désactivé, versioning et suppression réversible des blobs activés, conteneur `tfstate` ou `pulumi`. L'identité de déploiement reçoit Storage Blob Data Contributor sur le conteneur. | Terraform, Pulumi (backend Azure) |
 | 7. Clé de chiffrement des secrets d'état | Key Vault technique `kv-ifs-<projet>-<cible>` et clé RSA ; l'identité reçoit Key Vault Crypto User. | Pulumi |
-| 8. Service connection | Service connection Azure Resource Manager `ifs-<projet>-<cible>`, fédérée avec l'identité. | Azure DevOps |
+| 8. Service connections | `ifs-<projet>-<cible>` (infrastructure) et `ifs-<projet>-<cible>-app` (applications), fédérées chacune avec son identité. | Azure DevOps |
 | 9. Portées réseau externes *(lot 2)* | Droits sur le VNet du hub existant (appairage distant) et sur les zones DNS privées existantes ; si l'opérateur n'a pas ces droits, étape « à faire » destinée à l'équipe du hub, avec les commandes exactes. | Tous |
 | 10. Pools d'exécuteurs privés *(lot 2)* | Inscription du fournisseur `Microsoft.DevOpsInfrastructure` ; Reader et Network Contributor sur le VNet du pool pour le principal de service du fournisseur, résolu dans le tenant. | Azure DevOps |
 
@@ -59,7 +59,8 @@ permissions à donner une fois au compte de service de build du projet.
 | 3. Approbations | Contrôle d'approbation de chaque cible protégée avec ses approbateurs (adresse e-mail ou nom de groupe). Approbateur introuvable : échec. Les approbateurs sont **réalignés** sur le modèle. Contrôle de verrou exclusif sur chaque environnement ([RG-PIP-05](22-pipelines.md)). |
 | 4. Groupes de variables | Un groupe `ifs-<projet>-<cible>` par cible, avec une variable secrète par secret de pipeline attendu ([17 § 6](17-parametres-applicatifs-et-secrets.md)). Variable absente : créée vide. Variable existante : **jamais modifiée**. Variable plus attendue : signalée, pas supprimée. |
 | 5. Définitions de pipelines | Création ou mise à jour de chaque définition ([RG-PIP-06](22-pipelines.md)) : nom, dossier `\<projet>\<composant>[\<application>]`, chemin YAML, dépôt, branche par défaut. |
-| 6. Autorisations | Autorise les pipelines générés à utiliser leurs service connections, environnements et groupes de variables. |
+| 6. Autorisations | Autorise chaque pipeline généré à utiliser **ses seules** ressources : la connexion d'infrastructure pour les pipelines d'infrastructure, la connexion applicative pour les pipelines applicatifs, aucune pour les pipelines de pull request ; environnements et groupes de variables. |
+| 6 bis. Validation des pull requests | Politique de branche de validation de build sur la branche par défaut de chaque dépôt Azure Repos : le pipeline PR du composant ou de l'application concerné, filtré sur ses chemins. Un déclencheur `pr` en YAML ne suffit pas sur Azure Repos. Les dépôts GitHub utilisent le déclencheur YAML. |
 | 7. Fenêtres et délais *(lot 2)* | Contrôle « heures ouvrées » et délai sur les environnements des cibles qui en déclarent. |
 | 8. Rapport | Créé, mis à jour, laissé, orphelins détectés. |
 
@@ -95,9 +96,16 @@ limitées à l'environnement.
 marque de propriété (`managed-by: infraflowsculptor` dans la description quand la plateforme le permet).
 Un objet de même nom sans cette marque n'est pas modifié : l'étape échoue en l'expliquant.
 
-**RG-INS-05 — Jamais de suppression.** Le kit ne supprime rien. Les objets IFS qui ne correspondent plus
-au modèle (composant supprimé, environnement retiré, ancienne plateforme après un changement
-[DEC-48](03-decisions.md)) sont listés comme orphelins, avec la commande pour les supprimer.
+**RG-INS-05 — Révoquer les accès, ne jamais supprimer de données.** Le kit révoque ce qui donne un accès
+et ne correspond plus au modèle : identifiants fédérés, attributions de rôle de ses identités, autorisations
+de pipelines, approbateurs (réalignés). Il ne supprime jamais un objet qui porte des données ou de l'état :
+groupes de variables, stockages d'état, identités et service connections orphelins (composant supprimé,
+environnement retiré, ancienne plateforme après un changement [DEC-48](03-decisions.md)) sont listés avec
+la commande pour les supprimer ; leurs fédérations sont déjà révoquées.
+
+**RG-INS-07 — Version du kit.** Chaque exécution inscrit la révision du kit sur les objets qu'elle gère
+(tag du groupe technique, description des objets de la plateforme). Un kit plus ancien que la dernière
+version appliquée refuse de s'exécuter : il rétablirait d'anciens accès ou d'anciennes protections.
 
 ## 4. Liste de contrôle (`SETUP.md` et écran)
 
@@ -106,8 +114,9 @@ La liste de contrôle est générée dans la révision et affichée de façon in
 par l'utilisateur, journalisée).
 
 Contenu, dans l'ordre :
-1. Prérequis de la plateforme : permissions du compte de build (Azure DevOps), droits d'administration
-   des dépôts (GitHub).
+1. Prérequis de la plateforme : permissions du compte de build (Azure DevOps : environnements, groupes de
+   variables, définitions de pipelines, politiques de branche), droits d'administration des dépôts
+   (GitHub).
 2. Exécution du script Azure, avec la commande exacte.
 3. Étapes du script qui n'ont pas pu être faites (exemple : adhésion à un groupe Entra).
 4. Exécution de la partie plateforme.

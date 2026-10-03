@@ -21,7 +21,7 @@
 | 8 | Publier : une pull request par dépôt. | Publication | [24 § 6](24-depots-et-publication.md) |
 | 9 | Fusionner les pull requests chez le fournisseur git. | Fournisseur git | — |
 | 10 | Suivre la liste de contrôle : exécuter le script Azure, puis la partie plateforme, saisir les secrets. | Liste de contrôle | [23](23-kit-installation.md) |
-| 11 | Les pipelines CI puis release se déclenchent ; approuver la production. | Plateforme CI ; IFS › Déploiements | [22](22-pipelines.md), [28](28-suivi-des-deploiements.md) |
+| 11 | Les pipelines CI puis release se déclenchent. Pour la production, l'approbateur lit l'aperçu produit par le stage Aperçu, puis approuve le stage Déploiement. | Plateforme CI ; IFS › Déploiements | [22 § 3.1](22-pipelines.md), [28](28-suivi-des-deploiements.md) |
 | 12 | IFS affiche « révision 1 déployée » sur toutes les cibles ; la liste de contrôle est complète. | Déploiements | [28](28-suivi-des-deploiements.md) |
 
 **Points de friction à surveiller** : étapes 2 et 10 (droits chez le client). L'écran explique
@@ -35,9 +35,9 @@ l'architecte ou par un modèle.
 | # | Action | Référence |
 |---|---|---|
 | 1 | L'architecte crée le composant `payments` (ou le duplique depuis `orders`) et donne le rôle Développeur à l'équipe, portée `payments`. | [UC-CMP-01](12-composants-et-groupes-de-ressources.md), [10 § 4](10-organisations-et-acces.md) |
-| 2 | Le développeur ajoute sa Container App, sa base, ses paramètres ; il relie son application au Key Vault du socle (lecture des autres composants permise). | [RG-ORG-09](10-organisations-et-acces.md) |
+| 2 | Le développeur ajoute sa Container App, sa base, ses paramètres. Il relie son application au Key Vault du socle : cet accès à un autre composant devient une **demande d'accès**, que l'architecte accepte. | [RG-ORG-09](10-organisations-et-acces.md), [RG-LIA-24](16-liaisons-identites-et-acces.md) |
 | 3 | Il règle le build et les étapes de qualité (tests, couverture, Sonar). | [19](19-applications-build-et-deploiement.md) |
-| 4 | Il génère une révision. Une personne qui a `publier` publie (si la publication à deux personnes est exigée, ce n'est pas lui). | [21](21-generation-et-revisions.md), [RG-ORG-16](10-organisations-et-acces.md) |
+| 4 | Il génère une révision (`generer` vaut pour tout le projet, [RG-ORG-10](10-organisations-et-acces.md)). Une personne qui a `publier` publie (si la publication à deux personnes est exigée, ce n'est pas lui). | [21](21-generation-et-revisions.md), [RG-ORG-16](10-organisations-et-acces.md) |
 | 5 | La liste de contrôle montre le différentiel : nouveau secret à saisir, nouveau dépôt si « un dépôt par composant ». | [RG-INS-06](23-kit-installation.md) |
 
 ## P-03 — Changer un paramètre en production

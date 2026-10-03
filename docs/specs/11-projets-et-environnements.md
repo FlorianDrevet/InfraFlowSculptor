@@ -10,23 +10,26 @@ conventions (nommage, tags) et le plan de publication.
 | Champ | Règles | Défaut |
 |---|---|---|
 | Nom | 3 à 80 caractères, unique dans l'organisation (insensible à la casse). | — |
-| Code | `^[a-z][a-z0-9]{1,9}$`, unique dans l'organisation. Jeton `{project}` du nommage, tags système, noms de pipelines. | Dérivé du nom, modifiable |
+| Code | `^[a-z][a-z0-9]{1,9}$`, unique dans l'organisation. Jeton `{project}` du nommage, tags système, noms de pipelines, d'identités techniques et d'unités de déploiement. Verrouillé après la première publication (RG-PRJ-01). | Dérivé du nom, modifiable jusqu'à la première publication |
+| Tenant Entra | Identifiant du tenant de tous les abonnements du projet. Un projet vise un seul tenant ; le kit vérifie chaque abonnement. | Tenant de la connexion Azure de l'organisation, sinon saisi |
 | Description | 1 000 caractères max. | Vide |
 | Nommage | Gabarit par défaut, gabarits par type, abréviations ([13](13-nommage.md)). | Voir [13 § 3](13-nommage.md) |
 | Tags | Section 5. | Aucun |
 | Tags système | Activés ou non ([DEC-33](03-decisions.md)). | Activés |
 | Langage d'infrastructure | `Bicep` ; `Terraform` *(lot 3)* ; `OpenTofu`, `Pulumi` avec son langage (TypeScript, C#, Python, Go, Java, YAML) *(lot 4)* ([DEC-43](03-decisions.md), [DEC-62](03-decisions.md), [DEC-63](03-decisions.md)). Changeable ([DEC-48](03-decisions.md)). | `Bicep` |
 | Source des modules | `AVM registre public` ; `AVM embarqués`, `Modules IFS` *(lot 2)* ; `Modules du client` *(lot 3)* ; pour Pulumi, `Ressources directes` ou `Composants IFS` *(lot 4)*. Surcharge possible par type ([DEC-54](03-decisions.md), [21 § 6.5](21-generation-et-revisions.md)). | `AVM registre public` |
-| Version du catalogue | Dernière publiée, ou épinglée 90 jours au plus ([DEC-57](03-decisions.md)). | Dernière |
+| Version du catalogue | Version figée du projet ; une nouvelle version est proposée, la montée est explicite ([DEC-92](03-decisions.md), [40 § 3](40-exploitation-ifs.md)). | Dernière publiée à la création |
 | Backend d'état Pulumi | `Azure Storage` (créé par le kit) ou `Pulumi Cloud` (+ organisation Pulumi). Pulumi uniquement. | `Azure Storage` |
 | Plateforme CI | `AzureDevOps` ; `GitHubActions` *(lot 2)* ; `GitLabCI` *(lot 3)* ([DEC-47](03-decisions.md), [DEC-62](03-decisions.md)). Changeable ([DEC-48](03-decisions.md)). | — (obligatoire) |
 | Exécuteurs par défaut | Selon la plateforme : nom d'un pool d'agents (Azure DevOps), liste de libellés de runners (GitHub), liste de tags (GitLab). Vide = exécuteurs hébergés Linux de la plateforme. | Vide |
 | Relecteurs par défaut | Utilisateurs ou groupes du fournisseur git ajoutés aux pull requests ([24](24-depots-et-publication.md)). | Aucun |
 | Plan de publication | [24](24-depots-et-publication.md). | Rempli par le préréglage choisi |
 
-**RG-PRJ-01 — Code stable.** Changer le code d'un projet change les noms Azure de toutes les ressources
-qui utilisent `{project}`. Si au moins une révision a été publiée, IFS affiche la liste des noms qui
-changent et exige une confirmation explicite, car Azure recréera ces ressources.
+**RG-PRJ-01 — Code verrouillé.** Le code d'un projet est modifiable jusqu'à sa première publication, puis
+verrouillé. Il nomme les ressources, les unités de déploiement (piles, états), les identités techniques,
+les environnements de la plateforme CI et les pipelines : le changer après publication créerait une
+seconde chaîne de déploiement à côté de l'ancienne, toujours active. Renommer un projet publié revient à
+créer un nouveau projet par export et import, puis à retirer l'ancien.
 
 ## 3. Création
 
@@ -94,9 +97,10 @@ l'environnement ([DEC-08](03-decisions.md)). Renommer un environnement ne casse 
 **RG-ENV-02 — Ordre continu.** Insérer à la position *n* décale les suivants. Supprimer resserre
 l'ordre. Déplacer réordonne.
 
-**RG-ENV-03 — Changement d'impact.** Changer le code, l'abonnement ou la région d'un environnement
-change les noms ou l'emplacement de ses ressources. Si une révision a été publiée, IFS liste les
-ressources concernées et exige une confirmation explicite.
+**RG-ENV-03 — Changement d'impact.** Le code d'un environnement est verrouillé après la première
+publication qui le cible, pour la même raison que RG-PRJ-01. Changer l'abonnement ou la région change
+l'emplacement de ses ressources : si une révision a été publiée, IFS liste les ressources concernées et
+exige une confirmation explicite.
 
 **UC-ENV-01 — Ajouter un environnement** (`environnements.gerer` ; `environnements.proteges.gerer` s'il est protégé). Les composants `PerEnvironment` qui suivent
 « tous les environnements » le ciblent aussitôt. Les ressources y sont présentes avec leurs valeurs par
@@ -136,8 +140,9 @@ environnement.
 - liaisons, paramètres applicatifs, nommage, tags, plan de publication ;
 - étapes de pipeline.
 
-Il ne contient ni membres, ni historique, ni révisions, ni secret (IFS n'en a pas). Les identifiants
-d'abonnement et de ressources existantes y figurent : l'export est journalisé.
+Il ne contient ni membres, ni révisions, ni secret (IFS n'en a pas). L'historique du modèle (jeux de
+modifications) n'y figure que si l'export est demandé **avec l'historique** ([RG-HIS-03](31-historique-et-versions.md)).
+Les identifiants d'abonnement et de ressources existantes y figurent : l'export est journalisé.
 
 **UC-PRJ-08 — Importer un projet** (droit de créer des projets dans l'organisation). L'import crée un
 nouveau projet :
@@ -147,6 +152,11 @@ nouveau projet :
 
 Un document d'une version de schéma antérieure est migré automatiquement ; une version plus récente
 qu'IFS ne connaît pas est refusée.
+
+**RG-PRJ-09 — L'import crée une copie.** Un projet importé est une copie, jamais la reprise d'un projet
+existant : il reçoit un nouveau code, donc d'autres noms, d'autres unités de déploiement et d'autres
+identités. Une ressource existante déjà référencée par un autre projet de l'organisation est signalée.
+Reprendre la gestion d'un déploiement existant passe par l'import d'infrastructure ([29](29-import.md)).
 
 **UC-PRJ-09 — Modèles de projet et de composant** *(lot 2)*. Un administrateur d'organisation enregistre un
 projet ou un composant comme **modèle** : abonnements et identifiants retirés, valeurs à saisir marquées.

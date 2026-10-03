@@ -62,7 +62,8 @@ code ou de nom, retrait de liaison, changement d'environnement) passe par une bo
 liste l'impact calculé par le serveur.
 
 **RG-UI-04 — Implicite visible.** Les éléments implicites sont visuellement distincts et affichent leur
-origine au survol, avec un lien vers elle.
+origine, avec un lien vers elle, au survol, au focus clavier et au toucher. Aucune information n'est
+portée par la seule couleur ni par le seul survol.
 
 **RG-UI-05 — Pas de promesse.** Aucune fonctionnalité non livrée n'apparaît ([P9](01-principes.md)).
 
@@ -81,6 +82,15 @@ complet, contrastes, libellés, focus visible ; la vue graphe a un équivalent e
 
 **RG-UI-10 — Conflits.** En cas de conflit de version ([DEC-37](03-decisions.md)), l'écran affiche la
 version enregistrée et la saisie de l'utilisateur côte à côte.
+
+**RG-UI-15 — Saisie préservée.** Une saisie non sensible en cours est conservée localement si la session
+expire ou si la connexion est perdue, et proposée à la reconnexion. Chaque enregistrement affiche son état
+(enregistré, en attente, en échec). Une commande renvoyée après une coupure porte le même identifiant
+d'opération : elle n'est jamais appliquée deux fois.
+
+**RG-UI-16 — Petit écran.** Sur mobile, l'interface sert à consulter et à décider : lire l'état, les
+constats et les impacts, relire et appliquer une proposition, confirmer une publication. La modélisation
+complète vise un écran d'au moins 1 024 pixels de large.
 
 **RG-UI-11 — Visualiseur de code.** Coloration Bicep, HCL, TypeScript et YAML, arborescence, recherche dans les fichiers,
 diff entre révisions, téléchargement.

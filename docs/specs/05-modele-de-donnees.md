@@ -88,19 +88,24 @@ modèle appartient à exactement un projet.
 
 **RG-DON-02 — Identifiants.** Tout objet a un identifiant immuable. Les références entre objets passent par
 les identifiants, jamais par un nom ou un code ([DEC-08](03-decisions.md)). Les codes (projet,
-environnement, composant) servent aux noms Azure, aux dossiers et aux pipelines, et peuvent changer.
+environnement, composant) servent aux noms Azure, aux dossiers et aux pipelines ; ils sont verrouillés
+après la première publication ([RG-PRJ-01](11-projets-et-environnements.md)).
 
 **RG-DON-03 — Données par environnement.** Les surcharges, présences, valeurs de paramètres, identifiants de
 ressources existantes et identifiants de groupes Entra sont rattachés à l'identifiant d'un environnement
 (ou d'une cible propre). Supprimer l'environnement les supprime.
 
-**RG-DON-04 — Immutabilité.** Révisions, publications, exécutions suivies et événements d'audit ne sont
-jamais modifiés.
+**RG-DON-04 — Immutabilité.** Révisions, publications, événements d'exécution lus (rapports de release,
+changements d'état d'une exécution) et événements d'audit ne sont jamais modifiés. L'état courant d'une
+exécution ou d'une cible (« en cours », « déployée », « partiellement appliquée ») est **calculé** à partir de
+ces événements.
 
 **RG-DON-05 — Versions.** Chaque objet modifiable porte une version de concurrence ([DEC-37](03-decisions.md)) ;
 le projet porte en plus une version de modèle, incrémentée à chaque modification de l'un de ses objets,
 qui sert à détecter les révisions périmées.
 
 **RG-DON-06 — Ce qu'IFS ne stocke pas.** Aucune valeur de secret applicatif, aucun mot de passe
-d'administration, aucun état Terraform ou Pulumi, aucune donnée lue dans les abonnements Azure en dehors
-de l'import et de la disponibilité des noms.
+d'administration, aucun état Terraform ou Pulumi. Les seules données lues dans les abonnements Azure, par la
+connexion Azure en lecture de l'organisation, sont : l'import ([29](29-import.md)) ; la disponibilité des
+noms ; la sélection de ressources existantes ; l'usage et les quotas de modèles d'IA ([RG-IA-02](32-ia-et-foundry.md)).
+Elles sont mises en cache 24 heures au plus, datées à l'écran, et jamais conservées au-delà.

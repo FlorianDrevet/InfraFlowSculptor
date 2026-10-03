@@ -26,7 +26,7 @@
 | 00 | [Vision](00-vision.md) | Problème, personas, promesse, alternatives, indicateurs |
 | 01 | [Principes](01-principes.md) | Règles de conception non négociables |
 | 02 | [Glossaire](02-glossaire.md) | Termes, noms techniques, termes abandonnés |
-| 03 | [Décisions](03-decisions.md) | Journal des décisions DEC-01 à DEC-84 |
+| 03 | [Décisions](03-decisions.md) | Journal des décisions DEC-01 à DEC-98 |
 | 04 | [Périmètre et lots](04-perimetre-et-lots.md) | Matrices de support, lot 1 en trois jalons, lots 2 à 4, hors périmètre, points ouverts tous tranchés |
 | 05 | [Modèle de données](05-modele-de-donnees.md) | Entités, relations, invariants transverses |
 | 06 | [Parcours utilisateur](06-parcours-utilisateur.md) | Parcours de bout en bout : premier déploiement, nouveau service, changement de paramètre… |

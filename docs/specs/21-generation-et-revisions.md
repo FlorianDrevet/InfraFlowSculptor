@@ -35,8 +35,10 @@ plateforme a changé depuis sa génération. L'écran le signale et propose de g
 stable, fins de ligne `LF`, encodage UTF-8 sans BOM.
 
 **RG-GEN-04 — Contrôle de la sortie.** Avant d'enregistrer une révision, IFS exécute les contrôles du
-langage (section 6) et vérifie la syntaxe des pipelines. Un échec est un défaut d'IFS : la révision est
-marquée « en échec », n'est pas publiable, et l'incident est remonté à l'équipe IFS.
+langage (section 6) et vérifie la syntaxe des pipelines. Un point d'extension du client, qu'IFS ne voit
+pas, est remplacé pendant le contrôle par un bouchon vide qui respecte son contrat (RG-GEN-16). Un échec
+est un défaut d'IFS : la révision est marquée « en échec », n'est pas publiable, et l'incident est remonté
+à l'équipe IFS.
 
 **RG-GEN-05 — Conservation.** Les métadonnées de toutes les révisions sont conservées tant que le projet
 existe. Les fichiers sont conservés pour toute révision publiée, et 90 jours pour les autres.
@@ -63,7 +65,7 @@ Pour chaque composant et chaque cible, le plan de déploiement contient :
 | Secrets attendus | Secrets de pipeline à écrire dans Key Vault. |
 | Scripts post-déploiement | Accès aux données. |
 | Dépendances | Composants à déployer avant celui-ci. |
-| Ressources retirées | Ressources présentes dans la dernière révision publiée et absentes de celle-ci, avec la règle du composant (détacher, supprimer). |
+| Ressources retirées | À titre d'information : ressources présentes dans la dernière révision publiée et absentes de celle-ci, avec leur traitement (détacher, supprimer, révoquer). La référence qui fait foi au déploiement est l'unité de déploiement elle-même (RG-GEN-19). |
 | Pipelines | Étapes logiques ([22 § 2](22-pipelines.md)). |
 
 **RG-GEN-06 — Seul lieu des décisions.** Toute valeur, tout nom, tout rôle, tout ordre est décidé à
@@ -120,9 +122,12 @@ README.ifs.md                        (architecture, diagramme, noms par environn
 ```
 
 **RG-GEN-08 — En-tête.** Chaque fichier généré commence par un commentaire : « Généré par
-InfraFlowSculptor — projet <code>, révision <n>. Ne pas modifier : les modifications seront signalées
-puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md. » (Les formats sans
-commentaire, comme JSON, en sont dispensés et sont listés au manifeste.)
+InfraFlowSculptor — projet <code>. Ne pas modifier : les modifications seront signalées puis remplacées
+à la prochaine publication. Personnalisation : voir README.ifs.md. » (Les formats sans commentaire, comme
+JSON, en sont dispensés et sont listés au manifeste.) L'en-tête ne contient **pas** le numéro de révision :
+un fichier dont le contenu ne change pas reste identique, ne fait pas de bruit dans la pull request et ne
+déclenche aucun pipeline ([DEC-94](03-decisions.md)). La révision et les empreintes sont dans le
+manifeste.
 
 ## 6. Conventions du code d'infrastructure
 
@@ -270,9 +275,21 @@ cible ; sinon la publication est refusée pour cette destination, avec un modèl
 indépendante, nommée `ifs-<projet>-<composant>-<cible>` : pile de déploiement (Bicep), état
 (Terraform), pile Pulumi.
 
-**RG-GEN-19 — Ressources retirées.** Calculées par différence avec la **dernière révision publiée** vers
-la destination. Elles sont détachées ou supprimées selon la règle du composant. Une cible protégée
-détache toujours.
+**RG-GEN-19 — Ressources retirées** ([DEC-85](03-decisions.md), [DEC-91](03-decisions.md)).
+- Elles sont calculées **au moment de l'application**, contre ce que l'unité de déploiement gère
+  réellement dans la cible (pile Bicep, état Terraform, pile Pulumi). Une cible qui a sauté des révisions
+  retire donc tout ce qui doit l'être.
+- Les ressources à données ou à état sont détachées ou supprimées selon la règle du composant ; une cible
+  protégée détache toujours.
+- Les objets d'autorisation et de configuration sont toujours supprimés : un accès retiré du modèle est
+  révoqué dans Azure.
+- Terraform : un bloc `removed` reste généré tant qu'au moins une cible du composant n'a pas rapporté le
+  déploiement réussi d'une révision qui le contenait.
+
+**RG-GEN-25 — Famille de cycle de vie.** Le descripteur classe chaque ressource générée : ressource à
+données ou à état, ou objet d'autorisation et de configuration (attribution de rôle, politique d'accès,
+utilisateur de base créé par IFS, clé App Configuration, paramètre de diagnostic, règle de pare-feu,
+identifiant fédéré).
 
 **RG-GEN-20 — Pas de blocage.** IFS ne pose aucun refus de modification dans Azure (piles Bicep sans
 `denySettings`). Les verrous `CanNotDelete` des cibles protégées viennent de l'option du composant.

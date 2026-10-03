@@ -50,7 +50,10 @@ application est un **paramètre applicatif**, quelle que soit sa destination.
 
 Ce qu'un type de ressource accepte (propriétés, valeurs, contraintes de nom, rôles, sorties, liaisons)
 est décrit par un **descripteur** versionné. L'écran, l'API, le MCP, la validation et la génération
-lisent ce descripteur. Ajouter un type ou une valeur ne demande pas de modifier plusieurs couches.
+lisent ce descripteur. Ajouter une valeur, ou un type qui n'utilise que des capacités existantes, ne
+demande pas de modifier plusieurs couches. Une **nouvelle capacité** (un nouveau type de liaison, une
+politique d'accès hors RBAC, un nouveau parcours de livraison) demande du code, et un type qui en dépend
+ne sort qu'avec elle.
 
 ## P8 — Les contrôles sont côté serveur
 
@@ -71,5 +74,8 @@ pouvoir le relire, le comprendre et le maintenir.
 ## P11 — Le modèle ignore les outils
 
 Le modèle décrit Azure, pas un langage ni une plateforme CI. Une notion n'entre dans le modèle que si elle
-s'exprime dans tous les langages et toutes les plateformes supportés. Ce qui est propre à un outil vit
+s'exprime dans tous les langages et toutes les plateformes supportés, **avec le même comportement**
+(création, mise à jour, retrait), pas seulement la même syntaxe. Quand ce n'est pas le cas, le descripteur
+le déclare dans sa matrice de prise en charge par langage, et la validation le signale
+(`VAL-GEN-LANGAGE`) : la parité est garantie sur ce sous-ensemble déclaré. Ce qui est propre à un outil vit
 dans son émetteur ([DEC-44](03-decisions.md)) et n'y prend aucune décision métier.

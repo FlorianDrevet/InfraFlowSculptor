@@ -77,7 +77,10 @@ secrets conservés sont des identifiants de connexion git, et seulement en mode 
 
 | Indicateur | Cible v1 |
 |---|---|
-| Délai entre la création du projet et le premier déploiement réussi du projet de référence ([90](90-projet-de-reference.md)) | < 1 jour |
+| Temps **actif** entre la création du projet et le premier déploiement réussi du projet de référence ([90](90-projet-de-reference.md)), hors attente des droits chez le client, mesuré séparément | < 1 jour |
+| Temps d'obtention des droits chez le client (consentements, connexions git et Azure, approbateurs) | Mesuré, pour réduire les frictions ; pas de cible |
+| **Activation** : premier déploiement réussi **et** contrôle des dépendances de l'application témoin au vert **et** deuxième modification livrée en production | > 70 % des projets créés par des équipes pilotes |
 | Part des révisions dont le premier déploiement réussit sans retouche manuelle des fichiers | > 90 % |
+| Abandons avant la première génération, modifications manuelles des fichiers gérés, demandes au support par projet | Mesurés par cohorte mensuelle |
 | Étapes manuelles restantes après le kit d'installation | Exécuter le script Azure, exécuter la partie plateforme du kit, saisir les valeurs de secrets |
 | Écarts entre le nom affiché et le nom déployé | 0, par construction |

@@ -5,16 +5,16 @@ La rétro-spécification v0 (ancien dépôt `infra-pipeline-editor`, `docs/specs
 
 | Statut | Sens |
 |---|---|
-| **Résolu** | Une décision ou une règle de la v1 rend l'écart impossible. |
+| **Résolu** | Une décision ou une règle de la v1 traite l'écart. « Résolu » veut dire **spécifié**, pas encore prouvé : les garanties critiques suivent le registre des preuves ([04 § 7.2](04-perimetre-et-lots.md), [DEC-97](03-decisions.md)). |
 | **Supprimé** | La fonctionnalité concernée n'existe plus en v1. |
 | **Lot 2 / Lot 3** | Traité par une fonctionnalité spécifiée, livrée plus tard. |
-| **Hors périmètre** | Écarté volontairement ([04 § 4](04-perimetre-et-lots.md)). |
+| **Hors périmètre** | Écarté volontairement ([04 § 6](04-perimetre-et-lots.md)). |
 
 ## Accès (ACC)
 
 | Écart v0 | Statut | Traitement v1 |
 |---|---|---|
-| EC-ACC-01 Lectures sans contrôle d'appartenance | Résolu | [RG-ORG-11](10-organisations-et-acces.md), [EXG-01](27-exigences-non-fonctionnelles.md) : contrôle systématique, testé route par route. |
+| EC-ACC-01 Lectures sans contrôle d'appartenance | Résolu | [RG-ORG-14](10-organisations-et-acces.md), [EXG-01](27-exigences-non-fonctionnelles.md) : contrôle systématique, testé route par route. |
 | EC-ACC-02 Liste de tous les utilisateurs | Résolu | [DEC-03](03-decisions.md), [RG-ORG-07](10-organisations-et-acces.md) : annuaire limité à l'organisation. |
 | EC-ACC-03 Dernier Owner | Résolu | [RG-ORG-05](10-organisations-et-acces.md), [RG-ORG-10](10-organisations-et-acces.md). |
 | EC-ACC-04 Doublon de membre | Résolu | [RG-ORG-04](10-organisations-et-acces.md). |
@@ -88,7 +88,7 @@ La rétro-spécification v0 (ancien dépôt `infra-pipeline-editor`, `docs/specs
 
 | Écart v0 | Statut | Traitement v1 |
 |---|---|---|
-| EC-CAT-01 Politique d'éviction Redis non générée | Résolu | [RG-RES-02](14-modele-des-ressources.md) : toute valeur est générée ; Managed Redis au lot 2. |
+| EC-CAT-01 Politique d'éviction Redis non générée | Résolu | [RG-RES-02](14-modele-des-ressources.md) : toute valeur est générée ; Managed Redis au lot 1, jalon 2. |
 | EC-CAT-02 Pas de contrôle d'adressage | Lot 2 | [RG-NET-04](18-reseau-et-exposition.md). |
 | EC-CAT-03 Réglages Document Intelligence perdus | Résolu | Descripteur unique ; AI Services au lot 2. |
 | EC-CAT-04 Textes libres côté serveur | Résolu | [RG-RES-03](14-modele-des-ressources.md). |

@@ -153,8 +153,10 @@ Aucune erreur.
 
 | Identité | Droits |
 |---|---|
-| `id-ifs-deploy-shop-dev`, `-prd` | Contributor (abonnement A, B) ; RBAC Administrator conditionné à : AcrPull, App Configuration Data Reader, Key Vault Secrets User, Azure Service Bus Data Sender ; RBAC Administrator conditionné à AcrPull sur `crshopmainshared` (abonnement C) ; App Configuration Data Owner sur `appcs-shop-main-<env>` ; Key Vault Secrets Officer sur `kv-shop-main-<env>` (écriture du secret de pipeline) ; membre de `sg-shop-sql-admins` (<env>) |
-| `id-ifs-deploy-shop-shared` | Contributor (abonnement C) |
+| `id-ifs-deploy-shop-dev`, `-prd` | Donnés par le kit : Contributor (abonnement A, B) ; RBAC Administrator conditionné, en écriture et en suppression, à : AcrPull, App Configuration Data Reader, Key Vault Secrets User, Azure Service Bus Data Sender, Key Vault Secrets Officer, App Configuration Data Owner, Container Apps Contributor ; RBAC Administrator conditionné à AcrPull sur `crshopmainshared` (abonnement C) ; membre de `sg-shop-sql-admins` (<env>). Attribués par le déploiement de `core` : Key Vault Secrets Officer sur `kv-shop-main-<env>`, App Configuration Data Owner sur `appcs-shop-main-<env>` |
+| `id-ifs-app-shop-dev`, `-prd` | Aucun droit donné par le kit. Attribué par le déploiement de `orders` : Container Apps Contributor sur `ca-shop-api-<env>` |
+| `id-ifs-deploy-shop-shared` | Donnés par le kit : Contributor (abonnement C) ; RBAC Administrator conditionné à AcrPush |
+| `id-ifs-app-shop-shared` | Attribué par le déploiement de `platform` : AcrPush sur `crshopmainshared` (poussée de l'image par la CI) |
 
 ### 2.6 Secrets de pipeline
 
@@ -322,6 +324,26 @@ Le kit crée en plus, par cible, le stockage d'état et la clé Key Vault de chi
 9. Une troisième révision qui **retire** la file ajoutée au critère 6 la détache dans toutes les variantes :
    la file existe toujours dans Azure, et n'est plus gérée par la pile ou par l'état ([DEC-46](03-decisions.md)) ; elle figure dans l'inventaire des
    ressources détachées de chaque cible ([DEC-61](03-decisions.md)).
+10. **Création depuis zéro** (S01) : le critère 3 réussit depuis des abonnements vides, en une seule
+    exécution par composant, sans relance corrective ([DEC-86](03-decisions.md)).
+11. **Révocation** (S02) : une révision qui retire la liaison « accès » de `api` vers `sbns orders` est
+    déployée en prd ; l'attribution est supprimée, le rapport de release la cite, et le contrôle
+    `/health/dependencies` constate l'échec de l'envoi après propagation. `sbns orders` et ses messages
+    restent ([DEC-85](03-decisions.md)).
+12. **Cible en retard** (S04) : la révision 3 est déployée en dev seulement, puis la révision 4 en dev et
+    en prd ; la file retirée par la révision 3 est retirée de prd et figure dans l'inventaire de prd
+    ([DEC-91](03-decisions.md)).
+13. **Échec partiel** (S06) : la variable `MAIN_PAYMENTS_API_KEY` est vidée après l'approbation ; le
+    suivi affiche « partiellement appliquée » sur `core` avec l'étape en échec ; après saisie de la valeur,
+    la relance termine sans doublon.
+14. **Concurrence** (S08) : une livraison de `api` lancée pendant la release d'infrastructure d'`orders`
+    attend la fin de celle-ci ; l'image livrée n'est pas remplacée par l'image lue au stage Aperçu.
+15. **Effets indirects** (S10) : un développeur limité à `orders` ne peut ni supprimer `kv main` ni créer
+    sans demande une liaison d'accès vers lui ; sa liaison devient une demande d'accès.
+16. **Idempotence de la publication** (S12) : une publication interrompue après le commit puis relancée
+    ne crée ni second commit ni seconde pull request.
+17. **Corrélation** (S22) : une exécution déclenchée par un commit de fusion différent du commit de la
+    pull request est rattachée à la bonne révision par l'empreinte du manifeste.
 
 ## 5. Extension du projet de référence pour le lot 2
 

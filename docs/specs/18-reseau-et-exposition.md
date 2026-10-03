@@ -28,8 +28,10 @@ publique en dev, privée en prod).
 erreur `VAL-NET-IP-VIDE`.
 
 **RG-NET-03 — Joignabilité du déploiement.** Si une ressource restreinte doit être jointe par la release
-(accès aux données, écriture de secrets), la release ouvre puis referme une règle temporaire pour
-l'exécuteur, même en cas d'échec. Pour une ressource privée, voir section 9.
+(accès aux données, écriture de secrets, synchronisation de clés), la release ouvre puis referme une règle
+temporaire pour l'exécuteur, même en cas d'échec. La règle est nommée `ifs-temp-<identifiant du run>`.
+Chaque release commence par supprimer les règles `ifs-temp-*` de plus de 2 heures, laissées par un
+exécuteur interrompu, et le rapport de la release les cite. Pour une ressource privée, voir section 9.
 
 ## 3. Réseaux virtuels et subnets
 

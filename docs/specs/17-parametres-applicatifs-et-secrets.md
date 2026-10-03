@@ -34,9 +34,15 @@ existant.
 **RG-PAR-04 — Sortie sensible.** Une sortie sensible (chaîne de connexion, clé) ne peut être utilisée
 qu'en alimentation d'un secret Key Vault. Le serveur refuse toute autre utilisation.
 
-**RG-PAR-05 — Valeur suspecte.** Une valeur littérale dont le nom ressemble à un secret (`password`,
-`secret`, `token`, `apikey`, `connectionstring`, insensible à la casse) produit l'avertissement
-`VAL-PAR-SECRET-SUSPECT`, avec une action « convertir en secret de pipeline ».
+**RG-PAR-05 — Valeur suspecte.**
+- **Avant tout enregistrement**, IFS analyse la valeur littérale : motifs de jetons connus, chaînes de
+  connexion, forte entropie. Une valeur détectée est refusée, avec la conversion en secret de pipeline
+  proposée ; l'utilisateur peut la forcer en déclarant qu'elle n'est pas secrète, ce qui est journalisé
+  ([DEC-95](03-decisions.md)).
+- Une valeur dont seul le **nom** ressemble à un secret (`password`, `secret`, `token`, `apikey`,
+  `connectionstring`, insensible à la casse) produit l'avertissement `VAL-PAR-SECRET-SUSPECT`, avec une
+  action « convertir en secret de pipeline ».
+- Une valeur secrète enregistrée par erreur peut être **expurgée** ([RG-HIS-12](31-historique-et-versions.md)).
 
 **RG-PAR-06 — Sortie entre composants.** La ressource source peut appartenir à un autre composant. La
 liaison implicite « dépendance de valeur » ([16](16-liaisons-identites-et-acces.md)) ajoute la
@@ -55,12 +61,21 @@ paramètre.
 
 **RG-PAR-08 — Nom de secret.** 1 à 127 caractères, lettres, chiffres, tirets. Deux paramètres qui
 écrivent le même secret du même Key Vault avec des alimentations différentes sont en erreur
-`VAL-PAR-SECRET-CONFLIT`.
+`VAL-PAR-SECRET-CONFLIT`. Un secret n'a qu'un écrivain : le composant qui porte son Key Vault, ou le
+composant consommateur si le coffre est une ressource existante ([DEC-98](03-decisions.md)).
+
+**RG-PAR-22 — Coffre avant consommateur.** Un Key Vault qui reçoit un secret de pipeline ou un mot de passe
+généré appartient à un composant déployé **avant** tout composant qui consomme ce secret, ou est une
+ressource existante. Sinon : erreur `VAL-SEC-ORDRE` ([DEC-86](03-decisions.md)). Un consommateur est une
+application qui référence le secret, ou un serveur qui reçoit le mot de passe. L'assistant crée par défaut
+un composant socle qui porte les coffres.
 
 **RG-PAR-09 — Droit de lecture implicite.**
 - Variable d'environnement : l'application reçoit le rôle Key Vault Secrets User sur le Key Vault, pour
-  l'identité choisie dans le paramètre (système par défaut). C'est une liaison implicite « lecture de
-  secret ».
+  l'identité choisie dans le paramètre (par défaut l'identité par défaut de l'application,
+  [RG-LIA-10](16-liaisons-identites-et-acces.md), sinon son identité système). Une Container App exige une
+  identité affectée : son identité système n'existe pas encore quand ses secrets sont résolus à la
+  création. C'est une liaison implicite « lecture de secret ».
 - Clé de configuration : chaque application liée au magasin par « lecture de configuration » reçoit ce
   rôle.
 
@@ -75,8 +90,15 @@ Les formes ci-dessous sont des formes **Azure** : chaque émetteur les exprime d
 | | Secret Key Vault | `@Microsoft.KeyVault(SecretUri=…)` ; si l'identité est affectée, `keyVaultReferenceIdentity` est positionné. |
 | Variable d'environnement (ContainerApp) | Littérale, sortie | `env` du conteneur. |
 | | Secret Key Vault | Secret de Container App avec `keyVaultUrl` et identité, référencé par `secretRef`. |
-| Clé de configuration | Littérale, sortie | Ressource `keyValues` (clé, label, valeur). |
-| | Secret Key Vault | Ressource `keyValues` de type référence Key Vault (`application/vnd.microsoft.appconfig.keyvaultref+json`). |
+| Clé de configuration | Littérale, sortie | Entrée du fichier de clés du magasin pour la cible (`appconfig/<magasin>.<cible>.json`), synchronisée par la release (RG-PAR-23). |
+| | Secret Key Vault | Même fichier, entrée de type référence Key Vault (`application/vnd.microsoft.appconfig.keyvaultref+json`). |
+
+**RG-PAR-23 — Synchronisation des clés.** Les clés ne sont pas des ressources du code d'infrastructure : la
+release du composant qui porte le magasin les écrit par le plan de données, après le déploiement, dans
+tous les langages ([22 § 3.1](22-pipelines.md)). Elle ajoute et met à jour les clés du fichier, et supprime
+les clés qu'IFS avait écrites et qui n'y sont plus (elles portent le tag `managed-by: infraflowsculptor`).
+Une clé créée hors IFS n'est jamais touchée. L'identité de déploiement reçoit App Configuration Data Owner
+sur le magasin par le déploiement lui-même ([RG-LIA-18](16-liaisons-identites-et-acces.md)).
 
 **RG-PAR-10 — Paramètres implicites.** Les paramètres déduits des liaisons (`APPLICATIONINSIGHTS_CONNECTION_STRING`,
 `AzureWebJobsStorage__*`, `AZURE_CLIENT_ID`, adresse App Configuration) s'affichent avec les autres,
@@ -104,8 +126,13 @@ modifie jamais une valeur existante.
 variable secrète attendue a une valeur. Si ce n'est pas le cas, elle échoue avec la liste des variables
 vides et l'emplacement où les saisir.
 
-**RG-PAR-15 — Écriture hors du code d'infrastructure.** Après le déploiement de la cible, une étape de la
-release écrit chaque secret de pipeline dans son Key Vault (Azure CLI, avec l'identité de déploiement).
+**RG-PAR-15 — Écriture hors du code d'infrastructure.** Une étape de la release écrit chaque secret de
+pipeline dans son Key Vault (Azure CLI, avec l'identité de déploiement) :
+- la release du composant qui porte le Key Vault l'écrit **après** son déploiement ; les consommateurs,
+  déployés plus tard (RG-PAR-22), le trouvent donc dès leur création ;
+- si le Key Vault est une ressource existante, la release du composant consommateur l'écrit **avant** son
+  déploiement ([22 § 3.1](22-pipelines.md)).
+
 La valeur ne passe jamais par le code d'infrastructure : elle n'apparaît dans aucun fichier, aucun
 historique de déploiement ARM ni aucun état Terraform ou Pulumi ([DEC-46](03-decisions.md)). L'étape
 n'écrit une nouvelle version du secret que si la valeur a changé ; les applications qui le référencent
@@ -126,12 +153,15 @@ activée, IFS organise la vie du secret sans jamais en connaître la valeur.
 désigne un Key Vault du projet (ou existant) qui le reçoit. Nom de secret par défaut :
 `<nom logique>-admin-password` (ou `-admin-username` / `-admin-password` pour le registre).
 
-**RG-PAR-17 — Mot de passe généré.** Au déploiement de la cible, avant le code d'infrastructure, une étape
-de la release :
-1. lit le secret dans le Key Vault ;
-2. s'il n'existe pas, génère un mot de passe conforme à la politique Azure du service (longueur 32,
-   quatre classes de caractères) et l'écrit dans le Key Vault ;
-3. le transmet au code d'infrastructure comme entrée sensible.
+**RG-PAR-17 — Mot de passe généré.** Le mot de passe d'un serveur vit dans un Key Vault déployé avant le
+serveur (RG-PAR-22).
+1. La release du composant qui porte le Key Vault, après son déploiement, génère le mot de passe s'il
+   n'existe pas encore (longueur 32, quatre classes de caractères, conforme à la politique Azure du
+   service) et l'écrit dans le coffre. Si le coffre est une ressource existante, c'est la release du
+   composant du serveur qui le fait, avant son déploiement.
+2. La release du composant du serveur lit le secret dans son stage Aperçu (il doit exister, sinon échec
+   « déployez d'abord <composant du coffre> ») et le transmet au code d'infrastructure comme entrée
+   sensible.
 
 Les déploiements suivants relisent le même secret : le mot de passe ne change pas.
 

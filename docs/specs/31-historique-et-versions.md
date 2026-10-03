@@ -36,7 +36,7 @@ l'export ([11 § 6](11-projets-et-environnements.md)) s'il est demandé avec l'h
 **RG-HIS-04 — Sur chaque objet.** L'écran d'un objet affiche son auteur de création, sa dernière
 modification (auteur, date), et un onglet **Historique** : la chronologie de ses jeux de modifications.
 
-**RG-HIS-05 — Sur chaque propriété.** Au survol d'une valeur (y compris d'une surcharge d'environnement),
+**RG-HIS-05 — Sur chaque propriété.** Au survol, au focus clavier ou au toucher d'une valeur (y compris d'une surcharge d'environnement),
 l'écran indique qui l'a fixée en dernier, quand, et par quel jeu de modifications, avec un lien.
 
 **RG-HIS-06 — Lien avec l'audit.** Chaque événement d'audit de modification du modèle
@@ -70,11 +70,18 @@ les modifications inverses.
   d'origine `Annulation`.
 - Sinon IFS crée une **proposition** qui montre les conflits ; l'utilisateur choisit propriété par propriété.
 
-**UC-HIS-05 — Restaurer une version** (`modele.modifier`, et `composants.gerer` si des composants sont
-recréés ou supprimés). Portée : tout le projet, un composant ou une ressource. IFS crée une **proposition**
-contenant toutes les modifications qui ramènent la portée à son état passé, avec le résumé et l'impact
-(noms Azure qui changent, ressources qui seront recréées ou détachées). Une fois appliquée, elle produit un
-jeu d'origine `Restauration`.
+**UC-HIS-05 — Restaurer une version.** Portée : tout le projet, un composant ou une ressource. IFS crée une
+**proposition** contenant toutes les modifications qui ramènent la portée à son état passé, avec le résumé
+et l'impact (noms Azure qui changent, ressources qui seront recréées ou détachées, accès ouverts ou
+révoqués). L'appliquer exige, pour chaque modification, la permission qu'exigerait la modification directe
+([DEC-89](03-decisions.md)) : par exemple `environnements.proteges.gerer` pour une cible protégée. Une fois
+appliquée, elle produit un jeu d'origine `Restauration`.
+
+**RG-HIS-12 — Expurger une valeur** (administrateur d'organisation, [DEC-95](03-decisions.md)). Une valeur
+enregistrée par erreur (un secret collé dans une valeur littérale) est remplacée par une marque dans le
+modèle, tous les jeux de modifications, les révisions non publiées et les propositions. L'audit garde
+l'acte, l'auteur et l'objet, pas la valeur. L'écran rappelle que la valeur doit être renouvelée chez le
+client et qu'elle a pu être publiée dans un dépôt git, qu'IFS ne réécrit pas.
 
 **RG-HIS-08 — On n'efface jamais.** Annuler ou restaurer ajoute des jeux de modifications ; l'historique
 reste intact.
@@ -84,11 +91,20 @@ reste intact.
 | Je veux revenir en arrière sur… | Comment |
 |---|---|
 | Le modèle | Restaurer une version (UC-HIS-05). |
-| L'infrastructure déployée | Restaurer le modèle, générer, publier, déployer. L'aperçu de la release montre ce qui change dans Azure. |
+| L'infrastructure déployée | Restaurer le modèle, générer, publier, déployer. Avant d'appliquer la restauration, IFS calcule un **plan de retour** qui classe chaque changement : applicable ; partiel ; impossible, pour une propriété irréversible déjà franchie (attribut **I** du catalogue, exemple : protection contre la purge activée) ; avec intervention, pour une ressource recréée. L'aperçu de la release montre ensuite ce qui change dans Azure. |
+| Les données | Jamais par IFS : restaurer le modèle ne restaure ni le contenu d'une base, ni des fichiers, ni une ressource supprimée avec ses données. L'écran le dit et renvoie aux sauvegardes du client. |
 | Le code d'une application | Pas par IFS : relancer la release du build précédent, ou utiliser la stratégie de déploiement (bascule inverse du slot, retour du trafic sur la révision bleue, [19 § 9](19-applications-build-et-deploiement.md)). |
 | Une ressource supprimée par erreur | Restaurer sa version : la ressource revient dans le modèle avec ses liaisons ; si elle avait été détachée, elle sort de l'inventaire des ressources détachées et la pile ou l'état la reprend au déploiement suivant. |
 
-## 7. Brouillons *(lot 2)*
+## 7. Brouillons *(lot 1, jalon 2)*
+
+Avant les brouillons (jalons 0 et 1), un projet a un éditeur coordinateur qui intègre les changements
+([DEC-93](03-decisions.md)).
+
+**RG-HIS-13 — Modèle principal générable.** Dès que les brouillons existent, une application au modèle
+principal (brouillon soumis, proposition, commande directe) qui ajouterait une `Erreur` de validation est
+refusée : le travail incomplet reste dans son brouillon et ne bloque pas la livraison des autres. Un
+correctif urgent se prépare dans un brouillon court, appliqué dès qu'il est valide.
 
 **UC-HIS-06 — Créer un brouillon.** Un brouillon est un espace de travail nommé, personnel ou partagé, qui
 part de la version courante du modèle. Les modifications faites dans un brouillon :

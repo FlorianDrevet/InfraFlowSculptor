@@ -20,14 +20,15 @@ constat.
 | Champ | Contenu |
 |---|---|
 | Code | `VAL-<DOMAINE>-<NOM>`, stable. |
-| Gravité | `Erreur` (bloque la génération), `Avertissement`, `Info`. |
+| Gravité | `Erreur` (bloque la génération), `Erreur à la publication` (n'empêche pas de générer ni de télécharger, refuse la publication de la destination concernée), `Avertissement`, `Info`. |
 | Objet | Projet, environnement, composant, groupe de ressources, ressource, liaison ou paramètre, avec lien direct. |
 | Environnement | Environnement concerné, s'il y en a un. |
 | Message | Phrase complète, sans jargon interne, qui dit ce qui ne va pas et pourquoi. |
 | Correction | Action proposée ; si elle est sûre, applicable en un clic (« corriger »). |
 
 **RG-VAL-01 — Bloquant.** Une génération est refusée tant qu'il reste au moins une `Erreur`. Le refus
-liste les erreurs.
+liste les erreurs. Une `Erreur à la publication` laisse générer et télécharger, ce qui permet le mode
+découverte sans connexion git ([DEC-78](03-decisions.md)).
 
 **RG-VAL-02 — Pas de masquage d'erreur.** Une `Erreur` ne peut pas être ignorée. Un `Avertissement` peut
 être **acquitté** par une personne qui a `modele.modifier` sur l'objet, avec un commentaire obligatoire ; l'acquittement est journalisé
@@ -35,6 +36,13 @@ et tombe si l'objet change.
 
 **RG-VAL-03 — Performance.** La validation complète d'un projet de 300 ressources répond en moins de
 2 secondes ([EXG-07](27-exigences-non-fonctionnelles.md)).
+
+**RG-VAL-04 — Niveaux de préparation.** L'écran du projet distingue quatre états, du plus faible au plus
+fort : **modèle valide** (aucune `Erreur`) ; **révision générable** (idem, sortie contrôlée) ;
+**publiable** (aucune `Erreur à la publication` pour la destination) ; **déployable** (liste de contrôle
+du kit complète pour la cible). Aucun état n'est présenté comme une vérification d'Azure : quotas,
+politiques Azure du client et disponibilité réelle ne sont connus qu'au déploiement, sauf mention
+« vérifié » d'un constat qui a lu Azure.
 
 ## 4. Catalogue des règles
 
@@ -46,7 +54,7 @@ et tombe si l'objet change.
 | `VAL-ENV-APPROBATEURS` | Erreur | Cible protégée sans approbateur. |
 | `VAL-CMP-SANS-ENVIRONNEMENT` | Erreur | Composant `PerEnvironment` qui ne cible aucun environnement. |
 | `VAL-CMP-VIDE` | Info | Composant sans ressource. |
-| `VAL-CMP-CYCLE` | Erreur | Cycle de dépendances entre composants ; le constat cite les liaisons. |
+| `VAL-CMP-CYCLE` | Erreur | Cycle de dépendances de création entre composants ; le constat cite les liaisons et l'alternative ([RG-CMP-06](12-composants-et-groupes-de-ressources.md)). |
 | `VAL-CMP-SENS` | Erreur | Liaison d'une ressource `Single` vers une ressource `PerEnvironment`. |
 | `VAL-CMP-ENVIRONNEMENT` | Erreur | Liaison vers un composant qui ne cible pas un environnement où la source est présente. |
 | `VAL-PRJ-TAGS` | Erreur | Plus de 50 tags effectifs sur une ressource. |
@@ -74,7 +82,8 @@ et tombe si l'objet change.
 | `VAL-CAT-REGION` | Erreur | Type ou valeur indisponible dans la région effective. |
 | `VAL-GEN-CONTRAT` | Erreur | Module du client dont le contrat ne couvre pas une propriété du descripteur *(lot 3)*. |
 | `VAL-GEN-LANGAGE` | Erreur | Type, propriété ou valeur non pris en charge par l'émetteur du langage du projet (apparaît surtout après un changement de langage, [DEC-48](03-decisions.md)). |
-| `VAL-CAT-MISE-A-JOUR` | Info | Une version plus récente du catalogue modifierait la sortie (montée de module). |
+| `VAL-CAT-MISE-A-JOUR` | Info | Une version plus récente du catalogue est disponible ; le constat liste les fichiers et valeurs qu'elle changerait ([DEC-92](03-decisions.md)). |
+| `VAL-CAT-FIN-SUPPORT` | Avertissement 90 jours avant, puis Erreur | La version du catalogue du projet arrive en fin de support ; la montée est nécessaire pour générer ([DEC-92](03-decisions.md)). |
 
 ### Sécurité
 
@@ -83,6 +92,7 @@ et tombe si l'objet change.
 | `VAL-SEC-AUTH-LOCALE` | Avertissement (acquittable) | Authentification locale activée : mot de passe, compte admin, clé ([DEC-51](03-decisions.md)). Le constat propose l'alternative Entra. |
 | `VAL-SEC-SECRET-ETAT` | Info | Terraform : un mot de passe passe par un attribut classique, faute d'attribut en écriture seule ; il sera dans l'état protégé. |
 | `VAL-SEC-KEYVAULT-ABSENT` | Erreur | Authentification locale activée sans Key Vault de stockage désigné ([RG-PAR-16](17-parametres-applicatifs-et-secrets.md)). |
+| `VAL-SEC-ORDRE` | Erreur | Key Vault alimenté par la release (secret de pipeline, mot de passe généré) qui n'est pas déployé avant un consommateur de ce secret ([RG-PAR-22](17-parametres-applicatifs-et-secrets.md)). |
 
 ### Liaisons, accès, paramètres
 
@@ -90,6 +100,7 @@ et tombe si l'objet change.
 |---|---|---|
 | `VAL-LIA-OBLIGATOIRE` | Erreur | Liaison obligatoire absente (plan, environnement Container Apps, serveur, stockage hôte, registre en mode Container). |
 | `VAL-LIA-PLACEMENT` | Erreur | Source et cible dans des abonnements ou régions incompatibles. |
+| `VAL-LIA-IDENTITE-PARTAGEE` | Erreur | Identité affectée utilisée par une ressource d'un autre composant ([RG-LIA-12](16-liaisons-identites-et-acces.md)). |
 | `VAL-LIA-PORTEE-EXTERNE` | Info | Attribution à la portée d'une ressource existante ou d'un autre abonnement : droits à prévoir pour l'identité de déploiement. |
 | `VAL-LIA-GROUPE-ABSENT` | Info | Groupe Entra sans identifiant pour un environnement : attributions non générées là. |
 | `VAL-LIA-SQL-ADMIN` | Avertissement | Accès aux données défini alors que l'adhésion de l'identité de déploiement au groupe administrateur n'est pas confirmée dans la liste de contrôle. |
@@ -101,11 +112,11 @@ et tombe si l'objet change.
 
 | Code | Gravité | Condition |
 |---|---|---|
-| `VAL-APP-CODE-SOURCE` | Erreur | Application sans destination de code dans le plan de publication. |
+| `VAL-APP-CODE-SOURCE` | Erreur à la publication | Application sans destination de code dans le plan de publication. La génération utilise le chemin par défaut. |
 | `VAL-APP-PILE-PLAN` | Erreur | Pile ou mode incompatible avec le plan (exemple : Python sur Windows, conteneur sur `FC1`). |
 | `VAL-APP-ETAPE` | Erreur | Étape du catalogue activée sans valeur par défaut pour la pile ni commande saisie. |
 | `VAL-APP-STRATEGIE` | Erreur | Stratégie de déploiement impossible sur la ressource (exemple : slots sur un plan Basic ou Flex). |
-| `VAL-APP-EXTENSION` | Avertissement | Modèle d'étapes du client introuvable dans le dépôt de code (vérifié à la publication). |
+| `VAL-APP-EXTENSION` | Erreur à la publication | Modèle d'étapes du client introuvable dans le dépôt de code ([RG-APP-14](19-applications-build-et-deploiement.md)). |
 
 ### Réseau *(lot 2 sauf mention)*
 

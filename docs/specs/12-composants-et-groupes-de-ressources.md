@@ -12,7 +12,7 @@ commun à tous les environnements.
 | Champ | Règles | Défaut |
 |---|---|---|
 | Nom | 1 à 60 caractères, unique dans le projet. | — |
-| Code | `^[a-z][a-z0-9-]{1,19}$`, sans tiret final, unique dans le projet. Nom de dossier, jeton `{component}`, noms de pipelines. | Dérivé du nom |
+| Code | `^[a-z][a-z0-9-]{1,19}$`, sans tiret final, unique dans le projet. Nom de dossier, jeton `{component}`, noms de pipelines et d'unités de déploiement. Verrouillé après la première publication ([RG-PRJ-01](11-projets-et-environnements.md)). | Dérivé du nom |
 | Description | 1 000 caractères max. | Vide |
 | Mode de déploiement | `PerEnvironment` ou `Single`. Verrouillé après la première publication. | `PerEnvironment` |
 | Environnements ciblés | `PerEnvironment` : « tous » ou une liste d'au moins un environnement. | Tous |
@@ -21,7 +21,7 @@ commun à tous les environnements.
 | Nommage | Surcharges facultatives du nommage du projet ([13](13-nommage.md)). | Aucune |
 | Tags | [11 § 5](11-projets-et-environnements.md). | Aucun |
 | Espace de journaux par défaut | Ressource Log Analytics ([DEC-42](03-decisions.md)). | Aucun |
-| Ressources retirées | `Détacher` ou `Supprimer` ([DEC-46](03-decisions.md)). `Supprimer` ne s'applique jamais à une cible protégée. | `Détacher` |
+| Ressources retirées | `Détacher` ou `Supprimer` ([DEC-46](03-decisions.md)), pour les ressources à données ou à état. `Supprimer` ne s'applique jamais à une cible protégée. Les objets d'autorisation et de configuration sont toujours supprimés ([DEC-85](03-decisions.md)). | `Détacher` |
 | Verrou de suppression | Pose un verrou `CanNotDelete` sur les groupes de ressources dans les cibles protégées. | Activé |
 | Code d'infrastructure additionnel | Point d'extension ([21 § 7](21-generation-et-revisions.md)) : chemin d'un code écrit par le client, dans le langage du projet. | Aucun |
 
@@ -52,12 +52,13 @@ ressource est déployée ou retirée du modèle.
 
 **UC-CMP-01 — Créer un composant** (`composants.gerer`). Saisie : nom, code, mode, environnements ou cible
 propre. Le plan de publication attribue une destination selon sa règle par défaut
-([24 § 4](24-depots-et-publication.md)). Un composant peut donc être créé et livré sans
-intervention de la personne qui gère le plan de publication.
+([24 § 4](24-depots-et-publication.md)) : avec les préréglages « mono-dépôt » et « infra et code séparés »,
+le composant est livrable sans autre intervention. Avec « un dépôt par composant », une personne qui a
+`publication.gerer` doit lui désigner son dépôt ; tant que ce n'est pas fait, la publication de ce
+composant est refusée (`VAL-PUB-DESTINATION`) et la personne est notifiée.
 
-**UC-CMP-02 — Modifier un composant** (`composants.gerer`). Changer le code après publication suit la même
-confirmation d'impact que [RG-PRJ-01](11-projets-et-environnements.md), et déplace les fichiers dans
-les destinations (les anciens sont supprimés à la publication suivante via le manifeste).
+**UC-CMP-02 — Modifier un composant** (`composants.gerer`). Le code est verrouillé après la première
+publication ([RG-PRJ-01](11-projets-et-environnements.md)) ; les autres champs suivent leurs règles.
 
 **UC-CMP-03 — Dupliquer un composant** (`composants.gerer`). Nouveau nom et code obligatoires. Sont copiés :
 groupes de ressources, ressources, surcharges, présences, enfants, liaisons internes (vers les copies),
@@ -95,11 +96,17 @@ selon la règle du composant) et affiche les liaisons concernées.
 ## 6. Dépendances et ordre de déploiement
 
 **RG-CMP-05 — Dépendances déduites.** Le composant A dépend du composant B si au moins une ressource de
-A a une liaison vers une ressource de B ([DEC-40](03-decisions.md)). Les paramètres applicatifs dont la
-source est une sortie d'une ressource de B comptent comme des liaisons.
+A a une **dépendance de création** vers une ressource de B ([DEC-40](03-decisions.md),
+[DEC-98](03-decisions.md)) : hébergement, accès, accès aux données, lecture de secret, lecture de
+configuration, tirage d'image, stockage hôte, ou paramètre applicatif dont la source est une sortie connue
+seulement après le déploiement de B. Une sortie **calculable depuis le nom** (déclarée par le descripteur :
+adresse d'un Key Vault, d'un Service Bus, d'un serveur SQL, domaine personnalisé) ne crée pas de
+dépendance d'ordre. Un consommateur de secret dépend du composant du Key Vault ([RG-PAR-22](17-parametres-applicatifs-et-secrets.md)).
 
-**RG-CMP-06 — Pas de cycle.** Un cycle de dépendances entre composants est une erreur
-(`VAL-CMP-CYCLE`). Le constat indique les liaisons qui forment le cycle.
+**RG-CMP-06 — Pas de cycle.** Un cycle de dépendances de création entre composants est une erreur
+(`VAL-CMP-CYCLE`). Le constat indique les liaisons qui forment le cycle et propose l'alternative :
+passer par une adresse calculable depuis le nom (domaine personnalisé, par exemple) ou par une clé App
+Configuration.
 
 **RG-CMP-07 — Ordre.** L'ordre de déploiement est un tri topologique des composants (les composants
 `Single` avant ceux qui en dépendent ; à égalité, par code). Il est affiché sur l'écran du projet et

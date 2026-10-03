@@ -60,7 +60,12 @@ ni être retiré, ni être rétrogradé.
 facultativement, des équipes et des rôles de projet. L'invité reçoit un e-mail avec un lien valable
 7 jours.
 
-**UC-ORG-04 — Accepter.** L'invité se connecte ; l'adresse de son compte doit correspondre à l'invitation.
+**UC-ORG-04 — Accepter.** L'invité se connecte ; l'adresse **vérifiée** de son compte (revendication du
+fournisseur d'identité, pas un texte saisi) doit correspondre à l'invitation, et son tenant doit être
+autorisé. Sinon, l'acceptation est refusée et l'administrateur renvoie une invitation à la bonne adresse ;
+aucune correspondance n'est forcée. Un compte Entra désactivé ne peut plus se connecter ; s'il était
+dernier propriétaire d'un projet, la récupération passe par un administrateur de l'organisation
+([UC-EXP-07](40-exploitation-ifs.md) si aucun n'est joignable).
 
 **UC-ORG-05 — Révoquer ou renvoyer une invitation.**
 
@@ -99,7 +104,7 @@ Les droits sont des permissions élémentaires. Certaines peuvent être limitée
 | `environnements.gerer` | Créer, modifier, réordonner, supprimer les environnements **non protégés** ; exécuteurs. | |
 | `environnements.proteges.gerer` | Protection, approbateurs, abonnement et connexion de déploiement des cibles protégées. | |
 | `publication.gerer` | Plan de publication, relecteurs par défaut. | |
-| `generer` | Générer une révision, télécharger. | |
+| `generer` | Générer une révision, télécharger. Vaut pour le projet entier même dans une attribution limitée à des composants (RG-ORG-10). | |
 | `publier` | Publier une révision. | |
 | `installation.gerer` | Marquer les étapes de la liste de contrôle, gérer l'inventaire des ressources détachées. | |
 | `propositions.appliquer` | Appliquer ou rejeter les propositions de modification ([25](25-agent-ia-mcp.md)). | ✓ |
@@ -108,11 +113,18 @@ Les droits sont des permissions élémentaires. Certaines peuvent être limitée
 
 **RG-ORG-08 — Lecture implicite.** Toute permission implique `projet.lire`.
 
-**RG-ORG-09 — Portée composant.** Une permission accordée sur des composants ne vaut que pour eux.
-- Un membre limité au composant `orders` modifie ses ressources et peut créer des liaisons **vers** les
-  ressources d'autres composants (il les lit), mais ne modifie pas ces autres composants.
-- *(Lot 2)* Un composant peut restreindre ses liaisons entrantes : de tous les composants (défaut), d'une
-  liste, ou sur approbation de son responsable.
+**RG-ORG-09 — Portée composant et effets indirects** ([DEC-89](03-decisions.md)). Une permission accordée
+sur des composants ne vaut que pour eux, **y compris pour les effets indirects** d'une commande.
+- IFS calcule tous les effets d'une commande (éléments implicites, cascades) et vérifie la permission sur
+  chaque objet touché.
+- Un membre limité au composant `orders` modifie ses ressources et lit les autres composants. Une liaison
+  qui ne fait que lire une valeur d'un autre composant lui est permise ; une liaison qui ouvre un **accès**
+  à une ressource d'un autre composant devient une demande d'accès, relue par une personne qui a
+  `modele.modifier` sur ce composant ([RG-LIA-24](16-liaisons-identites-et-acces.md)).
+- Une suppression dont la cascade toucherait un autre composant est refusée ; IFS liste les objets et
+  leurs responsables.
+- *(Lot 2)* Un composant peut ouvrir ses liaisons entrantes sans demande : à tous les composants ou à une
+  liste.
 
 ### 4.2 Rôles prédéfinis
 
@@ -129,7 +141,12 @@ Les droits sont des permissions élémentaires. Certaines peuvent être limitée
 
 **RG-ORG-10 — Attribution.** Un rôle de projet s'attribue à un membre ou à une équipe, avec une portée :
 le projet, ou une liste de composants (seules les permissions « portée composant » sont alors
-accordées ; les autres exigent la portée projet).
+accordées ; les autres exigent la portée projet). Exception : `generer` est toujours accordée au niveau du
+projet, car générer ne modifie ni le modèle ni Azure ; c'est ce qui permet au développeur de
+[P-02](06-parcours-utilisateur.md) de générer une révision.
+
+**RG-ORG-23 — Plafond d'attribution.** On n'attribue qu'un rôle dont on détient toutes les permissions, sur
+une portée qu'on détient. Seul un propriétaire attribue le rôle Propriétaire ([DEC-89](03-decisions.md)).
 
 **RG-ORG-11 — Dernier propriétaire.** Un projet garde toujours au moins un propriétaire, désigné
 nominativement (pas seulement par une équipe).
@@ -236,7 +253,9 @@ l'expiration ([26 § 4](26-interface.md)).
 - Action, objet, différence.
 
 **RG-ORG-22 — Conservation et accès.**
-- Conservation 13 mois, sans modification ni suppression possible.
+- Conservation 13 mois, sans modification ni suppression possible. C'est une durée fixée par le produit
+  pour l'investigation de sécurité, dans la fourchette recommandée par la CNIL pour les journaux ; ce n'est
+  pas une obligation légale générale ([EXG-06](27-exigences-non-fonctionnelles.md)).
 - Consultable avec `audit.lire` (projet), par l'administrateur ou l'auditeur d'organisation (tout).
 - Filtrable par auteur, objet, période ; exportable en CSV.
 

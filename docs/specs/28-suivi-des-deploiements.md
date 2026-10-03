@@ -19,7 +19,11 @@ connexions de l'organisation :
 
 Aucun accès aux abonnements Azure n'est nécessaire.
 
-**RG-SUI-02 — Corrélation.** Chaque pipeline généré porte, dans son nom d'exécution et ses variables :
+**RG-SUI-02 — Corrélation.** La preuve qui relie une exécution à une révision est le **rapport de release**
+(`ifs-report.json`, [DEC-91](03-decisions.md)) : révision, commit, empreinte du manifeste, cible, étapes
+terminées. IFS ne déduit jamais la révision du seul nom de l'exécution ; un commit de fusion différent de
+celui de la pull request est rattaché par l'empreinte du manifeste. Chaque pipeline généré porte en plus,
+dans son nom d'exécution et ses variables :
 - le projet ;
 - le composant (et l'application) ;
 - le numéro de révision ;
@@ -37,10 +41,12 @@ mention « hors révision ».
 
 | Information | Contenu |
 |---|---|
-| Révision déployée | Dernière révision dont le stage de la cible a réussi, avec date et lien vers l'exécution. |
+| État | **Déployée** (toutes les étapes terminées), **partiellement appliquée** (le déploiement a modifié Azure, une étape suivante a échoué : révocations, secrets, clés, accès aux données ou domaines), **en échec avant modification**, **inconnu** (information indisponible). |
+| Révision déployée | Dernière révision dont toutes les étapes ont réussi, avec date et lien vers l'exécution. |
+| Dernier essai | Révision, étapes terminées, étape en échec, date, lien. Pour un état partiel : ce qui est appliqué, ce qui reste, et la reprise (relancer la release, idempotente). |
 | En cours | Exécution en cours ou en attente d'approbation : depuis quand, approbateurs attendus. |
-| Dernier échec | Révision, étape en échec, date, lien. |
-| Écart | « À jour », « révision <n> publiée, non déployée », « en retard de <k> révisions ». |
+| Écart | « À jour », « révision <n> publiée, non fusionnée », « fusionnée, non déployée », « en retard de <k> révisions ». |
+| Fraîcheur | Date de la dernière lecture réussie de la plateforme CI. Au-delà de 30 minutes sans lecture, l'état devient « inconnu » au lieu de rester affiché comme sûr. |
 
 ### 3.2 Par application et par environnement
 
@@ -56,9 +62,10 @@ Une matrice composants × cibles colorée par état : à jour, en retard, en att
 **RG-SUI-04 — Liste de contrôle.** Le premier déploiement réussi d'un composant dans une cible coche
 automatiquement l'étape correspondante de la liste de contrôle ([23 § 4](23-kit-installation.md)).
 
-**RG-SUI-05 — Ressources détachées.** Quand une révision qui détache des ressources est déployée avec
-succès dans une cible, ces ressources entrent dans l'inventaire des ressources détachées
-([DEC-61](03-decisions.md), section 5).
+**RG-SUI-05 — Ressources détachées.** Les ressources que le rapport d'une release déclare détachées entrent
+dans l'inventaire des ressources détachées de la cible ([DEC-61](03-decisions.md), section 5), même si la
+release a échoué ensuite. Les accès révoqués sont listés dans l'historique de la cible, pas dans
+l'inventaire.
 
 **RG-SUI-06 — Notifications.** Échec d'un déploiement, approbation en attente depuis plus de 24 heures,
 cible protégée en retard de plus de 3 révisions ([26 § 4](26-interface.md)).

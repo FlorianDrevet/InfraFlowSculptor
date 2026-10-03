@@ -30,7 +30,8 @@ d'attente.
 **RG-MCP-05 — Parité par construction.** Chaque commande et chaque requête de l'API publique est exposée
 comme outil MCP, avec un nom `snake_case` dérivé de son nom, sa description et son schéma d'entrée. Les
 outils sont produits depuis le même catalogue de commandes que l'API. Une commande ajoutée à l'API est
-disponible en MCP sans travail supplémentaire.
+disponible en MCP sans travail supplémentaire, **sauf** les commandes d'administration, jamais exposées :
+membres et rôles, jetons, connexions, politiques, export, suppression de projet ([DEC-96](03-decisions.md)).
 
 **RG-MCP-06 — Outils de haut niveau.** En plus des commandes unitaires :
 
@@ -48,7 +49,7 @@ disponible en MCP sans travail supplémentaire.
 | `preview_change` | Applique un ensemble de commandes « à blanc » : constats et résumé des changements, sans rien enregistrer. |
 | `create_change_proposal` | Crée une proposition de modification (section 4). |
 | `generate_revision`, `diff_revisions` | Génération et comparaison ([21](21-generation-et-revisions.md)). |
-| `publish_revision` | Publication ([24](24-depots-et-publication.md)) ; le client MCP demande une confirmation à l'utilisateur avant l'appel. |
+| `publish_revision` | Crée une **demande de publication** ([24](24-depots-et-publication.md)) : une personne qui a `publier` la confirme dans l'écran après avoir vu le résumé de la révision. La confirmation est garantie par le serveur, pas par le client MCP. Un projet peut autoriser la publication directe par agent (`projet.administrer`), en mode pull request uniquement ([DEC-96](03-decisions.md)). |
 
 **RG-MCP-07 — Erreurs exploitables.** Une commande refusée renvoie les mêmes messages par champ que
 l'écran, avec le code de règle, pour que l'agent puisse corriger et réessayer.
@@ -77,13 +78,16 @@ l'aperçu. Rien n'est modifié.
 résumé, les constats et le détail des commandes, puis applique (toutes les commandes en une
 transaction) ou rejette avec un commentaire.
 
-**RG-MCP-08 — Périmée.** Si le modèle a changé depuis la version de base, IFS recalcule l'aperçu à
-l'ouverture. Si une commande ne s'applique plus, la proposition passe `Périmée` et ne peut pas être
+**RG-MCP-08 — Périmée.** Si le modèle, la version du catalogue ou une politique d'organisation a changé
+depuis la version de base, IFS recalcule l'aperçu à l'ouverture et à l'application ; un effet qui change
+est montré avant d'appliquer. Si une commande ne s'applique plus, la proposition passe `Périmée` et ne peut pas être
 appliquée telle quelle.
 
 **RG-MCP-09 — Conservation.** Les propositions sont persistées 90 jours, visibles par les membres du
 projet.
 
-**RG-MCP-10 — Mode direct.** Avec la portée `write`, un agent peut appliquer des commandes sans
-proposition. Une personne qui a `projet.administrer` peut interdire ce mode pour son projet : les agents n'ont alors
-que `propose`.
+**RG-MCP-10 — Mode direct.** Par défaut, un agent n'agit que par propositions, même avec la portée
+`write`. Une personne qui a `projet.administrer` peut activer le mode direct pour son projet : un agent qui a
+`write` applique alors des commandes sans proposition, avec les contrôles d'effets indirects de
+[DEC-89](03-decisions.md). Les propositions d'un agent mettent en tête les nouveaux accès, les expositions
+publiques et les ressources recréées.
