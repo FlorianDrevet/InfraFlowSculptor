@@ -30,7 +30,7 @@ l'utilisateur peut les inverser avant l'étape qui les applique ; le plan indiqu
 | [DT-19](#dt-19--design-system--strata-reproduit-en-composants-angular) | Design system : Strata reproduit en composants Angular | Décidée |
 | [DT-20](#dt-20--client-http-généré-depuis-openapi) | Client HTTP généré depuis OpenAPI | Décidée |
 | [DT-21](#dt-21--outillage-de-test) | Outillage de test | Décidée |
-| [DT-22](#dt-22--mediatr-et-sa-licence) | MediatR et sa licence — `Mediator` recommandé | ⚖️ à confirmer avant S-03 |
+| [DT-22](#dt-22--mediator-à-la-place-de-mediatr) | `Mediator` à la place de MediatR | Décidée |
 | [DT-23](#dt-23--identifiants-et-concurrence) | Identifiants et concurrence | Décidée |
 | [DT-24](#dt-24--isolation-multi-organisations) | Isolation multi-organisations | Décidée |
 | [DT-25](#dt-25--journal-daudit-en-ajout-seul) | Journal d'audit en ajout seul | Décidée |
@@ -56,7 +56,7 @@ modèle touche presque toujours l'API, le client généré et un écran : un seu
 
 **Base.** Le template `dotnet new templatewebcqrs` du dépôt
 [FlorianDrevet/template-CQRS](https://github.com/FlorianDrevet/template-CQRS) : couches `Domain`,
-`Application`, `Infrastructure`, `Api`, `Contracts`, CQRS par MediatR, validation FluentValidation,
+`Application`, `Infrastructure`, `Api`, `Contracts`, CQRS par MediatR (remplacé par `Mediator`, [DT-22](#dt-22--mediator-à-la-place-de-mediatr)), validation FluentValidation,
 erreurs `ErrorOr`, mapping Mapster, points de terminaison en classes statiques `XxxController`.
 
 **Évolutions reprises du dépôt [Vole-Papillon-Damour](https://github.com/FlorianDrevet/Vole-Papillon-Damour)**
@@ -107,7 +107,7 @@ Les versions vivent dans `src/backend/Directory.Packages.props`, `src/frontend/i
 | EF Core, ASP.NET Core, `Microsoft.Extensions.*` | `10.0.7` |
 | Npgsql EF Core | dernière `10.0.x` |
 | `EFCore.NamingConventions` | dernière `10.0.x` |
-| MediatR | `14.1.0` |
+| `Mediator.Abstractions`, `Mediator.SourceGenerator` | dernière `3.x` stable |
 | ErrorOr | `2.0.1` |
 | FluentValidation (+ `DependencyInjectionExtensions`) | `12.1.1` |
 | Mapster (+ `DependencyInjection`) | `10.0.7` |
@@ -408,11 +408,11 @@ Confirmée (2026-10-04).
 | Bout en bout navigateur | Playwright (`@playwright/test`), contre l'AppHost Aspire |
 | Accessibilité | `@axe-core/playwright` |
 
-### DT-22 — MediatR et sa licence
+### DT-22 — `Mediator` à la place de MediatR
 
-⚖️ **À confirmer avant S-03.** MediatR (template et VPD) est sous licence commerciale depuis la v13 : gratuit
-(« Community ») pour une entreprise dont le chiffre d'affaires est inférieur à 5 M$, avec une clé de licence à
-demander ; payant au-delà. Les alternatives :
+Confirmée (2026-10-04) : **`Mediator`** (martinothamar/Mediator, MIT). MediatR (template et VPD) est sous licence
+commerciale depuis la v13 : gratuit (« Community ») sous 5 M$ de chiffre d'affaires avec une clé à demander, payant
+au-delà. Options étudiées :
 
 | Option | Licence | Changement par rapport au template | Avis |
 |---|---|---|---|
@@ -421,12 +421,11 @@ demander ; payant au-delà. Les alternatives :
 | Wolverine | MIT | Autre modèle (messages, conventions, bus intégré) ; réécrit les tranches | Trop éloigné du template |
 | Médiateur écrit à la main | — | ~150 lignes à maintenir | Inutile quand `Mediator` existe |
 
-**Choix proposé : `Mediator`** (dernière `3.x`) : `Mediator.Abstractions` dans Application, `Mediator.SourceGenerator`
+**Mise en œuvre** (dernière `3.x`) : `Mediator.Abstractions` dans Application, `Mediator.SourceGenerator`
 dans les projets hôtes (Api, Worker). Adaptations de la tranche du template : `Task<ErrorOr<T>>` →
 `ValueTask<ErrorOr<T>>` ; `IPipelineBehavior<TMessage, TResponse>.Handle(TMessage message,
 MessageHandlerDelegate<TMessage, TResponse> next, CancellationToken ct)` avec `next(message, ct)`. Le reste (validation,
-autorisation, unité de travail, `ErrorOr`) est identique. L'étape S-03 donne les deux variantes ; celle de la décision
-confirmée s'applique.
+autorisation, unité de travail, `ErrorOr`) est identique. Application à l'étape S-03.
 
 ### DT-23 — Identifiants et concurrence
 
@@ -447,7 +446,7 @@ confirmée s'applique.
   interdites hors du dossier `Infrastructure/Persistence/Admin/` (vérifié par un test d'architecture).
 - L'organisation active vient de l'en-tête `X-Ifs-Organization` (identifiant), vérifié contre les
   adhésions de l'utilisateur à chaque requête ; un jeton d'API porte sa propre organisation.
-- L'autorisation projet/composant est faite par `IProjectAuthorizer` dans un comportement MediatR, à partir
+- L'autorisation projet/composant est faite par `IProjectAuthorizer` dans un comportement du médiateur, à partir
   d'un attribut `[RequiresPermission(Permission.ModelEdit, Scope = ...)]` sur chaque commande ou requête.
 - [EXG-01](../specs/27-exigences-non-fonctionnelles.md) : la suite `Api.Tests/Isolation/` énumère tous les
   points de terminaison (`EndpointDataSource`) et échoue si l'un d'eux n'a pas de scénario d'isolation
@@ -568,7 +567,7 @@ singleton (`IfsAzureCredential`) partagé par tous les clients.
 
 **Exceptions assumées** (secrets qui ne viennent pas d'IFS) : jetons git **de repli** fournis par les clients
 ([DEC-23](../specs/03-decisions.md)) et clé privée de l'application GitHub (jalon 1), stockés dans Key Vault et lus par
-identité managée ; clé de licence MediatR si [DT-22](#dt-22--mediatr-et-sa-licence) retient MediatR.
+identité managée.
 
 **Vérifications** : `AzureConnectionResolverTests` (chaîne présente → mode chaîne ; absente + point de terminaison →
 identité managée ; chaîne vide = absente ; aucune → erreur explicite) ; test d'architecture (aucun `new

@@ -63,7 +63,7 @@ Chaque cas d'utilisation est une tranche verticale, nommée d'après son `UC-…
 Application/Projects/
 ├── Commands/
 │   └── CreateProject/
-│       ├── CreateProjectCommand.cs          record : IRequest<ErrorOr<ProjectResult>>, [RequiresPermission(...)]
+│       ├── CreateProjectCommand.cs          record : IRequest<ErrorOr<ProjectResult>> (Mediator), [RequiresPermission(...)]
 │       ├── CreateProjectCommandValidator.cs AbstractValidator<CreateProjectCommand> — contrôle à la saisie
 │       └── CreateProjectCommandHandler.cs   IRequestHandler<,>
 ├── Queries/
@@ -109,7 +109,7 @@ public static class ProjectsController
 }
 ```
 
-Comportements MediatR, dans cet ordre : `LoggingBehavior` → `ValidationBehavior` (template, FluentValidation)
+Comportements du médiateur (`Mediator`, [DT-22](01-decisions.md#dt-22--mediator-à-la-place-de-mediatr)), dans cet ordre : `LoggingBehavior` → `ValidationBehavior` (template, FluentValidation)
 → `AuthorizationBehavior` (permission, portée composant, effets indirects, [DEC-89](../specs/03-decisions.md))
 → `UnitOfWorkBehavior` (commandes seulement : une transaction, version du modèle, audit, outbox).
 
@@ -158,7 +158,7 @@ Comportements MediatR, dans cet ordre : `LoggingBehavior` → `ValidationBehavio
 
 - Clés de configuration en constantes (`Infrastructure/Configuration/ConfigurationKeys.cs`), options typées
   validées au démarrage (`ValidateDataAnnotations().ValidateOnStart()`).
-- Secrets locaux : `dotnet user-secrets` de l'AppHost (mot de passe PostgreSQL, clé MediatR) ; en Azure,
+- Secrets locaux : `dotnet user-secrets` de l'AppHost (mot de passe PostgreSQL) ; en Azure,
   références Key Vault des Container Apps.
 - Aucune chaîne de connexion en clair dans `appsettings*.json` : Aspire injecte `ConnectionStrings__*` en
   local ; en Azure, seulement `Azure__<nom>__Endpoint` et l'identité managée. Tous les clients Azure (PostgreSQL,

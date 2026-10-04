@@ -83,7 +83,7 @@ flowchart TB
 | `InfraFlowSculptor.Emitters.Bicep` | **Étage 2** : plan → fichiers Bicep | Engine interne autre que le modèle du plan (lit `DeploymentPlan` uniquement) |
 | `InfraFlowSculptor.Emitters.AzureDevOps` | Étage 2 : plan → pipelines YAML Azure DevOps et modèles partagés | Idem |
 | `InfraFlowSculptor.Emitters.InstallKit` | Étage 2 : plan → kit d'installation (script Azure, pipeline d'installation, `SETUP.md`) | Idem |
-| `InfraFlowSculptor.Application` | Tranches CQRS (MediatR) : commandes, requêtes, validateurs, interfaces des ports | EF concret, SDK Azure concrets |
+| `InfraFlowSculptor.Application` | Tranches CQRS (`Mediator`) : commandes, requêtes, validateurs, interfaces des ports | EF concret, SDK Azure concrets |
 | `InfraFlowSculptor.Infrastructure` | EF Core / PostgreSQL, blob, Service Bus, Redis, e-mail, fournisseurs git, Azure DevOps, Key Vault | — |
 | `InfraFlowSculptor.Contracts` | DTO publics de l'API (requêtes, réponses) | Domain |
 | `InfraFlowSculptor.Api` | Points de terminaison minimal API, authentification, erreurs, OpenAPI | — |
@@ -103,7 +103,7 @@ Les dépendances interdites sont vérifiées par des tests d'architecture
 sequenceDiagram
   participant UI as web / API client / MCP
   participant API as api
-  participant APP as Application (MediatR)
+  participant APP as Application (Mediator)
   participant ENG as Engine
   participant DB as PostgreSQL
   UI->>API: POST /v1/projects/{id}/… (Idempotency-Key, expectedVersion)

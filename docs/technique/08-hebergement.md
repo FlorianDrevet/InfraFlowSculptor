@@ -24,7 +24,7 @@ Région : `francecentral` ([DT-27](01-decisions.md#dt-27--hébergement-dans-azur
 | PostgreSQL serveur flexible 17 | `Standard_B2ms` / `Standard_D2ds_v5`, sauvegarde géo-redondante (prod) | Authentification Entra seule ; PITR 35 jours ([EXG-10](../specs/27-exigences-non-fonctionnelles.md)) |
 | Service Bus | Standard | Files à sessions ([DT-32](01-decisions.md#dt-32--files-et-équité)) |
 | Stockage | Standard_ZRS, versioning, suppression réversible | Révisions, exports, rapports |
-| Key Vault | standard, RBAC, protection contre la purge | Jetons git de repli, clé de l'application GitHub, clé MediatR |
+| Key Vault | standard, RBAC, protection contre la purge | Jetons git de repli, clé de l'application GitHub |
 | Azure Managed Redis | Balanced_B0 | Cache, limites |
 | Application Insights + Log Analytics | — | Alertes : échec de contrôle de sortie ([EXG-11](../specs/27-exigences-non-fonctionnelles.md)) |
 | ACS + Email | — | Domaine d'envoi vérifié |

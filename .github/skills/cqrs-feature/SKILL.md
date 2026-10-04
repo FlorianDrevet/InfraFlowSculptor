@@ -9,9 +9,9 @@ Référence complète : `docs/technique/02-backend.md` § 2-5 et `DT-02`, `DT-05
 
 | Fichier | Contenu |
 |---|---|
-| `Application/<Domaine>/Commands/<Cas>/<Cas>Command.cs` | `record … : IRequest<ErrorOr<TResult>>`, `[RequiresPermission(...)]`, `[Audited("...")]`, `[ModelChange]` si le modèle change, `ExpectedVersion` si modification |
+| `Application/<Domaine>/Commands/<Cas>/<Cas>Command.cs` | `record … : IRequest<ErrorOr<TResult>>` (`using Mediator;`), `[RequiresPermission(...)]`, `[Audited("...")]`, `[ModelChange]` si le modèle change, `ExpectedVersion` si modification |
 | `…/<Cas>CommandValidator.cs` | FluentValidation : contrôle **à la saisie** ; code d'erreur = code de règle de la spec |
-| `…/<Cas>CommandHandler.cs` | Charge via `IIfsDbContext`, appelle le domaine, **n'enregistre pas** (le `UnitOfWorkBehavior` le fait) |
+| `…/<Cas>CommandHandler.cs` | Charge via `IIfsDbContext`, appelle le domaine, renvoie `ValueTask<ErrorOr<TResult>>`, **n'enregistre pas** (le `UnitOfWorkBehavior` le fait) |
 | `Application/<Domaine>/Queries/<Cas>/…` | Requête + gestionnaire, projections directes (`AsNoTracking`), pagination serveur |
 | `Contracts/<Domaine>/…Request.cs`, `…Response.cs` | DTO publics, jamais les types du domaine |
 | `Api/Controllers/<Domaine>Controller.cs` | `Map<Domaine>Endpoints(this RouteGroupBuilder v1)` ; `mediator.Send` ; `result.Match(ok, errors => errors.ToProblem())` ; `.WithName(EndpointNames.X)`, `.WithSummary("… (UC-…)")`, `.Produces…`, `.RequireAuthorization(...)`, `.RequireRateLimiting(...)`, `.WithIdempotency()` en écriture |

@@ -25,7 +25,7 @@ Luna ne commence pas l'étape tant que la colonne « Confirmée » ne vaut pas *
 
 | Décision | Choix proposé | Avant l'étape | Confirmée |
 |---|---|---|---|
-| [DT-22](docs/technique/01-decisions.md#dt-22--mediatr-et-sa-licence) | **`Mediator`** (MIT, génération de source) recommandé ; ou MediatR 14 avec clé de licence | S-03 | Non — indiquer le choix |
+| [DT-22](docs/technique/01-decisions.md#dt-22--mediator-à-la-place-de-mediatr) | `Mediator` (MIT, génération de source) à la place de MediatR | S-03 | Oui (2026-10-04) |
 | [DT-21](docs/technique/01-decisions.md#dt-21--outillage-de-test) | AwesomeAssertions au lieu de FluentAssertions 8 (licence) | S-04 | Oui (2026-10-04) |
 | [DT-04](docs/technique/01-decisions.md#dt-04--postgresql-17) | PostgreSQL 17 au lieu de SQL Server | S-06 | Oui (2026-10-04) |
 | [DT-07](docs/technique/01-decisions.md#dt-07--authentification--oidc-entra-en-azure-keycloak-en-local) | OIDC générique : Entra en Azure, Keycloak en local ([guide](docs/technique/09-keycloak.md)) | S-07 | Oui (2026-10-04) |

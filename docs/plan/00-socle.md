@@ -120,7 +120,7 @@ avertissements du template sont tolérés **à cette étape seulement**). `git s
 | | |
 |---|---|
 | **Technique** | [DT-02](../technique/01-decisions.md#dt-02--backend--template-cqrs-modernisé-selon-vole-papillon-damour) (E1–E18), [DT-03](../technique/01-decisions.md#dt-03--versions-épinglées), [DT-05](../technique/01-decisions.md#dt-05--minimal-api-v1-openapi-intégré--scalar), [DT-06](../technique/01-decisions.md#dt-06--erreurs--erroror--problemjson), [DT-22](../technique/01-decisions.md#dt-22--mediatr-et-sa-licence), [DT-26](../technique/01-decisions.md#dt-26--temps-et-horloge) |
-| **Dépend de** | S-02 ; ⚖️ DT-22 confirmée |
+| **Dépend de** | S-02 |
 | **Commit** | `refactor(backend): moderniser le squelette selon les évolutions VPD` |
 
 🎯 **Objectif.** Un backend .NET 10 propre, sans avertissement, avec l'API `/v1`, OpenAPI, Scalar, les
@@ -145,17 +145,17 @@ erreurs `problem+json`, sans aucune trace d'authentification locale.
    J0-22).
 5. `Domain/Common/Models/` : garder `Entity`, `AggregateRoot`, `ValueObject` ; ajouter `EnumValueObject<TEnum>`
    recopié de VPD (évolution E13) ; ajouter `IHasVersion` (`int Version { get; }`).
-6. `Application/DependencyInjection.cs`, selon [DT-22](../technique/01-decisions.md#dt-22--mediatr-et-sa-licence)
-   confirmée dans `NEXT.md` :
-   - **`Mediator` (recommandé)** : retirer `MediatR` de `Directory.Packages.props`, ajouter `Mediator.Abstractions`
-     (Application) et `Mediator.SourceGenerator` (Api, puis Worker à S-08) en dernière `3.x` ;
-     `services.AddMediator(o => { o.ServiceLifetime = ServiceLifetime.Scoped; o.PipelineBehaviors = [typeof(LoggingBehavior<,>), typeof(ValidationBehavior<,>)]; })`
-     dans le projet Api ; gestionnaires et comportements en `ValueTask<…>` ; adapter `ValidationBehavior` du template à
-     la signature `Handle(TMessage message, MessageHandlerDelegate<TMessage, TResponse> next, CancellationToken ct)` ;
-   - **MediatR 14** : `cfg.LicenseKey = configuration["MediatR:LicenseKey"]`, mêmes comportements.
-   Dans les deux cas : `LoggingBehavior` (nouveau : journalise le nom de la requête et la durée, jamais le contenu) puis
-   `ValidationBehavior` (template) ; validateurs FluentValidation par `AddValidatorsFromAssembly`. Les extraits de code
-   du plan écrits avec `IMediator.Send` et `Task` valent pour les deux ; avec `Mediator`, `Task` devient `ValueTask`.
+6. **Remplacer MediatR par `Mediator`** ([DT-22](../technique/01-decisions.md#dt-22--mediator-à-la-place-de-mediatr)) :
+   retirer `MediatR` de `Directory.Packages.props` et de tous les `.csproj` ; ajouter `Mediator.Abstractions`
+   (Application) et `Mediator.SourceGenerator` (Api, puis Worker à S-08), dernière version stable `3.x` ; dans le projet
+   Api, `services.AddMediator(o => { o.ServiceLifetime = ServiceLifetime.Scoped; o.PipelineBehaviors =
+   [typeof(LoggingBehavior<,>), typeof(ValidationBehavior<,>)]; });` ; remplacer les `using MediatR;` par
+   `using Mediator;` ; gestionnaires `ValueTask<ErrorOr<T>> Handle(TRequest request, CancellationToken ct)` ;
+   `ValidationBehavior` du template adapté à `ValueTask<TResponse> Handle(TMessage message,
+   MessageHandlerDelegate<TMessage, TResponse> next, CancellationToken ct)` avec `await next(message, ct)` ;
+   `LoggingBehavior` (nouveau : journalise le nom de la requête et la durée, jamais le contenu) ; validateurs
+   FluentValidation par `AddValidatorsFromAssembly`. Les points de terminaison gardent `IMediator` et `Send`.
+   Vérifier `grep -ri mediatr src/backend` → aucun résultat.
 7. `Api/Errors/` : remplacer `ErrorOrStatusCode.cs` par `ProblemDetailsMapper.cs` (extension
    `ToProblem(this List<Error>)`) qui applique le tableau de [DT-06](../technique/01-decisions.md#dt-06--erreurs--erroror--problemjson)
    à partir de `ErrorType` et de `Error.Metadata` (clés constantes dans `Api/Errors/ProblemMetadataKeys.cs` :
@@ -177,7 +177,7 @@ erreurs `problem+json`, sans aucune trace d'authentification locale.
    "environment": "<nom>" }`, anonyme, nom `GetVersion`.
 10. Constantes : `Api/Common/EndpointNames.cs`, `Api/Common/RateLimitingPolicies.cs`,
     `Api/Common/AuthorizationPolicies.cs` (vide pour l'instant), `Infrastructure/Configuration/ConfigurationKeys.cs`
-    (`MediatR:LicenseKey`, `Cors:AllowedOrigins`…).
+    (`Cors:AllowedOrigins`…).
 11. Remplacer tout `.WithOpenApi()` (déprécié en .NET 10) par les métadonnées `.WithSummary()`/`.Produces*()`.
 
 ✅ **Vérification automatique.**
