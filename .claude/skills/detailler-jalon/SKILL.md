@@ -17,4 +17,5 @@ actions et résultats attendus, 🧠, 📌.
    bibliothèque, un format ou un comportement, ce n'est pas fini : choisis, ou ajoute une `DT-nn`.
 4. Écrire la recette du jalon (`docs/plan/recettes/NN-jalon-n.md`), une section par verrou.
 5. Mettre à jour le tableau des phases de `docs/plan/README.md` et la colonne jalon de `docs/design/README.md`.
-6. `python tools/plan/gate.py lint` vert.
+6. Retirer la ligne `> **Niveau : découpé.**` de l'en-tête du fichier (sinon `gate.py check` refuse ses étapes).
+7. `python tools/plan/gate.py lint` vert.

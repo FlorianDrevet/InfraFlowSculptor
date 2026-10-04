@@ -194,7 +194,7 @@ orders/apps/api/pipelines/pr.yml, ci.yml, release.yml
 ```
 
 Le manifeste `.ifs/manifest.json` est écrit par la publication, pas par la génération : il figure dans la
-sortie de référence sous `reference/pilot/bicep-azdo/.ifs/manifest.example.json` pour la recette, avec une
+sortie de référence sous `reference/pilot/manifest.example.json` (hors du dossier comparé) pour la recette, avec une
 empreinte par fichier. Le code de l'application (`src/api`) appartient au client.
 
 ## 4. Critères d'acceptation du jalon 0
@@ -210,8 +210,9 @@ Ceux de [90 § 4](../specs/90-projet-de-reference.md) qui s'appliquent au catalo
    exécution par composant** (P1).
 4. La CI de `api` construit l'image témoin, la pousse dans `crshopmainshared`, la release la déploie en dev
    puis en prd ; `/health` répond 2xx ; l'image est référencée par son empreinte.
-5. `/health/dependencies` réussit dans les deux environnements : secret lu, requête Log Analytics, lecture et
-   écriture SQL.
+5. Après exécution de `witness-schema.sql` par un administrateur SQL, `/health/dependencies` réussit dans les deux
+   environnements : secret lu, requête Log Analytics, lecture et écriture SQL avec les seuls rôles
+   `db_datareader`/`db_datawriter`, et création de table **refusée** (`sql-least-privilege`).
 6. Une révision 2 qui change la rétention prd de `log main` (90 → 120 jours) produit une pull request qui ne
    modifie que `core/infra/main.prd.bicepparam` ; une modification manuelle préalable de
    `orders/infra/main.bicep` est détectée et présentée en diff avant publication.
@@ -221,12 +222,17 @@ Ceux de [90 § 4](../specs/90-projet-de-reference.md) qui s'appliquent au catalo
    protégée par `denyDelete`, supprime l'attribution ; le rapport la cite ; `/health/dependencies` constate
    l'échec de la requête Log Analytics après propagation ; l'espace et ses données restent ; une tentative de
    suppression de `log-shop-main-prd` par un propriétaire de l'abonnement est refusée.
-9. **Aperçu et approbation (P3)** : l'aperçu prd est lisible dans le run avant approbation ; un commit qui
-   change un rôle, fusionné pendant l'attente d'approbation, arrête la release approuvée sans rien modifier.
-10. **Cible en retard (P4)** : révision 3 ajoute l'identité `id extra` dans `orders` (dev et prd) ; révision 4 la
-    retire ; la révision 4 déployée en dev seulement, puis la révision 5 (n'importe quel autre changement) en
-    dev et prd : `id-shop-extra-prd` est retirée de la pile prd et figure à l'inventaire des ressources
-    détachées de prd.
+9. **Aperçu et approbation (P3)** : l'aperçu prd est lisible dans le run avant approbation, puis deux cas, chacun sur
+   une release en attente d'approbation : (a) une **révision plus récente qui change un rôle d'`orders`** est fusionnée
+   pendant l'attente → après approbation, la release s'arrête à l'étape 5 sans rien modifier, et la release déclenchée
+   par la fusion demande sa propre approbation ; (b) **Azure change** pendant l'attente (rétention de `log-shop-main-prd`
+   modifiée à la main dans le portail) → après approbation, l'empreinte recalculée sur l'artefact figé diffère : arrêt
+   sans rien modifier.
+10. **Cible en retard (P4)** : révision 3 ajoute l'identité `id extra` dans `orders` et est **déployée en dev et en
+    prd** (constater `id-shop-extra-prd` gérée par la pile `ifs-shop-orders-prd`) ; révision 4 la retire et n'est
+    déployée **qu'en dev** (approbation prd refusée) ; révision 5 (autre changement) déployée en dev et prd : prd
+    saute la révision 4, `id-shop-extra-prd` est retirée de la pile prd (toujours présente dans Azure) et figure à
+    l'inventaire des ressources détachées de prd.
 11. **Échec partiel (P5)** : `MAIN_PAYMENTS_API_KEY` vidée après l'approbation de `core` en prd : « partiellement
     appliquée » avec l'étape en échec ; après saisie, la relance termine sans doublon.
 12. **Interruption brutale (P7)** : l'agent est interrompu après la mise à jour de la pile et avant les

@@ -487,8 +487,11 @@ plusieurs réplicas.
    LOCKED`), les envoie sur la file avec `SessionId = organization_id` et `MessageId = id`, marque `sent_at` ;
    réessai exponentiel, `attempts` incrémenté.
 4. Worker : `SessionJobProcessorService` — un `ServiceBusSessionProcessor` par file, `MaxConcurrentSessions = 8`,
-   `MaxConcurrentCallsPerSession = 1`, `SessionIdleTimeout = 5 s` (une session vide est libérée et la suivante
-   servie) ; désérialise l'enveloppe, résout `IJobHandler<T>`, exécute dans une portée DI avec
+   `MaxConcurrentCallsPerSession = 1`, `SessionIdleTimeout = 5 s` ; **rotation forcée** : après chaque message traité,
+   le gestionnaire appelle `args.ReleaseSession()` — une session n'occupe jamais une place plus d'un travail, même
+   si son organisation alimente sa file en continu (le délai d'inactivité seul ne suffit pas : il ne libère qu'une
+   session vide) ; budget par organisation (`organization_budgets`, [DT-32](../technique/01-decisions.md#dt-32--files-et-équité))
+   vérifié avant exécution : dépassé → message replanifié (`ScheduledEnqueueTime` + 30 s) et session libérée ; désérialise l'enveloppe, résout `IJobHandler<T>`, exécute dans une portée DI avec
    `ICurrentOrganization` positionné, complète le message ; idempotence : table `processed_jobs (job_id pk,
    processed_at)` vérifiée avant exécution (migration `S_08_Jobs`).
 5. Worker : `ScheduledJobRunner` + `IScheduledJob { string Name; TimeSpan Interval; Task RunAsync(...) }`,
@@ -503,8 +506,12 @@ plusieurs réplicas.
 9. Tests : `Application.Tests/Jobs/JobDispatcherTests` (l'outbox reçoit l'enveloppe) ;
    `Infrastructure.Tests/Jobs/ScheduledJobLeaseTests` (deux exécuteurs concurrents → une seule exécution) ;
    `Acceptance.Tests/JobsTests.Ping_job_is_processed_once` (via l'AppHost : appel de `/v1/dev/ping-job`, attente
-   de la ligne `processed_jobs`) ; `Acceptance.Tests/JobsTests.Sessions_are_served_fairly` (20 travaux de
-   l'organisation A puis 1 de B : le travail de B se termine avant le 10ᵉ de A ; chaque `PingJob` attend 200 ms).
+   de la ligne `processed_jobs`) ; `Acceptance.Tests/JobsTests.Sessions_are_served_fairly_under_saturation` : `MaxConcurrentSessions = 2` (option de
+   test), trois organisations A, B, C ; A et B **alimentées en continu** (un nouveau `PingJob` de 200 ms dès qu'un se
+   termine) ; un travail de C arrive après 2 s → il doit **commencer en moins de 3 s** (borne = places × durée d'un
+   travail × 3). Si ce test échoue malgré `ReleaseSession` (l'ordre de distribution des sessions par Service Bus n'est
+   pas contractuel), appliquer le **planificateur équitable en base** de [DT-32](../technique/01-decisions.md#dt-32--files-et-équité)
+   (variante B) et noter l'écart dans la demande de revue : c'est une instruction, pas un choix.
 
 ✅ **Vérification automatique.** `dotnet test` (acceptation comprise) vert.
 
@@ -793,8 +800,14 @@ critique bloque ([EXG-05](../specs/27-exigences-non-fonctionnelles.md)).
 
 🔧 **À faire.**
 1. `.github/workflows/ci.yml` (déclencheurs `push` sur toutes les branches, `pull_request` vers `main`) avec
-   les jobs `backend`, `acceptance`, `frontend`, `supply-chain` de [technique 06 § 6](../technique/06-tests-et-qualite.md)
-   (`e2e`, `release-module` et `images` arrivent avec leurs étapes) ; .NET via `actions/setup-dotnet` et
+   les jobs `backend`, `acceptance`, `frontend`, `supply-chain` **et `e2e`** de [technique 06 § 6](../technique/06-tests-et-qualite.md)
+   (`release-module` arrive à P-06, `images` à J0-24 et J0-31). Job `e2e` : Docker sur `ubuntu-latest`, `dotnet run
+   --project src/backend/InfraFlowSculptor.AppHost` en arrière-plan avec `ASPNETCORE_ENVIRONMENT=Development` et des
+   paramètres Aspire fournis par variables (`Parameters__postgres-password`, `Parameters__keycloak-admin-password`,
+   valeurs de CI non secrètes) ; attente que `http://localhost:4200` et `/health` de l'API répondent (5 min max) ;
+   `npx playwright install --with-deps chromium` puis `npm run e2e` ; artefacts : rapport HTML Playwright, traces,
+   captures, journaux de l'AppHost ; arrêt de l'AppHost dans un `always()`. Vérification : une régression volontaire
+   (libellé de la page de connexion modifié sur une branche jetable) fait échouer le job ; .NET via `actions/setup-dotnet` et
    `global.json`, Node via `.nvmrc`, cache NuGet et npm ; publication des résultats de test (TRX, JUnit) en
    artefacts.
 2. Le job `plan` reste dans `.github/workflows/plan-gate.yml` (déjà présent).

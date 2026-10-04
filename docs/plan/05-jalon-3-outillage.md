@@ -1,6 +1,8 @@
 # Jalon 3 — Outillage
 
-> **Niveau : découpé.** Détaillé par Claude au verrou [`R-15`](04-jalon-2-largeur.md#-r-15--sortie-du-jalon-2).
+> **Niveau : découpé.**
+>
+> Détaillé par Claude au verrou [`R-15`](04-jalon-2-largeur.md#-r-15--sortie-du-jalon-2).
 
 **But** ([04 § 2.3](../specs/04-perimetre-et-lots.md)) : les agents IA, la navigation à l'échelle, la sortie et l'entrée
 de projet, le mode découverte — puis l'ouverture commerciale du lot 1.

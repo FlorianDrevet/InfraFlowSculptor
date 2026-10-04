@@ -65,9 +65,9 @@ puis `python tools/design/export_design.py maquette|strata …`, puis mettre à 
 
 | Page du canvas | Écran (`preview/`) | Jalon / étape | Zones des jalons ultérieurs |
 |---|---|---|---|
-| Espace de travail | [Main](maquette-v1/preview/Main.html) | J0-32 | Propositions (J2-06) |
+| Espace de travail | [Main](maquette-v1/preview/Main.html) | J0-32 | Propositions (J2-04) |
 | | [Projects](maquette-v1/preview/Projects.html) | J0-09 | — |
-| | [Proposals](maquette-v1/preview/Proposals.html), [ProposalReview](maquette-v1/preview/ProposalReview.html) | J2-06 | — |
+| | [Proposals](maquette-v1/preview/Proposals.html), [ProposalReview](maquette-v1/preview/ProposalReview.html) | J2-04 | — |
 | | [CommandPalette](maquette-v1/preview/CommandPalette.html), [Notifications](maquette-v1/preview/Notifications.html) | J3-03 | — |
 | Accès & organisation | [Login](maquette-v1/preview/Login.html) | S-13 | — |
 | | [InviteAccept](maquette-v1/preview/InviteAccept.html) | J0-03 | — |
@@ -90,9 +90,9 @@ puis `python tools/design/export_design.py maquette|strata …`, puis mettre à 
 | | [ProjectMembers](maquette-v1/preview/ProjectMembers.html) | J0-05, J0-09 | Huit rôles (J1-04), équipes et portées (J2-03) |
 | | [ProjectSettings](maquette-v1/preview/ProjectSettings.html) | J0-09, J0-25 | Catalogue (J1-01), outils et exécuteurs (J1-05, J1-06) |
 | | [ProjectFindings](maquette-v1/preview/ProjectFindings.html) | J0-20 | Politiques (L2-E) |
-| | [ProjectHistory](maquette-v1/preview/ProjectHistory.html) | J1-03 | Étiquettes, restauration (J2-04) |
-| | [HistoryCompare](maquette-v1/preview/HistoryCompare.html) | J2-04 | — |
-| | [Drafts](maquette-v1/preview/Drafts.html) | J2-05 | — |
+| | [ProjectHistory](maquette-v1/preview/ProjectHistory.html) | J1-03 | Étiquettes, restauration (J2-05) |
+| | [HistoryCompare](maquette-v1/preview/HistoryCompare.html) | J2-05 | — |
+| | [Drafts](maquette-v1/preview/Drafts.html) | J2-06 | — |
 | | [ProjectCosts](maquette-v1/preview/ProjectCosts.html) | L2-E | — |
 | Composants & ressources | [Component](maquette-v1/preview/Component.html), [ComponentSettings](maquette-v1/preview/ComponentSettings.html) | J0-10 | Duplication, retrait, code additionnel (J1-05), abonnement par environnement (J2-03) |
 | | [AddResourceType](maquette-v1/preview/AddResourceType.html), [AddResourceConfigure](maquette-v1/preview/AddResourceConfigure.html) | J0-14 | Types des lots suivants |

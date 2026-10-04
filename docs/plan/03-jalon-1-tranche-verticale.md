@@ -1,6 +1,8 @@
 # Jalon 1 — Tranche verticale
 
-> **Niveau : découpé.** Chaque étape dit quoi construire, avec ses références, ses tests et sa recette. Claude la
+> **Niveau : découpé.**
+>
+> Chaque étape dit quoi construire, avec ses références, ses tests et sa recette. Claude la
 > **détaille au niveau d'exécution** (fichiers, classes, commandes exactes) au verrou [`R-08`](02-jalon-0-pilote.md#-r-08--sortie-du-jalon-0),
 > sur le code réel du jalon 0. Luna n'exécute rien de ce fichier avant ce détail : `gate.py check` l'en empêche
 > (R-08 non approuvé).
@@ -8,12 +10,13 @@
 **But** ([04 § 2.1](../specs/04-perimetre-et-lots.md), [DEC-58](../specs/03-decisions.md)) : le projet de référence
 ([90](../specs/90-projet-de-reference.md)) déployé de bout en bout, avec tout ce que le jalon 1 promet.
 
-**Critère de sortie** : critères 1 à 18 de [90 § 4](../specs/90-projet-de-reference.md) sur la variante Bicep + Azure
+**Critère de sortie** : critères 1 à 14 et 16 à 18 de [90 § 4](../specs/90-projet-de-reference.md) — le critère 15 (droits
+limités à un composant et demande d'accès) dépend de J2-03 et J2-07 : il est exigé au verrou R-15 sur la variante Bicep + Azure
 DevOps ; scénarios T01–T04, T07, T16 ([91](../specs/91-scenarios-critiques.md)) réussis ; preuve P6 obtenue.
 
-**Écart à arbitrer au détail (R-08)** : [04 § 2.1](../specs/04-perimetre-et-lots.md) place « build conteneur **et code** »
-au jalon 1, mais les onze types du jalon 1 sont tous des conteneurs ; Web App et Function App arrivent au jalon 2.
-Proposition : profils de build Code au jalon 2, avec leurs types (J2-01).
+**Écart de spec tranché** ([DT-41](../technique/01-decisions.md#dt-41--build-en-mode-code-au-jalon-2)) : [04 § 2.1](../specs/04-perimetre-et-lots.md) place « build conteneur
+**et code** » au jalon 1, mais les onze types du jalon 1 sont tous des conteneurs ; les profils de build Code arrivent au
+jalon 2 avec Web App et Function App (J2-01).
 
 ---
 
@@ -61,7 +64,7 @@ synchronisation (clé créée hors IFS jamais touchée).
 🔧 **À faire.** `ChangeSet` produit par `UnitOfWorkBehavior` (une commande = un jeu), différences par objet et par
 environnement, lien audit ↔ jeu, provenance au survol/focus/toucher, onglet Historique des objets, chronologie du projet.
 ✅ **Vérification automatique.** Un jeu par commande ; reconstruction du modèle à une version donnée en < 3 s pour 300
-ressources (préparation de J2-04).
+ressources (préparation de J2-05).
 🧪 **Test manuel.** bob modifie une surcharge ; survoler la cellule → « bob, il y a 1 min, jeu n° 42 » ; chronologie du projet.
 
 ### J1-04 — Rôles prédéfinis complets et jetons d'API
@@ -192,6 +195,12 @@ plan**, corrigé dans le moteur.
 ✅ **Vérification automatique.** Compilation et `terraform validate` / schéma GitHub.
 🧪 **Test manuel.** Recette P6 (`recettes/03-jalon-1.md` § P6), y compris l'aperçu GitHub (T14).
 
+### 🔒 R-11 — Revue de l'exploitation et des garde-fous
+
+**Périmètre** : `J1-10`, `J1-11`. **Recette** : back-office et P6.
+
+**Après approbation** : branche `impl/j1-sortie` pour J1-12.
+
 ### J1-12 — Exigences transverses avant le pilote élargi
 
 | | |
@@ -205,11 +214,7 @@ suppression d'organisation (30 jours), restauration testée et reprise après re
 ✅ **Vérification automatique.** Tests de performance ; tests RGPD ; exercice de restauration scripté.
 🧪 **Test manuel.** Supprimer le compte de chloe → profil effacé, audit pseudonymisé ; restaurer une sauvegarde de `dev`.
 
-### 🔒 R-11 — Revue de l'exploitation et des garde-fous
-
-**Périmètre** : `J1-10`, `J1-11`. **Recette** : back-office et P6.
-
 ### 🔒 R-12 — Sortie du jalon 1
 
-**Périmètre** : `J1-12` et le jalon entier. **Claude** : critères de [90 § 4](../specs/90-projet-de-reference.md), puis
+**Périmètre** : `J1-12` et le jalon entier. **Claude** : critères 1 à 14 et 16 à 18 de [90 § 4](../specs/90-projet-de-reference.md), puis
 **détaille le jalon 2** (skill `detailler-jalon`). **Après approbation** : premier segment du jalon 2.

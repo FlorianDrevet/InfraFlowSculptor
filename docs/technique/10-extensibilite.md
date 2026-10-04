@@ -35,7 +35,7 @@ Test d'architecture (`Architecture.Tests/NoSwitchOnExtensionKeysTests`) : aucun 
 
 Décision : [DT-36](01-decisions.md#dt-36--commandes-du-modèle-comme-données-et-espaces-de-travail).
 
-Brouillons (J2-05), propositions (J2-06), restauration (J2-04), import (J3-05, lot 3), `preview_change` du MCP (J3-01),
+Brouillons (J2-06), propositions (J2-04), restauration (J2-05), import (J3-05, lot 3), `preview_change` du MCP (J3-01),
 demandes d'accès (J2-07) : **tous** rejouent des commandes du modèle. Dès le jalon 0 :
 - chaque commande qui modifie le modèle est un `record` sérialisable portant `[ModelCommand("AddResource")]` (nom
   stable, versionné) et implémente `IModelCommand` ; elle cible un **espace de travail** (`ModelWorkspaceId` : le

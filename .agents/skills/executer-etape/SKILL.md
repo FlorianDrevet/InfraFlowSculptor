@@ -12,8 +12,10 @@ verrou 🔒 ou un blocage.
 
 1. `git pull` sur la branche du segment (`NEXT.md`, ligne « Branche »). En début de segment (étape qui suit un verrou
    approuvé, ou S-01) : `git fetch origin main` puis `git switch -c impl/<segment> origin/main` avec le nom donné par le
-   verrou précédent ; mets à jour la ligne « Branche » de `NEXT.md`.
-2. `python tools/plan/gate.py check` → code 3 : arrête-toi et explique. Code 0 : continue.
+   verrou précédent — sauf si ce verrou dit « même branche » (R-02) : rester sur la branche du segment ; mets à jour la ligne « Branche » de `NEXT.md`.
+2. `python tools/plan/gate.py check` → code 3 : arrête-toi et explique — **sauf** statut `EN_ATTENTE_DE_RECETTE` quand
+   l'utilisateur te transmet dans cette session des résultats de recette : alors `gate.py resume <ID>` et suis l'étape
+   (exemple : P-08). Code 0 : continue.
 3. Si l'étape courante est un verrou `R-nn` → skill `demander-revue` (ou `appliquer-corrections` si le statut est
    `CORRECTIONS_DEMANDEES`). Fin.
 4. Si l'étape dépend d'une décision de « Décisions à confirmer » de `NEXT.md` non confirmée → statut `BLOQUE`, question,

@@ -13,8 +13,9 @@ Langue : français pour les échanges, les commits, la documentation ; anglais p
 1. `git pull` (sur la branche du segment indiquée dans `NEXT.md`).
 2. Lire [`NEXT.md`](NEXT.md) en entier.
 3. `python tools/plan/gate.py check`
-   - code **3** → un verrou 🔒 est en attente de revue ou le statut est `BLOQUE` : **ne fais rien d'autre**, dis
-     pourquoi à l'utilisateur et arrête-toi.
+   - code **3** → verrou 🔒 en attente de revue, statut `BLOQUE`, jalon non détaillé, ou attente de recette : **ne fais
+     rien d'autre**, dis pourquoi et arrête-toi. Seule exception : statut `EN_ATTENTE_DE_RECETTE` **et** l'utilisateur te
+     transmet des résultats de recette → `python tools/plan/gate.py resume <ID>`, puis suis l'étape.
    - code 0 → continue.
 4. Lire [`MEMORY.md`](MEMORY.md), puis les fichiers `.github/memory/` utiles à l'étape.
 5. Appliquer la skill [`executer-etape`](.agents/skills/executer-etape/SKILL.md) sur l'étape courante.

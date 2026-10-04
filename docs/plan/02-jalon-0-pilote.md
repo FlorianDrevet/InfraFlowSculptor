@@ -30,7 +30,7 @@ Captures 1440 et 390 jointes à la demande de revue du segment.
 | | |
 |---|---|
 | **Spécifications** | [10 § 2-3](../specs/10-organisations-et-acces.md) : RG-ORG-02, UC-ORG-01, UC-ORG-02, RG-ORG-04 ; [RG-DON-01](../specs/05-modele-de-donnees.md) ; [EXG-01](../specs/27-exigences-non-fonctionnelles.md) |
-| **Maquette** | [OrgSettings](../design/maquette-v1/preview/OrgSettings.html) — zones : nom de l'organisation ; **exclues** : plan et facturation, tenants/domaines autorisés (J0-02), politiques, télémétrie (J1), accès support (J1) ; sélecteur d'organisation de [Sidebar](../design/maquette-v1/preview/Sidebar.html) |
+| **Maquette** | [OrgSettings](../design/maquette-v1/preview/OrgSettings.html) — zones : nom de l'organisation ; **exclues** : plan et facturation, tenants/domaines autorisés (J0-02), politiques, télémétrie (J0-32), accès support (J1) ; sélecteur d'organisation de [Sidebar](../design/maquette-v1/preview/Sidebar.html) |
 | **Dépend de** | R-03 |
 | **Commit** | `feat(organisation): profils d'utilisateur, création et choix de l'organisation` |
 
@@ -158,7 +158,7 @@ administrateur et choisit l'organisation active. Le cadre des tests d'isolation 
 
 | | |
 |---|---|
-| **Spécifications** | [10 § 8](../specs/10-organisations-et-acces.md) : RG-ORG-20, RG-ORG-21, RG-ORG-22, UC-ORG-19 ; [EXG-06](../specs/27-exigences-non-fonctionnelles.md) ; [DT-25](../technique/01-decisions.md#dt-25--journal-daudit-en-ajout-seul) |
+| **Spécifications** | [10 § 8](../specs/10-organisations-et-acces.md) : RG-ORG-20, RG-ORG-21, RG-ORG-22, UC-ORG-19 ; [EXG-06](../specs/27-exigences-non-fonctionnelles.md) ; [DT-25](../technique/01-decisions.md#dt-25--journal-daudit-en-ajout-seul-données-personnelles-à-part) |
 | **Maquette** | [OrgAudit](../design/maquette-v1/preview/OrgAudit.html) — zones : liste, filtre par période ; **exclues** : filtres par auteur et objet, export CSV (J3) |
 | **Dépend de** | J0-03 |
 | **Commit** | `feat(audit): journal d'audit en ajout seul` |
@@ -166,8 +166,15 @@ administrateur et choisit l'organisation active. Le cadre des tests d'isolation 
 🎯 **Objectif.** Toute action de J0-01 à J0-03, et toutes les suivantes, laisse une trace inaltérable.
 
 🔧 **À faire.**
-1. Table `audit_events (id, organization_id, project_id?, occurred_at, actor_kind, actor_id, actor_display,
-   via (Screen|Api|Mcp|Support), action, object_type, object_id, diff jsonb)` ; déclencheur PostgreSQL qui refuse
+1. Table `audit_events (id, organization_id, project_id?, occurred_at, actor_kind, actor_ref, via
+   (Screen|Api|Mcp|Support), action, object_type, object_id, diff jsonb)` — **aucune donnée identifiante** :
+   `actor_ref` est un identifiant opaque (`UserProfileId`, `ApiTokenId`, opérateur), le nom affiché est résolu **à la
+   lecture** par jointure ; table `audit_personal_data (event_id, subject_user_id, field, value)` pour les valeurs
+   personnelles d'une différence (adresse invitée, nom affiché) — le `diff` n'y garde que la marque `{"$personal":
+   "<field>"}`. Les champs personnels sont déclarés par `[PersonalData]` sur les propriétés concernées. Pseudonymisation
+   (J1-12, [EXG-06](../specs/27-exigences-non-fonctionnelles.md)) = suppression des lignes de `audit_personal_data` du
+   sujet et du profil : `audit_events` n'est jamais modifiée, l'acteur s'affiche « Utilisateur supprimé · <empreinte
+   courte> ». Test : après suppression simulée, aucune valeur personnelle du sujet dans les deux tables ; déclencheur PostgreSQL qui refuse
    `UPDATE`/`DELETE` ; fonction `purge_audit_events(cutoff)` `SECURITY DEFINER`, seule voie de suppression.
 2. `IAuditWriter` appelé par `UnitOfWorkBehavior` : chaque commande déclare son action (`[Audited("organization.member.removed")]`)
    et fournit avant/après ; écrit dans la même transaction. Rattrapage des commandes de J0-01 à J0-03.
@@ -207,8 +214,10 @@ composant), avec « introuvable » ou « interdit » selon [RG-ORG-13](../specs/
    (UC-ORG-10). Le port `IProjectOwnershipCheck` de J0-02 devient réel.
 4. L'administrateur d'organisation lit tous les projets ; la **prise de propriété** est une commande journalisée.
 5. Écran membres du projet, limité aux trois rôles du pilote (les autres existent côté serveur).
-   *Le projet complet arrive en J0-07 : cette étape crée l'agrégat `Project` **minimal** (`Id`, `OrganizationId`,
-   `Name`, `Code`, `Version`, `DeletedAt`, `RoleAssignments`) et une commande interne de test pour l'alimenter ; J0-07
+   *Le projet complet arrive en J0-07 : cette étape crée — table, configuration EF, migration `J0_05_ProjectFoundation` —
+   l'agrégat `Project` **minimal** (`Id`, `OrganizationId`,
+   `Name`, `Code`, `Version`, `DeletedAt`, `RoleAssignments`) et une commande interne de test pour l'alimenter ; `seed demo` crée le projet minimal `shop` de Contoso
+   (alice propriétaire, bob contributeur, chloe lectrice) pour la recette R-04 (A14) ; J0-07
    ajoute les autres champs à ce même agrégat (migration additive), sans le renommer ni le déplacer. L'écran est relié
    en J0-09.*
 
@@ -327,8 +336,11 @@ en 3.
 1. `ProjectWizardDraft` (utilisateur, organisation, contenu `jsonb`, expiration 30 jours) ; commandes
    `SaveWizardDraft`, `DiscardWizardDraft`, `CreateProjectFromWizard` (une transaction : projet,
    environnements, nommage, plan de publication facultatif, rôle propriétaire du créateur — [RG-PRJ-04](../specs/11-projets-et-environnements.md)).
-2. Aperçu des noms de l'étape 4 calculé par le **moteur** (endpoint `POST /v1/naming/preview` qui accepte un
-   projet non enregistré ; le moteur de nommage complet arrive en J0-13 — à cette étape, gabarits et jetons
+2. Créer le projet `InfraFlowSculptor.Engine` (pur, règles d'architecture de [technique 06 § 3](../technique/06-tests-et-qualite.md#3-tests-darchitecture-extraits-obligatoires))
+   et `tests/InfraFlowSculptor.Engine.Tests`, avec le contrat `ModelSnapshot` **partiel** (projet, environnements,
+   conventions de nommage et de tags) que J0-11 complète par les composants et ressources sans le déplacer.
+   Aperçu des noms de l'étape 4 calculé par le **moteur** (`NamingEngine` initial dans ce projet ; endpoint
+   `POST /v1/naming/preview` qui accepte un projet non enregistré ; le moteur de nommage complet arrive en J0-13 — à cette étape, gabarits et jetons
    simples, sans assainissement par type ; J0-13 remplace l'implémentation sans changer le contrat).
 3. Écrans de l'assistant, avec enregistrement du brouillon à chaque étape et reprise.
 
@@ -419,7 +431,8 @@ catalogue ne demande aucun code ([P7](../specs/01-principes.md)).
    `SetExistingResourceId` (validation du format et du type ARM — [RG-RES-09](../specs/14-modele-des-ressources.md)),
    `SetForcedName`, `AddChild`/`UpdateChild`/`RemoveChild`, `MoveResource`, `DeleteResource` (l'impact vient du
    moteur en J0-15 ; ici, suppression simple et test marqué « à compléter en J0-15 » dans `test-debt.md`).
-4. `ModelSnapshotBuilder` (Application) : charge un projet complet et produit le `ModelSnapshot` du moteur
+4. Compléter `ModelSnapshot` (composants, groupes, ressources, surcharges, présences, existantes, enfants) et
+   `ModelSnapshotBuilder` (Application) : charge un projet complet et produit le `ModelSnapshot` du moteur
    ([technique 03 § 3](../technique/03-moteur-et-generation.md#3-le-modèle-dentrée)) ; requête interne réutilisée
    par toutes les étapes du moteur.
 
@@ -444,7 +457,7 @@ expliquant l'irréversibilité.
 🎯 **Objectif.** Le premier bloc du moteur pur : pour chaque ressource et chaque cible, la valeur effective de
 chaque propriété avec sa provenance, la présence, la région, les tags effectifs.
 
-🔧 **À faire.** Projet `InfraFlowSculptor.Engine` + `tests/InfraFlowSculptor.Engine.Tests` ; `EffectiveValueResolver`,
+🔧 **À faire.** Dans `InfraFlowSculptor.Engine` (créé en J0-08) : `EffectiveValueResolver`,
 `TargetResolver`, `TagResolver` ; `ModelSnapshotBuilder` de test fluide (`Engine.Tests/Builders/`) ; règles
 d'architecture du moteur ([technique 06 § 3](../technique/06-tests-et-qualite.md#3-tests-darchitecture-extraits-obligatoires)) ;
 API `GET /v1/projects/{id}/resources/{rid}/effective-values` (tableau propriétés × cibles, provenance).
@@ -807,6 +820,13 @@ déterministe) ; `ReferenceOutputTests` étendu à **toute** l'arborescence.
    `Queued|Generating|Generated|Failed`, constats non bloquants, arborescence chemin → empreinte, résumé des
    changements, position dans la file) ; `GenerateRevision` (refus si erreur ; renvoie la dernière si rien n'a
    changé ; met en file `generation`) ; budget par organisation.
+1 bis. **Entrée figée** : dans la transaction de `GenerateRevision`, sous verrou de la ligne `projects` (`SELECT … FOR
+   UPDATE`, donc aucune modification concurrente du modèle), construire le `ModelSnapshot` courant, le sérialiser en JSON
+   canonique (`ifs-project/v1`) avec la version du catalogue, le langage et la plateforme, calculer son empreinte, et
+   l'écrire dans `revision_inputs (revision_id pk, model_version, catalog_version, iac_language, ci_platform,
+   snapshot jsonb, sha256)` ; la révision `Queued` et le message d'outbox sont écrits dans **la même** transaction. Le
+   worker ne lit **que** `revision_inputs`, jamais le modèle courant. Test d'acceptation : worker suspendu, génération
+   demandée sur v10, modèle modifié en v11, worker repris → fichiers et métadonnées correspondent à v10.
 2. Worker : `GenerateRevisionJobHandler` ; `OutputChecker` (CLI Bicep épinglée, cache AVM, schéma YAML,
    PSScriptAnalyzer) ; échec → révision `Failed`, compteur `ifs.output_check_failures`, incident interne (journal
    d'erreur structuré `OutputCheckFailed` sans contenu client) et message « incident IFS ».
@@ -1100,7 +1120,11 @@ personnel (outlook.com) est refusé avec un message clair (les comptes personnel
 `PUT /v1/me/preferences`, appliqués sans rechargement) ; e2e `pilot-journey.spec.ts` (dans l'AppHost,
 Gitea) : créer l'organisation, la connexion, le projet par l'assistant, modéliser le projet pilote, corriger les
 constats, générer, publier, vérifier la pull request ; instrumentation des indicateurs du pilote (temps actif par
-étape, [04 § 2.0](../specs/04-perimetre-et-lots.md)) en télémétrie produit pseudonymisée ([DEC-83](../specs/03-decisions.md)) ;
+étape, [04 § 2.0](../specs/04-perimetre-et-lots.md)) en télémétrie produit pseudonymisée ([DEC-83](../specs/03-decisions.md)),
+**avec son interrupteur** : réglage d'organisation « Télémétrie produit » (activée par défaut, administrateur, zone de
+[OrgSettings](../design/maquette-v1/preview/OrgSettings.html)) vérifié **côté serveur** par `IProductTelemetry` avant toute
+émission (désactivé → aucun événement produit ; journaux de sécurité et de facturation inchangés), conservation 13 mois
+(table dédiée de Log Analytics avec rétention de 395 jours, réglée dans `infra/`) ;
 traduction anglaise complète (contrôle : aucune clé manquante) ; `docs/plan/recettes/02-jalon-0.md` complété avec la
 séquence de démonstration du pilote.
 

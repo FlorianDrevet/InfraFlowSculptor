@@ -33,7 +33,7 @@ l'utilisateur peut les inverser avant l'étape qui les applique ; le plan indiqu
 | [DT-22](#dt-22--mediator-à-la-place-de-mediatr) | `Mediator` à la place de MediatR | Décidée |
 | [DT-23](#dt-23--identifiants-et-concurrence) | Identifiants et concurrence | Décidée |
 | [DT-24](#dt-24--isolation-multi-organisations) | Isolation multi-organisations | Décidée |
-| [DT-25](#dt-25--journal-daudit-en-ajout-seul) | Journal d'audit en ajout seul | Décidée |
+| [DT-25](#dt-25--journal-daudit-en-ajout-seul-données-personnelles-à-part) | Journal d'audit en ajout seul, données personnelles à part | Décidée |
 | [DT-26](#dt-26--temps-et-horloge) | Temps et horloge | Décidée |
 | [DT-27](#dt-27--hébergement-dans-azure-france-central) | Hébergement dans Azure France Central | Décidée |
 | [DT-28](#dt-28--langue-du-code-et-de-linterface) | Langue du code et de l'interface | Décidée |
@@ -49,6 +49,7 @@ l'utilisateur peut les inverser avant l'étape qui les applique ; le plan indiqu
 | [DT-38](#dt-38--disponibilité-des-fonctions-et-limites-de-plan) | Disponibilité des fonctions et limites de plan | Décidée |
 | [DT-39](#dt-39--journalisation-et-diagnostics-sont-des-dépendances-de-création) | Journalisation et diagnostics : dépendances de création (écart de spec) | Décidée |
 | [DT-40](#dt-40--ordre-des-comportements-du-médiateur) | Ordre des comportements du médiateur | Décidée |
+| [DT-41](#dt-41--build-en-mode-code-au-jalon-2) | Build en mode Code au jalon 2 (écart de spec) | Décidée |
 
 ---
 
@@ -458,13 +459,15 @@ autorisation, unité de travail, `ErrorOr`) est identique. Application à l'éta
   points de terminaison (`EndpointDataSource`) et échoue si l'un d'eux n'a pas de scénario d'isolation
   déclaré ([06 § 4](06-tests-et-qualite.md)).
 
-### DT-25 — Journal d'audit en ajout seul
+### DT-25 — Journal d'audit en ajout seul, données personnelles à part
 
-Table `audit_events` alimentée dans la transaction de la commande. Un déclencheur PostgreSQL refuse
-`UPDATE` et `DELETE` (seule la purge planifiée à 13 mois, par une fonction `SECURITY DEFINER` dédiée, peut
-supprimer). Différence avant/après en `jsonb`. Pseudonymisation après suppression d'un compte par
-remplacement de l'auteur par un identifiant opaque dans une table de correspondance supprimée
-([EXG-06](../specs/27-exigences-non-fonctionnelles.md)).
+Table `audit_events` alimentée dans la transaction de la commande. Un déclencheur PostgreSQL refuse `UPDATE` et
+`DELETE` (seule la purge planifiée à 13 mois, par une fonction `SECURITY DEFINER` dédiée, peut supprimer). L'acteur
+est un identifiant opaque (`actor_ref`) ; son nom est résolu **à la lecture**. Les valeurs personnelles d'une différence
+(nom, adresse) vont dans `audit_personal_data (event_id, subject_user_id, field, value)`, la différence `jsonb` n'en
+garde qu'une marque. Pseudonymiser un compte ([EXG-06](../specs/27-exigences-non-fonctionnelles.md)) = supprimer ses
+lignes de `audit_personal_data` et son profil, sans jamais modifier `audit_events` (corrige la contradiction relevée
+par la revue du plan du 2026-10-04, PLAN-07).
 
 ### DT-26 — Temps et horloge
 
@@ -527,13 +530,23 @@ d'opération ([RG-PUB-20](../specs/24-depots-et-publication.md)).
 ### DT-32 — Files et équité
 
 - Une file Service Bus **à sessions** par nature de travail (`generation`, `publication`, `tracking`,
-  `notifications`), identifiant de session = identifiant d'organisation : les messages d'une organisation
-  sont traités dans l'ordre, et le processeur à sessions sert les organisations à tour de rôle
-  ([EXG-23](../specs/27-exigences-non-fonctionnelles.md)).
-- Envoi fiable : table `outbox_messages` écrite dans la transaction de la commande, relayée vers Service Bus
-  par le worker (`OutboxRelay`), à au moins une fois ; chaque gestionnaire est idempotent.
-- Budgets par organisation (générations par heure…) : table `organization_budgets`, contrôlés avant la mise
-  en file ; un dépassement ralentit (message différé) et prévient, sans toucher aux autres organisations.
+  `notifications`), identifiant de session = identifiant d'organisation.
+- **Rotation forcée** : le processeur libère la session (`ReleaseSession()`) après **chaque** message ; une
+  organisation qui alimente sa file en continu n'occupe donc jamais une place plus d'un travail. `SessionIdleTimeout`
+  seul ne suffit pas : il ne libère qu'une session vide (revue du plan, PLAN-06).
+- **Mesure, pas supposition** : le test `Sessions_are_served_fairly_under_saturation` (S-08) sature toutes les places
+  avec des organisations alimentées en continu et borne le délai de prise en charge d'une nouvelle organisation
+  (places × durée d'un travail × 3).
+- **Variante B, à appliquer si ce test échoue** (l'ordre de remise des sessions par Service Bus n'est pas contractuel) :
+  planificateur équitable en base — table `job_queue (id, organization_id, kind, payload, enqueued_at, state,
+  started_at)` et `organization_dispatch (organization_id, kind, last_dispatched_at)` ; le worker prend le travail
+  `Pending` de l'organisation servie le moins récemment (`ORDER BY last_dispatched_at NULLS FIRST, enqueued_at`,
+  `FOR UPDATE SKIP LOCKED`) ; Service Bus ne sert plus qu'au réveil (message sans contenu). Les gestionnaires
+  `IJobHandler<T>` et `IJobDispatcher` ne changent pas.
+- Envoi fiable : table `outbox_messages` écrite dans la transaction de la commande, relayée par le worker
+  (`OutboxRelay`), à au moins une fois ; chaque gestionnaire est idempotent.
+- Budgets par organisation (`organization_budgets`) contrôlés avant exécution : un dépassement replanifie le message
+  (30 s) et libère la session, sans toucher aux autres organisations.
 - La position dans la file est exposée par l'API (`queuePosition`) pour l'écran.
 
 ### DT-33 — Identité managée partout ; chaîne de connexion seulement en local
@@ -645,3 +658,9 @@ Décidée (2026-10-04). `LoggingBehavior` → `AuthorizationBehavior` → `Valid
 L'autorisation passe **avant** la validation : un utilisateur sans accès au projet doit recevoir « introuvable »
 ([RG-ORG-13](../specs/10-organisations-et-acces.md)), jamais des erreurs de validation qui révéleraient l'existence ou la
 forme de l'objet. Les validateurs ne contrôlent que la forme de la requête ; ils ne lisent pas la base.
+
+### DT-41 — Build en mode Code au jalon 2
+
+Décidée (2026-10-04), **écart de spec signalé**. [04 § 2.1](../specs/04-perimetre-et-lots.md) place « build conteneur et
+code » au jalon 1, mais les onze types du jalon 1 sont des conteneurs : les profils de build Code arrivent avec Web App et
+Function App (J2-01). Claude propose l'amendement de 04 § 2.1 avec celui de RG-CMP-05 ([DT-39](#dt-39--journalisation-et-diagnostics-sont-des-dépendances-de-création)) au verrou R-03.

@@ -17,7 +17,8 @@
 | **Branche** | `impl/socle` (à créer depuis `origin/main` à S-01) |
 | **Dernière mise à jour** | 2026-10-03 — Claude (plan initial) |
 
-Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question ci-dessous).
+Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
+résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question ci-dessous).
 
 ## Décisions à confirmer avant leur étape
 

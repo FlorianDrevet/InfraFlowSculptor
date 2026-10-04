@@ -39,7 +39,10 @@ décision cite des fichiers, des classes et des commandes qui n'existeront qu'ap
 Les écrire maintenant, c'est écrire des étapes qu'on réécrira. Chaque jalon est donc **découpé** dès
 aujourd'hui (objectif, contenu, références, tests, recette), et **détaillé au niveau d'exécution par Claude
 au verrou qui le précède**, sur le code réel. Luna ne commence jamais une étape qui n'est pas au niveau
-d'exécution : `gate.py lint` refuse une étape sans ses rubriques 🔧 ✅ 🧪.
+d'exécution : un fichier de jalon seulement découpé porte la ligne `> **Niveau : découpé.**`, et `gate.py check` refuse
+(code 3) toute étape d'un tel fichier ; la skill `detailler-jalon` retire cette ligne quand le détail est fait. `gate.py
+lint` vérifie seulement la présence des rubriques 🔧 ✅ 🧪 : il ne mesure pas le niveau de détail, que la revue de Claude
+garantit.
 
 ## Anatomie d'une étape
 
@@ -112,7 +115,8 @@ refuse un `NEXT.md` positionné après un verrou non approuvé.
 ## Branches et pull requests
 
 - Un **segment** = les étapes entre deux verrous. Une branche par segment : `impl/<segment>` (nom donné par
-  le verrou précédent ; le premier est `impl/socle`), créée depuis `origin/main` à jour.
+  le verrou précédent ; le premier est `impl/socle`), créée depuis `origin/main` à jour. **Exception** : quand le texte
+  du verrou dit « même branche » (R-02), Luna continue sur la branche et la pull request du segment en cours.
 - **Un commit par étape**, message du plan, en français, pied obligatoire :
 
   ```

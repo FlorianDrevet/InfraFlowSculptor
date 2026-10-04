@@ -44,11 +44,15 @@ chaque accès que le modèle a câblé.
    |---|---|---|
    | `secret` | `Payments__ApiKey` | La variable est présente et non vide (Container Apps l'a résolue depuis Key Vault) |
    | `logs` | `LogAnalytics__WorkspaceId` | `LogsQueryClient.QueryWorkspaceAsync(id, "print 1", 5 min)` avec `DefaultAzureCredential` |
-   | `sql` | `Sql__Server`, `Sql__Database` | Connexion `Authentication=Active Directory Default` (identité **système**), `CREATE TABLE IF NOT EXISTS witness(...)` équivalent T-SQL, insertion puis lecture d'une ligne |
+   | `sql` | `Sql__Server`, `Sql__Database` | Connexion `Authentication=Active Directory Default` (identité **système**) ; insertion puis lecture d'une ligne dans `dbo.witness_checks` (table **préparée** par `sql/witness-schema.sql`, jamais créée par l'application) ; puis contrôle `sql-least-privilege` : un `CREATE TABLE dbo.witness_forbidden(...)` doit être **refusé** (le contrôle échoue s'il réussit) |
    | `appconfig` | `AZURE_APPCONFIG_ENDPOINT` | Lecture de la clé `orders:maxItemsPerOrder` (jalon 1) |
    | `servicebus` | `ServiceBus__Namespace` | Envoi d'un message sur `order-created` (jalon 1) |
    `DefaultAzureCredential` utilise `AZURE_CLIENT_ID` (identité affectée `id api`) **sauf** pour SQL, qui
    force l'identité système (`ManagedIdentityCredential()` sans identifiant client) : c'est ce qu'exige P9.
+3 bis. `samples/witness-app/sql/witness-schema.sql` : script idempotent qui crée `dbo.witness_checks (id uniqueidentifier
+   primary key, written_at datetime2, value nvarchar(100))`. Il est exécuté **une fois par cible** par un membre du
+   groupe administrateur SQL (étape de la recette, comme le ferait la migration de schéma d'un client) : les droits de
+   l'application restent exactement `db_datareader` + `db_datawriter` ([RG-LIA-20](../specs/16-liaisons-identites-et-acces.md)).
 4. Tests `samples/witness-app/tests/` (xUnit) : un contrôle sans configuration est `skipped` ; un contrôle en
    erreur rend 503 et un message sans valeur secrète ; `/health` renvoie `IMAGE_TAG`.
 
@@ -120,8 +124,8 @@ sans avertissement.
      "subscriptionId": "<A>", "location": "francecentral", "protected": false,
      "deploymentIdentityObjectId": null,
      "dependencies": [ { "component": "core", "resources": [ { "id": "/subscriptions/<A>/resourceGroups/rg-shop-core-main-dev/providers/Microsoft.KeyVault/vaults/kv-shop-main-dev" } ] } ],
-     "expectedSecrets": [ { "variable": "MAIN_PAYMENTS_API_KEY", "vault": "kv-shop-main-dev", "secret": "payments-api-key", "writer": "core" } ],
      "secretWrites": [],
+     "secretReferences": [ { "vault": "kv-shop-main-dev", "secret": "payments-api-key", "writer": "core" } ],
      "appOwnedState": [ { "resourceId": "…/containerApps/ca-shop-api-dev", "parameter": "caApi.image", "kind": "containerAppImage", "bootstrapImage": "<pins>" } ],
      "dataAccess": [ { "server": "sql-shop-orders-dev.database.windows.net", "database": "sqldb-shop-orders-dev",
                        "principal": { "resourceId": "…/containerApps/ca-shop-api-dev", "kind": "systemAssigned" },
@@ -130,6 +134,12 @@ sans avertissement.
      "restartOnSecretChange": [ "…/containerApps/ca-shop-api-dev" ]
    }
    ```
+   **Contrat des secrets** (corrige l'ambiguïté écrivain / consommateur) : `secretWrites` = secrets que **ce** composant
+   écrit (`{ variable, vault, secret, source: "pipeline" | "generated" }`) — présent seulement dans le
+   `release.<cible>.json` du composant écrivain, ici `core` (`[{ "variable": "MAIN_PAYMENTS_API_KEY", "vault":
+   "kv-shop-main-dev", "secret": "payments-api-key", "source": "pipeline" }]`) ; `secretReferences` = secrets que ce
+   composant consomme sans les écrire, vérifiés **par leur existence dans le coffre**, jamais par la valeur : `orders`
+   ne reçoit donc jamais `MAIN_PAYMENTS_API_KEY`.
    `deploymentIdentityObjectId` est `null` dans la sortie de référence ; la release le lit dans l'identité du
    run (`az ad signed-in-user` n'existe pas pour un principal de service : utiliser
    `az account show --query user.name` puis `az ad sp show --id`).
@@ -165,10 +175,12 @@ unité de déploiement dans une cible, reprenable à tout moment, sans doublon.
    | Fonction | Étape de [22 § 3.1](../specs/22-pipelines.md) | Contrat |
    |---|---|---|
    | `Read-IfsReleaseData` | — | Lit et valide `release.<cible>.json` (schéma) |
-   | `Open-IfsOperationJournal` | 1, 6 | Blob `ifs-operations/<unit>.json` du compte `stifs<projet><cible>`, bail exclusif de 60 s renouvelé ; crée le journal s'il n'existe pas |
+   | `Read-IfsOperationJournal` | 1 (Aperçu) | **Lecture seule**, sans bail : un journal absent est un journal vide ; aucun appel d'écriture ([22 § 3.1](../specs/22-pipelines.md) : l'Aperçu ne modifie rien) |
+   | `Open-IfsOperationJournal` | 6 (Déploiement) | Crée le blob `ifs-operations/<unit>.json` du compte `stifs<projet><cible>` s'il n'existe pas, prend un bail exclusif de 60 s renouvelé toutes les 30 s par une tâche de fond jusqu'à `Close-IfsOperationJournal` (dans le `finally`) ; un bail tenu par un autre run → attente bornée (10 min) puis échec explicite |
    | `Get-IfsPendingOperation` | 1, 7 | Opérations `ToDo` ou `Started` d'une exécution précédente |
    | `Test-IfsDependency` | 2 | Chaque ressource de `dependencies` existe (`az resource show --ids`), sinon erreur « Déployez d'abord <composant> en <cible>. » |
-   | `Test-IfsSecretVariable` | 3 | Chaque `expectedSecrets.variable` a une valeur dans l'environnement du run, sinon erreur listant les variables vides et le groupe `ifs-<projet>-<cible>` |
+   | `Test-IfsSecretVariable` | 3 | Chaque `secretWrites.variable` de source `pipeline` a une valeur dans l'environnement de l'étape (mappée par le YAML), sinon erreur listant les variables vides et le groupe `ifs-<projet>-<cible>` |
+   | `Test-IfsSecretReference` | 3 | Chaque `secretReferences` existe dans son coffre (`az keyvault secret list --vault-name … --query "[?name=='…'].id"`, sans lire la valeur) ; sinon erreur « Déployez d'abord <writer> en <cible> » |
    | `Invoke-IfsPreview` | 4 | What-if de portée abonnement + comparaison avec les ressources gérées par la pile (`az stack sub show`) ; produit `ifs-preview.json` et un résumé Markdown en sections : opérations reprises ; créées / modifiées / recréées ; détachées ou supprimées ; **accès révoqués** ; écritures de plan de données ; limites de l'aperçu |
    | `Get-IfsEffectFingerprint` | 4, 5 | SHA-256 du JSON canonique des effets, **hors** état appartenant au pipeline applicatif (`appOwnedState`) — [DEC-102](../specs/03-decisions.md) |
    | `Read-IfsAppOwnedState` | 5 | Image en service (et, plus tard, trafic) relue sous verrou ; image de démarrage si la ressource n'existe pas |
@@ -183,16 +195,25 @@ unité de déploiement dans une cible, reprenable à tout moment, sans doublon.
    rapport. Documenté dans l'aide comme « réservé aux tests ; sans effet si absent ». (Son maintien dans la
    sortie générée sera tranché au verrou R-03.)
 3. Scripts appelés par les pipelines : `Invoke-IfsInfraPreview.ps1` (étapes 1–4, publie `ifs-preview` en
-   artefact et le résumé dans le run), `Invoke-IfsInfraDeploy.ps1` (étapes 5–13 : refuse si l'empreinte
-   recalculée diffère de celle de l'artefact approuvé — message « Les effets ont changé depuis l'aperçu
-   approuvé ; relancez la release pour une nouvelle approbation. » — [DEC-87](../specs/03-decisions.md)),
+   artefact et le résumé dans le run), `Invoke-IfsInfraDeploy.ps1` (étapes 5–13). L'étape 5 a **deux** contrôles, dans cet ordre :
+   (a) **révision plus récente** ([91 T04, variante](../specs/91-scenarios-critiques.md)) : lire `.ifs/manifest.json`
+   à la tête de la branche par défaut (`git fetch origin <branche> && git show origin/<branche>:<chemin>`) ; si sa
+   révision est plus récente que celle de l'artefact du run **et** que l'empreinte des fichiers de cette unité y diffère,
+   arrêt sans mutation : « Une révision plus récente (<n>) modifie ce composant ; la release qu'elle a déclenchée
+   l'appliquera après une nouvelle approbation. » ;
+   (b) **effets** ([DEC-87](../specs/03-decisions.md), [DEC-102](../specs/03-decisions.md)) : l'aperçu est recalculé
+   **sur l'artefact figé du run** contre l'état Azure courant ; empreinte différente de celle approuvée → arrêt :
+   « Les effets ont changé depuis l'aperçu approuvé ; relancez la release pour une nouvelle approbation. »
    `Invoke-IfsAppDeploy.ps1` (vérification préalable [RG-APP-16](../specs/19-applications-build-et-deploiement.md),
    nouvelle révision avec l'image par empreinte, contrôle de santé 2xx sous 5 min, `ifs-app-report.json`).
 4. Schémas JSON sous `reference/release-module/schemas/` : `release-data`, `operation-journal`, `ifs-report`,
    `ifs-preview`, `ifs-app-report`.
 5. Tests Pester 5 dans `reference/release-module/tests/` — `az` est **simulé** (fonction `az` remplacée par un
    faux qui enregistre les appels et rejoue des réponses JSON de `tests/fixtures/`) :
+   - l'Aperçu, journal absent compris, ne fait **aucun** appel d'écriture ni de bail (le faux `az` échoue si on en fait) ;
    - le journal est écrit **avant** la première mutation ; une reprise ne duplique aucune opération ;
+   - `orders` (références seulement) n'exige aucune variable secrète ; `core` échoue à l'étape 3 si `MAIN_PAYMENTS_API_KEY` est vide ;
+   - une révision plus récente fusionnée pendant l'attente d'approbation et qui change les fichiers de l'unité → arrêt à l'étape 5 sans mutation ;
    - T02 : journal avec une révocation `ToDo` → la release suivante la fait **en premier** ;
    - T03 : échec du déploiement de la pile → rapport « partiellement appliquée » avec les ressources créées ;
    - T04 : image en service différente de celle de l'aperçu → empreinte inchangée, image reconduite ;
@@ -230,8 +251,10 @@ destination ([RG-PIP-01](../specs/22-pipelines.md)).
    des cibles avec `protected`), `infra-target-stages.yml` (stage `Preview_<cible>` : job **sans
    environnement**, connexion `ifs-<projet>-<cible>`, `Invoke-IfsInfraPreview.ps1` ; stage `Deploy_<cible>` :
    job de déploiement sur l'environnement `<projet>-<cible>`, connexion `ifs-<projet>-<cible>`,
-   `Invoke-IfsInfraDeploy.ps1`, groupe de variables `ifs-<projet>-<cible>` avec chaque secret attendu **mappé
-   explicitement** dans `env:`), `app-pr.yml`, `app-ci.yml` (build `buildx`, scan Trivy bloquant à `CRITICAL`,
+   `Invoke-IfsInfraDeploy.ps1` ; le groupe de variables `ifs-<projet>-<cible>` est lié aux **deux** stages
+   (`Preview_<cible>` et `Deploy_<cible>`) **seulement** dans les pipelines du composant écrivain, et chaque variable de
+   `secretWrites` est mappée explicitement dans le `env:` des seules étapes qui l'utilisent (contrôle de l'étape 3 en
+   Aperçu, écriture des étapes 8/11 en Déploiement) ; les composants consommateurs n'ont ni groupe ni mapping), `app-pr.yml`, `app-ci.yml` (build `buildx`, scan Trivy bloquant à `CRITICAL`,
    cache, poussée avec la connexion `ifs-<projet>-<cible du registre>-app`, tag `<build>-<sha court>`,
    publication de l'**empreinte** de l'image en artefact), `app-release.yml`, `app-target-stage.yml`
    (environnement `<projet>-<cible>`, connexion applicative, `Invoke-IfsAppDeploy.ps1`).
@@ -313,8 +336,9 @@ la faire, avec quels droits, et donne la commande exacte.
 1. `README.ifs.md` : architecture (diagramme Mermaid des composants et liaisons), noms par cible, ordre de
    déploiement, comment déployer, comment revenir en arrière, points d'extension et leur contrat
    ([RG-GEN-16](../specs/21-generation-et-revisions.md)).
-2. `.ifs/manifest.example.json` : projet, révision `1`, liste des fichiers gérés avec SHA-256 ; script
-   `reference/tools/Update-ManifestExample.ps1` qui le recalcule.
+2. `reference/pilot/manifest.example.json` (**hors** de `reference/pilot/bicep-azdo/`, qui ne contient que la sortie
+   générée, comparée intégralement et sans exception) : projet, révision `1`, liste des fichiers gérés avec SHA-256 ;
+   script `reference/tools/Update-ManifestExample.ps1` qui le recalcule.
 3. `reference/tools/Test-ReferenceDeterminism.ps1` : fins de ligne `LF`, UTF-8 sans BOM, ligne finale, en-tête
    présent sur chaque fichier commentable.
 4. CI : job `release-module` (Pester, PSScriptAnalyzer, `Test-Reference*.ps1`, Bicep CLI installée).
@@ -366,6 +390,12 @@ branche.
 3. `docs/plan/recettes/01-preuves.md` : la recette complète, dans l'ordre P1, P9, P3, P8, P2, P4, P5, P7 ; pour
    chacune : état initial, actions (portail, Azure DevOps, commandes exactes), résultat attendu, preuve à
    recueillir (lien du run, extrait du rapport, capture) ; durée estimée ; nettoyage.
+3 bis. `tools/proofs/Save-AdoRecordings.ps1` : pour un run Azure DevOps donné (organisation, projet, identifiant), enregistre
+   les réponses JSON utilisées par le suivi (J0-30) — build, timeline, liste et contenu des artefacts `ifs-report`,
+   `ifs-preview`, `ifs-app-report`, approbations — **anonymisées** (organisation, projet, abonnements, identifiants
+   d'objets, adresses remplacés par des valeurs fixes documentées) dans `src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/AzureDevOps/Recordings/<scénario>/`.
+   La recette demande de l'exécuter après chaque preuve (release réussie, partiellement appliquée, interrompue, commit de
+   fusion différent, attente d'approbation).
 4. `docs/plan/preuves/resultats.md` : tableau `Preuve | Date | Résultat (OK/KO) | Preuve recueillie |
    Remarques`, vide.
 
@@ -391,10 +421,12 @@ Owner sur les abonnements, administrateur de projet Azure DevOps, groupe Entra c
 paramètre d'API, version de commande `az`) constatés pendant la recette.
 
 🔧 **À faire.**
-1. Statut `BLOQUE` dans `NEXT.md` avec la mention « Recette des preuves en cours par l'utilisateur » tant que
-   vous n'avez pas transmis de résultat (Luna s'arrête). Quand vous relancez Luna avec des résultats, elle
-   repasse le statut à `EN_COURS`, traite les résultats, puis remet `BLOQUE` en attendant les suivants. Quand
-   vous déclarez la recette terminée, elle exécute `gate.py done P-08`.
+1. `python tools/plan/gate.py wait-recette P-08` (statut `EN_ATTENTE_DE_RECETTE`) puis arrêt. Conduite unique à chaque
+   nouvelle session :
+   - l'utilisateur ne transmet rien → `gate.py check` renvoie 3 : s'arrêter ;
+   - l'utilisateur transmet des résultats (KO, partiels ou « recette terminée ») → `gate.py resume P-08`, traiter ces
+     résultats (point 2), les consigner, enregistrer les réponses Azure DevOps fournies (point 3 bis de P-07) ; puis
+     `gate.py wait-recette P-08` s'il en reste, ou `gate.py done P-08` si l'utilisateur a déclaré la recette terminée.
 2. Pour chaque KO transmis (journal du run, message) : si la cause est une erreur de mise en œuvre de la sortie
    de référence (le comportement attendu est clair dans la spec et le plan), corriger, ajouter le test Pester
    qui l'aurait détectée, commiter `fix(reference): …` ; si la cause est une question de conception, ne rien

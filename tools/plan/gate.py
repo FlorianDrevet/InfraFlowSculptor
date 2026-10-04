@@ -20,8 +20,13 @@ Commandes (toutes en Python 3.11+, sans dépendance) :
   python tools/plan/gate.py approve <R-nn>    Claude : lève le verrou (exige « Verdict : APPROUVÉ »)
   python tools/plan/gate.py reject <R-nn>     Claude : corrections demandées (exige « Verdict : CORRECTIONS »)
   python tools/plan/gate.py precommit         hook git : refuse du code tant qu'une revue est en attente
+  python tools/plan/gate.py wait-recette <ID>  Luna : la suite attend une recette de l'utilisateur (statut EN_ATTENTE_DE_RECETTE)
+  python tools/plan/gate.py resume <ID>        Luna, SEULEMENT quand l'utilisateur transmet des résultats de recette : EN_COURS
 
-Statuts de NEXT.md : A_FAIRE, EN_COURS, EN_ATTENTE_DE_REVUE, CORRECTIONS_DEMANDEES, BLOQUE.
+Statuts de NEXT.md : A_FAIRE, EN_COURS, EN_ATTENTE_DE_REVUE, EN_ATTENTE_DE_RECETTE, CORRECTIONS_DEMANDEES, BLOQUE.
+
+Un fichier de plan qui contient la ligne « > **Niveau : découpé.** » n'est pas exécutable : `check` refuse toute
+étape qu'il contient (code 3) tant que Claude ne l'a pas détaillé (skill detailler-jalon, qui retire cette ligne).
 """
 from __future__ import annotations
 
@@ -39,7 +44,8 @@ NEXT = ROOT / "NEXT.md"
 JOURNAL = PLAN_DIR / "JOURNAL.md"
 
 STEP_RE = re.compile(r"^###\s+(🔒\s+)?([A-Z][A-Z0-9]*-\d{2})\s+—\s+(.+?)\s*$")
-STATUSES = {"A_FAIRE", "EN_COURS", "EN_ATTENTE_DE_REVUE", "CORRECTIONS_DEMANDEES", "BLOQUE"}
+STATUSES = {"A_FAIRE", "EN_COURS", "EN_ATTENTE_DE_REVUE", "EN_ATTENTE_DE_RECETTE", "CORRECTIONS_DEMANDEES", "BLOQUE"}
+NOT_DETAILED_MARK = "> **Niveau : découpé.**"
 # Pendant une revue en attente, seuls ces chemins peuvent être commités (demande, état, conception).
 ALLOWED_WHILE_LOCKED = ("docs/", "NEXT.md", ".github/memory/", "MEMORY.md")
 REQUIRED_MARKERS = ("🔧", "✅", "🧪")
@@ -180,6 +186,12 @@ def cmd_check() -> None:
     current = steps[index]
     if status == "EN_ATTENTE_DE_REVUE":
         fail(f"Revue {current.ident} en attente : aucun code tant que Claude n'a pas rendu son verdict.", 3)
+    if status == "EN_ATTENTE_DE_RECETTE":
+        fail(f"{current.ident} attend une recette de l'utilisateur. Reprendre seulement si l'utilisateur transmet des "
+             f"résultats : python tools/plan/gate.py resume {current.ident}.", 3)
+    if NOT_DETAILED_MARK in current.file.read_text(encoding="utf-8"):
+        fail(f"{current.file.name} est seulement découpé : Claude doit le détailler (skill detailler-jalon) avant "
+             f"l'exécution de {current.ident}.", 3)
     if status == "BLOQUE":
         fail("Statut BLOQUE : lire la section « Questions pour Claude » de NEXT.md.", 3)
     if current.lock and status not in {"CORRECTIONS_DEMANDEES", "A_FAIRE", "EN_COURS"}:
@@ -305,6 +317,25 @@ def cmd_reject(ident: str) -> None:
     print(f"✔ Corrections demandées sur {ident}. Luna applique la skill appliquer-corrections.")
 
 
+def cmd_set_wait(ident: str, waiting: bool) -> None:
+    steps, index, status = state()
+    current = steps[index]
+    if current.ident != ident:
+        fail(f"L'étape courante est {current.ident}, pas {ident}.")
+    if waiting:
+        if status not in {"EN_COURS", "A_FAIRE"}:
+            fail(f"Statut {status} : impossible de passer en attente de recette.")
+        write_next_row("Statut", "`EN_ATTENTE_DE_RECETTE`")
+        journal("Luna", f"`{ident}` attend une recette de l'utilisateur")
+    else:
+        if status != "EN_ATTENTE_DE_RECETTE":
+            fail(f"Statut {status} : resume ne s'applique qu'à EN_ATTENTE_DE_RECETTE.")
+        write_next_row("Statut", "`EN_COURS`")
+        journal("Luna", f"`{ident}` reprise sur résultats de recette transmis par l'utilisateur")
+    write_next_row("Dernière mise à jour", f"{today()} — Luna")
+    print(f"✔ {ident} : statut {'EN_ATTENTE_DE_RECETTE' if waiting else 'EN_COURS'}.")
+
+
 def cmd_precommit() -> None:
     _, _, status = state()
     if status != "EN_ATTENTE_DE_REVUE":
@@ -332,6 +363,8 @@ def main() -> None:
         "check": lambda: cmd_check(),
         "lint": lambda: cmd_lint(),
         "precommit": lambda: cmd_precommit(),
+        "wait-recette": lambda: cmd_set_wait(rest[0], True),
+        "resume": lambda: cmd_set_wait(rest[0], False),
         "done": lambda: cmd_done(rest[0], who),
         "request": lambda: cmd_request(rest[0]),
         "approve": lambda: cmd_approve(rest[0]),
@@ -339,7 +372,7 @@ def main() -> None:
     }
     if command not in handlers:
         fail(f"Commande inconnue : {command}")
-    if command in {"done", "request", "approve", "reject"} and not rest:
+    if command in {"done", "request", "approve", "reject", "wait-recette", "resume"} and not rest:
         fail(f"« {command} » attend un identifiant d'étape.")
     handlers[command]()
 

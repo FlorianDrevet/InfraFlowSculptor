@@ -1,6 +1,8 @@
 # Jalon 2 — Largeur
 
-> **Niveau : découpé.** Détaillé par Claude au verrou [`R-12`](03-jalon-1-tranche-verticale.md#-r-12--sortie-du-jalon-1).
+> **Niveau : découpé.**
+>
+> Détaillé par Claude au verrou [`R-12`](03-jalon-1-tranche-verticale.md#-r-12--sortie-du-jalon-1).
 
 **But** ([04 § 2.2](../specs/04-perimetre-et-lots.md)) : couvrir tout le catalogue du lot 1 et la collaboration à
 plusieurs équipes, avec un modèle principal toujours générable ([DEC-93](../specs/03-decisions.md)).
@@ -48,35 +50,7 @@ abonnement et connexion par (composant, environnement), kit étendu.
 
 ### 🔒 R-13 — Revue largeur et droits fins
 
-### J2-04 — Versions étiquetées, consultation, comparaison, annulation, restauration
-
-| | |
-|---|---|
-| **Spécifications** | [31 § 4-6](../specs/31-historique-et-versions.md), [EXG-22](../specs/27-exigences-non-fonctionnelles.md), RG-HIS-12 (expurgation, [DEC-95](../specs/03-decisions.md), [DEC-107](../specs/03-decisions.md)) |
-| **Maquette** | [ProjectHistory](../design/maquette-v1/preview/ProjectHistory.html), [HistoryCompare](../design/maquette-v1/preview/HistoryCompare.html) |
-| **Commit** | `feat(historique): versions, comparaison, annulation et restauration` |
-
-🎯 **Objectif.** Revenir en arrière sans jamais effacer l'histoire.
-🔧 **À faire.** Étiquettes, lecture seule à une version, comparaison, annulation (directe ou proposition en conflit),
-restauration par proposition avec plan de retour, expurgation et révisions contaminées.
-✅ **Vérification automatique.** EXG-22 (< 3 s), T11.
-🧪 **Test manuel.** Supprimer une ressource par erreur puis la restaurer (critère de [31 § 6](../specs/31-historique-et-versions.md)).
-
-### J2-05 — Brouillons
-
-| | |
-|---|---|
-| **Spécifications** | [31 § 7](../specs/31-historique-et-versions.md) : RG-HIS-10, 11, 13 ; [DEC-93](../specs/03-decisions.md) |
-| **Maquette** | [Drafts](../design/maquette-v1/preview/Drafts.html) |
-| **Commit** | `feat(historique): brouillons et modèle principal toujours générable` |
-
-🎯 **Objectif.** Préparer sans bloquer les autres ; le modèle principal n'accepte plus une erreur.
-🔧 **À faire.** Brouillon (copie logique), validation propre, révision d'essai non publiable, mise à jour avec conflits par
-propriété, soumission en proposition, archivage à 90 jours.
-✅ **Vérification automatique.** RG-HIS-13 (application refusée si elle ajoute une erreur).
-🧪 **Test manuel.** bob prépare un brouillon incomplet ; alice publie une autre modification entre-temps.
-
-### J2-06 — Propositions de modification
+### J2-04 — Propositions de modification
 
 | | |
 |---|---|
@@ -90,6 +64,34 @@ en une transaction.
 écran de relecture.
 ✅ **Vérification automatique.** Proposition périmée ; application atomique.
 🧪 **Test manuel.** Proposition créée par l'API avec un jeton `propose` ; relecture et application par alice.
+
+### J2-05 — Versions étiquetées, consultation, comparaison, annulation, restauration
+
+| | |
+|---|---|
+| **Spécifications** | [31 § 4-6](../specs/31-historique-et-versions.md), [EXG-22](../specs/27-exigences-non-fonctionnelles.md), RG-HIS-12 (expurgation, [DEC-95](../specs/03-decisions.md), [DEC-107](../specs/03-decisions.md)) |
+| **Maquette** | [ProjectHistory](../design/maquette-v1/preview/ProjectHistory.html), [HistoryCompare](../design/maquette-v1/preview/HistoryCompare.html) |
+| **Commit** | `feat(historique): versions, comparaison, annulation et restauration` |
+
+🎯 **Objectif.** Revenir en arrière sans jamais effacer l'histoire.
+🔧 **À faire.** Étiquettes, lecture seule à une version, comparaison, annulation (directe ou proposition en conflit),
+restauration par proposition avec plan de retour, expurgation et révisions contaminées.
+✅ **Vérification automatique.** EXG-22 (< 3 s), T11.
+🧪 **Test manuel.** Supprimer une ressource par erreur puis la restaurer (critère de [31 § 6](../specs/31-historique-et-versions.md)).
+
+### J2-06 — Brouillons
+
+| | |
+|---|---|
+| **Spécifications** | [31 § 7](../specs/31-historique-et-versions.md) : RG-HIS-10, 11, 13 ; [DEC-93](../specs/03-decisions.md) |
+| **Maquette** | [Drafts](../design/maquette-v1/preview/Drafts.html) |
+| **Commit** | `feat(historique): brouillons et modèle principal toujours générable` |
+
+🎯 **Objectif.** Préparer sans bloquer les autres ; le modèle principal n'accepte plus une erreur.
+🔧 **À faire.** Brouillon (copie logique), validation propre, révision d'essai non publiable, mise à jour avec conflits par
+propriété, soumission en proposition, archivage à 90 jours.
+✅ **Vérification automatique.** RG-HIS-13 (application refusée si elle ajoute une erreur).
+🧪 **Test manuel.** bob prépare un brouillon incomplet ; alice publie une autre modification entre-temps.
 
 ### J2-07 — Demandes d'accès à double consentement
 
@@ -145,4 +147,4 @@ restriction de tenants.
 
 ### 🔒 R-15 — Sortie du jalon 2
 
-**Claude** : critères du jalon, puis **détaille le jalon 3**.
+**Claude** : critères du jalon, dont le **critère 15** de [90 § 4](../specs/90-projet-de-reference.md) reporté du jalon 1, puis **détaille le jalon 3**.
