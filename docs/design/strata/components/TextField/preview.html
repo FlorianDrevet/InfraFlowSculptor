@@ -1,0 +1,16 @@
+<!-- @dsCard group="Formulaires" height=200 subtitle="standard · mono · modifié · erreur" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>TextField — aperçu</title></head>
+<body>
+<div id="root" class="st-root" style="padding: 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px"></div>
+<script>
+  var S = window.Strata, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h(S.TextField, { label: 'Nom logique', defaultValue: 'orders-api' }),
+    h(S.TextField, { label: 'Subnet des Private Endpoints', mono: true, defaultValue: 'snet-private-endpoints · 10.20.4.0/24' }),
+    h(S.TextField, { label: 'Instances (prod)', defaultValue: '3', changed: true, hint: 'Diffère de dev (1)' }),
+    h(S.TextField, { label: 'Jeton d’accès', defaultValue: 'ifs_****', error: 'Azure DevOps refuse ce jeton : il a expiré le 28/09.' })));
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr"><head><style>
+    .sc-placeholder{background:color-mix(in srgb,currentColor 8%,transparent);
+      border:1px solid color-mix(in srgb,currentColor 50%,transparent);
+      border-radius:2px;box-sizing:border-box;overflow:hidden}
+    @keyframes sc-shine{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+    html.sc-dc-streaming .sc-placeholder,
+    html.sc-dc-streaming .sc-interp.sc-missing{position:relative;
+      background:color-mix(in srgb,currentColor 5%,transparent);
+      border-color:transparent}
+    html.sc-dc-streaming .sc-placeholder::before,
+    html.sc-dc-streaming .sc-interp.sc-missing::before{content:'';
+      position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(90deg,rgba(217,119,87,0) 25%,rgba(247,225,211,.95) 37%,rgba(217,119,87,0) 63%);
+      background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+    html.sc-dc-streaming .sc-placeholder:nth-child(n+9 of .sc-placeholder)::before,
+    html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n+9 of .sc-interp.sc-missing)::before{animation:none;
+      background:color-mix(in srgb,currentColor 8%,transparent)}
+    .sc-placeholder-error{padding:4px 8px;font:11px/1.4 ui-monospace,monospace;
+      color:color-mix(in srgb,currentColor 70%,transparent);word-break:break-word}
+    .sc-interp.sc-missing{display:inline-block;width:2em;height:1em;overflow:hidden;
+      vertical-align:text-bottom;background:rgba(255,255,255,.3);border:1px solid rgba(0,0,0,.5);
+      border-radius:2px;box-sizing:border-box;color:transparent;
+      user-select:none}
+    .sc-interp.sc-unresolved{font-family:ui-monospace,monospace;font-size:.85em;
+      color:color-mix(in srgb,currentColor 50%,transparent);
+      background:color-mix(in srgb,currentColor 10%,transparent);border-radius:3px;
+      padding:0 3px}
+    .sc-host.sc-has-error{position:relative}
+    .sc-logic-error{position:absolute;top:8px;left:8px;z-index:2147483647;max-width:60ch;
+      padding:6px 10px;background:#b00020;color:#fff;font:12px/1.4 ui-monospace,monospace;
+      border-radius:4px;white-space:pre-wrap;pointer-events:none}
+    /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
+       in sync until dc-runtime regains a build step. */
+    @media print {
+      @page { margin: 0.5cm; }
+      figure, table { break-inside: avoid; }
+      #dc-root, #dc-root > .sc-host { height: auto; }
+      *, *::before, *::after {
+        print-color-adjust: exact; -webkit-print-color-adjust: exact;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        animation-delay: -99s !important; animation-duration: .001s !important;
+        animation-iteration-count: 1 !important; animation-fill-mode: both !important;
+        animation-play-state: running !important; transition-duration: 0s !important;
+      }
+    }
+  </style>
+<meta charset="utf-8">
+<title>Publier la révision</title>
+<style>x-dc{display:none!important}</style>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"><style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+</style></head>
+<body>
+<div id="dc-root"><div class="sc-host" data-sc-name="PublishDialog"><div style="width: 1440px; height: 1100px; display: flex; justify-content: center; align-items: center; background: rgba(5, 7, 10, 0.92); color: rgb(232, 236, 242); font-family: &quot;Instrument Sans&quot;, system-ui, sans-serif; font-size: 14px; line-height: 20px;"><div role="dialog" aria-label="Publier la révision 16" style="width: 900px; border-radius: 12px; background: rgb(17, 21, 28); border: 1px solid rgb(52, 61, 76); box-shadow: rgba(0, 0, 0, 0.45) 0px 24px 48px; display: flex; flex-direction: column;"><div style="padding: 20px 24px; border-bottom: 1px solid rgb(37, 44, 56); display: flex; flex-direction: column; gap: 4px;"><h2 style="margin: 0px; font-size: 18px; line-height: 26px; font-weight: 600;">Publier la révision 16</h2><span style="font-size: 13px; color: rgb(167, 176, 191);">2 dépôts préparés et vérifiés. Rien n'est écrit avant votre confirmation ; un dépôt en échec n'empêche pas les autres.</span></div><div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 16px;"><div style="display: grid; grid-template-columns: minmax(0px, 1fr) minmax(0px, 1.4fr); gap: 12px;"><div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 12px; font-weight: 500; color: rgb(167, 176, 191);">Mode</span><div class="sc-host-x" style="display: contents;"><div role="group" class="st-seg"><button type="button" class="st-seg-btn" aria-pressed="true">Pull request</button><button type="button" class="st-seg-btn" aria-pressed="false">Écriture directe</button></div></div></div><div class="sc-host-x" style="display: contents;"><div class="st-field"><label class="st-field-label" for="st-field-1">Message</label><input id="st-field-1" type="text" class="st-field-input" value="IFS révision 16"></div></div></div><div style="border-radius: 10px; border: 1px solid rgb(37, 44, 56); overflow: hidden;"><div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: rgb(20, 25, 34); flex-wrap: wrap;"><div class="sc-host-x" style="display: contents;"><svg class="st-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7v10M18 9c0 4-4 4-10 8"></path><circle cx="6" cy="5" r="2"></circle><circle cx="6" cy="19" r="2"></circle><circle cx="18" cy="7" r="2"></circle></svg></div><span style="font-family: &quot;JetBrains Mono&quot;, monospace; font-size: 13px; font-weight: 500; flex-grow: 1;">Shop/shop-infra</span><span style="font-size: 12px; color: rgb(167, 176, 191);">5 destinations · branche ifs/shop/revision-16 · met à jour la PR 44 ouverte</span><div class="sc-host-x" style="display: contents;"><span class="st-badge st-badge-success">Prêt</span></div></div><div style="display: flex; gap: 20px; padding: 10px 16px; font-size: 13px; color: rgb(167, 176, 191); flex-wrap: wrap;"><span><span style="color: rgb(126, 211, 163);">4</span> mis à jour</span><span><span style="color: rgb(126, 211, 163);">1</span> ajouté</span><span>0 supprimé</span><span>82 inchangés</span><span>Code additionnel connectivity/extra.bicep : présent</span></div></div><div style="border-radius: 10px; border: 1px solid rgb(232, 166, 90); overflow: hidden;"><div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: rgba(232, 166, 90, 0.08); flex-wrap: wrap;"><div class="sc-host-x" style="display: contents;"><svg class="st-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7v10M18 9c0 4-4 4-10 8"></path><circle cx="6" cy="5" r="2"></circle><circle cx="6" cy="19" r="2"></circle><circle cx="18" cy="7" r="2"></circle></svg></div><span style="font-family: &quot;JetBrains Mono&quot;, monospace; font-size: 13px; font-weight: 500; flex-grow: 1;">Shop/shop-app</span><span style="font-size: 12px; color: rgb(167, 176, 191);">1 destination · nouvelle PR</span><div class="sc-host-x" style="display: contents;"><span class="st-badge st-badge-ember">Confirmation requise</span></div></div><div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 13px;"><span style="font-family: &quot;JetBrains Mono&quot;, monospace; font-size: 12px;">orders/apps/api/pipelines/ci.yml</span> <span style="color: rgb(167, 176, 191);">a été modifié à la main depuis la révision 14 (empreinte différente du manifeste).</span></span><div style="border-radius: 8px; background: rgb(14, 18, 24); border: 1px solid rgb(30, 36, 48); padding: 8px 0px; font-family: &quot;JetBrains Mono&quot;, monospace; font-size: 12px; line-height: 20px;"><div style="padding: 0px 12px; white-space: pre; color: rgb(167, 176, 191);"><span class="sc-interp">  - template: ../../../../.ifs/templates/dotnet-test.yml</span></div><div style="padding: 0px 12px; white-space: pre; background: rgba(229, 105, 95, 0.1); color: rgb(240, 138, 128);"><span class="sc-interp">- - script: dotnet test --filter Category!=Slow   # modif. manuelle</span></div><div style="padding: 0px 12px; white-space: pre; background: rgba(92, 192, 138, 0.1); color: rgb(126, 211, 163);"><span class="sc-interp">+   parameters:</span></div><div style="padding: 0px 12px; white-space: pre; background: rgba(92, 192, 138, 0.1); color: rgb(126, 211, 163);"><span class="sc-interp">+     testFilter: ''</span></div><div style="padding: 0px 12px; white-space: pre; color: rgb(167, 176, 191);"><span class="sc-interp">  - template: ../../../../.ifs/templates/docker-build.yml</span></div></div><span style="font-size: 12px; color: rgb(125, 135, 151);">Pour garder ce changement durablement, utilisez le point d'extension « après tests » au lieu de modifier le fichier généré.</span><div class="sc-host-x" style="display: contents;"><label class="st-toggle"><button type="button" role="switch" class="st-toggle-track" aria-checked="false"><span class="st-toggle-thumb"></span></button><span>Remplacer la modification manuelle par le contenu de la révision</span></label></div></div></div></div><div style="padding: 16px 24px; border-top: 1px solid rgb(37, 44, 56); display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; align-items: center;"><span style="flex-grow: 1; font-size: 12px; color: rgb(125, 135, 151);">Sans confirmation, seul shop-infra sera publié.</span><div class="sc-host-x" style="display: contents;"><button type="button" class="st-btn st-btn-ghost">Annuler</button></div><div class="sc-host-x" style="display: contents;"><a class="st-btn st-btn-primary" href="PublishResult.html"><svg class="st-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V9M7 14l5-5 5 5M5 4h14"></path></svg>Publier</a></div></div></div></div></div></div>
+
+
+
+</body></html>

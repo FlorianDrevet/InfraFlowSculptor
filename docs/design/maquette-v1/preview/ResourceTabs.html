@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr"><head><style>
+    .sc-placeholder{background:color-mix(in srgb,currentColor 8%,transparent);
+      border:1px solid color-mix(in srgb,currentColor 50%,transparent);
+      border-radius:2px;box-sizing:border-box;overflow:hidden}
+    @keyframes sc-shine{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+    html.sc-dc-streaming .sc-placeholder,
+    html.sc-dc-streaming .sc-interp.sc-missing{position:relative;
+      background:color-mix(in srgb,currentColor 5%,transparent);
+      border-color:transparent}
+    html.sc-dc-streaming .sc-placeholder::before,
+    html.sc-dc-streaming .sc-interp.sc-missing::before{content:'';
+      position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(90deg,rgba(217,119,87,0) 25%,rgba(247,225,211,.95) 37%,rgba(217,119,87,0) 63%);
+      background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+    html.sc-dc-streaming .sc-placeholder:nth-child(n+9 of .sc-placeholder)::before,
+    html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n+9 of .sc-interp.sc-missing)::before{animation:none;
+      background:color-mix(in srgb,currentColor 8%,transparent)}
+    .sc-placeholder-error{padding:4px 8px;font:11px/1.4 ui-monospace,monospace;
+      color:color-mix(in srgb,currentColor 70%,transparent);word-break:break-word}
+    .sc-interp.sc-missing{display:inline-block;width:2em;height:1em;overflow:hidden;
+      vertical-align:text-bottom;background:rgba(255,255,255,.3);border:1px solid rgba(0,0,0,.5);
+      border-radius:2px;box-sizing:border-box;color:transparent;
+      user-select:none}
+    .sc-interp.sc-unresolved{font-family:ui-monospace,monospace;font-size:.85em;
+      color:color-mix(in srgb,currentColor 50%,transparent);
+      background:color-mix(in srgb,currentColor 10%,transparent);border-radius:3px;
+      padding:0 3px}
+    .sc-host.sc-has-error{position:relative}
+    .sc-logic-error{position:absolute;top:8px;left:8px;z-index:2147483647;max-width:60ch;
+      padding:6px 10px;background:#b00020;color:#fff;font:12px/1.4 ui-monospace,monospace;
+      border-radius:4px;white-space:pre-wrap;pointer-events:none}
+    /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
+       in sync until dc-runtime regains a build step. */
+    @media print {
+      @page { margin: 0.5cm; }
+      figure, table { break-inside: avoid; }
+      #dc-root, #dc-root > .sc-host { height: auto; }
+      *, *::before, *::after {
+        print-color-adjust: exact; -webkit-print-color-adjust: exact;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        animation-delay: -99s !important; animation-duration: .001s !important;
+        animation-iteration-count: 1 !important; animation-fill-mode: both !important;
+        animation-play-state: running !important; transition-duration: 0s !important;
+      }
+    }
+  </style>
+<meta charset="utf-8">
+<title>Onglets de ressource</title>
+<style>x-dc{display:none!important}</style>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"><style>body{margin:0}</style></head>
+<body>
+<div id="dc-root"><div class="sc-host" data-sc-name="ResourceTabs"><nav aria-label="Sections de la ressource" style="display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid rgb(37, 44, 56); background: rgb(11, 14, 19); color: rgb(167, 176, 191); font-family: &quot;Instrument Sans&quot;, system-ui, sans-serif; font-size: 13px;"><a href="ResourceGeneral.html" aria-current="page" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0px 12px; white-space: nowrap; font-weight: 500; border-bottom: 2px solid rgb(91, 200, 223); color: rgb(232, 236, 242);"><span class="sc-interp">Général</span></a><a href="ResourceProperties.html" aria-current="false" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0px 12px; white-space: nowrap; font-weight: 500; border-bottom: 2px solid transparent; color: rgb(167, 176, 191);"><span class="sc-interp">Propriétés</span></a><a href="ResourceLinks.html" aria-current="false" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0px 12px; white-space: nowrap; font-weight: 500; border-bottom: 2px solid transparent; color: rgb(167, 176, 191);"><span class="sc-interp">Liaisons</span><span style="display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0px 5px; box-sizing: border-box; border-radius: 999px; font-size: 11px; background: rgb(30, 36, 48); color: rgb(167, 176, 191);"><span class="sc-interp">7</span></span></a><a href="ResourceIdentity.html" aria-current="false" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0px 12px; white-space: nowrap; font-weight: 500; border-bottom: 2px solid transparent; color: rgb(167, 176, 191);"><span class="sc-interp">Identité et accès</span></a><a href="ResourceAppSettings.html" aria-current="false" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0px 12px; white-space: nowrap; font-weight: 500; border-bottom: 2px solid transparent; color: rgb(167, 176, 191);"><span class="sc-interp">Paramètres</span><span style="display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0px 5px; box-sizing: border-box; border-radius: 999px; font-size: 11px; background: rgb(30, 36, 48); color: rgb(167, 176, 191);"><span class="sc-interp">9</span></span></a><a href="ResourceApplication.html" aria-current="false" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0px 12px; white-space: nowrap; font-weight: 500; border-bottom: 2px solid transparent; color: rgb(167, 176, 191);"><span class="sc-interp">Application</span></a><a href="ResourceNetwork.html" aria-current="false" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0px 12px; white-space: nowrap; font-weight: 500; border-bottom: 2px solid transparent; color: rgb(167, 176, 191);"><span class="sc-interp">Réseau</span></a><a href="ProjectFindings.html" aria-current="false" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0px 12px; white-space: nowrap; font-weight: 500; border-bottom: 2px solid transparent; color: rgb(167, 176, 191);"><span class="sc-interp">Constats</span><span style="display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0px 5px; box-sizing: border-box; border-radius: 999px; font-size: 11px; background: rgba(232, 166, 90, 0.12); color: rgb(240, 182, 118);"><span class="sc-interp">1</span></span></a><a href="ProjectHistory.html" aria-current="false" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0px 12px; white-space: nowrap; font-weight: 500; border-bottom: 2px solid transparent; color: rgb(167, 176, 191);"><span class="sc-interp">Historique</span></a></nav></div></div>
+
+
+
+</body></html>

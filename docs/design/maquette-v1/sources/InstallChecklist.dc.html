@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Liste de contrôle d'installation</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+@media (max-width: 760px){.ifs-side{display:none !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #0B0E13; color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div class="ifs-side" style="width: 236px; flex-shrink: 0; background: #0E1218; border-right: 1px solid #222936"><dc-import name="Sidebar" active="install" scope="project" hint-size="236px,1100px"></dc-import></div>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="min-height: 56px; box-sizing: border-box; padding: 10px 32px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid #222936">
+<nav aria-label="Fil d'Ariane" style="flex-grow: 1; font-family: 'JetBrains Mono', monospace; font-size: 12px"><a href="ProjectOverview.dc.html">shop</a> / installation</nav>
+<x-import component-from-global-scope="Strata.Button" variant="ghost" icon="file">SETUP.md</x-import>
+<x-import component-from-global-scope="Strata.Button" variant="primary" icon="copy">Copier la commande Azure</x-import>
+</header>
+<div style="box-sizing: border-box; width: 100%; max-width: 1280px; padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap">
+<div style="flex: 1 1 420px; display: flex; flex-direction: column; gap: 4px"><h1 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600">Liste de contrôle d'installation</h1><span style="font-size: 13px; color: #A7B0BF">Révision 16 · le kit est réexécutable : chaque exécution réconcilie l'existant, sans jamais rien supprimer.</span></div>
+<div style="display: flex; gap: 12px; font-size: 13px; flex-wrap: wrap"><span style="color: #7ED3A3">5 faites</span><span style="color: #7ED3A3">3 vérifiées</span><span style="color: #A7B0BF">8 automatiques</span><span style="color: #F0B676">4 à faire</span></div>
+</div>
+<div style="display: block; height: 6px; border-radius: 999px; background: #1E2430; overflow: hidden"><span style="display: block; height: 100%; width: 80%; background: #5CC08A"></span></div>
+<sc-for list="{{sections}}" as="s" hint-placeholder-count="6">
+<x-import component-from-global-scope="Strata.Panel" title="{{s.title}}" subtitle="{{s.subtitle}}" padded="{{no}}">
+<sc-for list="{{s.items}}" as="i" hint-placeholder-count="3">
+<div style="display: flex; gap: 12px; padding: 12px 16px; border-top: {{i.border}}; align-items: flex-start; flex-wrap: wrap">
+<span style="{{i.chip}}">{{i.state}}</span>
+<span style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 4px"><span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px">{{i.text}}<sc-if value="{{i.isNew}}" hint-placeholder-val="{{false}}"><x-import component-from-global-scope="Strata.Badge" tone="signal">Nouveau depuis la révision 15</x-import></sc-if></span><sc-if value="{{i.hasCmd}}" hint-placeholder-val="{{false}}"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #A7B0BF; padding: 6px 10px; border-radius: 6px; background: #0E1218; border: 1px solid #1E2430; overflow-wrap: anywhere">{{i.cmd}}</span></sc-if><span style="font-size: 12px; color: #7D8797">{{i.note}}</span></span>
+</div>
+</sc-for>
+</x-import>
+</sc-for>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const chip = (bg, fg) => 'display: inline-flex; align-items: center; justify-content: center; height: 22px; min-width: 96px; padding: 0 8px; border-radius: 999px; font-size: 12px; background: ' + bg + '; color: ' + fg + ';';
+    const DONE = chip('rgba(92,192,138,0.12)', '#7ED3A3'), AUTO = chip('#1E2430', '#A7B0BF'), TODO = chip('rgba(232,166,90,0.12)', '#F0B676'), VERIF = chip('rgba(92,192,138,0.20)', '#7ED3A3');
+    const it = (st, text, note, cmd, isNew, first) => ({ state: st === DONE ? 'Fait' : st === VERIF ? 'Vérifié' : st === AUTO ? 'Automatique' : 'À faire', chip: st, text, note: note || '', cmd: cmd || '', hasCmd: !!cmd, isNew: !!isNew, border: first ? 'none' : '1px solid #1E2430' });
+    return {
+      no: false,
+      sections: [
+        { title: '1. Prérequis Azure DevOps', subtitle: 'Une seule fois', items: [
+          it(DONE, 'Donner au compte de build de Shop les droits de créer environnements, groupes de variables et définitions', 'Coché par Léa Bernard le 12/09', null, false, true) ] },
+        { title: '2. Script Azure', subtitle: 'Par une personne Owner ou User Access Administrator sur les abonnements', items: [
+          it(DONE, 'Exécuter le script Azure', 'Dernière exécution : 29/09, rapport : 4 cibles, 0 échec', '.\\.ifs\\install\\azure-setup.ps1 -AdoOrganization contoso -TenantId 72f9…', false, true),
+          it(AUTO, 'Identités id-ifs-deploy-shop-* (infrastructure) et id-ifs-app-shop-* (applications), identifiants fédérés, droits, deux service connections par cible', 'Réalisé par le script'),
+          it(AUTO, 'Azure Deployment Stack Owner pour id-ifs-deploy-shop-* : refus de suppression des piles en cible protégée, sans verrou', 'Réalisé par le script', null, true),
+          it(AUTO, 'Stockage technique stifsshopdev, stifsshopprd, stifsshopshared : conteneur ifs-operations pour le journal d’opérations', 'Réalisé par le script', null, true),
+          it(TODO, 'Ajouter id-ifs-deploy-shop-prd au groupe Entra sg-shop-sql-admins', 'L’opérateur n’avait pas le droit de modifier ce groupe. Constat VAL-LIA-SQL-ADMIN tant que ce n’est pas confirmé.', 'az ad group member add --group sg-shop-sql-admins --member-id 5d0e…', true),
+          it(TODO, 'Équipe du hub : accorder Private DNS Zone Contributor à id-ifs-deploy-shop-prd sur rg-dns-prd', 'Portée externe, gérée par une autre équipe', 'az role assignment create --assignee 5d0e… --role "Private DNS Zone Contributor" --scope /subscriptions/9ab…/resourceGroups/rg-dns-prd', true) ] },
+        { title: '3. Pipeline d’installation Azure DevOps', subtitle: 'install.pipeline.yml dans shop-infra', items: [
+          it(DONE, 'Exécuter le pipeline ifs-shop-install', 'Dernière exécution réussie : 29/09', null, false, true),
+          it(AUTO, 'Environnements shop-dev, shop-prd, shop-shared · approbations Shop Release Approvers · verrou exclusif · heures ouvrées lun–jeu 9–17 en prd', 'Réalignés sur le modèle à chaque exécution'),
+          it(AUTO, 'Définitions de pipelines \\shop\\orders\\api, autorisations', ''),
+          it(AUTO, 'Contrôles des service connections : branche par défaut et modèle requis ; approbation de Shop Release Approvers sur ifs-shop-prd-app', 'Seuls les pipelines IFS de main peuvent utiliser les connexions', null, true),
+          it(TODO, 'Exiger au moins un relecteur sur la branche main de shop-app', 'Sans cette politique, une modification non relue des pipelines pourrait utiliser les connexions. Paramètres du dépôt › Stratégies de branche › Nombre minimal de relecteurs', null, true) ] },
+        { title: '4. Vérification de préparation', subtitle: 'Exécutée dans chaque cible par le pipeline d’installation, avec ses vraies connexions', items: [
+          it(VERIF, 'dev · authentification, droit de déployer, variables secrètes', 'Vérifié le 30/09 à 14:12', null, false, true),
+          it(VERIF, 'shared · authentification, droit de déployer', 'Vérifié le 30/09 à 14:13'),
+          it(VERIF, 'prd · authentification, droit de déployer, variables secrètes', 'Vérifié le 30/09 à 14:15'),
+          it(TODO, 'prd · adhésion de id-ifs-deploy-shop-prd à sg-shop-sql-admins', 'Non vérifiée : l’étape 2 n’est pas faite. Relancer le pipeline d’installation après coup.') ] },
+        { title: '5. Secrets de pipeline', subtitle: 'IFS ne voit jamais leur valeur', items: [
+          it(DONE, 'ifs-shop-prd · PAYMENTS_API_KEY → paramètre Payments__ApiKey de api', 'Coché par Léa Bernard le 30/09 (la valeur reste illisible pour IFS)', null, false, true),
+          it(DONE, 'ifs-shop-dev · PAYMENTS_API_KEY', 'Coché par Léa Bernard le 30/09') ] },
+        { title: '6. Premier déploiement', subtitle: 'Coché automatiquement au premier succès', items: [
+          it(AUTO, 'tooling → connectivity → core → platform → orders, puis l’application api', 'Fait en dev et prd le 30/09', null, false, true) ] },
+        { title: '7. Orphelins', subtitle: 'Les accès sont révoqués ; les objets qui portent des données restent, avec leur commande', items: [
+          it(AUTO, 'Groupe de variables ifs-shop-qa (environnement qa retiré le 20/09)', 'Supprimer si plus utile', 'az pipelines variable-group delete --group-id 41 --org https://dev.azure.com/contoso --project Shop', false, true) ] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<!-- @dsCard group="Infrastructure" height=240 subtitle="ligne d'une liste de ressources" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ResourceRow — aperçu</title></head>
+<body>
+<div id="root" class="st-root" style="margin: 16px; border-radius: 10px; border: 1px solid var(--line, #252c38); background: var(--surface-1, #11151c); overflow: hidden"></div>
+<script>
+  var S = window.Strata, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h(S.ResourceRow, { type: 'ContainerApp', name: 'api', generatedName: 'ca-shop-api-dev', detail: 'Consumption · 0 à 2 réplicas', status: { tone: 'ember', label: 'Modifiée' }, style: { borderTop: 'none' } }),
+    h(S.ResourceRow, { type: 'KeyVault', name: 'main', generatedName: 'kv-shop-main-dev', detail: 'Publique en dev · privée en prd', status: { tone: 'success', label: 'À jour' } }),
+    h(S.ResourceRow, { type: 'ContainerRegistry', name: 'main', generatedName: 'crshopmainshared', generatedNote: 'sans tirets, contrainte Azure', detail: 'Premium · composant Single', status: { tone: 'success', label: 'À jour' } }),
+    h(S.ResourceRow, { type: 'ServiceBusNamespace', name: 'orders', generatedName: 'sbns-shop-orders-dev', detail: 'Standard · 2 files', status: { tone: 'ember', label: 'Nouvelle file' } })));
+</script>
+</body>
+</html>

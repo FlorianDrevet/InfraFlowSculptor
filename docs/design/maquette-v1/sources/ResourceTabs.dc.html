@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Onglets de ressource</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<nav aria-label="Sections de la ressource" style="display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid #252C38; background: #0B0E13; color: #A7B0BF; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 13px">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="8">
+<a href="{{t.href}}" aria-current="{{t.current}}" style="{{t.style}}">{{t.label}}<sc-if value="{{t.count}}" hint-placeholder-val="{{false}}"><span style="{{t.countStyle}}">{{t.count}}</span></sc-if></a>
+</sc-for>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","default":"general","options":["general","properties","children","links","identity","settings","application","network"]},"variant":{"editor":"enum","default":"app","options":["app","data"]},"$preview":{"width":1200,"height":64}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const active = this.props.active ?? 'general';
+    const variant = this.props.variant ?? 'app';
+    const all = {
+      general: ['Général', 'ResourceGeneral.dc.html', 0],
+      properties: ['Propriétés', 'ResourceProperties.dc.html', 0],
+      children: ['Enfants', 'ResourceChildren.dc.html', 3],
+      links: ['Liaisons', 'ResourceLinks.dc.html', 7],
+      identity: ['Identité et accès', 'ResourceIdentity.dc.html', 0],
+      settings: ['Paramètres', 'ResourceAppSettings.dc.html', 9],
+      application: ['Application', 'ResourceApplication.dc.html', 0],
+      network: ['Réseau', 'ResourceNetwork.dc.html', 0],
+      findings: ['Constats', 'ProjectFindings.dc.html', 1],
+      history: ['Historique', 'ProjectHistory.dc.html', 0]
+    };
+    const order = variant === 'data'
+      ? ['general', 'properties', 'children', 'links', 'identity', 'network', 'findings', 'history']
+      : ['general', 'properties', 'links', 'identity', 'settings', 'application', 'network', 'findings', 'history'];
+    const tabs = order.map(id => {
+      const on = id === active;
+      const a = all[id];
+      return {
+        label: a[0], href: a[1], count: a[2], current: on ? 'page' : 'false',
+        style: 'display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 12px; white-space: nowrap; font-weight: 500; border-bottom: 2px solid ' + (on ? '#5BC8DF; color: #E8ECF2;' : 'transparent; color: #A7B0BF;'),
+        countStyle: 'display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; font-size: 11px; ' + (id === 'findings' ? 'background: rgba(232,166,90,0.12); color: #F0B676;' : 'background: #1E2430; color: #A7B0BF;')
+      };
+    });
+    return { tabs };
+  }
+}
+</script>
+</body>
+</html>

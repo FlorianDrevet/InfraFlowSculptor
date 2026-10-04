@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ajouter une ressource — catalogue</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1100px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; background: rgba(5,7,10,0.92); color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div role="dialog" aria-labelledby="cat-title" style="width: 1120px; height: 960px; box-sizing: border-box; display: flex; flex-direction: column; border-radius: 12px; background: #11151C; border: 1px solid #343D4C; box-shadow: 0 24px 48px rgba(0,0,0,0.45); overflow: hidden">
+<div style="display: flex; align-items: center; gap: 12px; padding: 18px 24px; border-bottom: 1px solid #252C38">
+<div style="display: flex; flex-direction: column; flex-grow: 1"><h1 id="cat-title" style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 600">Ajouter une ressource à <span style="font-family: 'JetBrains Mono', monospace">orders</span></h1><span style="font-size: 13px; color: #7D8797">Catalogue 2026.10 · types pris en charge par Bicep</span></div>
+<label style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border-radius: 6px; background: #121720; border: 1px solid #343D4C; color: #7D8797; width: 300px; box-sizing: border-box"><x-import component-from-global-scope="Strata.Icon" name="search" size="{{s16}}"></x-import><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Rechercher un type</span><input type="text" placeholder="Rechercher : redis, file, modèle…" style="flex-grow: 1; min-width: 0; background: transparent; border: none; outline: none; color: #E8ECF2; font: inherit; font-size: 13px"></label>
+<a href="Component.dc.html" aria-label="Fermer" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; color: #A7B0BF"><x-import component-from-global-scope="Strata.Icon" name="x" size="{{s18}}"></x-import></a>
+</div>
+<div style="flex-grow: 1; overflow-y: auto; padding: 18px 24px 24px; display: flex; flex-direction: column; gap: 18px">
+<sc-for list="{{cats}}" as="c" hint-placeholder-count="8">
+<section style="display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #7D8797; font-weight: 500">{{c.name}}</h2>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{c.types}}" as="t" hint-placeholder-count="4">
+<a href="AddResourceConfigure.dc.html" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: #171C25; border: 1px solid {{t.border}}; color: #E8ECF2">
+<sc-if value="{{t.icon}}" hint-placeholder-val="{{true}}"><x-import component-from-global-scope="Strata.ResourceIcon" type="{{t.icon}}" size="{{s28}}" alt=""></x-import></sc-if>
+<sc-if value="{{t.tile}}" hint-placeholder-val="{{false}}"><span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex-shrink: 0; border-radius: 6px; background: #1E2430; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #B8E294">{{t.tile}}</span></sc-if>
+<span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 13px; font-weight: 500">{{t.name}}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7D8797">{{t.abbr}}</span></span>
+</a>
+</sc-for>
+</div>
+</section>
+</sc-for>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid #252C38; font-size: 13px; color: #A7B0BF"><span style="flex-grow: 1">Une ressource déjà déployée hors IFS ? Ajoutez-la comme ressource existante, par son identifiant Azure.</span><a href="ResourceExisting.dc.html">Référencer une ressource existante</a></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const t = (name, abbr, icon, tile, sel) => ({ name, abbr, icon: icon || '', tile: tile || '', border: sel ? '#5BC8DF' : '#252C38' });
+    return {
+      s16: 16, s18: 18, s28: 28,
+      cats: [
+        { name: 'Calcul', types: [t('Container App', 'ca', 'ContainerApp', '', true), t('Environnement Container Apps', 'cae', 'ContainerAppEnvironment'), t('Container Apps Job', 'caj', '', 'caj'), t('Web App', 'app', 'WebApp'), t('Function App', 'func', 'FunctionApp'), t('Plan App Service', 'asp', 'AppServicePlan'), t('Static Web App', 'stapp', '', 'stapp'), t('Logic App Standard', 'logic', '', 'logic'), t('Container Instances', 'ci', '', 'ci'), t('Cluster AKS', 'aks', '', 'aks')] },
+        { name: 'Données', types: [t('Compte de stockage', 'st', 'StorageAccount'), t('Serveur Azure SQL', 'sql', 'SqlServer'), t('Base Azure SQL', 'sqldb', 'SqlDatabase'), t('PostgreSQL flexible', 'psql', '', 'psql'), t('MySQL flexible', 'mysql', '', 'mysql'), t('Cosmos DB', 'cosmos', 'CosmosDb'), t('Azure Managed Redis', 'amr', 'RedisCache')] },
+        { name: 'Messagerie et intégration', types: [t('Service Bus', 'sbns', 'ServiceBusNamespace'), t('Event Hubs', 'evhns', 'EventHubNamespace'), t('Event Grid', 'evgt', '', 'evgt'), t('API Management', 'apim', '', 'apim'), t('SignalR', 'sigr', '', 'sigr'), t('Web PubSub', 'wps', '', 'wps'), t('Communication Services', 'acs', '', 'acs')] },
+        { name: 'IA', types: [t('Compte Foundry', 'aif', '', 'aif'), t('Projet Foundry', 'aifp', '', 'aifp'), t('AI Search', 'srch', '', 'srch')] },
+        { name: 'Sécurité et identité', types: [t('Key Vault', 'kv', 'KeyVault'), t('Identité managée', 'id', 'UserAssignedIdentity')] },
+        { name: 'Plateforme', types: [t('Registre de conteneurs', 'cr', 'ContainerRegistry'), t('App Configuration', 'appcs', 'AppConfiguration'), t('Pool d’exécuteurs privé', 'mdp', '', 'mdp')] },
+        { name: 'Réseau et exposition', types: [t('Réseau virtuel', 'vnet', 'VirtualNetwork'), t('NSG', 'nsg', 'NetworkSecurityGroup'), t('Table de routage', 'rt', '', 'rt'), t('Passerelle NAT', 'ng', '', 'ng'), t('IP publique', 'pip', '', 'pip'), t('Zone DNS publique', 'dnsz', '', 'dnsz'), t('Zone DNS privée', 'pdnsz', '', 'pdnsz'), t('Front Door et WAF', 'afd', 'FrontDoor'), t('Application Gateway', 'agw', '', 'agw'), t('Azure Firewall', 'afw', '', 'afw'), t('DNS Private Resolver', 'dnspr', '', 'dnspr'), t('Bastion', 'bas', '', 'bas')] },
+        { name: 'Observabilité et coûts', types: [t('Log Analytics', 'log', 'LogAnalyticsWorkspace'), t('Application Insights', 'appi', 'ApplicationInsights'), t('Groupe d’actions', 'ag', '', 'ag'), t('Alerte', 'alert', '', 'alrt'), t('Test de disponibilité', 'avail', '', 'avl'), t('Budget', 'budget', '', 'bdg'), t('Managed Grafana', 'amg', '', 'amg')] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

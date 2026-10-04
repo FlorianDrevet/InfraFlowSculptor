@@ -1,0 +1,32 @@
+name: Plan
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+jobs:
+  plan:
+    name: Garde-fou du plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Forme du plan
+        run: python tools/plan/gate.py lint
+      - name: Aucun verrou franchi sans revue approuvée
+        # Le code 3 « revue en attente » est normal sur la branche d'un segment arrivé à son verrou ;
+        # seul un verrou franchi sans revue approuvée fait échouer le job.
+        shell: bash
+        run: |
+          set +e
+          out=$(python tools/plan/gate.py check); code=$?
+          echo "$out"
+          if [ $code -eq 3 ] && echo "$out" | grep -q "franchi"; then exit 1; fi
+          if [ $code -ne 0 ] && [ $code -ne 3 ]; then exit $code; fi
+          exit 0
+      - name: Tests du garde-fou
+        if: hashFiles('tools/plan/tests/*.py') != ''
+        run: python -m unittest discover tools/plan/tests

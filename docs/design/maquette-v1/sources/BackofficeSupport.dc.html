@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Organisations et support</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+@media (max-width: 760px){.ifs-side{display:none !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #0B0E13; color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div class="ifs-side" style="width: 236px; flex-shrink: 0; background: #0E1218; border-right: 1px solid #222936"><dc-import name="Sidebar" active="bo-support" scope="backoffice" hint-size="236px,1100px"></dc-import></div>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="min-height: 56px; box-sizing: border-box; padding: 10px 32px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid #222936">
+<nav aria-label="Fil d'Ariane" style="flex-grow: 1; font-family: 'JetBrains Mono', monospace; font-size: 12px">exploitation / organisations</nav>
+<x-import component-from-global-scope="Strata.Button" variant="primary" icon="key">Demander un accès support</x-import>
+</header>
+<div style="box-sizing: border-box; width: 100%; max-width: 1280px; padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; flex-direction: column; gap: 4px"><h1 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600">Organisations et accès support</h1><span style="font-size: 13px; color: #A7B0BF">Aucun accès permanent aux données clients. Toute lecture sous accès support apparaît dans le journal d'audit du client.</span></div>
+<x-import component-from-global-scope="Strata.Panel" title="Accès support" padded="{{no}}">
+<div style="overflow-x: auto"><div style="min-width: 900px">
+<div style="display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.2fr) 100px 140px minmax(0, 1fr); gap: 12px; padding: 10px 16px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: #7D8797; background: #141922"><span>Organisation</span><span>Opérateur</span><span>Motif</span><span>Niveau</span><span>État</span><span>Fin</span></div>
+<sc-for list="{{access}}" as="a" hint-placeholder-count="3">
+<div style="display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.2fr) 100px 140px minmax(0, 1fr); gap: 12px; align-items: center; padding: 10px 16px; border-top: 1px solid #1E2430; font-size: 13px">
+<span>{{a.org}}</span><span style="color: #A7B0BF">{{a.op}}</span><span style="font-size: 12px; color: #A7B0BF">{{a.why}}</span><span style="font-size: 12px">{{a.level}}</span><span style="{{a.chip}}">{{a.state}}</span><span style="font-size: 12px; color: #7D8797">{{a.until}}</span>
+</div>
+</sc-for>
+</div></div>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Organisations" padded="{{no}}">
+<div style="padding: 10px 16px"><x-import component-from-global-scope="Strata.TextField" label="Rechercher une organisation" default-value=""></x-import></div>
+<div style="overflow-x: auto"><div style="min-width: 900px">
+<div style="display: grid; grid-template-columns: minmax(0, 1.2fr) 110px 110px 90px 110px minmax(0, 1.4fr); gap: 12px; padding: 10px 16px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: #7D8797; background: #141922"><span>Nom</span><span>Plan</span><span>État</span><span>Projets</span><span>Membres</span><span>Accès anticipé</span></div>
+<sc-for list="{{orgs}}" as="o" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: minmax(0, 1.2fr) 110px 110px 90px 110px minmax(0, 1.4fr); gap: 12px; align-items: center; padding: 10px 16px; border-top: 1px solid #1E2430; font-size: 13px">
+<span>{{o.name}}</span><span style="color: #A7B0BF">{{o.plan}}</span><span style="{{o.chip}}">{{o.state}}</span><span>{{o.projects}}</span><span>{{o.members}}</span><span style="font-size: 12px; color: #A7B0BF">{{o.early}}</span>
+</div>
+</sc-for>
+</div></div>
+</x-import>
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<div style="flex: 1 1 420px; min-width: 0"><x-import component-from-global-scope="Strata.Panel" title="Incidents">
+<div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+<span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><x-import component-from-global-scope="Strata.Badge" tone="ember" dot="{{yes}}">Ouvert</x-import>INC-212 · contrôle de sortie en échec (bicep lint) · 1 révision</span>
+<span style="font-size: 12px; color: #7D8797">Ouvert automatiquement. Le client voit « incident IFS », pas une erreur à corriger.</span>
+<a href="BackofficeSupport.dc.html">Publier un bandeau aux organisations concernées</a>
+</div>
+</x-import></div>
+<div style="flex: 1 1 420px; min-width: 0"><x-import component-from-global-scope="Strata.Panel" title="Page d'état publique">
+<div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{services}}" as="s" hint-placeholder-count="6"><x-import component-from-global-scope="Strata.Badge" tone="{{s.tone}}" dot="{{yes}}">{{s.name}}</x-import></sc-for></div>
+</x-import></div>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const chip = (bg, fg) => 'display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; width: fit-content; background: ' + bg + '; color: ' + fg + ';';
+    const OK = chip('rgba(92,192,138,0.12)', '#7ED3A3'), WAIT = chip('rgba(91,200,223,0.12)', '#7FD6E8'), WARN = chip('rgba(232,166,90,0.12)', '#F0B676'), OFF = chip('#1E2430', '#7D8797'), BAD = chip('rgba(229,105,95,0.12)', '#F08A80');
+    return {
+      yes: true,
+      access: [
+        { org: 'Contoso', op: 'Nadia Roux', why: 'SUP-4471 · publication shop-app refusée', level: 'Lecture', state: 'Actif', chip: OK, until: 'Dans 41 h · révocable par le client' },
+        { org: 'Fabrikam', op: 'Nadia Roux', why: 'SUP-4480 · import bloqué', level: 'Lecture', state: 'En attente du client', chip: WAIT, until: '72 h demandées' },
+        { org: 'Northwind', op: 'Paul Girard', why: 'SUP-4402 · correction de nommage', level: 'Écriture', state: 'Refusé', chip: BAD, until: 'Refusé par l’administrateur le 28/09' }
+      ],
+      orgs: [
+        { name: 'Contoso', plan: 'Entreprise', state: 'Active', chip: OK, projects: '12', members: '86', early: 'Import ARM' },
+        { name: 'Fabrikam', plan: 'Équipe', state: 'Active', chip: OK, projects: '4', members: '19', early: '—' },
+        { name: 'Northwind', plan: 'Équipe', state: 'Suspendue', chip: WARN, projects: '2', members: '7', early: '—' },
+        { name: 'Tailspin', plan: 'Gratuit', state: 'Supprimée', chip: OFF, projects: '1', members: '2', early: 'Purge automatique le 21/10' }
+      ],
+      services: [
+        { name: 'Application', tone: 'success' }, { name: 'API', tone: 'success' }, { name: 'MCP', tone: 'success' }, { name: 'Génération', tone: 'ember' }, { name: 'Publication', tone: 'success' }, { name: 'Suivi des déploiements', tone: 'success' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

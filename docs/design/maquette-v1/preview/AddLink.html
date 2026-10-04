@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr"><head><style>
+    .sc-placeholder{background:color-mix(in srgb,currentColor 8%,transparent);
+      border:1px solid color-mix(in srgb,currentColor 50%,transparent);
+      border-radius:2px;box-sizing:border-box;overflow:hidden}
+    @keyframes sc-shine{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+    html.sc-dc-streaming .sc-placeholder,
+    html.sc-dc-streaming .sc-interp.sc-missing{position:relative;
+      background:color-mix(in srgb,currentColor 5%,transparent);
+      border-color:transparent}
+    html.sc-dc-streaming .sc-placeholder::before,
+    html.sc-dc-streaming .sc-interp.sc-missing::before{content:'';
+      position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(90deg,rgba(217,119,87,0) 25%,rgba(247,225,211,.95) 37%,rgba(217,119,87,0) 63%);
+      background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+    html.sc-dc-streaming .sc-placeholder:nth-child(n+9 of .sc-placeholder)::before,
+    html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n+9 of .sc-interp.sc-missing)::before{animation:none;
+      background:color-mix(in srgb,currentColor 8%,transparent)}
+    .sc-placeholder-error{padding:4px 8px;font:11px/1.4 ui-monospace,monospace;
+      color:color-mix(in srgb,currentColor 70%,transparent);word-break:break-word}
+    .sc-interp.sc-missing{display:inline-block;width:2em;height:1em;overflow:hidden;
+      vertical-align:text-bottom;background:rgba(255,255,255,.3);border:1px solid rgba(0,0,0,.5);
+      border-radius:2px;box-sizing:border-box;color:transparent;
+      user-select:none}
+    .sc-interp.sc-unresolved{font-family:ui-monospace,monospace;font-size:.85em;
+      color:color-mix(in srgb,currentColor 50%,transparent);
+      background:color-mix(in srgb,currentColor 10%,transparent);border-radius:3px;
+      padding:0 3px}
+    .sc-host.sc-has-error{position:relative}
+    .sc-logic-error{position:absolute;top:8px;left:8px;z-index:2147483647;max-width:60ch;
+      padding:6px 10px;background:#b00020;color:#fff;font:12px/1.4 ui-monospace,monospace;
+      border-radius:4px;white-space:pre-wrap;pointer-events:none}
+    /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
+       in sync until dc-runtime regains a build step. */
+    @media print {
+      @page { margin: 0.5cm; }
+      figure, table { break-inside: avoid; }
+      #dc-root, #dc-root > .sc-host { height: auto; }
+      *, *::before, *::after {
+        print-color-adjust: exact; -webkit-print-color-adjust: exact;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        animation-delay: -99s !important; animation-duration: .001s !important;
+        animation-iteration-count: 1 !important; animation-fill-mode: both !important;
+        animation-play-state: running !important; transition-duration: 0s !important;
+      }
+    }
+  </style>
+<meta charset="utf-8">
+<title>Ajouter une liaison</title>
+<style>x-dc{display:none!important}</style>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"><style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+</style></head>
+<body>
+<div id="dc-root"><div class="sc-host" data-sc-name="AddLink"><div style="width: 1440px; height: 900px; display: flex; justify-content: center; align-items: center; background: rgba(5, 7, 10, 0.92); color: rgb(232, 236, 242); font-family: &quot;Instrument Sans&quot;, system-ui, sans-serif; font-size: 14px; line-height: 20px;"><div role="dialog" aria-label="Ajouter une liaison" style="width: 760px; border-radius: 12px; background: rgb(17, 21, 28); border: 1px solid rgb(52, 61, 76); box-shadow: rgba(0, 0, 0, 0.45) 0px 24px 48px; display: flex; flex-direction: column;"><div style="padding: 20px 24px; border-bottom: 1px solid rgb(37, 44, 56); display: flex; align-items: center; gap: 10px;"><h2 style="margin: 0px; font-size: 18px; line-height: 26px; font-weight: 600; flex-grow: 1;">Ajouter une liaison depuis <span style="font-family: &quot;JetBrains Mono&quot;, monospace;">api</span></h2><div class="sc-host-x" style="display: contents;"><svg class="st-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-label="Fermer" role="img"><path d="M6 6l12 12M18 6L6 18"></path></svg></div></div><div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 18px;"><div style="display: flex; flex-direction: column; gap: 8px;"><span style="font-size: 12px; font-weight: 500; color: rgb(167, 176, 191);">Type de liaison</span><div style="display: grid; grid-template-columns: repeat(3, minmax(0px, 1fr)); gap: 8px;"><div style="display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 8px; cursor: pointer; background: rgba(91, 200, 223, 0.12); border: 1px solid rgb(91, 200, 223);"><span style="font-size: 13px; font-weight: 500;"><span class="sc-interp">Accès</span></span><span style="font-size: 12px; color: rgb(125, 135, 151);"><span class="sc-interp">Rôle Azure sur la cible</span></span></div><div style="display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 8px; cursor: pointer; background: rgb(14, 18, 24); border: 1px solid rgb(37, 44, 56);"><span style="font-size: 13px; font-weight: 500;"><span class="sc-interp">Accès aux données</span></span><span style="font-size: 12px; color: rgb(125, 135, 151);"><span class="sc-interp">Utilisateur et rôles SQL / PG</span></span></div><div style="display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 8px; cursor: pointer; background: rgb(14, 18, 24); border: 1px solid rgb(37, 44, 56);"><span style="font-size: 13px; font-weight: 500;"><span class="sc-interp">Lecture de configuration</span></span><span style="font-size: 12px; color: rgb(125, 135, 151);"><span class="sc-interp">App Configuration</span></span></div><div style="display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 8px; cursor: pointer; background: rgb(14, 18, 24); border: 1px solid rgb(37, 44, 56);"><span style="font-size: 13px; font-weight: 500;"><span class="sc-interp">Télémétrie</span></span><span style="font-size: 12px; color: rgb(125, 135, 151);"><span class="sc-interp">Application Insights</span></span></div><div style="display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 8px; cursor: pointer; background: rgb(14, 18, 24); border: 1px solid rgb(37, 44, 56);"><span style="font-size: 13px; font-weight: 500;"><span class="sc-interp">Tirage d’image</span></span><span style="font-size: 12px; color: rgb(125, 135, 151);"><span class="sc-interp">Registre de conteneurs</span></span></div><div style="display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 8px; cursor: pointer; background: rgb(14, 18, 24); border: 1px solid rgb(37, 44, 56);"><span style="font-size: 13px; font-weight: 500;"><span class="sc-interp">Usage IA</span></span><span style="font-size: 12px; color: rgb(125, 135, 151);"><span class="sc-interp">Déploiement de modèle Foundry</span></span></div></div></div><div style="display: grid; grid-template-columns: repeat(2, minmax(0px, 1fr)); gap: 12px;"><label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 12px; font-weight: 500; color: rgb(167, 176, 191);">Cible</span><select style="height: 36px; padding: 0px 10px; border-radius: 6px; background: rgb(18, 23, 32); border: 1px solid rgb(91, 200, 223); color: rgb(232, 236, 242); font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; font-size: 13px;"><option>orders / sbns orders</option><option>orders / sbns orders / file payments</option><option>core / kv main (autre composant : demande d'accès si vous n'avez pas de droit sur core)</option></select></label><label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 12px; font-weight: 500; color: rgb(167, 176, 191);">Rôle</span><select style="height: 36px; padding: 0px 10px; border-radius: 6px; background: rgb(18, 23, 32); border: 1px solid rgb(52, 61, 76); color: rgb(232, 236, 242); font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; font-size: 13px;"><option>Azure Service Bus Data Receiver</option><option>Azure Service Bus Data Sender</option><option>Azure Service Bus Data Owner (déconseillé)</option></select></label><label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 12px; font-weight: 500; color: rgb(167, 176, 191);">Identité</span><select style="height: 36px; padding: 0px 10px; border-radius: 6px; background: rgb(18, 23, 32); border: 1px solid rgb(52, 61, 76); color: rgb(232, 236, 242); font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; font-size: 13px;"><option>id api (par défaut)</option></select></label><div class="sc-host-x" style="display: contents;"><div class="st-field"><label class="st-field-label" for="st-field-1">Paramètre exposé (facultatif)</label><input id="st-field-1" type="text" class="st-field-input st-mono" value="ServiceBus__Namespace"><span class="st-field-hint">Déjà présent : sera réutilisé</span></div></div></div><div style="border-radius: 8px; background: rgb(14, 18, 24); border: 1px solid rgb(30, 36, 48); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; font-size: 13px;"><span style="font-weight: 500;">Ce que la liaison produira</span><span style="color: rgb(167, 176, 191);">Attribution du rôle Data Receiver à id-shop-api-dev et id-shop-api-prd sur sbns-shop-orders-*</span><span style="color: rgb(167, 176, 191);">Ordre de déploiement : sbns orders avant api (même composant)</span><span style="color: rgb(167, 176, 191);">En prd : chemin via le point de terminaison privé existant, rien à ajouter</span></div></div><div style="padding: 16px 24px; border-top: 1px solid rgb(37, 44, 56); display: flex; justify-content: flex-end; gap: 8px;"><div class="sc-host-x" style="display: contents;"><button type="button" class="st-btn st-btn-ghost">Annuler</button></div><div class="sc-host-x" style="display: contents;"><a class="st-btn st-btn-primary" href="ResourceLinks.html"><svg class="st-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Ajouter</a></div></div></div></div></div></div>
+
+
+
+</body></html>

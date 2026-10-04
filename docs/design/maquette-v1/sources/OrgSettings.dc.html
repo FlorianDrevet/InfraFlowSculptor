@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Organisation — plan et paramètres</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+@media (max-width: 760px){.ifs-side{display:none !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #0B0E13; color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div class="ifs-side" style="width: 236px; flex-shrink: 0; background: #0E1218; border-right: 1px solid #222936"><dc-import name="Sidebar" active="org-settings" scope="org" hint-size="236px,1100px"></dc-import></div>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="min-height: 56px; box-sizing: border-box; padding: 10px 32px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid #222936">
+<nav aria-label="Fil d'Ariane" style="flex-grow: 1; font-family: 'JetBrains Mono', monospace; font-size: 12px">contoso / organisation / plan et paramètres</nav>
+<x-import component-from-global-scope="Strata.Button" variant="primary" icon="check">Enregistrer</x-import>
+</header>
+<div style="box-sizing: border-box; width: 100%; max-width: 1280px; padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 20px">
+<h1 style="margin: 0; font-size: 28px; line-height: 34px; font-weight: 600">Plan et paramètres</h1>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px">
+<sc-for list="{{usage}}" as="u" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 10px; background: #11151C; border: 1px solid #252C38">
+<span style="font-size: 12px; color: #7D8797">{{u.label}}</span>
+<span style="font-size: 22px; font-weight: 600">{{u.value}}</span>
+<span style="height: 4px; border-radius: 2px; background: #1E2430; display: flex"><span style="{{u.bar}}"></span></span>
+<span style="font-size: 12px; color: #A7B0BF">{{u.note}}</span>
+</div>
+</sc-for>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<div style="flex: 1 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<x-import component-from-global-scope="Strata.Panel" title="Plan" subtitle="Entreprise · facturation annuelle · renouvellement le 01/03/2027">
+<div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: #A7B0BF">
+<span>Inclus : politiques d'organisation, rôles personnalisés, équipes synchronisées avec Entra, publication à deux personnes, SLA 99,9 %, support prioritaire.</span>
+<span>Option instance dédiée : <span style="color: #E8ECF2">non souscrite</span> · région d'hébergement : Union européenne.</span>
+<a href="OrgSettings.dc.html">Voir les factures et le détail des membres actifs</a>
+</div>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Accès">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<x-import component-from-global-scope="Strata.TextField" label="Nom de l'organisation" default-value="Contoso"></x-import>
+<x-import component-from-global-scope="Strata.TextField" label="Domaines autorisés pour les invitations" default-value="contoso.com, contoso.fr" mono="{{yes}}"></x-import>
+<x-import component-from-global-scope="Strata.TextField" label="Tenants Entra autorisés" default-value="72f988bf-…-2d7cd011db47 (contoso.onmicrosoft.com)" mono="{{yes}}" hint="Renseigné : les comptes Microsoft personnels sont refusés."></x-import>
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Qui peut créer des projets</span><x-import component-from-global-scope="Strata.Segmented" options="{{creators}}" value="all"></x-import></div>
+</div>
+</x-import>
+</div>
+<div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<x-import component-from-global-scope="Strata.Panel" title="Accès support IFS" subtitle="Aucun accès permanent : chaque accès est demandé, approuvé, limité à 72 h et journalisé" padded="{{no}}">
+<sc-for list="{{support}}" as="s" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-top: {{s.border}}">
+<span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><span style="font-weight: 500">{{s.title}}</span><span style="{{s.stateStyle}}">{{s.state}}</span></span>
+<span style="font-size: 13px; color: #A7B0BF">{{s.text}}</span>
+<sc-if value="{{s.pending}}" hint-placeholder-val="{{false}}"><span style="display: flex; gap: 8px"><x-import component-from-global-scope="Strata.Button" variant="ghost" size="sm">Refuser</x-import><x-import component-from-global-scope="Strata.Button" variant="secondary" size="sm">Approuver 24 h en lecture</x-import></span></sc-if>
+</div>
+</sc-for>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Télémétrie produit">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<x-import component-from-global-scope="Strata.Toggle" default-checked="{{yes}}" label="Partager des mesures d'usage pseudonymisées"></x-import>
+<span style="font-size: 12px; color: #7D8797">Aucun contenu du modèle : ni noms, ni valeurs, ni identifiants Azure. Conservation 13 mois.</span>
+</div>
+</x-import>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 10px; border: 1px solid rgba(229,105,95,0.45)">
+<span style="font-weight: 600; color: #F08A80">Supprimer l'organisation</span>
+<span style="font-size: 13px; color: #A7B0BF">Accès coupé tout de suite, restaurable 30 jours, puis purge. Un export de chaque projet vous est proposé avant.</span>
+<x-import component-from-global-scope="Strata.Button" variant="danger" icon="trash">Supprimer Contoso…</x-import>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const bar = (pct, c) => 'width: ' + pct + '%; height: 4px; border-radius: 2px; background: ' + c + ';';
+    const chip = (bg, fg) => 'display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 500; background: ' + bg + '; color: ' + fg + ';';
+    return {
+      yes: true,
+      creators: [{ value: 'all', label: 'Tous les membres' }, { value: 'roles', label: 'Rôles désignés' }],
+      usage: [
+        { label: 'Membres actifs ce mois', value: '9', bar: bar(18, '#5BC8DF'), note: 'Sur 50 inclus' },
+        { label: 'Projets', value: '6', bar: bar(12, '#5BC8DF'), note: 'Sur 50' },
+        { label: 'Ressources (plus gros projet)', value: '31', bar: bar(3, '#5BC8DF'), note: 'Sur 1 000 par projet' },
+        { label: 'Révisions ce mois', value: '64', bar: bar(0, '#5BC8DF'), note: 'Illimitées' }
+      ],
+      support: [
+        { title: 'Lecture de Woodgrove Payments', text: 'Opérateur IFS · ticket SUP-2214 « génération en échec sur appgw-pay » · approuvé par Florian Drevet · expire dans 41 h.', state: 'Actif', stateStyle: chip('rgba(232,166,90,0.12)', '#F0B676'), pending: false, border: 'none' },
+        { title: 'Lecture de Boutique en ligne', text: 'Opérateur IFS · ticket SUP-2231 « dérive faussement signalée sur kv-shop-main-prd » · demandé il y a 10 min.', state: 'En attente', stateStyle: chip('rgba(91,200,223,0.12)', '#7FD6E8'), pending: true, border: '1px solid #1E2430' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

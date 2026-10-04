@@ -1,0 +1,20 @@
+<!-- @dsCard group="Navigation" height=80 subtitle="sections d'une page, compteurs" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Tabs — aperçu</title></head>
+<body>
+<div id="root" class="st-root" style="padding: 8px 16px"></div>
+<script>
+  var S = window.Strata, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    h(S.Tabs, { ariaLabel: 'Sections de la configuration', items: [
+      { id: 'resources', label: 'Ressources', count: 10 },
+      { id: 'naming', label: 'Nommage' },
+      { id: 'tags', label: 'Tags' },
+      { id: 'xref', label: 'Références cross-config', count: 3 },
+      { id: 'repos', label: 'Dépôts', count: 2 },
+      { id: 'diag', label: 'Diagnostics', count: 2, countTone: 'ember' }
+    ] }));
+</script>
+</body>
+</html>

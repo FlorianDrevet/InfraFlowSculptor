@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Boutique en ligne — vue d'ensemble</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+@media (max-width: 760px){.ifs-side{display:none !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #0B0E13; color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div class="ifs-side" style="width: 236px; flex-shrink: 0; background: #0E1218; border-right: 1px solid #222936"><dc-import name="Sidebar" active="overview" scope="project" hint-size="236px,1100px"></dc-import></div>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="min-height: 56px; box-sizing: border-box; padding: 10px 32px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid #222936">
+<nav aria-label="Fil d'Ariane" style="flex-grow: 1; font-family: 'JetBrains Mono', monospace; font-size: 12px"><a href="Projects.dc.html">projets</a> / shop</nav>
+<x-import component-from-global-scope="Strata.Button" variant="secondary" icon="graph" href="ProjectGraph.dc.html">Graphe</x-import>
+<x-import component-from-global-scope="Strata.Button" variant="secondary" icon="upload" href="PublishDialog.dc.html">Publier la révision 15</x-import>
+<x-import component-from-global-scope="Strata.Button" variant="primary" icon="zap" href="RevisionDetail.dc.html">Générer la révision 16</x-import>
+</header>
+<div style="box-sizing: border-box; width: 100%; max-width: 1280px; padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><h1 style="margin: 0; font-size: 28px; line-height: 34px; font-weight: 600">Boutique en ligne</h1><x-import component-from-global-scope="Strata.Badge" mono="{{yes}}">shop</x-import><x-import component-from-global-scope="Strata.Badge">Bicep · AVM</x-import><x-import component-from-global-scope="Strata.Badge">Azure DevOps</x-import><x-import component-from-global-scope="Strata.Badge" mono="{{yes}}">catalogue 2026.10</x-import></div>
+<p style="margin: 0; color: #A7B0BF">Commandes, catalogue et socle partagé. 3 composants, 13 ressources, 2 environnements et une cible partagée.</p>
+</div>
+<x-import component-from-global-scope="Strata.GoldenPathRail" steps="{{rail}}" aria-label="Avancement du projet"></x-import>
+
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+<div style="flex: 2 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<section aria-labelledby="comp-title" style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 id="comp-title" style="margin: 0; font-size: 16px; font-weight: 600; flex-grow: 1">Composants, dans l'ordre de déploiement</h2><a href="Component.dc.html" style="font-size: 13px">+ Nouveau composant</a></div>
+<sc-for list="{{comps}}" as="c" hint-placeholder-count="3">
+<a href="{{c.href}}" style="display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: 10px; background: #11151C; border: 1px solid #252C38; color: #E8ECF2; flex-wrap: wrap">
+<span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: #1E2430; font-size: 12px; font-weight: 600">{{c.order}}</span>
+<span style="flex: 1 1 240px; display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 500">{{c.code}}</span><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: #1A2029; border: 1px solid #2C3442; color: #A7B0BF; font-size: 12px">{{c.mode}}</span><sc-if value="{{c.changed}}" hint-placeholder-val="{{false}}"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: rgba(232,166,90,0.12); color: #F0B676; font-size: 12px">{{c.changed}}</span></sc-if></span>
+<span style="font-size: 13px; color: #A7B0BF">{{c.desc}}</span>
+</span>
+<span style="display: flex; gap: 4px; flex-wrap: wrap"><sc-for list="{{c.icons}}" as="t" hint-placeholder-count="4"><x-import component-from-global-scope="Strata.ResourceIcon" type="{{t}}" size="{{s24}}"></x-import></sc-for></span>
+<span style="font-size: 12px; color: #7D8797; text-align: right; min-width: 120px">{{c.deps}}</span>
+</a>
+</sc-for>
+</section>
+<section aria-labelledby="dep-title" style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px"><h2 id="dep-title" style="margin: 0; font-size: 16px; font-weight: 600; flex-grow: 1">Déploiements</h2><a href="Deployments.dc.html" style="font-size: 13px">Détail</a></div>
+<div style="border-radius: 10px; border: 1px solid #252C38; background: #11151C; overflow-x: auto">
+<div style="min-width: 560px">
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, minmax(0, 1.2fr)); gap: 12px; padding: 10px 16px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: #7D8797; background: #141922"><span>Composant</span><span>dev</span><span>prd</span><span>shared</span></div>
+<sc-for list="{{matrix}}" as="m" hint-placeholder-count="3">
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, minmax(0, 1.2fr)); gap: 12px; align-items: center; padding: 10px 16px; border-top: 1px solid #1E2430; font-size: 13px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">{{m.code}}</span><sc-for list="{{m.cells}}" as="c" hint-placeholder-count="3"><span style="display: flex; align-items: center; gap: 6px; {{c.color}}"><span style="{{c.dot}}"></span>{{c.label}}</span></sc-for></div>
+</sc-for>
+</div>
+</div>
+</section>
+</div>
+<aside style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<x-import component-from-global-scope="Strata.Panel" title="Constats" subtitle="0 erreur · 2 avertissements · 1 info">
+<div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px">
+<a href="ProjectFindings.dc.html" style="display: flex; gap: 8px; color: #E8ECF2"><span style="color: #F0B676">●</span><span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">VAL-SEC-AUTH-LOCALE</span><br><span style="color: #A7B0BF">sql orders : mot de passe administrateur activé</span></span></a>
+<a href="ProjectFindings.dc.html" style="display: flex; gap: 8px; color: #E8ECF2"><span style="color: #F0B676">●</span><span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">VAL-POL-REGLE</span><br><span style="color: #A7B0BF">sqldb orders : redondance minimale (dérogation demandée)</span></span></a>
+</div>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Depuis la révision 14">
+<div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #A7B0BF">
+<span><span style="color: #F0B676; font-family: 'JetBrains Mono', monospace">~</span> ca api : CPU prd 1.0 → 2.0</span>
+<span><span style="color: #7ED3A3; font-family: 'JetBrains Mono', monospace">+</span> sbns orders / file <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">payments</span></span>
+<span><span style="color: #F0B676; font-family: 'JetBrains Mono', monospace">~</span> ca api : stratégie bleu/vert en prd</span>
+<span style="font-size: 12px; color: #7D8797">Coût estimé : +12 € / mois en prd</span>
+</div>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Installation" subtitle="7 étapes sur 9 faites">
+<div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+<span style="height: 6px; border-radius: 3px; background: #1E2430; display: flex"><span style="width: 78%; border-radius: 3px; background: #5CC08A"></span></span>
+<span style="color: #A7B0BF">Reste : saisir MAIN_PAYMENTS_API_KEY en prd, confirmer l'adhésion des identités au groupe sg-shop-sql-admins.</span>
+<a href="InstallChecklist.dc.html">Ouvrir la liste de contrôle</a>
+</div>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Coût estimé mensuel">
+<div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px"><span style="display: flex; justify-content: space-between"><span style="color: #A7B0BF">dev</span><span style="font-family: 'JetBrains Mono', monospace">184 €</span></span><span style="display: flex; justify-content: space-between"><span style="color: #A7B0BF">prd</span><span style="font-family: 'JetBrains Mono', monospace">1 246 €</span></span><span style="display: flex; justify-content: space-between"><span style="color: #A7B0BF">shared</span><span style="font-family: 'JetBrains Mono', monospace">18 €</span></span><a href="ProjectCosts.dc.html">Détail et hypothèses</a></div>
+</x-import>
+</aside>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dot = c => 'width: 6px; height: 6px; border-radius: 999px; background: ' + c + ';';
+    const cell = (label, tone) => {
+      const m = { g: ['#5CC08A', '#7ED3A3'], e: ['#E8A65A', '#F0B676'], d: ['#E5695F', '#F08A80'], n: ['#4A5363', '#7D8797'] }[tone];
+      return { label, dot: dot(m[0]), color: 'color: ' + m[1] + ';' };
+    };
+    return {
+      yes: true, s24: 24,
+      rail: [
+        { label: 'Modèle', state: 'attention', meta: '3 modifications depuis la révision 14' },
+        { label: 'Révision', state: 'attention', meta: '15 générée, non publiée' },
+        { label: 'Publication', state: 'done', meta: '14 publiée · 2 PR fusionnées' },
+        { label: 'Déploiement', state: 'current', meta: 'prd : approbation attendue' }
+      ],
+      comps: [
+        { order: '1', code: 'core', href: 'Component.dc.html', mode: 'Par environnement · dev, prd', desc: 'Journaux, télémétrie, Key Vault et App Configuration partagés', icons: ['LogAnalyticsWorkspace', 'ApplicationInsights', 'KeyVault', 'AppConfiguration'], deps: 'Aucune dépendance', changed: '' },
+        { order: '2', code: 'platform', href: 'ComponentSettings.dc.html', mode: 'Unique · cible shared', desc: 'Registre de conteneurs commun à tous les environnements', icons: ['ContainerRegistry'], deps: 'Aucune dépendance', changed: '' },
+        { order: '3', code: 'orders', href: 'Component.dc.html', mode: 'Par environnement · dev, prd', desc: 'Service de commandes : API conteneur, base SQL, Service Bus', icons: ['UserAssignedIdentity', 'ContainerAppEnvironment', 'ContainerApp', 'SqlServer', 'SqlDatabase', 'ServiceBusNamespace'], deps: 'Dépend de core, platform', changed: '3 modifiées' }
+      ],
+      matrix: [
+        { code: 'core', cells: [cell('Révision 14', 'g'), cell('Révision 14', 'g'), cell('—', 'n')] },
+        { code: 'platform', cells: [cell('—', 'n'), cell('—', 'n'), cell('Révision 14', 'g')] },
+        { code: 'orders', cells: [cell('Révision 14', 'g'), cell('Approbation attendue', 'e'), cell('—', 'n')] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

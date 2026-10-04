@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ajouter une liaison</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; justify-content: center; align-items: center; background: rgba(5,7,10,0.92); color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div role="dialog" aria-label="Ajouter une liaison" style="width: 760px; border-radius: 12px; background: #11151C; border: 1px solid #343D4C; box-shadow: 0 24px 48px rgba(0,0,0,0.45); display: flex; flex-direction: column">
+<div style="padding: 20px 24px; border-bottom: 1px solid #252C38; display: flex; align-items: center; gap: 10px"><h2 style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 600; flex-grow: 1">Ajouter une liaison depuis <span style="font-family: 'JetBrains Mono', monospace">api</span></h2><x-import component-from-global-scope="Strata.Icon" name="x" size="{{s16}}" label="Fermer"></x-import></div>
+<div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Type de liaison</span>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{kinds}}" as="k" hint-placeholder-count="6">
+<div style="{{k.style}}"><span style="font-size: 13px; font-weight: 500">{{k.label}}</span><span style="font-size: 12px; color: #7D8797">{{k.hint}}</span></div>
+</sc-for>
+</div></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Cible</span><select style="height: 36px; padding: 0 10px; border-radius: 6px; background: #121720; border: 1px solid #5BC8DF; color: #E8ECF2; font: inherit; font-size: 13px"><option>orders / sbns orders</option><option>orders / sbns orders / file payments</option><option>core / kv main (autre composant : demande d'accès si vous n'avez pas de droit sur core)</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Rôle</span><select style="height: 36px; padding: 0 10px; border-radius: 6px; background: #121720; border: 1px solid #343D4C; color: #E8ECF2; font: inherit; font-size: 13px"><option>Azure Service Bus Data Receiver</option><option>Azure Service Bus Data Sender</option><option>Azure Service Bus Data Owner (déconseillé)</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Identité</span><select style="height: 36px; padding: 0 10px; border-radius: 6px; background: #121720; border: 1px solid #343D4C; color: #E8ECF2; font: inherit; font-size: 13px"><option>id api (par défaut)</option></select></label>
+<x-import component-from-global-scope="Strata.TextField" label="Paramètre exposé (facultatif)" default-value="ServiceBus__Namespace" mono="{{yes}}" hint="Déjà présent : sera réutilisé"></x-import>
+</div>
+<div style="border-radius: 8px; background: #0E1218; border: 1px solid #1E2430; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; font-size: 13px">
+<span style="font-weight: 500">Ce que la liaison produira</span>
+<span style="color: #A7B0BF">Attribution du rôle Data Receiver à id-shop-api-dev et id-shop-api-prd sur sbns-shop-orders-*</span>
+<span style="color: #A7B0BF">Ordre de déploiement : sbns orders avant api (même composant)</span>
+<span style="color: #A7B0BF">En prd : chemin via le point de terminaison privé existant, rien à ajouter</span>
+</div>
+</div>
+<div style="padding: 16px 24px; border-top: 1px solid #252C38; display: flex; justify-content: flex-end; gap: 8px">
+<x-import component-from-global-scope="Strata.Button" variant="ghost">Annuler</x-import>
+<x-import component-from-global-scope="Strata.Button" variant="primary" icon="plus" href="ResourceLinks.dc.html">Ajouter</x-import>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const base = 'display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 8px; cursor: pointer; ';
+    const off = base + 'background: #0E1218; border: 1px solid #252C38;';
+    const on = base + 'background: rgba(91,200,223,0.12); border: 1px solid #5BC8DF;';
+    return {
+      yes: true, s16: 16,
+      kinds: [
+        { label: 'Accès', hint: 'Rôle Azure sur la cible', style: on },
+        { label: 'Accès aux données', hint: 'Utilisateur et rôles SQL / PG', style: off },
+        { label: 'Lecture de configuration', hint: 'App Configuration', style: off },
+        { label: 'Télémétrie', hint: 'Application Insights', style: off },
+        { label: 'Tirage d’image', hint: 'Registre de conteneurs', style: off },
+        { label: 'Usage IA', hint: 'Déploiement de modèle Foundry', style: off }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

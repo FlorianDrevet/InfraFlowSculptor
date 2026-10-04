@@ -1,0 +1,16 @@
+<!-- @dsCard group="Statut" height=250 subtitle="ember · danger · success · signal" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Banner — aperçu</title></head>
+<body>
+<div id="root" class="st-root st-stack" style="padding: 16px; gap: 10px"></div>
+<script>
+  var S = window.Strata, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h(S.Banner, { tone: 'ember', title: 'Push partiel : 4 dépôts sur 5 mis à jour' }, 'Les dépôts déjà poussés restent tels quels. Corrigez le dépôt en échec, puis relancez-le seul.'),
+    h(S.Banner, { tone: 'danger', title: 'Azure DevOps a refusé l’authentification', action: h(S.Button, { size: 'sm' }, 'Remplacer le jeton') }, 'Le jeton du dépôt catalog-app a expiré le 28/09.'),
+    h(S.Banner, { tone: 'success', title: 'Prêt à générer' }, 'VNet et subnet définis, zone DNS privée résolue.'),
+    h(S.Banner, { tone: 'signal', title: 'Génération en cours' }, 'orders-service · 14 fichiers')));
+</script>
+</body>
+</html>

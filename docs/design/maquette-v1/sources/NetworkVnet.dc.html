@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>vnet orders — subnets</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+@media (max-width: 760px){.ifs-side{display:none !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #0B0E13; color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div class="ifs-side" style="width: 236px; flex-shrink: 0; background: #0E1218; border-right: 1px solid #222936"><dc-import name="Sidebar" active="comp-orders" scope="project" hint-size="236px,1100px"></dc-import></div>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="min-height: 56px; box-sizing: border-box; padding: 10px 32px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid #222936">
+<nav aria-label="Fil d'Ariane" style="flex-grow: 1; font-family: 'JetBrains Mono', monospace; font-size: 12px"><a href="ProjectOverview.dc.html">shop</a> / <a href="Component.dc.html">orders</a> / vnet spoke / enfants</nav>
+<x-import component-from-global-scope="Strata.Button" variant="ghost" icon="grid">Plan d'adressage assisté</x-import>
+<x-import component-from-global-scope="Strata.Button" variant="primary" icon="plus">Subnet</x-import>
+</header>
+<div style="box-sizing: border-box; width: 100%; max-width: 1280px; padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap">
+<x-import component-from-global-scope="Strata.ResourceIcon" type="VirtualNetwork" size="{{s40}}" alt=""></x-import>
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><h1 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 24px; line-height: 32px; font-weight: 500">spoke</h1><x-import component-from-global-scope="Strata.Badge">Réseau virtuel</x-import><x-import component-from-global-scope="Strata.Badge" mono="{{yes}}">vnet-shop-orders-prd</x-import></div>
+</div>
+<dc-import name="ResourceTabs" active="children" variant="data" hint-size="100%,48px"></dc-import>
+<x-import component-from-global-scope="Strata.Panel" title="Espaces d'adressage et DNS">
+<div style="display: grid; grid-template-columns: 60px minmax(0, 1fr) minmax(0, 1fr); gap: 10px 12px; align-items: center; font-size: 13px">
+<span></span><span style="font-size: 12px; color: #7D8797">Espace d'adressage</span><span style="font-size: 12px; color: #7D8797">Serveurs DNS</span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #A7B0BF">dev</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">10.10.0.0/22</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #F0B676">10.1.0.68 (résolveur hub dev)</span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #A7B0BF">prd</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">10.20.0.0/22</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #F0B676">10.0.0.68 (résolveur hub prd)</span>
+</div>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Occupation de 10.20.0.0/22 (prd)">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; height: 28px; border-radius: 6px; overflow: hidden; border: 1px solid #252C38">
+<sc-for list="{{bar}}" as="b" hint-placeholder-count="4"><span style="{{b.style}}">{{b.label}}</span></sc-for>
+</div>
+<span style="font-size: 12px; color: #7D8797">448 adresses libres (10.20.2.64 – 10.20.3.255) réservées à la croissance.</span>
+</div>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Subnets" padded="{{no}}">
+<div style="overflow-x: auto"><div style="min-width: 1000px">
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.3fr) 120px 120px minmax(0, 1.3fr); gap: 12px; padding: 10px 16px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: #7D8797; background: #141922"><span>Nom</span><span>Usage</span><span>Délégation</span><span>dev</span><span>prd</span><span>Liaisons</span></div>
+<sc-for list="{{subnets}}" as="s" hint-placeholder-count="3">
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.3fr) 120px 120px minmax(0, 1.3fr); gap: 12px; align-items: center; padding: 10px 16px; border-top: 1px solid #1E2430; font-size: 13px">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">{{s.name}}</span><span>{{s.usage}}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A7B0BF">{{s.deleg}}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">{{s.dev}}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">{{s.prd}}</span><span style="font-size: 12px; color: #A7B0BF">{{s.links}}</span>
+</div>
+</sc-for>
+</div></div>
+</x-import>
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<div style="flex: 1 1 520px; min-width: 0"><x-import component-from-global-scope="Strata.Panel" title="nsg-shop-cae-prd" subtitle="Règles implicites du descripteur : visibles, non supprimables" padded="{{no}}">
+<sc-for list="{{rules}}" as="r" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: 50px 70px minmax(0, 1fr) 90px; gap: 10px; align-items: center; padding: 8px 16px; border-top: {{r.border}}; font-size: 12px">
+<span style="font-family: 'JetBrains Mono', monospace">{{r.prio}}</span><span style="color: #A7B0BF">{{r.dir}}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A7B0BF">{{r.what}}</span><span style="{{r.chip}}">{{r.kind}}</span>
+</div>
+</sc-for>
+</x-import></div>
+<div style="flex: 1 1 400px; min-width: 0"><x-import component-from-global-scope="Strata.Panel" title="Contrôles d'adressage">
+<div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+<span style="display: flex; gap: 8px; color: #7ED3A3"><x-import component-from-global-scope="Strata.Icon" name="check" size="{{s16}}"></x-import>Subnets inclus dans l'espace d'adressage</span>
+<span style="display: flex; gap: 8px; color: #7ED3A3"><x-import component-from-global-scope="Strata.Icon" name="check" size="{{s16}}"></x-import>Aucun chevauchement avec le hub ni avec core</span>
+<span style="display: flex; gap: 8px; color: #7ED3A3"><x-import component-from-global-scope="Strata.Icon" name="check" size="{{s16}}"></x-import>Tailles minimales par usage respectées</span>
+<span style="display: flex; gap: 8px; color: #F0B676"><x-import component-from-global-scope="Strata.Icon" name="alert" size="{{s16}}"></x-import>snet-cae est verrouillé : il se choisit à la création de cae main</span>
+</div>
+</x-import></div>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const seg = (flex, bg, fg) => "display: flex; align-items: center; justify-content: center; font-size: 11px; font-family: 'JetBrains Mono', monospace; white-space: nowrap; overflow: hidden; flex: " + flex + '; background: ' + bg + '; color: ' + fg + ';';
+    const chip = (bg, fg) => 'display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px; font-size: 11px; width: fit-content; background: ' + bg + '; color: ' + fg + ';';
+    return {
+      yes: true, s16: 16, s40: 40,
+      bar: [
+        { label: 'snet-cae /23', style: seg(512, 'rgba(91,200,223,0.25)', '#E8ECF2') },
+        { label: 'pe /27', style: seg(32, 'rgba(181,154,242,0.3)', '#E8ECF2') },
+        { label: 'app /27', style: seg(32, 'rgba(92,192,138,0.25)', '#E8ECF2') },
+        { label: 'libre', style: seg(448, '#11151C', '#7D8797') }
+      ],
+      subnets: [
+        { name: 'snet-cae', usage: 'Environnement Container Apps', deleg: 'Microsoft.App/environments', dev: '10.10.0.0/23', prd: '10.20.0.0/23', links: 'NSG nsg-shop-cae · routes rt-shop-spoke' },
+        { name: 'snet-pe', usage: 'Points de terminaison privés', deleg: 'Aucune', dev: '10.10.2.0/27', prd: '10.20.2.0/27', links: '3 points de terminaison (prd)' },
+        { name: 'snet-app', usage: 'Intégration d’applications', deleg: 'Microsoft.Web/serverFarms', dev: '10.10.2.32/27', prd: '10.20.2.32/27', links: 'Réservé (Functions au lot 2)' }
+      ],
+      rules: [
+        { prio: '100', dir: 'Entrant', what: 'AzureLoadBalancer → * : tous ports', kind: 'Implicite', chip: chip('#1E2430', '#A7B0BF'), border: 'none' },
+        { prio: '110', dir: 'Sortant', what: '* → AzureMonitor : 443', kind: 'Implicite', chip: chip('#1E2430', '#A7B0BF'), border: '1px solid #1E2430' },
+        { prio: '120', dir: 'Sortant', what: '* → MicrosoftContainerRegistry : 443', kind: 'Implicite', chip: chip('#1E2430', '#A7B0BF'), border: '1px solid #1E2430' },
+        { prio: '200', dir: 'Entrant', what: 'AzureFrontDoor.Backend → * : 443', kind: 'Saisie', chip: chip('rgba(91,200,223,0.12)', '#7FD6E8'), border: '1px solid #1E2430' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

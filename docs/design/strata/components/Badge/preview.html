@@ -1,0 +1,22 @@
+<!-- @dsCard group="Statut" height=96 subtitle="neutral · signal · ember · success · danger" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Badge — aperçu</title></head>
+<body>
+<div id="root" class="st-root st-stack" style="padding: 16px"></div>
+<script>
+  var S = window.Strata, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h('div', { className: 'st-row' },
+      h(S.Badge, { tone: 'success' }, 'Généré'),
+      h(S.Badge, { tone: 'ember' }, 'Modifiée'),
+      h(S.Badge, { tone: 'danger' }, 'Push échoué'),
+      h(S.Badge, { tone: 'signal' }, 'En cours'),
+      h(S.Badge, null, 'Infra / code séparés')),
+    h('div', { className: 'st-row' },
+      h(S.Badge, { mono: true }, 'dev · staging · prod'),
+      h(S.Badge, { icon: 'lock' }, 'Privé'),
+      h(S.Badge, { tone: 'danger', dot: true }, 'Push partiel'))));
+</script>
+</body>
+</html>

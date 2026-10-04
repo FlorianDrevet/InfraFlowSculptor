@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Boutique en ligne — graphe</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+@media (max-width: 760px){.ifs-side{display:none !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #0B0E13; color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div class="ifs-side" style="width: 236px; flex-shrink: 0; background: #0E1218; border-right: 1px solid #222936"><dc-import name="Sidebar" active="graph" scope="project" hint-size="236px,1100px"></dc-import></div>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="min-height: 56px; box-sizing: border-box; padding: 10px 32px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid #222936">
+<nav aria-label="Fil d'Ariane" style="flex-grow: 1; font-family: 'JetBrains Mono', monospace; font-size: 12px"><a href="ProjectOverview.dc.html">shop</a> / graphe</nav>
+<x-import component-from-global-scope="Strata.Segmented" options="{{envs}}" value="prd" aria-label="Environnement"></x-import>
+<x-import component-from-global-scope="Strata.Segmented" options="{{views}}" value="graph" aria-label="Vue"></x-import>
+<x-import component-from-global-scope="Strata.Button" variant="primary" icon="plus" href="AddLink.dc.html">Nouvelle liaison</x-import>
+</header>
+<div style="box-sizing: border-box; width: 100%; padding: 20px 32px 40px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 12px; color: #A7B0BF">
+<span style="font-weight: 500; color: #E8ECF2">Légende</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 24px; border-top: 2px solid #5B6576"></span>Hébergement, journalisation</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 24px; border-top: 2px solid #5BC8DF"></span>Accès, tirage d'image, accès aux données</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 24px; border-top: 2px dashed #B59AF2"></span>Identité</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 24px; border-top: 2px dashed #5B6576"></span>Implicite (déduite)</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 24px; border-top: 2px dashed #E8A65A"></span>Entre composants</span>
+<span style="flex-grow: 1"></span>
+<span>Filtrer : <a href="ProjectGraph.dc.html">tous les types</a> · <a href="ProjectGraph.dc.html">implicites visibles</a></span>
+</div>
+<div style="overflow: auto; border-radius: 12px; border: 1px solid #252C38; background: #0E1218">
+<div style="position: relative; width: 1120px; height: 640px">
+<svg width="1120" height="640" viewBox="0 0 1120 640" fill="none" aria-hidden="true" style="position: absolute; left: 0; top: 0">
+<path d="M950 236 L780 236" stroke="#5B6576" stroke-width="2"></path>
+<path d="M950 236 C 760 120, 620 120, 560 118" stroke="#E8A65A" stroke-width="2" stroke-dasharray="6 4"></path>
+<path d="M950 236 C 600 190, 420 210, 340 208" stroke="#E8A65A" stroke-width="2" stroke-dasharray="6 4"></path>
+<path d="M950 250 C 640 400, 420 450, 340 448" stroke="#E8A65A" stroke-width="2" stroke-dasharray="6 4"></path>
+<path d="M950 244 C 640 330, 420 330, 340 328" stroke="#E8A65A" stroke-width="2" stroke-dasharray="6 4"></path>
+<path d="M990 264 L990 340" stroke="#5BC8DF" stroke-width="2"></path>
+<path d="M990 264 C 990 420, 960 460, 960 470" stroke="#5BC8DF" stroke-width="2"></path>
+<path d="M960 498 L960 520" stroke="#5B6576" stroke-width="2"></path>
+<path d="M740 120 C 860 150, 940 180, 960 208" stroke="#B59AF2" stroke-width="2" stroke-dasharray="4 4"></path>
+<path d="M700 264 C 600 120, 420 100, 340 98" stroke="#E8A65A" stroke-width="2" stroke-dasharray="6 4"></path>
+<path d="M150 180 L150 126" stroke="#5B6576" stroke-width="2"></path>
+</svg>
+<div style="position: absolute; left: 20px; top: 24px; width: 340px; height: 590px; box-sizing: border-box; border-radius: 12px; border: 1px solid #252C38; background: rgba(17,21,28,0.6)"><div style="padding: 10px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #7D8797">core · rg-shop-core-main-prd</div></div>
+<div style="position: absolute; left: 400px; top: 24px; width: 220px; height: 170px; box-sizing: border-box; border-radius: 12px; border: 1px dashed #5A4A35; background: rgba(232,166,90,0.04)"><div style="padding: 10px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #F0B676">platform · cible shared</div></div>
+<div style="position: absolute; left: 660px; top: 24px; width: 440px; height: 590px; box-sizing: border-box; border-radius: 12px; border: 1px solid #252C38; background: rgba(17,21,28,0.6)"><div style="padding: 10px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #7D8797">orders · rg-shop-orders-main-prd</div></div>
+<sc-for list="{{nodes}}" as="n" hint-placeholder-count="11">
+<a href="{{n.href}}" style="position: absolute; left: {{n.x}}px; top: {{n.y}}px; width: 200px; height: 56px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 0 12px; border-radius: 8px; background: #11151C; border: 1px solid {{n.border}}; color: #E8ECF2">
+<x-import component-from-global-scope="Strata.ResourceIcon" type="{{n.type}}" size="{{s26}}" alt=""></x-import>
+<span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 13px; font-weight: 500">{{n.name}}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7D8797; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{n.azure}}</span></span>
+</a>
+</sc-for>
+</div>
+</div>
+<p style="margin: 0; font-size: 12px; color: #7D8797">Glissez d'une ressource à une autre pour créer une liaison. La même information existe en liste accessible au clavier : bouton « Liste ».</p>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const n = (name, type, azure, x, y, href, sel) => ({ name, type, azure, x, y, href: href || 'ResourceGeneral.dc.html', border: sel ? '#5BC8DF' : '#2C3442' });
+    return {
+      s26: 26,
+      envs: [{ value: 'dev', label: 'dev' }, { value: 'prd', label: 'prd' }],
+      views: [{ value: 'graph', label: 'Graphe', icon: 'graph' }, { value: 'list', label: 'Liste', icon: 'list' }],
+      nodes: [
+        n('log main', 'LogAnalyticsWorkspace', 'log-shop-main-prd', 50, 70),
+        n('appi main', 'ApplicationInsights', 'appi-shop-main-prd', 50, 180),
+        n('kv main', 'KeyVault', 'kv-shop-main-prd', 50, 300),
+        n('appcs main', 'AppConfiguration', 'appcs-shop-main-prd', 50, 420),
+        n('cr main', 'ContainerRegistry', 'crshopmainshared', 410, 90),
+        n('id api', 'UserAssignedIdentity', 'id-shop-api-prd', 680, 90, 'ResourceIdentity.dc.html'),
+        n('cae main', 'ContainerAppEnvironment', 'cae-shop-main-prd', 680, 208),
+        n('ca api', 'ContainerApp', 'ca-shop-api-prd', 900, 208, 'ResourceGeneral.dc.html', true),
+        n('sbns orders', 'ServiceBusNamespace', 'sbns-shop-orders-prd', 680, 340, 'ResourceChildren.dc.html'),
+        n('sql orders', 'SqlServer', 'sql-shop-orders-prd', 900, 520),
+        n('sqldb orders', 'SqlDatabase', 'sqldb-shop-orders-prd', 900, 440)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

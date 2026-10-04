@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Supprimer une ressource</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; justify-content: center; align-items: center; background: rgba(5,7,10,0.92); color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div role="dialog" aria-label="Supprimer sql orders" style="width: 720px; border-radius: 12px; background: #11151C; border: 1px solid #343D4C; box-shadow: 0 24px 48px rgba(0,0,0,0.45); display: flex; flex-direction: column">
+<div style="padding: 20px 24px; border-bottom: 1px solid #252C38; display: flex; flex-direction: column; gap: 4px"><h2 style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 600">Supprimer <span style="font-family: 'JetBrains Mono', monospace">sql orders</span> du modèle ?</h2><span style="font-size: 13px; color: #A7B0BF">Règle du composant orders : détacher. Rien n'est supprimé dans Azure ; la ressource devient détachée au prochain déploiement.</span></div>
+<div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Supprimé avec elle</span>
+<sc-for list="{{cascade}}" as="c" hint-placeholder-count="2"><span style="font-size: 13px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">{{c.name}}</span> <span style="color: #7D8797">· {{c.why}}</span></span></sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Supprimés aussi, car ils la citent</span>
+<sc-for list="{{broken}}" as="b" hint-placeholder-count="3"><span style="font-size: 13px; display: flex; gap: 8px; align-items: center"><x-import component-from-global-scope="Strata.Icon" name="minus" size="{{s14}}"></x-import><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">{{b.name}}</span><span style="color: #7D8797">{{b.why}}</span></span></sc-for>
+</div>
+<span style="font-size: 12px; color: #7D8797">Sql__Database reste : c'est une valeur saisie, elle ne cite pas la ressource : à relire à la main.</span>
+<x-import component-from-global-scope="Strata.Banner" tone="ember" title="Données en production">sql-shop-orders-prd contient des données. Après déploiement elle restera dans Azure, listée dans l'inventaire des ressources détachées, jusqu'à ce que quelqu'un la supprime ou la rattache. Même si le composant passait en « supprimer », prd étant protégée, la ressource y serait toujours détachée.</x-import>
+<x-import component-from-global-scope="Strata.TextField" label="Tapez sql orders pour confirmer" default-value="sql orders" mono="{{yes}}"></x-import>
+</div>
+<div style="padding: 16px 24px; border-top: 1px solid #252C38; display: flex; justify-content: flex-end; gap: 8px">
+<x-import component-from-global-scope="Strata.Button" variant="ghost">Annuler</x-import>
+<x-import component-from-global-scope="Strata.Button" variant="danger" icon="trash">Supprimer du modèle</x-import>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      yes: true, s14: 14,
+      cascade: [
+        { name: 'sqldb orders', why: 'base enfant du serveur' },
+        { name: 'sql-orders-admin', why: 'secret du mot de passe administrateur dans kv main' }
+      ],
+      broken: [
+        { name: 'api → sqldb orders', why: 'accès aux données LectureÉcriture' },
+        { name: 'Sql__Server', why: 'paramètre de api (sortie fqdn)' },
+        { name: 'Diagnostics sql orders → log corp', why: 'liaison implicite' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

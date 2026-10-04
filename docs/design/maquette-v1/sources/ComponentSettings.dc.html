@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Composant — réglages</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+@media (max-width: 760px){.ifs-side{display:none !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #0B0E13; color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div class="ifs-side" style="width: 236px; flex-shrink: 0; background: #0E1218; border-right: 1px solid #222936"><dc-import name="Sidebar" active="comp-platform" scope="project" hint-size="236px,1100px"></dc-import></div>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="min-height: 56px; box-sizing: border-box; padding: 10px 32px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid #222936">
+<nav aria-label="Fil d'Ariane" style="flex-grow: 1; font-family: 'JetBrains Mono', monospace; font-size: 12px"><a href="ProjectOverview.dc.html">shop</a> / composants / platform / réglages</nav>
+<x-import component-from-global-scope="Strata.Button" variant="secondary" icon="copy">Dupliquer</x-import>
+<x-import component-from-global-scope="Strata.Button" variant="primary" icon="check">Enregistrer</x-import>
+</header>
+<div style="box-sizing: border-box; width: 100%; max-width: 1280px; padding: 28px 32px 48px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<div style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<h1 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 24px; line-height: 32px; font-weight: 500">platform</h1>
+<x-import component-from-global-scope="Strata.Panel" title="Identité">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<x-import component-from-global-scope="Strata.TextField" label="Nom" default-value="Plateforme partagée"></x-import>
+<x-import component-from-global-scope="Strata.TextField" label="Code" default-value="platform" mono="{{yes}}" hint="Dossier, jeton {component}, noms des pipelines"></x-import>
+</div>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Mode de déploiement" subtitle="Verrouillé après la première publication">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<x-import component-from-global-scope="Strata.Segmented" options="{{modes}}" value="single" aria-label="Mode"></x-import>
+<span style="font-size: 13px; color: #A7B0BF">Unique : déployé une fois, dans sa cible propre. Les composants par environnement peuvent s'y relier ; l'inverse est refusé.</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<x-import component-from-global-scope="Strata.TextField" label="Code de la cible" default-value="shared" mono="{{yes}}" hint="Remplace {env} dans les noms"></x-import>
+<x-import component-from-global-scope="Strata.TextField" label="Abonnement" default-value="sub-platform" mono="{{yes}}"></x-import>
+<x-import component-from-global-scope="Strata.TextField" label="Région" default-value="francecentral" mono="{{yes}}"></x-import>
+<x-import component-from-global-scope="Strata.TextField" label="Connexion de déploiement" default-value="ifs-shop-shared" mono="{{yes}}"></x-import>
+</div>
+<x-import component-from-global-scope="Strata.Toggle" default-checked="{{yes}}" label="Cible protégée · approbateurs : Shop Release Approvers"></x-import>
+</div>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Abonnement par environnement" subtitle="Composants par environnement seulement · exemple : connectivity">
+<span style="font-size: 13px; color: #7D8797">Sans objet pour un composant unique. Sur connectivity : dev → sub-connectivity-nonprod, prd → sub-connectivity-prod.</span>
+</x-import>
+</div>
+<div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 16px; padding-top: 48px">
+<x-import component-from-global-scope="Strata.Panel" title="Cycle de vie">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Ressources retirées du modèle</span><x-import component-from-global-scope="Strata.Segmented" options="{{removal}}" value="detach" aria-label="Ressources retirées"></x-import><span style="font-size: 12px; color: #7D8797">Pour les ressources à données. Une cible protégée détache toujours. Les accès et la configuration retirés sont toujours révoqués, en production aussi.</span></div>
+<x-import component-from-global-scope="Strata.Toggle" default-checked="{{yes}}" label="Protection contre la suppression dans les cibles protégées"></x-import>
+<span style="font-size: 12px; color: #7D8797">Refus de suppression de la pile : personne ne peut supprimer les ressources gérées ni leurs accès, sauf l'identité de déploiement, qui peut ainsi révoquer. Aucun verrou Azure n'est posé.</span>
+<x-import component-from-global-scope="Strata.TextField" label="Groupe d'urgence exclu de la protection (facultatif)" default-value="sg-contoso-breakglass" mono="{{yes}}" hint="Groupe Entra du client ; quatre exclusions au plus en plus de l'identité de déploiement"></x-import>
+</div>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Exploitation">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<x-import component-from-global-scope="Strata.TextField" label="Espace Log Analytics par défaut" default-value="core / log main (par environnement : refusé pour un composant unique)" hint="Choisissez un espace unique ou aucun"></x-import>
+<x-import component-from-global-scope="Strata.Toggle" default-checked="{{no}}" label="Alertes recommandées"></x-import>
+<x-import component-from-global-scope="Strata.TextField" label="Code d'infrastructure additionnel" default-value="custom/platform.bicep" mono="{{yes}}" hint="Écrit par vous, hors fichiers gérés ; reçoit target, resourceGroups, resources, tags"></x-import>
+</div>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Nommage propre au composant">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<x-import component-from-global-scope="Strata.Toggle" default-checked="{{no}}" label="Surcharger le nommage du projet"></x-import>
+<span style="font-size: 12px; color: #7D8797">Désactivé : les gabarits du projet s'appliquent.</span>
+</div>
+</x-import>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 10px; border: 1px solid rgba(229,105,95,0.45)">
+<span style="font-weight: 600; color: #F08A80">Supprimer le composant</span>
+<span style="font-size: 13px; color: #A7B0BF">Refusé : orders a une liaison vers cr main. Retirez-la d'abord.</span>
+<span style="font-size: 12px; color: #7D8797">Une fois possible, la suppression d'un composant déployé le met en « retrait demandé » : chaque cible déploie une unité vide, révoque ses accès et confirme. Les données restent dans Azure, à l'inventaire des ressources détachées.</span>
+</div>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      yes: true, no: false,
+      modes: [{ value: 'per', label: 'Par environnement' }, { value: 'single', label: 'Unique' }],
+      removal: [{ value: 'detach', label: 'Détacher' }, { value: 'delete', label: 'Supprimer (hors cibles protégées)' }]
+    };
+  }
+}
+</script>
+</body>
+</html>

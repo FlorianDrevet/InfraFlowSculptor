@@ -1,0 +1,15 @@
+<!-- @dsCard group="Formulaires" height=80 subtitle="interrupteur on / off" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Toggle — aperçu</title></head>
+<body>
+<div id="root" class="st-root st-row" style="padding: 16px; gap: 24px"></div>
+<script>
+  var S = window.Strata, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h(S.Toggle, { label: 'Always On', defaultChecked: true }),
+    h(S.Toggle, { label: 'Identité system-assigned' }),
+    h(S.Toggle, { label: 'Seulement les différences' })));
+</script>
+</body>
+</html>

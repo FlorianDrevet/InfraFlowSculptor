@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Centre de notifications</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; display: flex; justify-content: flex-end; background: rgba(5,7,10,0.85); color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<aside aria-label="Notifications" style="width: 460px; height: 900px; box-sizing: border-box; display: flex; flex-direction: column; background: #11151C; border-left: 1px solid #343D4C; box-shadow: 0 24px 48px rgba(0,0,0,0.45)">
+<div style="display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid #252C38">
+<h1 style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 600; flex-grow: 1">Notifications</h1>
+<a href="Profile.dc.html" style="font-size: 13px">Préférences</a>
+<button type="button" style="height: 28px; padding: 0 10px; border-radius: 6px; border: 1px solid #2C3442; background: #1A2029; color: #E8ECF2; font: inherit; font-size: 12px">Tout marquer lu</button>
+</div>
+<div style="display: flex; gap: 6px; padding: 10px 20px; border-bottom: 1px solid #1E2430">
+<x-import component-from-global-scope="Strata.Badge" tone="signal">Non lues · 3</x-import><x-import component-from-global-scope="Strata.Badge" tone="neutral">Toutes</x-import><x-import component-from-global-scope="Strata.Badge" tone="neutral">Mentions</x-import>
+</div>
+<div style="flex-grow: 1; overflow-y: auto">
+<sc-for list="{{items}}" as="n" hint-placeholder-count="7">
+<a href="{{n.href}}" style="display: flex; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #1E2430; color: #E8ECF2; {{n.bg}}">
+<span style="{{n.iconStyle}}"><x-import component-from-global-scope="Strata.Icon" name="{{n.icon}}" size="{{s16}}"></x-import></span>
+<span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 13px; font-weight: 500">{{n.title}}</span>
+<span style="font-size: 13px; color: #A7B0BF">{{n.text}}</span>
+<span style="font-size: 12px; color: #7D8797">{{n.meta}}</span>
+</span>
+<sc-if value="{{n.unread}}" hint-placeholder-val="{{false}}"><span style="width: 8px; height: 8px; margin-top: 6px; flex-shrink: 0; border-radius: 999px; background: #5BC8DF" aria-label="Non lue"></span></sc-if>
+</a>
+</sc-for>
+</div>
+<div style="padding: 12px 20px; border-top: 1px solid #252C38; font-size: 12px; color: #7D8797">Résumé quotidien par e-mail activé à 08:00 · Webhook Teams « #shop-infra » actif</div>
+</aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ic = (bg, fg) => 'display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; background: ' + bg + '; color: ' + fg + ';';
+    const S = ic('rgba(91,200,223,0.12)', '#7FD6E8'), E = ic('rgba(232,166,90,0.12)', '#F0B676'), D = ic('rgba(229,105,95,0.12)', '#F08A80'), N = ic('#1E2430', '#A7B0BF');
+    const unread = 'background: rgba(91,200,223,0.04);';
+    return {
+      s16: 16,
+      items: [
+        { href: 'Deployments.dc.html', icon: 'alert', iconStyle: D, title: 'Déploiement en échec', text: 'orders · release infra · prd : la vérification des secrets a trouvé MAIN_PAYMENTS_API_KEY vide.', meta: 'Boutique en ligne · il y a 8 min', unread: true, bg: unread },
+        { href: 'ProposalReview.dc.html', icon: 'users', iconStyle: S, title: 'Camille Martin vous a mentionné', text: '« la file doit-elle avoir les sessions activées ? »', meta: 'Proposition « File refunds » · il y a 20 min', unread: true, bg: unread },
+        { href: 'ProposalReview.dc.html', icon: 'branch', iconStyle: S, title: 'Nouvelle proposition à relire', text: 'File refunds et droit d’écriture pour api, préparée par un agent IA.', meta: 'Boutique en ligne · il y a 25 min', unread: true, bg: unread },
+        { href: 'Deployments.dc.html', icon: 'clock', iconStyle: E, title: 'Approbation en attente depuis 24 h', text: 'Release infra de orders, révision 14, cible prd.', meta: 'Boutique en ligne · hier', unread: false, bg: '' },
+        { href: 'Deployments.dc.html', icon: 'alert', iconStyle: E, title: 'Dérive détectée', text: 'kv-shop-main-prd : une règle réseau ne correspond pas à la révision 14 déployée.', meta: 'Contrôle de dérive · cette nuit', unread: false, bg: '' },
+        { href: 'OrgPolicies.dc.html', icon: 'check', iconStyle: N, title: 'Dérogation expirant sous 30 jours', text: 'Exposition publique de st-legacy en prd, accordée jusqu’au 31/10.', meta: 'Woodgrove Payments · lun.', unread: false, bg: '' },
+        { href: 'ApiTokens.dc.html', icon: 'key', iconStyle: N, title: 'Jeton d’API expirant sous 7 jours', text: 'Le jeton « pipeline-ci » expire le 09/10.', meta: 'Votre compte · lun.', unread: false, bg: '' },
+        { href: 'BackofficeCatalog.dc.html', icon: 'layers', iconStyle: N, title: 'Dépréciation du catalogue', text: 'Node 20 sera refusé à partir du 30/04/2027 : 2 applications concernées.', meta: 'Catalogue 2026.10 · 01/10', unread: false, bg: '' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

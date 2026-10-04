@@ -1,0 +1,22 @@
+# Métadonnées et sortie de graphify
+.git/
+graphify-out/
+
+# Dépendances et artefacts
+**/node_modules/
+**/bin/
+**/obj/
+**/dist/
+**/.angular/
+**/.idea/
+**/.vs/
+**/coverage/
+**/test-results/
+**/playwright-report/
+
+# Exports et binaires sans valeur de corpus
+docs/design/maquette-v1/
+docs/design/strata/components/bundle.js
+**/*.zip
+**/*.png
+**/*.map

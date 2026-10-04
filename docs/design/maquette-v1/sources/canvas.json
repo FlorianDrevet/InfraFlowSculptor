@@ -1,0 +1,939 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "AddLink.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Ajouter une liaison",
+      "w": 1440,
+      "x": 1520,
+      "y": 6340
+    },
+    "AddResourceConfigure.dc.html": {
+      "h": 1100,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Ajouter une ressource — réglages",
+      "w": 1440,
+      "x": 0,
+      "y": 1560
+    },
+    "AddResourceType.dc.html": {
+      "h": 1100,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Ajouter une ressource — catalogue",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "AiUsageLink.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "page": "reseau-ia",
+      "title": "IA — liaison « utilisation d'IA »",
+      "w": 1440,
+      "x": 0,
+      "y": 1660
+    },
+    "ApiTokenCreate.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "page": "acces",
+      "title": "Créer un jeton d'API",
+      "w": 1440,
+      "x": 3040,
+      "y": 4080
+    },
+    "ApiTokens.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "page": "acces",
+      "title": "Jetons d'API",
+      "w": 1440,
+      "x": 1520,
+      "y": 4080
+    },
+    "BackofficeCatalog.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "exploitation",
+      "title": "Exploitation — versions du catalogue",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "BackofficeSupport.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "exploitation",
+      "title": "Exploitation — organisations et accès support",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "CommandPalette.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "page": "espace",
+      "title": "Recherche globale (Ctrl K)",
+      "w": 1440,
+      "x": 1520,
+      "y": 1360
+    },
+    "Component.dc.html": {
+      "expand": "fill",
+      "h": 1300,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Composant orders — ressources",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "ComponentSettings.dc.html": {
+      "expand": "fill",
+      "h": 1400,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Composant — réglages",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "DeleteImpact.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Supprimer — analyse d'impact",
+      "w": 1440,
+      "x": 3040,
+      "y": 6340
+    },
+    "DeploymentDetail.dc.html": {
+      "expand": "fill",
+      "h": 1300,
+      "is_interactive": true,
+      "page": "livraison",
+      "title": "Déploiement d'une application — bleu/vert",
+      "w": 1440,
+      "x": 1520,
+      "y": 3120
+    },
+    "Deployments.dc.html": {
+      "expand": "fill",
+      "h": 1400,
+      "is_interactive": true,
+      "page": "livraison",
+      "title": "Déploiements — matrice, dérive, ressources détachées",
+      "w": 1440,
+      "x": 0,
+      "y": 3120
+    },
+    "Drafts.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "page": "projet",
+      "title": "Projet — brouillons",
+      "w": 1440,
+      "x": 3040,
+      "y": 4680
+    },
+    "EnvironmentEdit.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "projet",
+      "title": "Modifier un environnement (prd)",
+      "w": 1440,
+      "x": 0,
+      "y": 1560
+    },
+    "FoundryAccount.dc.html": {
+      "expand": "fill",
+      "h": 1500,
+      "is_interactive": true,
+      "page": "reseau-ia",
+      "title": "IA — compte Microsoft Foundry",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "GenerateBlocked.dc.html": {
+      "h": 1000,
+      "is_interactive": true,
+      "page": "livraison",
+      "title": "Génération bloquée",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "HistoryCompare.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "projet",
+      "title": "Historique — comparer et restaurer",
+      "w": 1440,
+      "x": 1520,
+      "y": 4680
+    },
+    "ImportReview.dc.html": {
+      "expand": "fill",
+      "h": 1400,
+      "is_interactive": true,
+      "page": "import",
+      "title": "Import — revue",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "ImportSource.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "page": "import",
+      "title": "Import — source",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "InstallChecklist.dc.html": {
+      "expand": "fill",
+      "h": 1400,
+      "is_interactive": true,
+      "page": "livraison",
+      "title": "Kit d'installation — liste de contrôle",
+      "w": 1440,
+      "x": 3040,
+      "y": 1560
+    },
+    "InviteAccept.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "acces",
+      "title": "Accepter une invitation",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Login.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "acces",
+      "title": "Connexion",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "espace",
+      "title": "Accueil",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "NetworkTopology.dc.html": {
+      "expand": "fill",
+      "h": 1400,
+      "is_interactive": true,
+      "page": "reseau-ia",
+      "title": "Réseau — topologie hub and spoke",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "NetworkVnet.dc.html": {
+      "expand": "fill",
+      "h": 1400,
+      "is_interactive": true,
+      "page": "reseau-ia",
+      "title": "Réseau — VNet, subnets et plan d'adressage",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "NewProject.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "page": "creation",
+      "title": "Nouveau projet — point de départ",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Notifications.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "page": "espace",
+      "title": "Centre de notifications",
+      "w": 1440,
+      "x": 3040,
+      "y": 1360
+    },
+    "OrgAudit.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "acces",
+      "title": "Organisation — journal d'audit",
+      "w": 1440,
+      "x": 1520,
+      "y": 2620
+    },
+    "OrgConnections.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "acces",
+      "title": "Organisation — connexions git et Azure",
+      "w": 1440,
+      "x": 1520,
+      "y": 1260
+    },
+    "OrgMembers.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "acces",
+      "title": "Organisation — membres et invitations",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "OrgPolicies.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "acces",
+      "title": "Organisation — politiques et dérogations",
+      "w": 1440,
+      "x": 3040,
+      "y": 1260
+    },
+    "OrgRoles.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "acces",
+      "title": "Organisation — rôles et permissions",
+      "w": 1440,
+      "x": 0,
+      "y": 2620
+    },
+    "OrgSettings.dc.html": {
+      "expand": "fill",
+      "h": 1300,
+      "is_interactive": true,
+      "page": "acces",
+      "title": "Organisation — plan, accès et paramètres",
+      "w": 1440,
+      "x": 3040,
+      "y": 2620
+    },
+    "OrgTeams.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "page": "acces",
+      "title": "Organisation — équipes",
+      "w": 1440,
+      "x": 0,
+      "y": 1260
+    },
+    "Profile.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "acces",
+      "title": "Profil et préférences",
+      "w": 1440,
+      "x": 0,
+      "y": 4080
+    },
+    "ProjectCosts.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "projet",
+      "title": "Projet — coûts estimés et budgets",
+      "w": 1440,
+      "x": 0,
+      "y": 6040
+    },
+    "ProjectEnvironments.dc.html": {
+      "expand": "fill",
+      "h": 1300,
+      "is_interactive": true,
+      "page": "projet",
+      "title": "Projet — environnements et cibles",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "ProjectFindings.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "projet",
+      "title": "Projet — constats de validation",
+      "w": 1440,
+      "x": 3040,
+      "y": 3020
+    },
+    "ProjectGraph.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "projet",
+      "title": "Projet — graphe des liaisons",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "ProjectHistory.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "projet",
+      "title": "Projet — historique du modèle",
+      "w": 1440,
+      "x": 0,
+      "y": 4680
+    },
+    "ProjectMembers.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "projet",
+      "title": "Projet — membres, rôles et portées",
+      "w": 1440,
+      "x": 0,
+      "y": 3020
+    },
+    "ProjectNaming.dc.html": {
+      "expand": "fill",
+      "h": 1300,
+      "is_interactive": true,
+      "page": "projet",
+      "title": "Projet — nommage",
+      "w": 1440,
+      "x": 1520,
+      "y": 1560
+    },
+    "ProjectOverview.dc.html": {
+      "expand": "fill",
+      "h": 1400,
+      "is_interactive": true,
+      "page": "projet",
+      "title": "Projet — vue d'ensemble",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "ProjectPublishPlan.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "projet",
+      "title": "Projet — plan de publication",
+      "w": 1440,
+      "x": 3040,
+      "y": 1560
+    },
+    "ProjectSettings.dc.html": {
+      "expand": "fill",
+      "h": 1500,
+      "is_interactive": true,
+      "page": "projet",
+      "title": "Projet — paramètres",
+      "w": 1440,
+      "x": 1520,
+      "y": 3020
+    },
+    "Projects.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "espace",
+      "title": "Projets",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "ProposalReview.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "espace",
+      "title": "Relire une proposition",
+      "w": 1440,
+      "x": 0,
+      "y": 1360
+    },
+    "Proposals.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "page": "espace",
+      "title": "Propositions de modification",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "PublishDialog.dc.html": {
+      "h": 1100,
+      "is_interactive": true,
+      "page": "livraison",
+      "title": "Publier — préparation par dépôt",
+      "w": 1440,
+      "x": 0,
+      "y": 1560
+    },
+    "PublishResult.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "page": "livraison",
+      "title": "Publication — résultat",
+      "w": 1440,
+      "x": 1520,
+      "y": 1560
+    },
+    "ResourceAppSettings.dc.html": {
+      "expand": "fill",
+      "h": 1300,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Ressource — paramètres applicatifs",
+      "w": 1440,
+      "x": 0,
+      "y": 4580
+    },
+    "ResourceApplication.dc.html": {
+      "expand": "fill",
+      "h": 1600,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Ressource — application (build, étapes, stratégie)",
+      "w": 1440,
+      "x": 1520,
+      "y": 4580
+    },
+    "ResourceChildren.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Ressource — enfants (Service Bus)",
+      "w": 1440,
+      "x": 0,
+      "y": 3120
+    },
+    "ResourceExisting.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Ressource existante",
+      "w": 1440,
+      "x": 0,
+      "y": 6340
+    },
+    "ResourceGeneral.dc.html": {
+      "expand": "fill",
+      "h": 1300,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Ressource — général et noms",
+      "w": 1440,
+      "x": 1520,
+      "y": 1560
+    },
+    "ResourceIdentity.dc.html": {
+      "expand": "fill",
+      "h": 1300,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Ressource — identité et accès",
+      "w": 1440,
+      "x": 3040,
+      "y": 3120
+    },
+    "ResourceLinks.dc.html": {
+      "expand": "fill",
+      "h": 1300,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Ressource — liaisons",
+      "w": 1440,
+      "x": 1520,
+      "y": 3120
+    },
+    "ResourceNetwork.dc.html": {
+      "expand": "fill",
+      "h": 1400,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Ressource — réseau et domaines",
+      "w": 1440,
+      "x": 3040,
+      "y": 4580
+    },
+    "ResourceProperties.dc.html": {
+      "expand": "fill",
+      "h": 1400,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Ressource — propriétés par environnement",
+      "w": 1440,
+      "x": 3040,
+      "y": 1560
+    },
+    "ResourceTabs.dc.html": {
+      "h": 64,
+      "is_interactive": true,
+      "page": "coquille",
+      "title": "Coquille — onglets de ressource",
+      "w": 1200,
+      "x": 316,
+      "y": 0
+    },
+    "RevisionDetail.dc.html": {
+      "expand": "fill",
+      "h": 1400,
+      "is_interactive": true,
+      "page": "livraison",
+      "title": "Révision 15 — changements et fichiers",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Revisions.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "livraison",
+      "title": "Révisions",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Sidebar.dc.html": {
+      "h": 1100,
+      "is_interactive": true,
+      "page": "coquille",
+      "title": "Coquille — barre latérale",
+      "w": 236,
+      "x": 0,
+      "y": 0
+    },
+    "VersionConflict.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "page": "composants",
+      "title": "Conflit de version",
+      "w": 1440,
+      "x": 0,
+      "y": 7500
+    },
+    "WizardEnvironments.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "creation",
+      "title": "Assistant — 3. Environnements",
+      "w": 1440,
+      "x": 0,
+      "y": 1260
+    },
+    "WizardIdentity.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "page": "creation",
+      "title": "Assistant — 1. Identité",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "WizardNaming.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "creation",
+      "title": "Assistant — 4. Nommage",
+      "w": 1440,
+      "x": 1520,
+      "y": 1260
+    },
+    "WizardPublishing.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "creation",
+      "title": "Assistant — 5. Publication",
+      "w": 1440,
+      "x": 3040,
+      "y": 1260
+    },
+    "WizardReview.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "creation",
+      "title": "Assistant — 6. Récapitulatif",
+      "w": 1440,
+      "x": 0,
+      "y": 2520
+    },
+    "WizardTools.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "creation",
+      "title": "Assistant — 2. Outils",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-03T16:00:00Z",
+    "v": 1
+  },
+  "designSystems": [
+    {
+      "artifact": "https://claude.ai/artifact/4M9UorSE1agmiyxSa3vuqJ",
+      "copiedAt": "2026-10-03T16:00:00Z",
+      "namespace": "strata",
+      "title": "Strata — InfraFlowSculptor",
+      "version": "1791045957-352d"
+    }
+  ],
+  "launch": {
+    "page": "espace",
+    "view": "canvas"
+  },
+  "notes": {
+    "t-acces": {
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "acces",
+      "text": "Accès & organisation",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "t-composants": {
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "composants",
+      "text": "Composants & ressources",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "t-coquille": {
+      "kind": "title1",
+      "maxW": 1516,
+      "page": "coquille",
+      "text": "Coquille réutilisée",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "t-creation": {
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "creation",
+      "text": "Création de projet",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "t-espace": {
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "espace",
+      "text": "Espace de travail",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "t-exploitation": {
+      "kind": "title1",
+      "maxW": 2960,
+      "page": "exploitation",
+      "text": "Exploitation IFS (back-office)",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "t-import": {
+      "kind": "title1",
+      "maxW": 2960,
+      "page": "import",
+      "text": "Import d'une infrastructure existante",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "t-livraison": {
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "livraison",
+      "text": "Production & livraison",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "t-projet": {
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "projet",
+      "text": "Projet — Boutique en ligne",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "t-reseau": {
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "reseau-ia",
+      "text": "Réseau privé & IA",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Projects.dc.html",
+    "Proposals.dc.html",
+    "ProposalReview.dc.html",
+    "CommandPalette.dc.html",
+    "Notifications.dc.html",
+    "Login.dc.html",
+    "InviteAccept.dc.html",
+    "OrgMembers.dc.html",
+    "OrgTeams.dc.html",
+    "OrgConnections.dc.html",
+    "OrgPolicies.dc.html",
+    "OrgRoles.dc.html",
+    "OrgAudit.dc.html",
+    "OrgSettings.dc.html",
+    "Profile.dc.html",
+    "ApiTokens.dc.html",
+    "ApiTokenCreate.dc.html",
+    "NewProject.dc.html",
+    "WizardIdentity.dc.html",
+    "WizardTools.dc.html",
+    "WizardEnvironments.dc.html",
+    "WizardNaming.dc.html",
+    "WizardPublishing.dc.html",
+    "WizardReview.dc.html",
+    "ProjectOverview.dc.html",
+    "ProjectGraph.dc.html",
+    "ProjectEnvironments.dc.html",
+    "EnvironmentEdit.dc.html",
+    "ProjectNaming.dc.html",
+    "ProjectPublishPlan.dc.html",
+    "ProjectMembers.dc.html",
+    "ProjectSettings.dc.html",
+    "ProjectFindings.dc.html",
+    "ProjectHistory.dc.html",
+    "HistoryCompare.dc.html",
+    "Drafts.dc.html",
+    "ProjectCosts.dc.html",
+    "Component.dc.html",
+    "ComponentSettings.dc.html",
+    "AddResourceType.dc.html",
+    "AddResourceConfigure.dc.html",
+    "ResourceGeneral.dc.html",
+    "ResourceProperties.dc.html",
+    "ResourceChildren.dc.html",
+    "ResourceLinks.dc.html",
+    "ResourceIdentity.dc.html",
+    "ResourceAppSettings.dc.html",
+    "ResourceApplication.dc.html",
+    "ResourceNetwork.dc.html",
+    "ResourceExisting.dc.html",
+    "AddLink.dc.html",
+    "DeleteImpact.dc.html",
+    "VersionConflict.dc.html",
+    "NetworkTopology.dc.html",
+    "NetworkVnet.dc.html",
+    "FoundryAccount.dc.html",
+    "AiUsageLink.dc.html",
+    "Revisions.dc.html",
+    "RevisionDetail.dc.html",
+    "GenerateBlocked.dc.html",
+    "PublishDialog.dc.html",
+    "PublishResult.dc.html",
+    "InstallChecklist.dc.html",
+    "Deployments.dc.html",
+    "DeploymentDetail.dc.html",
+    "ImportSource.dc.html",
+    "ImportReview.dc.html",
+    "BackofficeCatalog.dc.html",
+    "BackofficeSupport.dc.html",
+    "Sidebar.dc.html",
+    "ResourceTabs.dc.html"
+  ],
+  "pages": [
+    {
+      "id": "espace",
+      "name": "Espace de travail"
+    },
+    {
+      "id": "acces",
+      "name": "Accès & organisation"
+    },
+    {
+      "id": "creation",
+      "name": "Création de projet"
+    },
+    {
+      "id": "projet",
+      "name": "Projet"
+    },
+    {
+      "id": "composants",
+      "name": "Composants & ressources"
+    },
+    {
+      "id": "reseau-ia",
+      "name": "Réseau & IA"
+    },
+    {
+      "id": "livraison",
+      "name": "Production & livraison"
+    },
+    {
+      "id": "import",
+      "name": "Import"
+    },
+    {
+      "id": "exploitation",
+      "name": "Exploitation IFS"
+    },
+    {
+      "id": "coquille",
+      "name": "Coquille"
+    }
+  ],
+  "title": "InfraFlowSculptor — Maquette v1"
+}

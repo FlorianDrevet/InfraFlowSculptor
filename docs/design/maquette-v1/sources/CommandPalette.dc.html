@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Recherche globale</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; display: flex; justify-content: center; padding-top: 96px; background: rgba(5,7,10,0.92); color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div role="dialog" aria-label="Recherche globale" style="width: 680px; height: fit-content; display: flex; flex-direction: column; border-radius: 12px; background: #11151C; border: 1px solid #343D4C; box-shadow: 0 24px 48px rgba(0,0,0,0.45); overflow: hidden">
+<label style="display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 16px; border-bottom: 1px solid #252C38; color: #7D8797"><x-import component-from-global-scope="Strata.Icon" name="search" size="{{s18}}"></x-import><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Rechercher</span><input type="text" value="orders" style="flex-grow: 1; background: transparent; border: none; outline: none; color: #E8ECF2; font: inherit; font-size: 16px"><kbd style="font-family: 'JetBrains Mono', monospace; font-size: 11px; border: 1px solid #2C3442; border-radius: 4px; padding: 0 5px">Échap</kbd></label>
+<div style="display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid #1E2430; flex-wrap: wrap">
+<sc-for list="{{scopes}}" as="s" hint-placeholder-count="6"><button type="button" aria-pressed="{{s.pressed}}" style="{{s.style}}">{{s.label}}</button></sc-for>
+</div>
+<div style="display: flex; flex-direction: column; padding: 6px 0; max-height: 560px; overflow-y: auto">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<div style="padding: 10px 16px 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #7D8797">{{g.label}}</div>
+<sc-for list="{{g.items}}" as="i" hint-placeholder-count="3">
+<a href="{{i.href}}" style="{{i.style}}"><span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex-shrink: 0; border-radius: 6px; background: #1E2430; color: #A7B0BF"><x-import component-from-global-scope="Strata.Icon" name="{{i.icon}}" size="{{s16}}"></x-import></span><span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-weight: 500">{{i.title}}</span><span style="font-size: 12px; color: #7D8797">{{i.sub}}</span></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7D8797">{{i.hint}}</span></a>
+</sc-for>
+</sc-for>
+</div>
+<div style="display: flex; gap: 16px; padding: 10px 16px; border-top: 1px solid #252C38; font-size: 12px; color: #7D8797"><span>↑↓ naviguer</span><span>Entrée ouvrir</span><span>&gt; commandes</span><span style="flex-grow: 1; text-align: right">Organisation active : Contoso</span></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const pill = on => 'height: 26px; padding: 0 10px; border-radius: 999px; font: inherit; font-size: 12px; ' + (on ? 'border: 1px solid #3A4656; background: #1E2430; color: #E8ECF2;' : 'border: 1px solid #252C38; background: transparent; color: #A7B0BF;');
+    const s = (label, on) => ({ label, pressed: on ? 'true' : 'false', style: pill(on) });
+    const row = sel => 'display: flex; align-items: center; gap: 12px; padding: 8px 16px; color: #E8ECF2; ' + (sel ? 'background: #1A2029;' : '');
+    return {
+      s16: 16, s18: 18,
+      scopes: [s('Tout', true), s('Projets', false), s('Composants', false), s('Ressources', false), s('Paramètres', false), s('Commandes', false)],
+      groups: [
+        { label: 'Composants', items: [
+          { href: 'Component.dc.html', icon: 'layers', title: 'orders', sub: 'Composant · Boutique en ligne · 6 ressources', hint: 'composant', style: row(true) }
+        ] },
+        { label: 'Ressources', items: [
+          { href: 'ResourceChildren.dc.html', icon: 'layers', title: 'sbns orders', sub: 'Service Bus · sbns-shop-orders-dev · sbns-shop-orders-prd', hint: 'ressource', style: row(false) },
+          { href: 'ResourceGeneral.dc.html', icon: 'layers', title: 'sql orders', sub: 'Serveur Azure SQL · sql-shop-orders-dev', hint: 'ressource', style: row(false) },
+          { href: 'ResourceGeneral.dc.html', icon: 'layers', title: 'sqldb orders', sub: 'Base Azure SQL · sqldb-shop-orders-dev', hint: 'ressource', style: row(false) }
+        ] },
+        { label: 'Paramètres applicatifs', items: [
+          { href: 'ResourceAppSettings.dc.html', icon: 'list', title: 'orders:maxItemsPerOrder', sub: 'Clé App Configuration · appcs main · 50 (dev : 500)', hint: 'paramètre', style: row(false) }
+        ] },
+        { label: 'Commandes', items: [
+          { href: 'Revisions.dc.html', icon: 'file', title: 'Générer une révision', sub: 'Boutique en ligne', hint: 'G R', style: row(false) },
+          { href: 'AddResourceType.dc.html', icon: 'plus', title: 'Ajouter une ressource dans orders', sub: 'Catalogue des types', hint: 'A R', style: row(false) }
+        ] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Assistant — outils</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #0B0E13; color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<aside style="flex: 0 1 300px; box-sizing: border-box; padding: 28px 24px; display: flex; flex-direction: column; gap: 24px; background: #0E1218; border-right: 1px solid #222936">
+<a href="Projects.dc.html" style="font-size: 13px">Quitter l'assistant</a>
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #7D8797">Nouveau projet</span><span style="font-weight: 600; font-size: 16px">Boutique en ligne</span></div>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="6"><li><a href="{{s.href}}" aria-current="{{s.current}}" style="{{s.style}}"><span style="{{s.numStyle}}">{{s.n}}</span>{{s.label}}</a></li></sc-for>
+</ol>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 40px 48px 48px; display: flex; flex-direction: column; gap: 24px; max-width: 980px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #7D8797">Étape 2 sur 6</span>
+<h1 style="margin: 0; font-size: 28px; line-height: 34px; font-weight: 600">Vos outils</h1>
+<p style="margin: 0; color: #A7B0BF">La cible est toujours Azure. Choisissez la langue de votre code d'infrastructure et la plateforme qui exécute vos pipelines. Vous pourrez en changer plus tard : IFS assiste la migration.</p>
+</div>
+<fieldset style="margin: 0; padding: 0; border: none; display: flex; flex-direction: column; gap: 10px">
+<legend style="font-weight: 600; margin-bottom: 10px">Langage d'infrastructure</legend>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 10px">
+<sc-for list="{{langs}}" as="l" hint-placeholder-count="4">
+<label style="display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 10px; background: #11151C; border: 1px solid {{l.border}}; cursor: pointer"><span style="display: flex; align-items: center; gap: 8px"><input type="radio" name="lang" checked="{{l.on}}" style="accent-color: #5BC8DF"><span style="font-weight: 600">{{l.name}}</span></span><span style="font-size: 12px; color: #A7B0BF">{{l.text}}</span></label>
+</sc-for>
+</div>
+<label style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #A7B0BF">Langage Pulumi <select style="height: 32px; padding: 0 8px; border-radius: 6px; background: #121720; border: 1px solid #343D4C; color: #E8ECF2; font: inherit; font-size: 13px"><option>TypeScript</option><option>C#</option><option>Python</option><option>Go</option><option>Java</option><option>YAML</option></select><span style="color: #7D8797">(si Pulumi est choisi)</span></label>
+</fieldset>
+<fieldset style="margin: 0; padding: 0; border: none; display: flex; flex-direction: column; gap: 10px">
+<legend style="font-weight: 600; margin-bottom: 10px">Plateforme CI</legend>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 10px">
+<sc-for list="{{cis}}" as="c" hint-placeholder-count="3">
+<label style="display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 10px; background: #11151C; border: 1px solid {{c.border}}; cursor: pointer"><span style="display: flex; align-items: center; gap: 8px"><input type="radio" name="ci" checked="{{c.on}}" style="accent-color: #5BC8DF"><span style="font-weight: 600">{{c.name}}</span></span><span style="font-size: 12px; color: #A7B0BF">{{c.text}}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7D8797">{{c.repos}}</span></label>
+</sc-for>
+</div>
+</fieldset>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Source des modules</span><select style="height: 36px; padding: 0 10px; border-radius: 6px; background: #121720; border: 1px solid #343D4C; color: #E8ECF2; font: inherit; font-size: 13px"><option>Azure Verified Modules (registre public)</option><option>Azure Verified Modules embarqués</option><option>Modules IFS</option><option>Modules de Contoso (registre privé)</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Version du catalogue</span><select style="height: 36px; padding: 0 10px; border-radius: 6px; background: #121720; border: 1px solid #343D4C; color: #E8ECF2; font: inherit; font-size: 13px"><option>Dernière publiée (2026.10)</option><option>Épingler 2026.10 pendant 90 jours</option></select></label>
+</div>
+<div style="display: flex; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px solid #222936">
+<x-import component-from-global-scope="Strata.Button" variant="ghost" href="WizardIdentity.dc.html">Retour</x-import>
+<x-import component-from-global-scope="Strata.Button" variant="primary" icon="chevron-right" icon-position="end" href="WizardEnvironments.dc.html">Continuer : environnements</x-import>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const cur = 2;
+    const labels = [['Identité', 'WizardIdentity.dc.html'], ['Outils', 'WizardTools.dc.html'], ['Environnements', 'WizardEnvironments.dc.html'], ['Nommage', 'WizardNaming.dc.html'], ['Publication', 'WizardPublishing.dc.html'], ['Récapitulatif', 'WizardReview.dc.html']];
+    const steps = labels.map((l, i) => {
+      const n = i + 1, on = n === cur, done = n < cur;
+      return { n: done ? '✓' : String(n), label: l[0], href: l[1], current: on ? 'step' : 'false',
+        style: 'display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: 6px; font-weight: 500; ' + (on ? 'background: #1A2029; color: #E8ECF2;' : done ? 'color: #A7B0BF;' : 'color: #7D8797;'),
+        numStyle: 'display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 999px; font-size: 12px; ' + (on ? 'background: #5BC8DF; color: #062228;' : done ? 'background: rgba(92,192,138,0.12); color: #7ED3A3;' : 'border: 1px solid #343D4C; color: #7D8797;') };
+    });
+    const b = on => on ? '#5BC8DF' : '#252C38';
+    return {
+      steps,
+      langs: [
+        { name: 'Bicep', text: 'Natif Azure, Azure Verified Modules, piles de déploiement.', on: true, border: b(true) },
+        { name: 'Terraform', text: 'AzureRM et AzAPI, AVM Terraform, état dans votre stockage Azure.', on: false, border: b(false) },
+        { name: 'OpenTofu', text: 'Même HCL, état chiffré par une clé Key Vault.', on: false, border: b(false) },
+        { name: 'Pulumi', text: 'Azure Native dans le langage de votre équipe.', on: false, border: b(false) }
+      ],
+      cis: [
+        { name: 'Azure DevOps Pipelines', text: 'Environnements, approbations, groupes de variables, Managed DevOps Pools.', repos: 'Dépôts Azure Repos ou GitHub', on: true, border: b(true) },
+        { name: 'GitHub Actions', text: 'Environnements, relecteurs requis, OIDC, runners en réseau privé.', repos: 'Dépôts GitHub', on: false, border: b(false) },
+        { name: 'GitLab CI', text: 'Environnements protégés, variables par environnement.', repos: 'Dépôts GitLab', on: false, border: b(false) }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

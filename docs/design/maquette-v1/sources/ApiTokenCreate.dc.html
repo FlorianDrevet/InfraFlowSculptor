@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Créer un jeton d'API</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; gap: 32px; background: rgba(5,7,10,0.92); color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div role="dialog" aria-labelledby="tok-title" style="width: 600px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px; padding: 24px; border-radius: 12px; background: #11151C; border: 1px solid #343D4C; box-shadow: 0 24px 48px rgba(0,0,0,0.45)">
+<h1 id="tok-title" style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 600">Créer un jeton d'API</h1>
+<x-import component-from-global-scope="Strata.TextField" label="Nom" default-value="pipeline-ci" mono="{{yes}}"></x-import>
+<fieldset style="margin: 0; padding: 0; border: none; display: flex; flex-direction: column; gap: 8px">
+<legend style="font-size: 12px; font-weight: 500; color: #A7B0BF; margin-bottom: 8px">Portées</legend>
+<sc-for list="{{scopes}}" as="s" hint-placeholder-count="5">
+<label style="display: flex; gap: 10px; align-items: flex-start; font-size: 13px"><input type="checkbox" checked="{{s.on}}" style="margin-top: 3px; accent-color: #5BC8DF"><span style="display: flex; flex-direction: column"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">{{s.id}}</span><span style="color: #7D8797">{{s.text}}</span></span></label>
+</sc-for>
+</fieldset>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<x-import component-from-global-scope="Strata.TextField" label="Projets" default-value="Boutique en ligne"></x-import>
+<x-import component-from-global-scope="Strata.TextField" label="Expire dans (jours, 1 à 365)" default-value="90" hint="Le 01/01/2027"></x-import>
+</div>
+<div style="display: flex; justify-content: flex-end; gap: 8px"><x-import component-from-global-scope="Strata.Button" variant="ghost" href="ApiTokens.dc.html">Annuler</x-import><x-import component-from-global-scope="Strata.Button" variant="primary">Créer le jeton</x-import></div>
+</div>
+<div role="dialog" aria-labelledby="tok-done" style="width: 520px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; padding: 24px; border-radius: 12px; background: #11151C; border: 1px solid #343D4C; box-shadow: 0 24px 48px rgba(0,0,0,0.45)">
+<h2 id="tok-done" style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 600">Jeton créé</h2>
+<x-import component-from-global-scope="Strata.Banner" tone="ember" title="Copiez-le maintenant">Il ne sera plus jamais affiché. IFS n'en garde qu'une empreinte.</x-import>
+<div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 6px; background: #0E1218; border: 1px solid #343D4C"><code style="flex-grow: 1; font-family: 'JetBrains Mono', monospace; font-size: 12px; word-break: break-all">ifs_8KpQ3vTz9WmXa2LrB7dYcN4eHs6uFgJ1kPq0RtVwZy</code><x-import component-from-global-scope="Strata.Button" variant="secondary" size="sm" icon="copy">Copier</x-import></div>
+<span style="font-size: 13px; color: #A7B0BF">Utilisation : en-tête <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #E8ECF2">Authorization: Bearer ifs_…</span>. Portées read, generate · Boutique en ligne · expire le 01/01/2027.</span>
+<div style="display: flex; justify-content: flex-end"><x-import component-from-global-scope="Strata.Button" variant="secondary" href="ApiTokens.dc.html">J'ai copié le jeton</x-import></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      yes: true,
+      scopes: [
+        { id: 'read', text: 'Toutes les lectures', on: true },
+        { id: 'propose', text: 'Créer des propositions, sans les appliquer', on: false },
+        { id: 'write', text: 'Modifier le modèle', on: false },
+        { id: 'generate', text: 'Générer des révisions', on: true },
+        { id: 'publish', text: 'Publier des révisions dans les dépôts', on: false }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

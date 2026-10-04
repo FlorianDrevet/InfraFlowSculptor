@@ -1,0 +1,16 @@
+<!-- @dsCard group="Infrastructure" height=150 subtitle="nom Azure calculé, par environnement" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>GeneratedName — aperçu</title></head>
+<body>
+<div id="root" class="st-root st-stack" style="padding: 16px; max-width: 420px; gap: 8px"></div>
+<script>
+  var S = window.Strata, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h(S.GeneratedName, { env: 'dev', value: 'ca-shop-api-dev', available: true }),
+    h(S.GeneratedName, { env: 'prd', value: 'ca-shop-api-prd', available: true }),
+    h(S.GeneratedName, { env: 'prd', value: 'kv-shop-main-prd', available: false }),
+    h(S.GeneratedName, { env: 'shared', value: 'crshopmainshared' })));
+</script>
+</body>
+</html>

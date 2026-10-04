@@ -1,0 +1,47 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Strata — couverture</title>
+<style>
+  body { margin: 0; background: var(--bg, #0b0e13); }
+  .cover { position: relative; width: 960px; height: 288px; overflow: hidden; background: var(--bg, #0b0e13); }
+  .cover svg { position: absolute; left: 0; top: 0; }
+  .slab { fill: var(--surface-3, #1e2430); }
+  .signal { fill: var(--signal, #5bc8df); }
+  .tint { fill: var(--text-2, #a7b0bf); }
+  .ember { fill: var(--ember, #e8a65a); }
+  .dot { fill: var(--line-strong, #343d4c); }
+  .band { rx: var(--radius-lg, 10px); }
+  .name { position: absolute; left: 48px; bottom: 40px; width: 440px; display: flex; flex-direction: column; gap: 12px; }
+  .name h1 { margin: 0; font-family: var(--font-sans, "Instrument Sans", system-ui, sans-serif); font-size: 120px; line-height: 0.92; font-weight: 600; letter-spacing: -0.03em; color: var(--text, #e8ecf2); }
+  .name p { margin: 0; font-family: var(--font-sans, "Instrument Sans", system-ui, sans-serif); font-size: 14px; line-height: 20px; color: var(--text-2, #a7b0bf); }
+</style>
+</head>
+<body>
+<div class="cover">
+<svg width="960" height="288" viewBox="0 0 960 288" aria-hidden="true">
+  <!--
+    blocks: surface-3 slab 440×288 (bleeds top/right/bottom) · signal 320×48 · text-2 320×48 · ember 240×48 (heights = space-12)
+    arrangement: three bands staggered right by 40px (space-8 + space-2), stacked like strata / the logo's layers, on one dark slab
+    pattern: dot grid at a space-4 pitch (16px), 6×5 dots in line-strong — "precise, technical, 4px grid"
+    steps and radii: 16px pitch, 48px band height, 16px gaps (space-4), corners radius-lg
+  -->
+  <rect class="slab" x="520" y="0" width="440" height="288"></rect>
+  <rect class="signal band" x="560" y="56" width="320" height="48"></rect>
+  <rect class="tint band" x="600" y="120" width="320" height="48"></rect>
+  <rect class="ember band" x="640" y="184" width="240" height="48"></rect>
+  <g>
+    <circle class="dot" cx="544" cy="200" r="1.5"></circle><circle class="dot" cx="560" cy="200" r="1.5"></circle><circle class="dot" cx="576" cy="200" r="1.5"></circle><circle class="dot" cx="592" cy="200" r="1.5"></circle><circle class="dot" cx="608" cy="200" r="1.5"></circle><circle class="dot" cx="624" cy="200" r="1.5"></circle>
+    <circle class="dot" cx="544" cy="216" r="1.5"></circle><circle class="dot" cx="560" cy="216" r="1.5"></circle><circle class="dot" cx="576" cy="216" r="1.5"></circle><circle class="dot" cx="592" cy="216" r="1.5"></circle><circle class="dot" cx="608" cy="216" r="1.5"></circle><circle class="dot" cx="624" cy="216" r="1.5"></circle>
+    <circle class="dot" cx="544" cy="232" r="1.5"></circle><circle class="dot" cx="560" cy="232" r="1.5"></circle><circle class="dot" cx="576" cy="232" r="1.5"></circle><circle class="dot" cx="592" cy="232" r="1.5"></circle><circle class="dot" cx="608" cy="232" r="1.5"></circle><circle class="dot" cx="624" cy="232" r="1.5"></circle>
+    <circle class="dot" cx="544" cy="248" r="1.5"></circle><circle class="dot" cx="560" cy="248" r="1.5"></circle><circle class="dot" cx="576" cy="248" r="1.5"></circle><circle class="dot" cx="592" cy="248" r="1.5"></circle><circle class="dot" cx="608" cy="248" r="1.5"></circle><circle class="dot" cx="624" cy="248" r="1.5"></circle>
+    <circle class="dot" cx="544" cy="264" r="1.5"></circle><circle class="dot" cx="560" cy="264" r="1.5"></circle><circle class="dot" cx="576" cy="264" r="1.5"></circle><circle class="dot" cx="592" cy="264" r="1.5"></circle><circle class="dot" cx="608" cy="264" r="1.5"></circle><circle class="dot" cx="624" cy="264" r="1.5"></circle>
+  </g>
+</svg>
+<div class="name">
+  <h1>Strata</h1>
+  <p>Le design system d'InfraFlowSculptor : modéliser, générer, livrer.</p>
+</div>
+</div>
+</body>
+</html>

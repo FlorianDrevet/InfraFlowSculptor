@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Révision 15</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+@media (max-width: 760px){.ifs-side{display:none !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #0B0E13; color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div class="ifs-side" style="width: 236px; flex-shrink: 0; background: #0E1218; border-right: 1px solid #222936"><dc-import name="Sidebar" active="revisions" scope="project" hint-size="236px,1100px"></dc-import></div>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="min-height: 56px; box-sizing: border-box; padding: 10px 32px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid #222936">
+<nav aria-label="Fil d'Ariane" style="flex-grow: 1; font-family: 'JetBrains Mono', monospace; font-size: 12px"><a href="ProjectOverview.dc.html">shop</a> / <a href="Revisions.dc.html">révisions</a> / 15</nav>
+<x-import component-from-global-scope="Strata.Button" variant="ghost" icon="download">Archive</x-import>
+<x-import component-from-global-scope="Strata.Button" variant="primary" icon="upload" href="PublishDialog.dc.html">Publier</x-import>
+</header>
+<div style="box-sizing: border-box; width: 100%; max-width: 1280px; padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap"><h1 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600">Révision 15</h1><x-import component-from-global-scope="Strata.Badge" tone="ember" dot="{{yes}}">Périmée</x-import><x-import component-from-global-scope="Strata.Badge">Bicep · Azure DevOps</x-import></div>
+<span style="font-size: 13px; color: #7D8797">Florian Drevet · aujourd'hui 11:40 · modèle v236 · catalogue 2026.09 (AVM épinglés) · 2 avertissements, 1 info</span>
+</div>
+<x-import component-from-global-scope="Strata.Tabs" items="{{ifsFix1}}" active="Changements"></x-import>
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<div style="flex: 2 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<x-import component-from-global-scope="Strata.Panel" title="Résumé des changements depuis la révision 14" subtitle="Calculé sur le plan de déploiement, pas sur le texte des fichiers" padded="{{no}}">
+<sc-for list="{{changes}}" as="c" hint-placeholder-count="6">
+<div style="display: flex; gap: 12px; padding: 10px 16px; border-top: {{c.border}}; align-items: flex-start; flex-wrap: wrap">
+<span style="{{c.kindStyle}}">{{c.kind}}</span>
+<span style="flex: 1 1 200px; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{c.what}}</span>
+<span style="flex: 2 1 280px; font-size: 13px; color: #A7B0BF">{{c.detail}}</span>
+</div>
+</sc-for>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Fichiers" subtitle="23 fichiers · 4 modifiés · 1 ajouté" padded="{{no}}">
+<div style="display: flex; flex-wrap: wrap">
+<div style="flex: 1 1 260px; min-width: 0; padding: 12px 0; border-right: 1px solid #1E2430; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 24px">
+<sc-for list="{{tree}}" as="t" hint-placeholder-count="12"><div style="{{t.style}}">{{t.name}}</div></sc-for>
+</div>
+<div style="flex: 2 1 380px; min-width: 0; padding: 12px 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 20px; overflow-x: auto">
+<div style="padding: 0 16px 8px; color: #7D8797">orders/infra/main.prd.bicepparam</div>
+<sc-for list="{{diff}}" as="d" hint-placeholder-count="10"><div style="{{d.style}}">{{d.line}}</div></sc-for>
+</div>
+</div>
+</x-import>
+</div>
+<aside style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<x-import component-from-global-scope="Strata.Panel" title="Coût estimé (prd)">
+<div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px"><span style="font-size: 22px; line-height: 28px; font-weight: 600">+ 86 €<span style="font-size: 13px; font-weight: 400; color: #A7B0BF"> / mois</span></span><span style="color: #A7B0BF">Container App api : 2 réplicas min, 2 vCPU (+ 79 €) · file payments (+ 7 €)</span><span style="font-size: 12px; color: #7D8797">Prix publics, francecentral, hors remises et consommation.</span></div>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Ordre de déploiement">
+<div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px"><span>1. tooling · connectivity</span><span>2. core</span><span>3. platform (shared)</span><span>4. orders → puis l'application api</span></div>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Retraits">
+<div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px"><span style="color: #7D8797">Ressources détachées : aucune.</span><span style="color: #7D8797">Accès révoqués : aucun.</span><span style="color: #7D8797">Opérations reprises du journal : affichées par l'aperçu de chaque cible.</span><span style="font-size: 12px; color: #7D8797">Indicatif : la release calcule les retraits contre ce que la pile gère réellement dans chaque cible.</span></div>
+</x-import>
+<x-import component-from-global-scope="Strata.Panel" title="Contrôles de sortie">
+<div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-family: 'JetBrains Mono', monospace; color: #7ED3A3"><span>bicep build · 0 avertissement</span><span>bicep build-params · ok</span><span>bicep format · sans différence</span><span>YAML des pipelines · valide</span></div>
+</x-import>
+</aside>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const k = (bg, fg) => 'display: inline-flex; align-items: center; justify-content: center; height: 22px; min-width: 76px; padding: 0 8px; border-radius: 999px; font-size: 12px; background: ' + bg + '; color: ' + fg + ';';
+    const ADD = k('rgba(92,192,138,0.12)', '#7ED3A3'), MOD = k('rgba(232,166,90,0.12)', '#F0B676'), ROLE = k('rgba(181,154,242,0.14)', '#C9B6F6');
+    const c = (kind, ks, what, detail, first) => ({ kind, kindStyle: ks, what, detail, border: first ? 'none' : '1px solid #1E2430' });
+    const mono = 'padding: 0 16px; white-space: pre; ';
+    const d = (line, t) => ({ line, style: mono + (t === '+' ? 'background: rgba(92,192,138,0.10); color: #7ED3A3;' : t === '-' ? 'background: rgba(229,105,95,0.10); color: #F08A80;' : 'color: #A7B0BF;') });
+    const tr = (name, depth, st) => ({ name, style: 'padding-left: ' + (16 + depth * 16) + 'px; ' + (st === 'm' ? 'color: #F0B676;' : st === 'a' ? 'color: #7ED3A3;' : 'color: #A7B0BF;') });
+    return { ifsFix1: [{"id": "Changements", "label": "Changements"}, {"id": "Plan de déploiement", "label": "Plan de déploiement"}, {"id": "Fichiers", "label": "Fichiers"}, {"id": "Constats", "label": "Constats"}, {"id": "Publications", "label": "Publications"}],
+      yes: true,
+      changes: [
+        c('Ajoutée', ADD, 'sbns orders / payments', 'File, sessions activées, 5 livraisons max', true),
+        c('Rôle', ROLE, 'id api → payments', 'Azure Service Bus Data Sender, portée : la file'),
+        c('Modifiée', MOD, 'ca api (prd)', 'CPU 1.0 → 2.0, mémoire 2Gi → 4Gi, réplicas min 1 → 2'),
+        c('Modifiée', MOD, 'ca api (prd)', 'Mode de révision Single → Multiple (bleu/vert)'),
+        c('Modifiée', MOD, 'Orders:MaxBatchSize (prd)', '50 → 100 (clé App Configuration)'),
+        c('Pipeline', MOD, 'orders-api release', 'Stage prd : bascule progressive 10 / 50 / 100 %')
+      ],
+      tree: [
+        tr('core/', 0), tr('orders/', 0), tr('infra/', 1), tr('main.bicep', 2, 'm'), tr('main.dev.bicepparam', 2, 'm'), tr('main.prd.bicepparam', 2, 'm'), tr('types.bicep', 2), tr('scripts/sql-access.sql', 2), tr('pipelines/infra.yml', 2), tr('apps/api/pipelines/release.yml', 1, 'm'), tr('.ifs/templates/', 0), tr('README.ifs.md', 0, 'a')
+      ],
+      diff: [
+        d('  caApi: {'), d("    cpu: '1.0'", '-'), d("    cpu: '2.0'", '+'), d("    memory: '2Gi'", '-'), d("    memory: '4Gi'", '+'), d('    minReplicas: 1', '-'), d('    minReplicas: 2', '+'), d("    revisionMode: 'Single'", '-'), d("    revisionMode: 'Multiple'", '+'), d('  }')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

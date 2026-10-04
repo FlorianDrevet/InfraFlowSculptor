@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Publier la révision</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1100px; display: flex; justify-content: center; align-items: center; background: rgba(5,7,10,0.92); color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div role="dialog" aria-label="Publier la révision 16" style="width: 900px; border-radius: 12px; background: #11151C; border: 1px solid #343D4C; box-shadow: 0 24px 48px rgba(0,0,0,0.45); display: flex; flex-direction: column">
+<div style="padding: 20px 24px; border-bottom: 1px solid #252C38; display: flex; flex-direction: column; gap: 4px"><h2 style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 600">Publier la révision 16</h2><span style="font-size: 13px; color: #A7B0BF">2 dépôts préparés et vérifiés. Rien n'est écrit avant votre confirmation ; un dépôt en échec n'empêche pas les autres.</span></div>
+<div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Mode</span><x-import component-from-global-scope="Strata.Segmented" options="{{ifsFix1}}" value="Pull request"></x-import></div>
+<x-import component-from-global-scope="Strata.TextField" label="Message" default-value="IFS révision 16"></x-import>
+</div>
+<div style="border-radius: 10px; border: 1px solid #252C38; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #141922; flex-wrap: wrap"><x-import component-from-global-scope="Strata.Icon" name="branch" size="{{s16}}"></x-import><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; flex-grow: 1">Shop/shop-infra</span><span style="font-size: 12px; color: #A7B0BF">5 destinations · branche ifs/shop/revision-16 · met à jour la PR 44 ouverte</span><x-import component-from-global-scope="Strata.Badge" tone="success" dot="{{yes}}">Prêt</x-import></div>
+<div style="display: flex; gap: 20px; padding: 10px 16px; font-size: 13px; color: #A7B0BF; flex-wrap: wrap"><span><span style="color: #7ED3A3">4</span> mis à jour</span><span><span style="color: #7ED3A3">1</span> ajouté</span><span>0 supprimé</span><span>82 inchangés</span><span>Code additionnel connectivity/extra.bicep : présent</span></div>
+</div>
+<div style="border-radius: 10px; border: 1px solid #E8A65A; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: rgba(232,166,90,0.08); flex-wrap: wrap"><x-import component-from-global-scope="Strata.Icon" name="branch" size="{{s16}}"></x-import><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; flex-grow: 1">Shop/shop-app</span><span style="font-size: 12px; color: #A7B0BF">1 destination · nouvelle PR</span><x-import component-from-global-scope="Strata.Badge" tone="ember" dot="{{yes}}">Confirmation requise</x-import></div>
+<div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 13px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">orders/apps/api/pipelines/ci.yml</span> <span style="color: #A7B0BF">a été modifié à la main depuis la révision 14 (empreinte différente du manifeste).</span></span>
+<div style="border-radius: 8px; background: #0E1218; border: 1px solid #1E2430; padding: 8px 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 20px">
+<sc-for list="{{diff}}" as="d" hint-placeholder-count="6"><div style="{{d.style}}">{{d.line}}</div></sc-for>
+</div>
+<span style="font-size: 12px; color: #7D8797">Pour garder ce changement durablement, utilisez le point d'extension « après tests » au lieu de modifier le fichier généré.</span>
+<x-import component-from-global-scope="Strata.Toggle" label="Remplacer la modification manuelle par le contenu de la révision"></x-import>
+</div>
+</div>
+</div>
+<div style="padding: 16px 24px; border-top: 1px solid #252C38; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; align-items: center">
+<span style="flex-grow: 1; font-size: 12px; color: #7D8797">Sans confirmation, seul shop-infra sera publié.</span>
+<x-import component-from-global-scope="Strata.Button" variant="ghost">Annuler</x-import>
+<x-import component-from-global-scope="Strata.Button" variant="primary" icon="upload" href="PublishResult.dc.html">Publier</x-import>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const base = 'padding: 0 12px; white-space: pre; ';
+    const d = (line, t) => ({ line, style: base + (t === '+' ? 'background: rgba(92,192,138,0.10); color: #7ED3A3;' : t === '-' ? 'background: rgba(229,105,95,0.10); color: #F08A80;' : 'color: #A7B0BF;') });
+    return { ifsFix1: [{"value": "Pull request", "label": "Pull request"}, {"value": "Écriture directe", "label": "Écriture directe"}],
+      s16: 16,
+      diff: [
+        d('  - template: ../../../../.ifs/templates/dotnet-test.yml'),
+        d('- - script: dotnet test --filter Category!=Slow   # modif. manuelle', '-'),
+        d('+   parameters:', '+'),
+        d("+     testFilter: ''", '+'),
+        d('  - template: ../../../../.ifs/templates/docker-build.yml')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+<!-- @dsCard group="Actions" height=120 subtitle="primary · secondary · ghost · danger" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Button — aperçu</title></head>
+<body>
+<div id="root" class="st-root st-stack" style="padding: 16px"></div>
+<script>
+  var S = window.Strata, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h('div', { className: 'st-row' },
+      h(S.Button, { variant: 'primary', icon: 'zap' }, 'Générer'),
+      h(S.Button, { variant: 'secondary', icon: 'plus' }, 'Ajouter une ressource'),
+      h(S.Button, { variant: 'ghost', icon: 'clock' }, 'Historique'),
+      h(S.Button, { variant: 'danger' }, 'Supprimer')),
+    h('div', { className: 'st-row' },
+      h(S.Button, { variant: 'primary', size: 'sm' }, 'Relancer'),
+      h(S.Button, { variant: 'secondary', size: 'sm' }, 'Accorder le rôle'),
+      h(S.Button, { variant: 'secondary', disabled: true }, 'Indisponible'))));
+</script>
+</body>
+</html>

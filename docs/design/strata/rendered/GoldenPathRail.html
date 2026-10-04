@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr"><head><style>
+    .sc-placeholder{background:color-mix(in srgb,currentColor 8%,transparent);
+      border:1px solid color-mix(in srgb,currentColor 50%,transparent);
+      border-radius:2px;box-sizing:border-box;overflow:hidden}
+    @keyframes sc-shine{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+    html.sc-dc-streaming .sc-placeholder,
+    html.sc-dc-streaming .sc-interp.sc-missing{position:relative;
+      background:color-mix(in srgb,currentColor 5%,transparent);
+      border-color:transparent}
+    html.sc-dc-streaming .sc-placeholder::before,
+    html.sc-dc-streaming .sc-interp.sc-missing::before{content:'';
+      position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(90deg,rgba(217,119,87,0) 25%,rgba(247,225,211,.95) 37%,rgba(217,119,87,0) 63%);
+      background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+    html.sc-dc-streaming .sc-placeholder:nth-child(n+9 of .sc-placeholder)::before,
+    html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n+9 of .sc-interp.sc-missing)::before{animation:none;
+      background:color-mix(in srgb,currentColor 8%,transparent)}
+    .sc-placeholder-error{padding:4px 8px;font:11px/1.4 ui-monospace,monospace;
+      color:color-mix(in srgb,currentColor 70%,transparent);word-break:break-word}
+    .sc-interp.sc-missing{display:inline-block;width:2em;height:1em;overflow:hidden;
+      vertical-align:text-bottom;background:rgba(255,255,255,.3);border:1px solid rgba(0,0,0,.5);
+      border-radius:2px;box-sizing:border-box;color:transparent;
+      user-select:none}
+    .sc-interp.sc-unresolved{font-family:ui-monospace,monospace;font-size:.85em;
+      color:color-mix(in srgb,currentColor 50%,transparent);
+      background:color-mix(in srgb,currentColor 10%,transparent);border-radius:3px;
+      padding:0 3px}
+    .sc-host.sc-has-error{position:relative}
+    .sc-logic-error{position:absolute;top:8px;left:8px;z-index:2147483647;max-width:60ch;
+      padding:6px 10px;background:#b00020;color:#fff;font:12px/1.4 ui-monospace,monospace;
+      border-radius:4px;white-space:pre-wrap;pointer-events:none}
+    /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
+       in sync until dc-runtime regains a build step. */
+    @media print {
+      @page { margin: 0.5cm; }
+      figure, table { break-inside: avoid; }
+      #dc-root, #dc-root > .sc-host { height: auto; }
+      *, *::before, *::after {
+        print-color-adjust: exact; -webkit-print-color-adjust: exact;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        animation-delay: -99s !important; animation-duration: .001s !important;
+        animation-iteration-count: 1 !important; animation-fill-mode: both !important;
+        animation-play-state: running !important; transition-duration: 0s !important;
+      }
+    }
+  </style><meta charset="utf-8"><title>GoldenPathRail — Strata</title>
+<style>x-dc{display:none!important}</style>
+<link rel="stylesheet" href="../components/bundle.css">
+<link rel="stylesheet" href="../tokens.css">
+
+</head><body>
+
+<div id="root" class="st-root st-stack" style="padding: 16px"><ol class="st-rail" aria-label="Avancement vers la livraison" style="margin: 0px; padding: 0px; list-style: none;"><li class="st-rail-step st-rail-done"><span class="st-rail-head"><span class="st-rail-node"><svg class="st-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>Modéliser</span><span class="st-rail-meta">5 composants · 31 ressources</span><span class="st-rail-hint">2 avertissements</span></li><li class="st-rail-step st-rail-attention"><span class="st-rail-head"><span class="st-rail-node">02</span>Générer</span><span class="st-rail-meta">Révision 15 · il y a 2 h</span><span class="st-rail-hint">Périmée : le modèle a changé</span></li><li class="st-rail-step st-rail-done"><span class="st-rail-head"><span class="st-rail-node"><svg class="st-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>Publier</span><span class="st-rail-meta">2 pull requests fusionnées sur 2</span></li><li class="st-rail-step st-rail-error"><span class="st-rail-head"><span class="st-rail-node"><svg class="st-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></span>Déployer</span><span class="st-rail-meta">dev à jour</span><span class="st-rail-hint">prd : partiellement appliquée</span></li></ol><ol class="st-rail" aria-label="Avancement vers la livraison" style="margin: 0px; padding: 0px; list-style: none;"><li class="st-rail-step st-rail-done"><span class="st-rail-head"><span class="st-rail-node"><svg class="st-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>Valider</span><span class="st-rail-meta">0 erreur · 2 avertissements</span></li><li class="st-rail-step st-rail-done"><span class="st-rail-head"><span class="st-rail-node"><svg class="st-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>Générer</span><span class="st-rail-meta">Révision 16 · 23 fichiers</span></li><li class="st-rail-step st-rail-current" aria-current="step"><span class="st-rail-head"><span class="st-rail-node">03</span>Relire</span><span class="st-rail-meta">4 fichiers modifiés</span></li><li class="st-rail-step st-rail-pending"><span class="st-rail-head"><span class="st-rail-node">04</span>Publier</span><span class="st-rail-meta">Une pull request par dépôt</span></li></ol></div>
+
+
+
+</body></html>

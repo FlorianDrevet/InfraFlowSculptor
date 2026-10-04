@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr"><head><style>
+    .sc-placeholder{background:color-mix(in srgb,currentColor 8%,transparent);
+      border:1px solid color-mix(in srgb,currentColor 50%,transparent);
+      border-radius:2px;box-sizing:border-box;overflow:hidden}
+    @keyframes sc-shine{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+    html.sc-dc-streaming .sc-placeholder,
+    html.sc-dc-streaming .sc-interp.sc-missing{position:relative;
+      background:color-mix(in srgb,currentColor 5%,transparent);
+      border-color:transparent}
+    html.sc-dc-streaming .sc-placeholder::before,
+    html.sc-dc-streaming .sc-interp.sc-missing::before{content:'';
+      position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(90deg,rgba(217,119,87,0) 25%,rgba(247,225,211,.95) 37%,rgba(217,119,87,0) 63%);
+      background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+    html.sc-dc-streaming .sc-placeholder:nth-child(n+9 of .sc-placeholder)::before,
+    html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n+9 of .sc-interp.sc-missing)::before{animation:none;
+      background:color-mix(in srgb,currentColor 8%,transparent)}
+    .sc-placeholder-error{padding:4px 8px;font:11px/1.4 ui-monospace,monospace;
+      color:color-mix(in srgb,currentColor 70%,transparent);word-break:break-word}
+    .sc-interp.sc-missing{display:inline-block;width:2em;height:1em;overflow:hidden;
+      vertical-align:text-bottom;background:rgba(255,255,255,.3);border:1px solid rgba(0,0,0,.5);
+      border-radius:2px;box-sizing:border-box;color:transparent;
+      user-select:none}
+    .sc-interp.sc-unresolved{font-family:ui-monospace,monospace;font-size:.85em;
+      color:color-mix(in srgb,currentColor 50%,transparent);
+      background:color-mix(in srgb,currentColor 10%,transparent);border-radius:3px;
+      padding:0 3px}
+    .sc-host.sc-has-error{position:relative}
+    .sc-logic-error{position:absolute;top:8px;left:8px;z-index:2147483647;max-width:60ch;
+      padding:6px 10px;background:#b00020;color:#fff;font:12px/1.4 ui-monospace,monospace;
+      border-radius:4px;white-space:pre-wrap;pointer-events:none}
+    /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
+       in sync until dc-runtime regains a build step. */
+    @media print {
+      @page { margin: 0.5cm; }
+      figure, table { break-inside: avoid; }
+      #dc-root, #dc-root > .sc-host { height: auto; }
+      *, *::before, *::after {
+        print-color-adjust: exact; -webkit-print-color-adjust: exact;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        animation-delay: -99s !important; animation-duration: .001s !important;
+        animation-iteration-count: 1 !important; animation-fill-mode: both !important;
+        animation-play-state: running !important; transition-duration: 0s !important;
+      }
+    }
+  </style>
+<meta charset="utf-8">
+<title>Assistant — identité</title>
+<style>x-dc{display:none!important}</style>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"><style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+@media (max-width: 760px){.ifs-side{display:none !important}}
+</style></head>
+<body>
+<div id="dc-root"><div class="sc-host" data-sc-name="WizardIdentity"><div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: rgb(11, 14, 19); color: rgb(232, 236, 242); font-family: &quot;Instrument Sans&quot;, system-ui, sans-serif; font-size: 14px; line-height: 20px;"><aside style="flex: 0 1 300px; box-sizing: border-box; padding: 28px 24px; display: flex; flex-direction: column; gap: 24px; background: rgb(14, 18, 24); border-right: 1px solid rgb(34, 41, 54);"><a href="Projects.html" style="font-size: 13px;">Quitter l'assistant</a><div style="display: flex; flex-direction: column; gap: 4px;"><span style="font-family: &quot;JetBrains Mono&quot;, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: rgb(125, 135, 151);">Nouveau projet</span><span style="font-weight: 600; font-size: 16px;">Boutique en ligne</span></div><ol style="margin: 0px; padding: 0px; list-style: none; display: flex; flex-direction: column; gap: 4px;"><li><a href="WizardIdentity.html" aria-current="step" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0px 10px; border-radius: 6px; font-weight: 500; background: rgb(26, 32, 41); color: rgb(232, 236, 242);"><span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 999px; font-size: 12px; background: rgb(91, 200, 223); color: rgb(6, 34, 40);"><span class="sc-interp">1</span></span><span class="sc-interp">Identité</span></a></li><li><a href="WizardTools.html" aria-current="false" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0px 10px; border-radius: 6px; font-weight: 500; color: rgb(125, 135, 151);"><span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 999px; font-size: 12px; border: 1px solid rgb(52, 61, 76); color: rgb(125, 135, 151);"><span class="sc-interp">2</span></span><span class="sc-interp">Outils</span></a></li><li><a href="WizardEnvironments.html" aria-current="false" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0px 10px; border-radius: 6px; font-weight: 500; color: rgb(125, 135, 151);"><span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 999px; font-size: 12px; border: 1px solid rgb(52, 61, 76); color: rgb(125, 135, 151);"><span class="sc-interp">3</span></span><span class="sc-interp">Environnements</span></a></li><li><a href="WizardNaming.html" aria-current="false" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0px 10px; border-radius: 6px; font-weight: 500; color: rgb(125, 135, 151);"><span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 999px; font-size: 12px; border: 1px solid rgb(52, 61, 76); color: rgb(125, 135, 151);"><span class="sc-interp">4</span></span><span class="sc-interp">Nommage</span></a></li><li><a href="WizardPublishing.html" aria-current="false" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0px 10px; border-radius: 6px; font-weight: 500; color: rgb(125, 135, 151);"><span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 999px; font-size: 12px; border: 1px solid rgb(52, 61, 76); color: rgb(125, 135, 151);"><span class="sc-interp">5</span></span><span class="sc-interp">Publication</span></a></li><li><a href="WizardReview.html" aria-current="false" style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0px 10px; border-radius: 6px; font-weight: 500; color: rgb(125, 135, 151);"><span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 999px; font-size: 12px; border: 1px solid rgb(52, 61, 76); color: rgb(125, 135, 151);"><span class="sc-interp">6</span></span><span class="sc-interp">Récapitulatif</span></a></li></ol><span style="font-size: 12px; color: rgb(125, 135, 151);">Brouillon enregistré automatiquement il y a 4 s · repris sur n'importe quel poste pendant 30 jours.</span></aside><main style="flex: 999 1 560px; min-width: 0px; box-sizing: border-box; padding: 40px 48px 48px; display: flex; flex-direction: column; gap: 24px; max-width: 900px;"><div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-family: &quot;JetBrains Mono&quot;, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: rgb(125, 135, 151);">Étape 1 sur 6</span><h1 style="margin: 0px; font-size: 28px; line-height: 34px; font-weight: 600;">Identité du projet</h1><p style="margin: 0px; color: rgb(167, 176, 191);">Le code apparaît dans tous les noms Azure, les dossiers et les pipelines. Choisissez-le court et stable.</p></div><div class="sc-host-x" style="display: contents;"><div class="st-field"><label class="st-field-label" for="st-field-1">Nom</label><input id="st-field-1" type="text" class="st-field-input" value="Boutique en ligne"><span class="st-field-hint">3 à 80 caractères, unique dans Contoso</span></div></div><div class="sc-host-x" style="display: contents;"><div class="st-field"><label class="st-field-label" for="st-field-2">Code</label><input id="st-field-2" type="text" class="st-field-input st-mono" value="shop"><span class="st-field-hint">2 à 10 caractères : minuscules et chiffres, commence par une lettre. Jeton {project} du nommage.</span></div></div><label style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 12px; font-weight: 500; color: rgb(167, 176, 191);">Description</span><textarea rows="3" style="box-sizing: border-box; width: 100%; padding: 10px 12px; border-radius: 6px; background: rgb(18, 23, 32); border: 1px solid rgb(52, 61, 76); color: rgb(232, 236, 242); font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; font-size: 13px; resize: vertical;">Commandes, catalogue et socle partagé de la boutique Contoso.</textarea></label><div style="display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 10px; background: rgb(17, 21, 28); border: 1px solid rgb(37, 44, 56);"><span style="font-size: 12px; color: rgb(125, 135, 151);">Aperçu avec le code <span style="font-family: &quot;JetBrains Mono&quot;, monospace;">shop</span></span><div style="display: flex; gap: 8px; flex-wrap: wrap;"><div class="sc-host-x" style="display: contents;"><div class="st-genname"><span class="st-genname-env">dev</span><span class="st-genname-value">kv-shop-main-dev</span></div></div><div class="sc-host-x" style="display: contents;"><div class="st-genname"><span class="st-genname-env">prd</span><span class="st-genname-value">ca-shop-api-prd</span></div></div><div class="sc-host-x" style="display: contents;"><div class="st-genname"><span class="st-genname-env">shared</span><span class="st-genname-value">crshopmainshared</span></div></div></div></div><div style="display: flex; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px solid rgb(34, 41, 54);"><div class="sc-host-x" style="display: contents;"><a class="st-btn st-btn-ghost" href="NewProject.html">Retour</a></div><div class="sc-host-x" style="display: contents;"><a class="st-btn st-btn-primary" href="WizardTools.html">Continuer : outils<svg class="st-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a></div></div></main></div></div></div>
+
+
+
+</body></html>

@@ -1,0 +1,19 @@
+<!-- @dsCard group="Mise en page" height=230 subtitle="bloc de contenu titré" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Panel — aperçu</title></head>
+<body>
+<div id="root" class="st-root" style="padding: 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start"></div>
+<script>
+  var S = window.Strata, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h(S.Panel, { title: 'Depuis la dernière génération' },
+      h('div', { className: 'st-stack', style: { gap: 8, fontSize: 13 } },
+        h('span', null, h('span', { className: 'st-mono', style: { color: 'var(--success-text, #7ed3a3)' } }, '+ '), 'st-orders créée'),
+        h('span', null, h('span', { className: 'st-mono', style: { color: 'var(--ember-text, #f0b676)' } }, '~ '), 'orders-api · 3 réglages'),
+        h(S.Button, { variant: 'primary' }, 'Générer orders-service'))),
+    h(S.Panel, { title: 'Identité & accès', subtitle: 'Rôles accordés par orders-api', actions: h(S.Button, { size: 'sm', icon: 'plus' }, 'Accorder un rôle') },
+      h('div', { className: 'st-row', style: { fontSize: 13 } }, h(S.ResourceIcon, { type: 'KeyVault', size: 20, alt: '' }), 'Key Vault · kv-orders — Secrets User'))));
+</script>
+</body>
+</html>

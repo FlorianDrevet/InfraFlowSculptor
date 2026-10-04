@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ajouter une ressource — réglages</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1100px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; background: rgba(5,7,10,0.92); color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div role="dialog" aria-labelledby="cfg-title" style="width: 920px; box-sizing: border-box; display: flex; flex-direction: column; border-radius: 12px; background: #11151C; border: 1px solid #343D4C; box-shadow: 0 24px 48px rgba(0,0,0,0.45)">
+<div style="display: flex; align-items: center; gap: 12px; padding: 18px 24px; border-bottom: 1px solid #252C38">
+<x-import component-from-global-scope="Strata.ResourceIcon" type="ContainerApp" size="{{s32}}" alt=""></x-import>
+<div style="display: flex; flex-direction: column; flex-grow: 1"><h1 id="cfg-title" style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 600">Nouvelle Container App</h1><span style="font-size: 13px; color: #7D8797">Dans orders · <a href="AddResourceType.dc.html">changer de type</a></span></div>
+</div>
+<div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<x-import component-from-global-scope="Strata.TextField" label="Nom logique" default-value="worker" mono="{{yes}}" hint="Unique par type dans le composant"></x-import>
+<label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Groupe de ressources</span><select style="height: 36px; padding: 0 10px; border-radius: 6px; background: #121720; border: 1px solid #343D4C; color: #E8ECF2; font: inherit; font-size: 13px"><option>main</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Environnement Container Apps</span><select style="height: 36px; padding: 0 10px; border-radius: 6px; background: #121720; border: 1px solid #343D4C; color: #E8ECF2; font: inherit; font-size: 13px"><option>cae main (orders)</option></select></label>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 8px; background: #0E1218; border: 1px solid #1E2430">
+<span style="font-size: 12px; color: #7D8797">Noms Azure calculés</span>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><x-import component-from-global-scope="Strata.GeneratedName" value="ca-shop-worker-dev" env="dev" available="{{yes}}"></x-import><x-import component-from-global-scope="Strata.GeneratedName" value="ca-shop-worker-prd" env="prd" available="{{yes}}"></x-import></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span style="font-weight: 600">Liaisons obligatoires</span>
+<label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Tirage d'image depuis</span><select style="height: 36px; padding: 0 10px; border-radius: 6px; background: #121720; border: 1px solid #343D4C; color: #E8ECF2; font: inherit; font-size: 13px"><option>platform / cr main (crshopmainshared)</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Avec l'identité</span><select style="height: 36px; padding: 0 10px; border-radius: 6px; background: #121720; border: 1px solid #343D4C; color: #E8ECF2; font: inherit; font-size: 13px"><option>orders / id api</option><option>Nouvelle identité « worker »</option></select></label>
+<span style="font-size: 12px; color: #7D8797">IFS ajoutera le rôle AcrPull sur le registre. Une identité affectée est exigée : l'identité système n'existe pas encore au premier tirage.</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span style="font-weight: 600">Présence</span>
+<x-import component-from-global-scope="Strata.Toggle" default-checked="{{yes}}" label="dev"></x-import>
+<x-import component-from-global-scope="Strata.Toggle" default-checked="{{yes}}" label="prd"></x-import>
+<span style="font-size: 12px; color: #7D8797">Les autres propriétés prennent leurs valeurs par défaut ; vous les réglerez par environnement dans l'onglet Propriétés.</span>
+</div>
+</div>
+</div>
+<div style="display: flex; justify-content: flex-end; gap: 8px; padding: 14px 24px; border-top: 1px solid #252C38"><x-import component-from-global-scope="Strata.Button" variant="ghost" href="Component.dc.html">Annuler</x-import><x-import component-from-global-scope="Strata.Button" variant="primary" icon="check" href="ResourceGeneral.dc.html">Ajouter worker</x-import></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() { return { yes: true, s32: 32 }; }
+}
+</script>
+</body>
+</html>

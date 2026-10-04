@@ -1,0 +1,220 @@
+{
+  "v": 3,
+  "layout": "files",
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-02T09:00:38Z"
+  },
+  "title": "Strata — InfraFlowSculptor",
+  "namespace": "Strata",
+  "libraries": [
+    {
+      "name": "react",
+      "version": "18"
+    },
+    {
+      "name": "react-dom",
+      "version": "18"
+    }
+  ],
+  "sections": {},
+  "groups": [
+    "Azure"
+  ],
+  "assetGroups": {
+    "Azure": {
+      "name": "Azure",
+      "tile": "s",
+      "order": [
+        "key-vault.svg",
+        "redis-cache.svg",
+        "storage-account.svg",
+        "app-service-plan.svg",
+        "web-app.svg",
+        "function-app.svg",
+        "managed-identity.svg",
+        "app-configuration.svg",
+        "container-apps-environment.svg",
+        "container-app.svg",
+        "log-analytics-workspace.svg",
+        "application-insights.svg",
+        "cosmos-db.svg",
+        "sql-server.svg",
+        "sql-database.svg",
+        "service-bus.svg",
+        "event-hubs.svg",
+        "container-registry.svg",
+        "virtual-network.svg",
+        "document-intelligence.svg",
+        "private-endpoint.svg",
+        "resource-group.svg",
+        "subnet.svg",
+        "network-security-group.svg",
+        "front-door.svg"
+      ],
+      "files": {
+        "key-vault.svg": {
+          "name": "key-vault.svg",
+          "blob": "5fdbf6d99f472efeceb447010c66d7f8",
+          "size": 2231,
+          "type": "image/svg+xml"
+        },
+        "redis-cache.svg": {
+          "name": "redis-cache.svg",
+          "blob": "0764f5654e65af5e598bd9b4aa70ee67",
+          "size": 2807,
+          "type": "image/svg+xml"
+        },
+        "storage-account.svg": {
+          "name": "storage-account.svg",
+          "blob": "9a344ed5372ab0c6649f3047b7b6234c",
+          "size": 1157,
+          "type": "image/svg+xml"
+        },
+        "app-service-plan.svg": {
+          "name": "app-service-plan.svg",
+          "blob": "d925ebb8734a8037338993b272991599",
+          "size": 1605,
+          "type": "image/svg+xml"
+        },
+        "web-app.svg": {
+          "name": "web-app.svg",
+          "blob": "204b660ff2e311abf21b4aac00d9621d",
+          "size": 3078,
+          "type": "image/svg+xml"
+        },
+        "function-app.svg": {
+          "name": "function-app.svg",
+          "blob": "d5dd178738401965b548ace59f58ddbc",
+          "size": 1747,
+          "type": "image/svg+xml"
+        },
+        "managed-identity.svg": {
+          "name": "managed-identity.svg",
+          "blob": "d91bafe649c07e722f420ef94ac685e9",
+          "size": 2352,
+          "type": "image/svg+xml"
+        },
+        "app-configuration.svg": {
+          "name": "app-configuration.svg",
+          "blob": "f44873768159d762b18be59e28f1d1e5",
+          "size": 2131,
+          "type": "image/svg+xml"
+        },
+        "container-apps-environment.svg": {
+          "name": "container-apps-environment.svg",
+          "blob": "286307cca74355f0aeac30c7c00ab679",
+          "size": 2029,
+          "type": "image/svg+xml"
+        },
+        "container-app.svg": {
+          "name": "container-app.svg",
+          "blob": "3363ef5e4b2994e8c82f5241e0b89e64",
+          "size": 3169,
+          "type": "image/svg+xml"
+        },
+        "log-analytics-workspace.svg": {
+          "name": "log-analytics-workspace.svg",
+          "blob": "0bdca88d9b8f3a7b961f372682c088f3",
+          "size": 1295,
+          "type": "image/svg+xml"
+        },
+        "application-insights.svg": {
+          "name": "application-insights.svg",
+          "blob": "6331ab35be6d0164277469ead5e275fd",
+          "size": 2320,
+          "type": "image/svg+xml"
+        },
+        "cosmos-db.svg": {
+          "name": "cosmos-db.svg",
+          "blob": "8bbfddc419b6a9edf867744484476167",
+          "size": 2599,
+          "type": "image/svg+xml"
+        },
+        "sql-server.svg": {
+          "name": "sql-server.svg",
+          "blob": "e397251c23d65c9cc26bd7e8224626a3",
+          "size": 2448,
+          "type": "image/svg+xml"
+        },
+        "sql-database.svg": {
+          "name": "sql-database.svg",
+          "blob": "35dffc5c9033f52d59dfe68760e91340",
+          "size": 2420,
+          "type": "image/svg+xml"
+        },
+        "service-bus.svg": {
+          "name": "service-bus.svg",
+          "blob": "b777d6a583b2a88d8dab8caf82e07ffe",
+          "size": 2683,
+          "type": "image/svg+xml"
+        },
+        "event-hubs.svg": {
+          "name": "event-hubs.svg",
+          "blob": "90ee9c3e21e0f2ee382874d84b6b94c1",
+          "size": 2497,
+          "type": "image/svg+xml"
+        },
+        "container-registry.svg": {
+          "name": "container-registry.svg",
+          "blob": "97e5736c4dc755a6e3317f5696bf70c9",
+          "size": 2708,
+          "type": "image/svg+xml"
+        },
+        "virtual-network.svg": {
+          "name": "virtual-network.svg",
+          "blob": "757e4e7a9ebe52fdfa6548a22a77358e",
+          "size": 1860,
+          "type": "image/svg+xml"
+        },
+        "document-intelligence.svg": {
+          "name": "document-intelligence.svg",
+          "blob": "63e4d60c53c6bef8065904dee6a5f7a0",
+          "size": 2143,
+          "type": "image/svg+xml"
+        },
+        "private-endpoint.svg": {
+          "name": "private-endpoint.svg",
+          "blob": "3867fe367c284cd356c3b6cda39c74bc",
+          "size": 1883,
+          "type": "image/svg+xml"
+        },
+        "resource-group.svg": {
+          "name": "resource-group.svg",
+          "blob": "fd7ca477452e84636ff0e7a388744582",
+          "size": 1746,
+          "type": "image/svg+xml"
+        },
+        "subnet.svg": {
+          "name": "subnet.svg",
+          "blob": "a3ffc258761cce0294a5cbc18f0dfd92",
+          "size": 1471,
+          "type": "image/svg+xml"
+        },
+        "network-security-group.svg": {
+          "name": "network-security-group.svg",
+          "blob": "f15b72e51e85096f1077133a873d9511",
+          "size": 1353,
+          "type": "image/svg+xml"
+        },
+        "front-door.svg": {
+          "name": "front-door.svg",
+          "blob": "63b436df7c865abfdcc8b7f5cdff7a52",
+          "size": 942,
+          "type": "image/svg+xml"
+        }
+      }
+    }
+  },
+  "blobs": {},
+  "docs": {
+    "readme": "project/README.md",
+    "sections": []
+  },
+  "lastChange": {
+    "by": "Florian Drevet",
+    "at": "2026-10-03T18:00:00Z",
+    "via": "Claude Code",
+    "note": "Vocabulaire et motifs alignés sur les spécifications fonctionnelles v1 et la maquette v1 : README, tokens (identity-text, identity-soft, overlay-scrim), guides des composants, aperçus"
+  }
+}

@@ -1,0 +1,24 @@
+<!-- @dsCard group="Statut" height=210 subtitle="modéliser → générer → publier → déployer" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>GoldenPathRail — aperçu</title></head>
+<body>
+<div id="root" class="st-root st-stack" style="padding: 16px"></div>
+<script>
+  var S = window.Strata, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h(S.GoldenPathRail, { steps: [
+      { label: 'Modéliser', state: 'done', meta: '5 composants · 31 ressources', hint: '2 avertissements' },
+      { label: 'Générer', state: 'attention', meta: 'Révision 15 · il y a 2 h', hint: 'Périmée : le modèle a changé' },
+      { label: 'Publier', state: 'done', meta: '2 pull requests fusionnées sur 2' },
+      { label: 'Déployer', state: 'error', meta: 'dev à jour', hint: 'prd : partiellement appliquée' }
+    ] }),
+    h(S.GoldenPathRail, { steps: [
+      { label: 'Valider', state: 'done', meta: '0 erreur · 2 avertissements' },
+      { label: 'Générer', state: 'done', meta: 'Révision 16 · 23 fichiers' },
+      { label: 'Relire', state: 'current', meta: '4 fichiers modifiés' },
+      { label: 'Publier', state: 'pending', meta: 'Une pull request par dépôt' }
+    ] })));
+</script>
+</body>
+</html>

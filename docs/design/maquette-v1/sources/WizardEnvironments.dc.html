@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Assistant — environnements</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #0B0E13; color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<aside style="flex: 0 1 300px; box-sizing: border-box; padding: 28px 24px; display: flex; flex-direction: column; gap: 24px; background: #0E1218; border-right: 1px solid #222936">
+<a href="Projects.dc.html" style="font-size: 13px">Quitter l'assistant</a>
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #7D8797">Nouveau projet</span><span style="font-weight: 600; font-size: 16px">Boutique en ligne</span></div>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="6"><li><a href="{{s.href}}" aria-current="{{s.current}}" style="{{s.style}}"><span style="{{s.numStyle}}">{{s.n}}</span>{{s.label}}</a></li></sc-for>
+</ol>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 40px 48px 48px; display: flex; flex-direction: column; gap: 20px; max-width: 1060px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #7D8797">Étape 3 sur 6</span>
+<h1 style="margin: 0; font-size: 28px; line-height: 34px; font-weight: 600">Chaîne d'environnements</h1>
+<p style="margin: 0; color: #A7B0BF">Dans l'ordre de promotion. Aucune région ni abonnement n'est présaisi : choisissez-les en connaissance de cause.</p>
+</div>
+<sc-for list="{{envs}}" as="e" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 18px; border-radius: 10px; background: #11151C; border: 1px solid #252C38">
+<div style="display: flex; align-items: center; gap: 10px"><span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 999px; background: #1E2430; font-size: 12px">{{e.order}}</span><span style="font-weight: 600; flex-grow: 1">{{e.name}}</span><sc-if value="{{e.protected}}" hint-placeholder-val="{{false}}"><x-import component-from-global-scope="Strata.Badge" tone="ember" icon="lock">Protégé</x-import></sc-if></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+<x-import component-from-global-scope="Strata.TextField" label="Nom" default-value="{{e.name}}"></x-import>
+<x-import component-from-global-scope="Strata.TextField" label="Code" default-value="{{e.code}}" mono="{{yes}}" hint="Jeton {env}"></x-import>
+<x-import component-from-global-scope="Strata.TextField" label="Région" default-value="francecentral" mono="{{yes}}"></x-import>
+<x-import component-from-global-scope="Strata.TextField" label="Abonnement" default-value="{{e.sub}}" mono="{{yes}}"></x-import>
+</div>
+<div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap">
+<x-import component-from-global-scope="Strata.Toggle" default-checked="{{e.protected}}" label="Protégé : chaque déploiement exige une approbation"></x-import>
+<sc-if value="{{e.protected}}" hint-placeholder-val="{{false}}"><span style="font-size: 13px; color: #A7B0BF">Approbateurs : <span style="color: #E8ECF2">Shop Release Approvers</span> (groupe Azure DevOps)</span></sc-if>
+</div>
+</div>
+</sc-for>
+<x-import component-from-global-scope="Strata.Button" variant="secondary" icon="plus">Ajouter un environnement</x-import>
+<div style="display: flex; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px solid #222936">
+<x-import component-from-global-scope="Strata.Button" variant="ghost" href="WizardTools.dc.html">Retour</x-import>
+<x-import component-from-global-scope="Strata.Button" variant="primary" icon="chevron-right" icon-position="end" href="WizardNaming.dc.html">Continuer : nommage</x-import>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const cur = 3;
+    const labels = [['Identité', 'WizardIdentity.dc.html'], ['Outils', 'WizardTools.dc.html'], ['Environnements', 'WizardEnvironments.dc.html'], ['Nommage', 'WizardNaming.dc.html'], ['Publication', 'WizardPublishing.dc.html'], ['Récapitulatif', 'WizardReview.dc.html']];
+    const steps = labels.map((l, i) => {
+      const n = i + 1, on = n === cur, done = n < cur;
+      return { n: done ? '✓' : String(n), label: l[0], href: l[1], current: on ? 'step' : 'false',
+        style: 'display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: 6px; font-weight: 500; ' + (on ? 'background: #1A2029; color: #E8ECF2;' : done ? 'color: #A7B0BF;' : 'color: #7D8797;'),
+        numStyle: 'display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 999px; font-size: 12px; ' + (on ? 'background: #5BC8DF; color: #062228;' : done ? 'background: rgba(92,192,138,0.12); color: #7ED3A3;' : 'border: 1px solid #343D4C; color: #7D8797;') };
+    });
+    return {
+      yes: true, steps,
+      envs: [
+        { order: '1', name: 'Développement', code: 'dev', sub: 'a1f3…-sub-shop-dev', protected: false },
+        { order: '2', name: 'Production', code: 'prd', sub: 'b72c…-sub-shop-prd', protected: true }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

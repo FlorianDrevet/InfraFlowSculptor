@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr"><head><style>
+    .sc-placeholder{background:color-mix(in srgb,currentColor 8%,transparent);
+      border:1px solid color-mix(in srgb,currentColor 50%,transparent);
+      border-radius:2px;box-sizing:border-box;overflow:hidden}
+    @keyframes sc-shine{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+    html.sc-dc-streaming .sc-placeholder,
+    html.sc-dc-streaming .sc-interp.sc-missing{position:relative;
+      background:color-mix(in srgb,currentColor 5%,transparent);
+      border-color:transparent}
+    html.sc-dc-streaming .sc-placeholder::before,
+    html.sc-dc-streaming .sc-interp.sc-missing::before{content:'';
+      position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(90deg,rgba(217,119,87,0) 25%,rgba(247,225,211,.95) 37%,rgba(217,119,87,0) 63%);
+      background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+    html.sc-dc-streaming .sc-placeholder:nth-child(n+9 of .sc-placeholder)::before,
+    html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n+9 of .sc-interp.sc-missing)::before{animation:none;
+      background:color-mix(in srgb,currentColor 8%,transparent)}
+    .sc-placeholder-error{padding:4px 8px;font:11px/1.4 ui-monospace,monospace;
+      color:color-mix(in srgb,currentColor 70%,transparent);word-break:break-word}
+    .sc-interp.sc-missing{display:inline-block;width:2em;height:1em;overflow:hidden;
+      vertical-align:text-bottom;background:rgba(255,255,255,.3);border:1px solid rgba(0,0,0,.5);
+      border-radius:2px;box-sizing:border-box;color:transparent;
+      user-select:none}
+    .sc-interp.sc-unresolved{font-family:ui-monospace,monospace;font-size:.85em;
+      color:color-mix(in srgb,currentColor 50%,transparent);
+      background:color-mix(in srgb,currentColor 10%,transparent);border-radius:3px;
+      padding:0 3px}
+    .sc-host.sc-has-error{position:relative}
+    .sc-logic-error{position:absolute;top:8px;left:8px;z-index:2147483647;max-width:60ch;
+      padding:6px 10px;background:#b00020;color:#fff;font:12px/1.4 ui-monospace,monospace;
+      border-radius:4px;white-space:pre-wrap;pointer-events:none}
+    /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
+       in sync until dc-runtime regains a build step. */
+    @media print {
+      @page { margin: 0.5cm; }
+      figure, table { break-inside: avoid; }
+      #dc-root, #dc-root > .sc-host { height: auto; }
+      *, *::before, *::after {
+        print-color-adjust: exact; -webkit-print-color-adjust: exact;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        animation-delay: -99s !important; animation-duration: .001s !important;
+        animation-iteration-count: 1 !important; animation-fill-mode: both !important;
+        animation-play-state: running !important; transition-duration: 0s !important;
+      }
+    }
+  </style>
+<meta charset="utf-8">
+<title>Supprimer une ressource</title>
+<style>x-dc{display:none!important}</style>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"><style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+</style></head>
+<body>
+<div id="dc-root"><div class="sc-host" data-sc-name="DeleteImpact"><div style="width: 1440px; height: 900px; display: flex; justify-content: center; align-items: center; background: rgba(5, 7, 10, 0.92); color: rgb(232, 236, 242); font-family: &quot;Instrument Sans&quot;, system-ui, sans-serif; font-size: 14px; line-height: 20px;"><div role="dialog" aria-label="Supprimer sql orders" style="width: 720px; border-radius: 12px; background: rgb(17, 21, 28); border: 1px solid rgb(52, 61, 76); box-shadow: rgba(0, 0, 0, 0.45) 0px 24px 48px; display: flex; flex-direction: column;"><div style="padding: 20px 24px; border-bottom: 1px solid rgb(37, 44, 56); display: flex; flex-direction: column; gap: 4px;"><h2 style="margin: 0px; font-size: 18px; line-height: 26px; font-weight: 600;">Supprimer <span style="font-family: &quot;JetBrains Mono&quot;, monospace;">sql orders</span> du modèle ?</h2><span style="font-size: 13px; color: rgb(167, 176, 191);">Règle du composant orders : détacher. Rien n'est supprimé dans Azure ; la ressource devient détachée au prochain déploiement.</span></div><div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 16px;"><div style="display: flex; flex-direction: column; gap: 8px;"><span style="font-size: 12px; font-weight: 500; color: rgb(167, 176, 191);">Supprimé avec elle</span><span style="font-size: 13px;"><span style="font-family: &quot;JetBrains Mono&quot;, monospace; font-size: 12px;"><span class="sc-interp">sqldb orders</span></span> <span style="color: rgb(125, 135, 151);">· <span class="sc-interp">base enfant du serveur</span></span></span><span style="font-size: 13px;"><span style="font-family: &quot;JetBrains Mono&quot;, monospace; font-size: 12px;"><span class="sc-interp">sql-orders-admin</span></span> <span style="color: rgb(125, 135, 151);">· <span class="sc-interp">secret du mot de passe administrateur dans kv main</span></span></span></div><div style="display: flex; flex-direction: column; gap: 8px;"><span style="font-size: 12px; font-weight: 500; color: rgb(167, 176, 191);">Supprimés aussi, car ils la citent</span><span style="font-size: 13px; display: flex; gap: 8px; align-items: center;"><div class="sc-host-x" style="display: contents;"><svg class="st-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path></svg></div><span style="font-family: &quot;JetBrains Mono&quot;, monospace; font-size: 12px;"><span class="sc-interp">api → sqldb orders</span></span><span style="color: rgb(125, 135, 151);"><span class="sc-interp">accès aux données LectureÉcriture</span></span></span><span style="font-size: 13px; display: flex; gap: 8px; align-items: center;"><div class="sc-host-x" style="display: contents;"><svg class="st-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path></svg></div><span style="font-family: &quot;JetBrains Mono&quot;, monospace; font-size: 12px;"><span class="sc-interp">Sql__Server</span></span><span style="color: rgb(125, 135, 151);"><span class="sc-interp">paramètre de api (sortie fqdn)</span></span></span><span style="font-size: 13px; display: flex; gap: 8px; align-items: center;"><div class="sc-host-x" style="display: contents;"><svg class="st-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path></svg></div><span style="font-family: &quot;JetBrains Mono&quot;, monospace; font-size: 12px;"><span class="sc-interp">Diagnostics sql orders → log corp</span></span><span style="color: rgb(125, 135, 151);"><span class="sc-interp">liaison implicite</span></span></span></div><span style="font-size: 12px; color: rgb(125, 135, 151);">Sql__Database reste : c'est une valeur saisie, elle ne cite pas la ressource : à relire à la main.</span><div class="sc-host-x" style="display: contents;"><div class="st-banner st-banner-ember" role="status"><svg class="st-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 2px;"><path d="M12 3.5l9 16H3z"></path><path d="M12 10v4M12 17h.01"></path></svg><div class="st-banner-body"><span class="st-banner-title">Données en production</span><span class="st-banner-text">sql-shop-orders-prd contient des données. Après déploiement elle restera dans Azure, listée dans l'inventaire des ressources détachées, jusqu'à ce que quelqu'un la supprime ou la rattache. Même si le composant passait en « supprimer », prd étant protégée, la ressource y serait toujours détachée.</span></div></div></div><div class="sc-host-x" style="display: contents;"><div class="st-field"><label class="st-field-label" for="st-field-1">Tapez sql orders pour confirmer</label><input id="st-field-1" type="text" class="st-field-input st-mono" value="sql orders"></div></div></div><div style="padding: 16px 24px; border-top: 1px solid rgb(37, 44, 56); display: flex; justify-content: flex-end; gap: 8px;"><div class="sc-host-x" style="display: contents;"><button type="button" class="st-btn st-btn-ghost">Annuler</button></div><div class="sc-host-x" style="display: contents;"><button type="button" class="st-btn st-btn-danger"><svg class="st-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"></path></svg>Supprimer du modèle</button></div></div></div></div></div></div>
+
+
+
+</body></html>

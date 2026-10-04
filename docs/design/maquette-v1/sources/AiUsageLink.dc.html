@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Liaison utilisation d'IA</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; justify-content: center; align-items: center; background: rgba(5,7,10,0.92); color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<div role="dialog" aria-label="Utilisation d'IA" style="width: 780px; border-radius: 12px; background: #11151C; border: 1px solid #343D4C; box-shadow: 0 24px 48px rgba(0,0,0,0.45); display: flex; flex-direction: column">
+<div style="padding: 20px 24px; border-bottom: 1px solid #252C38; display: flex; flex-direction: column; gap: 4px"><h2 style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 600">Utilisation d'IA : <span style="font-family: 'JetBrains Mono', monospace">api</span> → <span style="font-family: 'JetBrains Mono', monospace">aif main</span></h2><span style="font-size: 13px; color: #A7B0BF">L'application appelle les modèles par son identité, sans clé.</span></div>
+<div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Identité</span><select style="height: 36px; padding: 0 10px; border-radius: 6px; background: #121720; border: 1px solid #343D4C; color: #E8ECF2; font: inherit; font-size: 13px"><option>id api</option></select></label>
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Niveau</span><x-import component-from-global-scope="Strata.Segmented" options="{{ifsFix1}}" value="Inférence"></x-import></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 12px; font-weight: 500; color: #A7B0BF">Déploiements utilisés</span>
+<sc-for list="{{deps}}" as="d" hint-placeholder-count="2">
+<div style="display: grid; grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1.4fr); gap: 10px; align-items: center; padding: 8px 12px; border-radius: 8px; background: #0E1218; border: 1px solid #1E2430">
+<span style="width: 16px; height: 16px; border-radius: 4px; background: {{d.box}}; border: 1px solid #5BC8DF"></span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">{{d.name}}</span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #A7B0BF">{{d.var}}</span>
+</div>
+</sc-for>
+</div>
+<div style="border-radius: 8px; background: #0E1218; border: 1px solid #1E2430; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; font-size: 13px">
+<span style="font-weight: 500">Ce que la liaison produira</span>
+<span style="color: #A7B0BF">Rôle Cognitive Services OpenAI User pour id api sur aif-shop-main-*</span>
+<span style="color: #A7B0BF">Paramètres AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT_CHAT, AZURE_OPENAI_DEPLOYMENT_EMBEDDINGS</span>
+<span style="color: #A7B0BF">En prd : aif main est privé ; api l'atteint par le spoke orders appairé au hub (zones cognitiveservices, openai, services.ai)</span>
+<span style="color: #7D8797; font-size: 12px">Niveau Agents : rôle Azure AI User sur le projet et AZURE_AI_PROJECT_ENDPOINT à la place.</span>
+</div>
+</div>
+<div style="padding: 16px 24px; border-top: 1px solid #252C38; display: flex; justify-content: flex-end; gap: 8px">
+<x-import component-from-global-scope="Strata.Button" variant="ghost">Annuler</x-import>
+<x-import component-from-global-scope="Strata.Button" variant="primary" icon="plus" href="ResourceLinks.dc.html">Ajouter la liaison</x-import>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { ifsFix1: [{"value": "Inférence", "label": "Inférence"}, {"value": "Agents", "label": "Agents"}],
+      deps: [
+        { name: 'chat', var: 'AZURE_OPENAI_DEPLOYMENT_CHAT', box: '#5BC8DF' },
+        { name: 'embeddings', var: 'AZURE_OPENAI_DEPLOYMENT_EMBEDDINGS', box: '#5BC8DF' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

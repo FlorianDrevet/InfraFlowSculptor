@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Assistant — nommage</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/strata/components/bundle.css">
+<script src="ds/strata/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0E13}
+a{color:#7FD6E8;text-decoration:none}a:hover{color:#A8E5F1}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #0B0E13; color: #E8ECF2; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 14px; line-height: 20px">
+<aside style="flex: 0 1 300px; box-sizing: border-box; padding: 28px 24px; display: flex; flex-direction: column; gap: 24px; background: #0E1218; border-right: 1px solid #222936">
+<a href="Projects.dc.html" style="font-size: 13px">Quitter l'assistant</a>
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #7D8797">Nouveau projet</span><span style="font-weight: 600; font-size: 16px">Boutique en ligne</span></div>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="6"><li><a href="{{s.href}}" aria-current="{{s.current}}" style="{{s.style}}"><span style="{{s.numStyle}}">{{s.n}}</span>{{s.label}}</a></li></sc-for>
+</ol>
+</aside>
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 40px 48px 48px; display: flex; flex-direction: column; gap: 20px; max-width: 1060px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #7D8797">Étape 4 sur 6</span>
+<h1 style="margin: 0; font-size: 28px; line-height: 34px; font-weight: 600">Convention de nommage</h1>
+<p style="margin: 0; color: #A7B0BF">IFS calcule le nom Azure de chaque ressource à partir d'un gabarit, puis l'adapte aux règles du type (pas de tiret pour un registre, minuscules pour un compte de stockage). Il ne tronque jamais.</p>
+</div>
+<fieldset style="margin: 0; padding: 0; border: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<legend style="font-weight: 600; margin-bottom: 10px">Préréglage</legend>
+<sc-for list="{{presets}}" as="p" hint-placeholder-count="3">
+<label style="display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 10px; background: #11151C; border: 1px solid {{p.border}}; cursor: pointer"><span style="display: flex; align-items: center; gap: 8px"><input type="radio" name="preset" checked="{{p.on}}" style="accent-color: #5BC8DF"><span style="font-weight: 600">{{p.name}}</span></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #A7B0BF">{{p.tpl}}</span></label>
+</sc-for>
+</fieldset>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<x-import component-from-global-scope="Strata.TextField" label="Gabarit par défaut" default-value="{abbr}-{project}-{name}-{env}" mono="{{yes}}" hint="Jetons : {project} {component} {name} {abbr} {env} {region}"></x-import>
+<x-import component-from-global-scope="Strata.TextField" label="Gabarit des groupes de ressources" default-value="rg-{project}-{component}-{name}-{env}" mono="{{yes}}"></x-import>
+</div>
+<div style="border-radius: 10px; border: 1px solid #252C38; background: #11151C">
+<div style="display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.8fr) minmax(0, 1.6fr); gap: 12px; padding: 10px 16px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: #7D8797; background: #141922"><span>Exemple</span><span>Résultat en prd</span><span>Ajustement</span></div>
+<sc-for list="{{examples}}" as="x" hint-placeholder-count="5">
+<div style="display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.8fr) minmax(0, 1.6fr); gap: 12px; align-items: center; padding: 10px 16px; border-top: 1px solid #1E2430; font-size: 13px"><span>{{x.label}}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; {{x.style}}">{{x.name}}</span><span style="font-size: 12px; color: #7D8797">{{x.note}}</span></div>
+</sc-for>
+</div>
+<div style="display: flex; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px solid #222936">
+<x-import component-from-global-scope="Strata.Button" variant="ghost" href="WizardEnvironments.dc.html">Retour</x-import>
+<x-import component-from-global-scope="Strata.Button" variant="primary" icon="chevron-right" icon-position="end" href="WizardPublishing.dc.html">Continuer : publication</x-import>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const cur = 4;
+    const labels = [['Identité', 'WizardIdentity.dc.html'], ['Outils', 'WizardTools.dc.html'], ['Environnements', 'WizardEnvironments.dc.html'], ['Nommage', 'WizardNaming.dc.html'], ['Publication', 'WizardPublishing.dc.html'], ['Récapitulatif', 'WizardReview.dc.html']];
+    const steps = labels.map((l, i) => {
+      const n = i + 1, on = n === cur, done = n < cur;
+      return { n: done ? '✓' : String(n), label: l[0], href: l[1], current: on ? 'step' : 'false',
+        style: 'display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: 6px; font-weight: 500; ' + (on ? 'background: #1A2029; color: #E8ECF2;' : done ? 'color: #A7B0BF;' : 'color: #7D8797;'),
+        numStyle: 'display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 999px; font-size: 12px; ' + (on ? 'background: #5BC8DF; color: #062228;' : done ? 'background: rgba(92,192,138,0.12); color: #7ED3A3;' : 'border: 1px solid #343D4C; color: #7D8797;') };
+    });
+    const b = on => on ? '#5BC8DF' : '#252C38';
+    return {
+      yes: true, steps,
+      presets: [
+        { name: 'Compact', tpl: '{abbr}-{project}-{name}-{env}', on: true, border: b(true) },
+        { name: 'CAF', tpl: '{abbr}-{project}-{name}-{env}-{region}', on: false, border: b(false) },
+        { name: 'Personnalisé', tpl: 'Votre gabarit', on: false, border: b(false) }
+      ],
+      examples: [
+        { label: 'Key Vault « main »', name: 'kv-shop-main-prd', note: 'Aucun', style: 'color: #E8ECF2' },
+        { label: 'Container App « api »', name: 'ca-shop-api-prd', note: 'Aucun', style: 'color: #E8ECF2' },
+        { label: 'Registre « main » (cible shared)', name: 'crshopmainshared', note: 'Tirets retirés : alphanumérique seulement', style: 'color: #F0B676' },
+        { label: 'Stockage « orderexports »', name: 'stshoporderexportsprd', note: 'Tirets retirés, minuscules', style: 'color: #F0B676' },
+        { label: 'Stockage « customerdocuments »', name: 'stshopcustomerdocumentsprd', note: '26 caractères pour 24 max : erreur, choisissez un gabarit par type', style: 'color: #F08A80' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
