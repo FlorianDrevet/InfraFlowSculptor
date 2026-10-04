@@ -16,7 +16,7 @@ l'utilisateur peut les inverser avant l'étape qui les applique ; le plan indiqu
 | [DT-05](#dt-05--minimal-api-v1-openapi-intégré--scalar) | Minimal API `/v1`, OpenAPI intégré + Scalar | Décidée |
 | [DT-06](#dt-06--erreurs--erroror--problemjson) | Erreurs : `ErrorOr` → `problem+json` | Décidée |
 | [DT-07](#dt-07--authentification--oidc-entra-en-azure-keycloak-en-local) | Authentification : OIDC, Entra en Azure, Keycloak en local | Décidée |
-| [DT-08](#dt-08--worker--service-net-et-service-bus-pas-azure-functions) | Worker : service .NET + Service Bus, pas Azure Functions | ⚖️ à confirmer avant S-08 |
+| [DT-08](#dt-08--worker--service-net-et-service-bus-pas-azure-functions) | Worker : service .NET + Service Bus, pas Azure Functions | Décidée |
 | [DT-09](#dt-09--fichiers-des-révisions-dans-le-stockage-blob) | Fichiers des révisions dans le stockage blob | Décidée |
 | [DT-10](#dt-10--redis-pour-le-cache-et-les-limites) | Redis pour le cache et les limites | Décidée |
 | [DT-11](#dt-11--e-mail--acs-en-azure-mailpit-en-local) | E-mail : ACS en Azure, MailPit en local | Décidée |
@@ -227,7 +227,7 @@ Keycloak disparaît de l'AppHost et les tests manuels multi-organisations exigen
 
 ### DT-08 — Worker : service .NET et Service Bus, pas Azure Functions
 
-⚖️ **À confirmer avant S-08.**
+Confirmée (2026-10-04).
 
 **À quoi sert le worker.** L'API répond vite (< 300 ms, [EXG-07](../specs/27-exigences-non-fonctionnelles.md)) ; tout
 ce qui est long, externe ou planifié part au worker :

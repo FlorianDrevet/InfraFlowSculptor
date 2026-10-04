@@ -206,7 +206,7 @@ erreurs `problem+json`, sans aucune trace d'authentification locale.
 | | |
 |---|---|
 | **Technique** | [DT-21](../technique/01-decisions.md#dt-21--outillage-de-test), [06](../technique/06-tests-et-qualite.md) |
-| **Dépend de** | S-03 ; ⚖️ DT-21 confirmée |
+| **Dépend de** | S-03 |
 | **Commit** | `test(backend): projets de tests et règles d'architecture` |
 
 🎯 **Objectif.** Chaque couche a son projet de test, et les frontières entre couches sont vérifiées
@@ -341,7 +341,7 @@ nommant la dépendance ; annuler la modification.
 |---|---|
 | **Technique** | [DT-04](../technique/01-decisions.md#dt-04--postgresql-17), [DT-23](../technique/01-decisions.md#dt-23--identifiants-et-concurrence), [DT-24](../technique/01-decisions.md#dt-24--isolation-multi-organisations), [DT-31](../technique/01-decisions.md#dt-31--idempotence-des-commandes), [02 § 4](../technique/02-backend.md#4-persistance) |
 | **Spécifications** | [RG-DON-02](../specs/05-modele-de-donnees.md), [RG-DON-05](../specs/05-modele-de-donnees.md), [DEC-37](../specs/03-decisions.md), [RG-UI-15](../specs/26-interface.md) |
-| **Dépend de** | S-05 ; ⚖️ DT-04 confirmée |
+| **Dépend de** | S-05 |
 | **Commit** | `feat(persistance): contexte EF PostgreSQL, conventions et idempotence` |
 
 🎯 **Objectif.** Toutes les futures tables héritent sans effort de l'isolation par organisation, de la
@@ -414,7 +414,7 @@ migration).
 |---|---|
 | **Technique** | [DT-07](../technique/01-decisions.md#dt-07--authentification--oidc-entra-en-azure-keycloak-en-local), [02 § 5](../technique/02-backend.md#5-authentification-et-autorisation) |
 | **Spécifications** | [RG-ORG-01](../specs/10-organisations-et-acces.md), [RG-ORG-02](../specs/10-organisations-et-acces.md), [UC-ORG-04](../specs/10-organisations-et-acces.md) (adresse vérifiée) |
-| **Dépend de** | S-06 ; ⚖️ DT-07 confirmée |
+| **Dépend de** | S-06 |
 | **Commit** | `feat(auth): authentifier par OIDC et exposer l'utilisateur courant` |
 
 🎯 **Objectif.** L'API accepte les jetons de Keycloak en local et d'Entra en Azure par la même configuration,
@@ -465,7 +465,7 @@ et connaît `(tid, oid)` et l'adresse vérifiée de l'appelant.
 |---|---|
 | **Technique** | [DT-08](../technique/01-decisions.md#dt-08--worker--service-net-et-service-bus-pas-azure-functions), [DT-32](../technique/01-decisions.md#dt-32--files-et-équité) |
 | **Spécifications** | [EXG-23](../specs/27-exigences-non-fonctionnelles.md) |
-| **Dépend de** | S-07 ; ⚖️ DT-08 confirmée |
+| **Dépend de** | S-07 |
 | **Commit** | `feat(worker): relais d'outbox, files à sessions et tâches planifiées` |
 
 🎯 **Objectif.** Un travail mis en file par l'API dans sa transaction est exécuté une fois par le worker, les
