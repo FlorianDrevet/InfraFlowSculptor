@@ -119,7 +119,7 @@ avertissements du template sont tolérés **à cette étape seulement**). `git s
 
 | | |
 |---|---|
-| **Technique** | [DT-02](../technique/01-decisions.md#dt-02--backend--template-cqrs-modernisé-selon-vole-papillon-damour) (E1–E18), [DT-03](../technique/01-decisions.md#dt-03--versions-épinglées), [DT-05](../technique/01-decisions.md#dt-05--minimal-api-v1-openapi-intégré--scalar), [DT-06](../technique/01-decisions.md#dt-06--erreurs--erroror--problemjson), [DT-22](../technique/01-decisions.md#dt-22--mediatr-et-sa-licence), [DT-26](../technique/01-decisions.md#dt-26--temps-et-horloge) |
+| **Technique** | [DT-02](../technique/01-decisions.md#dt-02--backend--template-cqrs-modernisé-selon-vole-papillon-damour) (E1–E18), [DT-03](../technique/01-decisions.md#dt-03--versions-épinglées), [DT-05](../technique/01-decisions.md#dt-05--minimal-api-v1-openapi-intégré--scalar), [DT-06](../technique/01-decisions.md#dt-06--erreurs--erroror--problemjson), [DT-22](../technique/01-decisions.md#dt-22--mediator-à-la-place-de-mediatr), [DT-26](../technique/01-decisions.md#dt-26--temps-et-horloge) |
 | **Dépend de** | S-02 |
 | **Commit** | `refactor(backend): moderniser le squelette selon les évolutions VPD` |
 
