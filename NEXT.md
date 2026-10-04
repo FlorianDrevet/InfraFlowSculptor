@@ -25,12 +25,12 @@ Luna ne commence pas l'étape tant que la colonne « Confirmée » ne vaut pas *
 
 | Décision | Choix proposé | Avant l'étape | Confirmée |
 |---|---|---|---|
-| [DT-22](docs/technique/01-decisions.md#dt-22--mediatr-et-sa-licence) | MediatR 14 avec clé de licence (Community si CA < 5 M$) | S-03 | Non |
-| [DT-21](docs/technique/01-decisions.md#dt-21--outillage-de-test) | AwesomeAssertions au lieu de FluentAssertions 8 (licence) | S-04 | Non |
-| [DT-04](docs/technique/01-decisions.md#dt-04--postgresql-17) | PostgreSQL 17 au lieu de SQL Server | S-06 | Non |
-| [DT-07](docs/technique/01-decisions.md#dt-07--authentification--oidc-entra-en-azure-keycloak-en-local) | OIDC générique : Entra en Azure, Keycloak en local | S-07 | Non |
+| [DT-22](docs/technique/01-decisions.md#dt-22--mediatr-et-sa-licence) | **`Mediator`** (MIT, génération de source) recommandé ; ou MediatR 14 avec clé de licence | S-03 | Non — indiquer le choix |
+| [DT-21](docs/technique/01-decisions.md#dt-21--outillage-de-test) | AwesomeAssertions au lieu de FluentAssertions 8 (licence) | S-04 | Oui (2026-10-04) |
+| [DT-04](docs/technique/01-decisions.md#dt-04--postgresql-17) | PostgreSQL 17 au lieu de SQL Server | S-06 | Oui (2026-10-04) |
+| [DT-07](docs/technique/01-decisions.md#dt-07--authentification--oidc-entra-en-azure-keycloak-en-local) | OIDC générique : Entra en Azure, Keycloak en local ([guide](docs/technique/09-keycloak.md)) | S-07 | Oui (2026-10-04) |
 | [DT-08](docs/technique/01-decisions.md#dt-08--worker--service-net-et-service-bus-pas-azure-functions) | Worker .NET + Service Bus à sessions, pas Azure Functions | S-08 | Non |
-| [DT-30](docs/technique/01-decisions.md#dt-30--thème-clair) | Thème sombre seul tant que Strata n'a pas de thème clair | J3-08 | Non |
+| [DT-30](docs/technique/01-decisions.md#dt-30--thème-sombre-seul-changement-de-thème-prêt) | Thème sombre seul ; sélecteur de thème prêt et caché tant qu'il n'y a qu'un thème | S-10 | Oui (2026-10-04) |
 
 ## Machine
 

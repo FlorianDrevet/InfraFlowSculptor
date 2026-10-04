@@ -161,7 +161,9 @@ Comportements MediatR, dans cet ordre : `LoggingBehavior` → `ValidationBehavio
 - Secrets locaux : `dotnet user-secrets` de l'AppHost (mot de passe PostgreSQL, clé MediatR) ; en Azure,
   références Key Vault des Container Apps.
 - Aucune chaîne de connexion en clair dans `appsettings*.json` : Aspire injecte `ConnectionStrings__*` en
-  local ; identités managées en Azure.
+  local ; en Azure, seulement `Azure__<nom>__Endpoint` et l'identité managée. Tous les clients Azure (PostgreSQL,
+  blob, Service Bus, Redis, Key Vault, ACS) passent par `AzureConnectionResolver`
+  ([DT-33](01-decisions.md#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local)).
 
 ## 7. Ce qui est transverse et doit exister avant la première fonctionnalité
 

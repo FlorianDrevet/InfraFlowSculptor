@@ -32,6 +32,9 @@
 | 3.5 | Scalar en alice, `POST /v1/dev/ping-job` | 202 ; journaux du worker : « PingJob … traité » ; trace reliant api et worker |
 | 3.6 | Réduire la fenêtre à 390 px | Barre latérale remplacée par un bouton menu ; aucun défilement horizontal |
 | 3.7 | Arrêter la ressource `api`, recharger l'application | Page d'erreur avec une référence |
+| 3.8 | Menu utilisateur → « EN », puis recharger | Libellés en anglais immédiatement, conservés après rechargement ; revenir à « FR » |
+| 3.9 | Chercher un sélecteur de thème ; outils de développement sur `<html>` | Aucun sélecteur (un seul thème) ; `data-theme="dark"` |
+| 3.10 | Tableau de bord Aspire → ressource `api` → variables d'environnement | Des `ConnectionStrings__*` vers les émulateurs uniquement (la règle de DT-33 les utilise ; aucune variable `Azure__*` en local) |
 
 ## 4. Design system
 

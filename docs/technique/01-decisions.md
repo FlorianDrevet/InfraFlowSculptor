@@ -12,10 +12,10 @@ l'utilisateur peut les inverser avant l'étape qui les applique ; le plan indiqu
 | [DT-01](#dt-01--monodépôt) | Monodépôt | Décidée |
 | [DT-02](#dt-02--backend--template-cqrs-modernisé-selon-vole-papillon-damour) | Backend : template CQRS modernisé selon Vole-Papillon-Damour | Décidée |
 | [DT-03](#dt-03--versions-épinglées) | Versions épinglées | Décidée |
-| [DT-04](#dt-04--postgresql-17) | PostgreSQL 17 | ⚖️ à confirmer avant S-06 |
+| [DT-04](#dt-04--postgresql-17) | PostgreSQL 17 | Décidée |
 | [DT-05](#dt-05--minimal-api-v1-openapi-intégré--scalar) | Minimal API `/v1`, OpenAPI intégré + Scalar | Décidée |
 | [DT-06](#dt-06--erreurs--erroror--problemjson) | Erreurs : `ErrorOr` → `problem+json` | Décidée |
-| [DT-07](#dt-07--authentification--oidc-entra-en-azure-keycloak-en-local) | Authentification : OIDC, Entra en Azure, Keycloak en local | ⚖️ à confirmer avant S-07 |
+| [DT-07](#dt-07--authentification--oidc-entra-en-azure-keycloak-en-local) | Authentification : OIDC, Entra en Azure, Keycloak en local | Décidée |
 | [DT-08](#dt-08--worker--service-net-et-service-bus-pas-azure-functions) | Worker : service .NET + Service Bus, pas Azure Functions | ⚖️ à confirmer avant S-08 |
 | [DT-09](#dt-09--fichiers-des-révisions-dans-le-stockage-blob) | Fichiers des révisions dans le stockage blob | Décidée |
 | [DT-10](#dt-10--redis-pour-le-cache-et-les-limites) | Redis pour le cache et les limites | Décidée |
@@ -29,8 +29,8 @@ l'utilisateur peut les inverser avant l'étape qui les applique ; le plan indiqu
 | [DT-18](#dt-18--frontend--angular-22-généré-par-ng-template) | Frontend : Angular 22 généré par `ng-template` | Décidée |
 | [DT-19](#dt-19--design-system--strata-reproduit-en-composants-angular) | Design system : Strata reproduit en composants Angular | Décidée |
 | [DT-20](#dt-20--client-http-généré-depuis-openapi) | Client HTTP généré depuis OpenAPI | Décidée |
-| [DT-21](#dt-21--outillage-de-test) | Outillage de test | ⚖️ à confirmer avant S-04 (licence) |
-| [DT-22](#dt-22--mediatr-et-sa-licence) | MediatR et sa licence | ⚖️ à confirmer avant S-03 |
+| [DT-21](#dt-21--outillage-de-test) | Outillage de test | Décidée |
+| [DT-22](#dt-22--mediatr-et-sa-licence) | MediatR et sa licence — `Mediator` recommandé | ⚖️ à confirmer avant S-03 |
 | [DT-23](#dt-23--identifiants-et-concurrence) | Identifiants et concurrence | Décidée |
 | [DT-24](#dt-24--isolation-multi-organisations) | Isolation multi-organisations | Décidée |
 | [DT-25](#dt-25--journal-daudit-en-ajout-seul) | Journal d'audit en ajout seul | Décidée |
@@ -38,9 +38,11 @@ l'utilisateur peut les inverser avant l'étape qui les applique ; le plan indiqu
 | [DT-27](#dt-27--hébergement-dans-azure-france-central) | Hébergement dans Azure France Central | Décidée |
 | [DT-28](#dt-28--langue-du-code-et-de-linterface) | Langue du code et de l'interface | Décidée |
 | [DT-29](#dt-29--projet-pilote-de-référence) | Projet pilote de référence | Décidée |
-| [DT-30](#dt-30--thème-clair) | Thème clair | ⚖️ à confirmer avant J3 |
+| [DT-30](#dt-30--thème-sombre-seul-changement-de-thème-prêt) | Thème sombre seul, changement de thème prêt | Décidée |
 | [DT-31](#dt-31--idempotence-des-commandes) | Idempotence des commandes | Décidée |
 | [DT-32](#dt-32--files-et-équité) | Files et équité | Décidée |
+| [DT-33](#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local) | Identité managée partout ; chaîne de connexion seulement en local | Décidée |
+| [DT-34](#dt-34--langues--français-et-anglais-commutables) | Langues : français et anglais commutables | Décidée |
 
 ---
 
@@ -138,7 +140,7 @@ de la même majeure n'existe, s'arrêter (question pour Claude).
 
 ### DT-04 — PostgreSQL 17
 
-⚖️ **À confirmer avant S-06.** Base relationnelle unique d'IFS : PostgreSQL 17 (Azure Database for
+Confirmée (2026-10-04). Base relationnelle unique d'IFS : PostgreSQL 17 (Azure Database for
 PostgreSQL serveur flexible en Azure, conteneur `postgres:17` par Aspire en local), EF Core + Npgsql,
 conventions de nommage `snake_case` (`EFCore.NamingConventions`).
 
@@ -186,7 +188,7 @@ codes en dur).
 
 ### DT-07 — Authentification : OIDC, Entra en Azure, Keycloak en local
 
-⚖️ **À confirmer avant S-07.**
+Confirmée (2026-10-04). Guide d'utilisation de Keycloak : [09](09-keycloak.md).
 
 - **En Azure** : Entra ID multi-tenant ; les comptes Microsoft personnels
   ([RG-ORG-01](../specs/10-organisations-et-acces.md), [DEC-59](../specs/03-decisions.md)) arrivent au jalon 2
@@ -219,16 +221,40 @@ Keycloak disparaît de l'AppHost et les tests manuels multi-organisations exigen
 
 ### DT-08 — Worker : service .NET et Service Bus, pas Azure Functions
 
-⚖️ **À confirmer avant S-08.** Le worker est un hôte générique .NET (`Microsoft.Extensions.Hosting`) déployé
-en Container App sans ingress. Il consomme Azure Service Bus (émulateur en local) et exécute les tâches
-planifiées avec un bail en base (une seule instance exécute une tâche donnée).
+⚖️ **À confirmer avant S-08.**
 
-**Pourquoi pas Azure Functions, comme VPD** : l'équité par organisation
-([EXG-23](../specs/27-exigences-non-fonctionnelles.md)) repose sur des **sessions** Service Bus servies à tour
-de rôle ([DT-32](#dt-32--files-et-équité)) et sur des budgets par organisation que le worker contrôle
-lui-même ; le contrôle de sortie a besoin des binaires `bicep` et `pwsh` dans l'image ; et VPD a rencontré
-des incidents de résolution du SDK Functions dans Docker et dans Aspire (NEXT.md de VPD, 2026-09-24). Un
-hôte .NET simple supprime ces trois difficultés.
+**À quoi sert le worker.** L'API répond vite (< 300 ms, [EXG-07](../specs/27-exigences-non-fonctionnelles.md)) ; tout
+ce qui est long, externe ou planifié part au worker :
+
+| Travail | Pourquoi pas dans l'API |
+|---|---|
+| Générer une révision (moteur, émetteurs, puis `bicep build/lint/format`, analyse PowerShell) | Jusqu'à 30 s pour 300 ressources ; besoin des binaires `bicep` et `pwsh` |
+| Préparer et écrire une publication (lecture des dépôts, diff, commit, pull request) | Appels Azure DevOps / GitHub lents et faillibles, à réessayer |
+| Lire les pipelines Azure DevOps toutes les 2 à 15 minutes ([RG-SUI-01](../specs/28-suivi-des-deploiements.md)) | Tâche planifiée |
+| E-mails, expirations de jetons, purges (audit 13 mois, révisions 90 jours, projets supprimés 30 jours) | Tâches planifiées ou différées |
+
+**Pourquoi Service Bus « à sessions ».** [EXG-23](../specs/27-exigences-non-fonctionnelles.md) exige que les
+générations et publications passent par des **files par organisation servies équitablement** : une organisation qui
+lance 50 générations ne doit pas retarder celle qui en lance une. Une file Service Bus à sessions le fait sans code
+maison : chaque message porte l'identifiant de son organisation comme identifiant de session ; les messages d'une même
+session sont traités dans l'ordre et un à la fois ; le processeur passe d'une session à l'autre, donc d'une organisation
+à l'autre ([DT-32](#dt-32--files-et-équité)). L'API écrit le travail dans sa propre transaction (outbox) : il n'est
+jamais perdu, ni envoyé pour une commande annulée.
+
+**Pourquoi pas Azure Functions** (que VPD utilise) :
+1. **Équité** : les déclencheurs Service Bus de Functions lisent des sessions, mais le contrôle fin (sessions
+   simultanées, budgets par organisation, report d'un message quand une organisation dépasse son budget) est plus simple
+   et plus testable dans un hôte .NET qui tient lui-même son `ServiceBusSessionProcessor`.
+2. **Outils dans l'image** : le contrôle de sortie exige la CLI Bicep, PowerShell et PSScriptAnalyzer. Une Container App
+   avec notre propre image les embarque naturellement ; Functions impose son image de base.
+3. **Expérience VPD** : le NEXT.md de VPD (2026-09-24) décrit des incidents de résolution de `Azure.Functions.Sdk` dans
+   Docker et dans Aspire, et l'exécution locale exige Azure Functions Core Tools. Un hôte .NET démarre dans Aspire comme
+   l'API, sans outil de plus, se débogue pareil et se teste avec `Aspire.Hosting.Testing`.
+4. **Exploitation** : même environnement Container Apps que l'API, même identité managée, même télémétrie, mise à
+   l'échelle sur la longueur des files (règle KEDA Service Bus des Container Apps).
+
+**Ce qu'on perd** : la facturation à l'exécution de Functions. Le suivi planifié impose de toute façon un worker
+toujours actif : le gain serait nul.
 
 ### DT-09 — Fichiers des révisions dans le stockage blob
 
@@ -366,7 +392,7 @@ avec `httpResource`/signaux. Si `ng-openapi-gen` ne supporte pas Angular 22 à l
 
 ### DT-21 — Outillage de test
 
-⚖️ **À confirmer avant S-04 (licence).**
+Confirmée (2026-10-04).
 
 | Besoin | Outil |
 |---|---|
@@ -385,12 +411,22 @@ avec `httpResource`/signaux. Si `ng-openapi-gen` ne supporte pas Angular 22 à l
 ### DT-22 — MediatR et sa licence
 
 ⚖️ **À confirmer avant S-03.** MediatR (template et VPD) est sous licence commerciale depuis la v13 : gratuit
-(« Community ») pour une entreprise dont le chiffre d'affaires est inférieur à 5 M$, avec une clé de licence
-à demander ; payant au-delà. IFS garde MediatR `14.1.0` et lit la clé dans la configuration
-`MediatR:LicenseKey` (secret utilisateur en local, Key Vault en Azure). Sans clé, MediatR journalise un
-avertissement mais fonctionne. **Alternative** si l'utilisateur la préfère : `Mediator` (génération de
-source, MIT), API très proche ; le remplacement touche uniquement `Application/DependencyInjection.cs`, les
-signatures de gestionnaires (`ValueTask`) et les comportements.
+(« Community ») pour une entreprise dont le chiffre d'affaires est inférieur à 5 M$, avec une clé de licence à
+demander ; payant au-delà. Les alternatives :
+
+| Option | Licence | Changement par rapport au template | Avis |
+|---|---|---|---|
+| **`Mediator`** (martinothamar/Mediator, génération de source) | MIT | Mêmes notions (`IRequest<T>`, `IRequestHandler<,>`, `IPipelineBehavior<,>`, `IMediator.Send`) ; gestionnaires en `ValueTask` ; enregistrement par `services.AddMediator(...)` ; aucune réflexion à l'exécution, plus rapide, erreurs de câblage détectées **à la compilation** | **Recommandée** |
+| MediatR 14 avec clé de licence | Commerciale (Community gratuite sous 5 M$) | Aucun | Possible ; dépendance à une licence renouvelable |
+| Wolverine | MIT | Autre modèle (messages, conventions, bus intégré) ; réécrit les tranches | Trop éloigné du template |
+| Médiateur écrit à la main | — | ~150 lignes à maintenir | Inutile quand `Mediator` existe |
+
+**Choix proposé : `Mediator`** (dernière `3.x`) : `Mediator.Abstractions` dans Application, `Mediator.SourceGenerator`
+dans les projets hôtes (Api, Worker). Adaptations de la tranche du template : `Task<ErrorOr<T>>` →
+`ValueTask<ErrorOr<T>>` ; `IPipelineBehavior<TMessage, TResponse>.Handle(TMessage message,
+MessageHandlerDelegate<TMessage, TResponse> next, CancellationToken ct)` avec `next(message, ct)`. Le reste (validation,
+autorisation, unité de travail, `ErrorOr`) est identique. L'étape S-03 donne les deux variantes ; celle de la décision
+confirmée s'applique.
 
 ### DT-23 — Identifiants et concurrence
 
@@ -454,12 +490,26 @@ référence ([90](../specs/90-projet-de-reference.md)), avec la base dans son pr
 [P9](../specs/04-perimetre-et-lots.md), et une liaison d'accès vers Log Analytics pour démontrer la
 révocation ([P2](../specs/04-perimetre-et-lots.md)) sans type hors du catalogue du pilote.
 
-### DT-30 — Thème clair
+### DT-30 — Thème sombre seul, changement de thème prêt
 
-⚖️ **À confirmer avant J3.** Strata n'a qu'un thème sombre ; [RG-UI-07](../specs/26-interface.md) demande
-clair, sombre et système. Jusqu'à ce que Strata publie son thème clair (mêmes noms de tokens, second jeu de
-valeurs), l'interface est sombre et la préférence de thème n'est **pas affichée** ([P9](../specs/01-principes.md)).
-Les composants n'utilisent que des variables `--ifs-*` : le thème clair s'ajoutera sans toucher aux écrans.
+Confirmée (2026-10-04). Strata n'a qu'un thème sombre ; [RG-UI-07](../specs/26-interface.md) demande clair, sombre et
+système. L'interface est sombre, **mais tout ce qu'il faut pour ajouter le thème clair existe dès le socle** :
+
+1. **Tokens par thème** : `scripts/build-tokens.mjs` lit `color.themes` de `tokens.json` et produit un bloc par thème —
+   `:root, :root[data-theme="dark"] { … }` pour le thème par défaut, `:root[data-theme="light"] { … }` dès que
+   `tokens.json` porte les valeurs claires (même nom de token, une valeur par thème :
+   `"values": { "dark": "#0b0e13", "light": "#ffffff" }`). Les composants n'utilisent que `--ifs-*` : aucun écran ne
+   change quand le thème clair arrive.
+2. **`ThemeService`** (`core/theme/theme.service.ts`) : signal `preference` (`system` | `dark` | `light`), signal
+   `effective` calculé (préférence, sinon `prefers-color-scheme`), écrit `data-theme` et `color-scheme` sur `<html>`,
+   suit les changements du système, persiste localement puis côté serveur (préférence du profil, J0-32), expose
+   `availableThemes` lu dans `themes.generated.ts` (produit par `build-tokens.mjs`).
+3. **`app-theme-switch`** (`shell/theme-switch/`) : `app-ds-segmented` « Système / Sombre / Clair » dans le menu
+   utilisateur de la barre latérale et dans le Profil. **Affiché seulement si `availableThemes.length > 1`**
+   ([P9](../specs/01-principes.md)) : caché aujourd'hui, il apparaît sans code nouveau quand Strata publie le clair.
+   Testé dès S-13 avec un jeu de tokens de test à deux thèmes.
+4. **Ajouter le thème clair** = réexporter Strata (skill `exporter-design`), `npm run tokens`, vérifier les captures en
+   clair. Rien d'autre (étape J3-08, ou plus tôt si Strata est prêt).
 
 ### DT-31 — Idempotence des commandes
 
@@ -480,3 +530,64 @@ d'opération ([RG-PUB-20](../specs/24-depots-et-publication.md)).
 - Budgets par organisation (générations par heure…) : table `organization_budgets`, contrôlés avant la mise
   en file ; un dépassement ralentit (message différé) et prévient, sans toucher aux autres organisations.
 - La position dans la file est exposée par l'API (`queuePosition`) pour l'écran.
+
+### DT-33 — Identité managée partout ; chaîne de connexion seulement en local
+
+Décidée (2026-10-04, demande de l'utilisateur). **En Azure, IFS ne détient aucune clé ni aucun mot de passe pour ses
+propres services** : chaque connexion passe par l'identité managée du processus (une identité affectée par Container
+App, exposée par `AZURE_CLIENT_ID`). En local, Aspire fournit des chaînes de connexion vers les émulateurs, qui ne
+connaissent pas Entra.
+
+**Règle unique de résolution** — `Infrastructure/Azure/AzureConnectionResolver.cs`, utilisée par **toutes** les
+inscriptions de clients (aucun client Azure n'est construit autrement : test d'architecture) :
+
+1. si `ConnectionStrings:<nom>` existe et n'est pas vide → on l'utilise **telle quelle** (local : Azurite, émulateur
+   Service Bus, PostgreSQL et Redis en conteneur, MailPit) ;
+2. sinon on lit `Azure:<nom>:Endpoint` (URL du service, ou hôte pour PostgreSQL et Redis) et on s'authentifie par
+   **identité managée** : `ManagedIdentityCredential(AZURE_CLIENT_ID)` quand le processus tourne dans Azure (variable
+   `IDENTITY_ENDPOINT` présente), sinon `DefaultAzureCredential` sans les modes interactifs (développeur connecté par
+   `az login` qui vise un vrai service Azure depuis son poste) ;
+3. ni l'un ni l'autre → échec **au démarrage**, message citant la ressource et les deux clés attendues.
+
+Le résolveur renvoie `AzureConnection { Name, Mode (ConnectionString | ManagedIdentity), ConnectionString?, Endpoint?,
+Credential? }` ; chaque fabrique de client choisit son constructeur selon `Mode`. Le `TokenCredential` est un
+singleton (`IfsAzureCredential`) partagé par tous les clients.
+
+| Service | Nom | Local (chaîne de connexion) | Azure (point de terminaison + identité managée) | Réglage de la ressource Azure (J0-31) |
+|---|---|---|---|---|
+| PostgreSQL | `ifs` | Conteneur `postgres`, mot de passe Aspire | `Azure:ifs:Endpoint` = hôte, `Azure:ifs:Database`, `Azure:ifs:Username` = nom de l'identité ; mot de passe = jeton Entra (`https://ossrdbms-aad.database.windows.net/.default`) renouvelé par `NpgsqlDataSourceBuilder.UsePeriodicPasswordProvider` | Authentification **Entra seule** ; identités déclarées comme rôles PostgreSQL |
+| Stockage blob | `blobs` | Azurite | `BlobServiceClient(Uri, credential)` | Clé partagée **désactivée** |
+| Service Bus | `servicebus` | Émulateur | `ServiceBusClient(espace de noms, credential)` | `disableLocalAuth = true` |
+| Redis | `redis` | Conteneur | `Microsoft.Azure.StackExchangeRedis` : `ConfigureForAzureWithUserAssignedManagedIdentityAsync` | Entra seule, clés d'accès désactivées |
+| Key Vault | `keyvault` | Émulateur, ou `DevelopmentSecretStore` ([DT-12](#dt-12--secrets-propres-à-ifs--key-vault)) | `SecretClient(Uri, credential)` | RBAC ; Key Vault Secrets Officer pour le worker seulement |
+| E-mail (ACS) | `email` | MailPit (SMTP) | `EmailClient(Uri, credential)` | Accès par clé non utilisé ; rôle d'envoi attribué à l'identité du worker |
+| Application Insights | — | Tableau de bord Aspire (OTLP) | Exportateur Azure Monitor avec `Credential` | `DisableLocalAuth = true` (ingestion par Entra) |
+| Registre de conteneurs | — | — | Tirage des images par l'identité (`AcrPull`) | Utilisateur admin désactivé |
+| Azure DevOps (publication, suivi) | — | Gitea / WireMock | Jeton Entra de l'application « IFS Git » obtenu par **fédération depuis l'identité managée** du worker, sans secret client | Informations d'identification fédérées sur l'inscription |
+| Validation des jetons utilisateurs | — | Keycloak | Clés publiques OIDC d'Entra | — |
+
+**Exceptions assumées** (secrets qui ne viennent pas d'IFS) : jetons git **de repli** fournis par les clients
+([DEC-23](../specs/03-decisions.md)) et clé privée de l'application GitHub (jalon 1), stockés dans Key Vault et lus par
+identité managée ; clé de licence MediatR si [DT-22](#dt-22--mediatr-et-sa-licence) retient MediatR.
+
+**Vérifications** : `AzureConnectionResolverTests` (chaîne présente → mode chaîne ; absente + point de terminaison →
+identité managée ; chaîne vide = absente ; aucune → erreur explicite) ; test d'architecture (aucun `new
+BlobServiceClient(`, `new ServiceBusClient(`, `new SecretClient(`, `new EmailClient(` hors de
+`Infrastructure/Azure/`) ; recette J0-31 : aucune clé ni mot de passe dans les paramètres des Container Apps,
+`allowSharedKeyAccess: false`, `disableLocalAuth: true`, PostgreSQL en Entra seul.
+
+### DT-34 — Langues : français et anglais commutables
+
+Décidée (2026-10-04). Transloco (option `i18n` du template), `fr` par défaut, `en` complet ([EXG-13](../specs/27-exigences-non-fonctionnelles.md),
+[RG-UI-08](../specs/26-interface.md)).
+
+- `LanguageService` (`core/i18n/language.service.ts`) : langue active = préférence du profil (serveur, à partir de J0-01),
+  sinon choix local mémorisé, sinon langue du navigateur si `fr` ou `en`, sinon `fr` ; met à jour `<html lang>`,
+  `TranslocoService.setActiveLang`, et les formats de dates et de nombres (données de locale `fr` et `en` enregistrées,
+  formatage par `Intl` avec la langue active — pas de `LOCALE_ID` figé).
+- `app-language-switch` (`shell/language-switch/`) : `app-ds-segmented` « FR / EN » dans le menu utilisateur de la barre
+  latérale (dès S-13) et dans le Profil ([Profile](../design/maquette-v1/preview/Profile.html), J0-32) ; changement
+  **immédiat**, sans rechargement.
+- L'intercepteur envoie `Accept-Language` ; l'API rend ses messages (constats, `problem+json`) dans cette langue ; les
+  codes de règles ne sont jamais traduits.
+- CI : `npm run i18n:check` — toute clé de `fr.json` existe dans `en.json` et inversement, aucune clé inutilisée.

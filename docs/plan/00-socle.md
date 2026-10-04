@@ -145,10 +145,17 @@ erreurs `problem+json`, sans aucune trace d'authentification locale.
    J0-22).
 5. `Domain/Common/Models/` : garder `Entity`, `AggregateRoot`, `ValueObject` ; ajouter `EnumValueObject<TEnum>`
    recopié de VPD (évolution E13) ; ajouter `IHasVersion` (`int Version { get; }`).
-6. `Application/DependencyInjection.cs` : MediatR 14 depuis l'assembly Application avec
-   `cfg.LicenseKey = configuration["MediatR:LicenseKey"]`, comportements `LoggingBehavior` (nouveau : journalise
-   le nom de la requête et la durée, jamais le contenu) puis `ValidationBehavior` (template) ; validateurs
-   FluentValidation par `AddValidatorsFromAssembly`.
+6. `Application/DependencyInjection.cs`, selon [DT-22](../technique/01-decisions.md#dt-22--mediatr-et-sa-licence)
+   confirmée dans `NEXT.md` :
+   - **`Mediator` (recommandé)** : retirer `MediatR` de `Directory.Packages.props`, ajouter `Mediator.Abstractions`
+     (Application) et `Mediator.SourceGenerator` (Api, puis Worker à S-08) en dernière `3.x` ;
+     `services.AddMediator(o => { o.ServiceLifetime = ServiceLifetime.Scoped; o.PipelineBehaviors = [typeof(LoggingBehavior<,>), typeof(ValidationBehavior<,>)]; })`
+     dans le projet Api ; gestionnaires et comportements en `ValueTask<…>` ; adapter `ValidationBehavior` du template à
+     la signature `Handle(TMessage message, MessageHandlerDelegate<TMessage, TResponse> next, CancellationToken ct)` ;
+   - **MediatR 14** : `cfg.LicenseKey = configuration["MediatR:LicenseKey"]`, mêmes comportements.
+   Dans les deux cas : `LoggingBehavior` (nouveau : journalise le nom de la requête et la durée, jamais le contenu) puis
+   `ValidationBehavior` (template) ; validateurs FluentValidation par `AddValidatorsFromAssembly`. Les extraits de code
+   du plan écrits avec `IMediator.Send` et `Task` valent pour les deux ; avec `Mediator`, `Task` devient `ValueTask`.
 7. `Api/Errors/` : remplacer `ErrorOrStatusCode.cs` par `ProblemDetailsMapper.cs` (extension
    `ToProblem(this List<Error>)`) qui applique le tableau de [DT-06](../technique/01-decisions.md#dt-06--erreurs--erroror--problemjson)
    à partir de `ErrorType` et de `Error.Metadata` (clés constantes dans `Api/Errors/ProblemMetadataKeys.cs` :
@@ -230,7 +237,7 @@ nommant la dépendance ; annuler la modification.
 
 | | |
 |---|---|
-| **Technique** | [05](../technique/05-execution-locale.md), [DT-07](../technique/01-decisions.md#dt-07--authentification--oidc-entra-en-azure-keycloak-en-local), [DT-12](../technique/01-decisions.md#dt-12--secrets-propres-à-ifs--key-vault), [DT-13](../technique/01-decisions.md#dt-13--fournisseurs-git-derrière-un-port-unique--gitea-comme-émulateur) |
+| **Technique** | [05](../technique/05-execution-locale.md), [DT-33](../technique/01-decisions.md#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local), [09 — Keycloak](../technique/09-keycloak.md), [DT-07](../technique/01-decisions.md#dt-07--authentification--oidc-entra-en-azure-keycloak-en-local), [DT-12](../technique/01-decisions.md#dt-12--secrets-propres-à-ifs--key-vault), [DT-13](../technique/01-decisions.md#dt-13--fournisseurs-git-derrière-un-port-unique--gitea-comme-émulateur) |
 | **Dépend de** | S-04 |
 | **Commit** | `feat(local): orchestrer l'API et les émulateurs avec Aspire` |
 
@@ -275,9 +282,18 @@ nommant la dépendance ; annuler la modification.
    sept utilisateurs de [technique 05 § 3](../technique/05-execution-locale.md#3-utilisateurs-de-démonstration-royaume-keycloak-ifs)
    avec leurs attributs (`oid` = GUID fixe par utilisateur, écrit dans le tableau de `05-execution-locale.md`
    par Luna dans la même étape), `email_verified` (faux pour nina), rôles internes pour ops.
-6. Client de l'API : `builder.AddNpgsqlDbContext` arrive en S-06 ; à cette étape l'API référence seulement
-   les clients Aspire `Aspire.Azure.Storage.Blobs`, `Aspire.Azure.Messaging.ServiceBus`,
-   `Aspire.StackExchange.Redis` et enregistre des contrôles de santé (`/health`).
+6. **Résolution des connexions** ([DT-33](../technique/01-decisions.md#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local)): créer `Infrastructure/Azure/AzureConnectionResolver.cs`,
+   `AzureConnection.cs`, `AzureConnectionMode.cs`, `IfsAzureCredential.cs` (singleton : `ManagedIdentityCredential`
+   avec `AZURE_CLIENT_ID` si `IDENTITY_ENDPOINT` existe, sinon `DefaultAzureCredential` sans modes interactifs) et des
+   extensions `AddIfsBlobServiceClient("blobs")`, `AddIfsServiceBusClient("servicebus")`, `AddIfsRedis("redis")`
+   (paquets `Azure.Storage.Blobs`, `Azure.Messaging.ServiceBus`, `StackExchange.Redis`,
+   `Microsoft.Azure.StackExchangeRedis`) qui appliquent la règle de DT-33 : `ConnectionStrings:<nom>` si présente
+   (émulateurs Aspire), sinon `Azure:<nom>:Endpoint` + identité managée, sinon erreur au démarrage. Les clients
+   « Aspire.* » ne sont **pas** utilisés pour construire ces clients (ils n'appliquent pas cette règle) ; la télémétrie
+   et la santé sont ajoutées à la main (`AddAzureClientsCore`, contrôles de santé `AspNetCore.HealthChecks.*`).
+   Tests `Infrastructure.Tests/Azure/AzureConnectionResolverTests.cs` (les quatre cas de DT-33) et règle
+   d'architecture « aucun `new BlobServiceClient(` / `new ServiceBusClient(` / `ConnectionMultiplexer.Connect` hors
+   de `Infrastructure/Azure/` ». L'API enregistre ces clients et les contrôles de santé (`/health`).
 7. `tools/dev/gitea-init.ps1` : attend que `http://localhost:3000/api/healthz` réponde ; crée par
    `docker exec <conteneur gitea> gitea admin user create --admin --username ifs-dev --password <param>
    --email ifs-dev@contoso.example --must-change-password=false` (ignore « already exists ») ; crée par l'API
@@ -323,8 +339,15 @@ nommant la dépendance ; annuler la modification.
 concurrence optimiste, des identifiants v7 et de l'idempotence des commandes.
 
 🔧 **À faire.**
-1. Paquets Infrastructure : `Aspire.Npgsql.EntityFrameworkCore.PostgreSQL`, `EFCore.NamingConventions`,
-   `Microsoft.EntityFrameworkCore.Design`. Tests : `Testcontainers.PostgreSql`.
+1. Paquets Infrastructure : `Npgsql.EntityFrameworkCore.PostgreSQL`, `Aspire.Npgsql.EntityFrameworkCore.PostgreSQL`
+   (seulement pour `EnrichNpgsqlDbContext` : santé, traces, métriques), `EFCore.NamingConventions`,
+   `Microsoft.EntityFrameworkCore.Design`. Tests : `Testcontainers.PostgreSql`. Extension `AddIfsDbContext("ifs")` qui
+   suit [DT-33](../technique/01-decisions.md#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local): chaîne `ConnectionStrings:ifs` si présente (conteneur Aspire) ; sinon `NpgsqlDataSourceBuilder` sur
+   `Azure:ifs:Endpoint`, `Azure:ifs:Database`, `Azure:ifs:Username`, SSL requis, et
+   `UsePeriodicPasswordProvider` qui demande un jeton Entra (`https://ossrdbms-aad.database.windows.net/.default`) à
+   `IfsAzureCredential` toutes les 50 minutes ; puis `builder.EnrichNpgsqlDbContext<IfsDbContext>()`. Test : avec
+   seulement `Azure:ifs:*`, la source de données est construite sans mot de passe et appelle le fournisseur de jeton
+   (faux `TokenCredential`).
 2. `Domain/Common/Identifiers/StronglyTypedId.cs` : interface marqueur `IStronglyTypedId { Guid Value { get; } }` ;
    les identifiants sont des `readonly record struct XxxId(Guid Value) : IStronglyTypedId` avec
    `static XxxId New(TimeProvider clock)` (Guid v7).
@@ -435,8 +458,8 @@ plusieurs réplicas.
 
 🔧 **À faire.**
 1. `dotnet new worker -n InfraFlowSculptor.Worker -o src/backend/InfraFlowSculptor.Worker` ; références :
-   Application, Infrastructure, ServiceDefaults ; `builder.AddServiceDefaults()` ; clients Aspire
-   (`AddNpgsqlDbContext` partagé via une extension d'Infrastructure, `AddAzureServiceBusClient`).
+   Application, Infrastructure, ServiceDefaults ; `builder.AddServiceDefaults()` ; `AddIfsDbContext("ifs")` et
+   `AddIfsServiceBusClient("servicebus")` (règle de [DT-33](../technique/01-decisions.md#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local), jamais un client construit autrement).
 2. `Application/Common/Jobs/` : `JobQueue` (enum : `Generation`, `Publication`, `Tracking`, `Notifications`,
    noms de files en constantes), `IJob` (marqueur), `JobEnvelope (JobId, OrganizationId, Type, Payload,
    TraceParent)`, `IJobDispatcher.Enqueue<TJob>(JobQueue, OrganizationId, TJob)` qui écrit dans
@@ -507,7 +530,10 @@ appelle `/v1/me`.
    Portée Keycloak : `openid profile email offline_access`.
 6. Page d'accueil provisoire `features/home/` : « Bonjour {{ displayName }} » depuis `GET /v1/me` (client écrit
    à la main ici, remplacé par le client généré en S-14).
-7. Transloco : langue par défaut `fr`, disponibles `fr`, `en` ; textes de l'accueil dans `public/i18n/*.json`.
+7. Transloco ([DT-34](../technique/01-decisions.md#dt-34--langues--français-et-anglais-commutables)) : langue par défaut `fr`, disponibles `fr`, `en` ; textes de l'accueil dans
+   `public/i18n/fr.json` et `en.json` ; `core/i18n/language.service.ts` (ordre : choix local mémorisé, langue du
+   navigateur si `fr` ou `en`, sinon `fr` — la préférence serveur s'ajoute en J0-01) qui met à jour `<html lang>` ;
+   script `npm run i18n:check` (clés identiques dans les deux fichiers, aucune clé inutilisée) ajouté à `lint`.
 8. AppHost : `AddJavaScriptApp(web, "../../frontend/ifs-web").WithRunScript("start").WithArgs("--", "--port",
    "4200").WithHttpEndpoint(port: 4200, targetPort: 4200, name: "http", isProxied: false)` (forme de VPD),
    variables `IFS_API_URL` = point de terminaison https de `api`, `IFS_OIDC_*` (Keycloak, client `ifs-web`),
@@ -543,6 +569,10 @@ appelle `/v1/me`.
      28px… d'après `type.groups`) ;
    - `src/styles/theme.css` : bloc Tailwind v4 `@theme { --color-<nom>: var(--ifs-<nom>); --spacing-<n>…;
      --radius-<nom>…; --font-sans…; }` ;
+   - **un bloc par thème** ([DT-30](../technique/01-decisions.md#dt-30--thème-sombre-seul-changement-de-thème-prêt)) : thème par défaut sous `:root, :root[data-theme="<défaut>"]`, chaque autre thème
+     de `color.themes` sous `:root[data-theme="<id>"]` (valeurs prises dans `values.<id>` d'un token, sinon `value`) ;
+   - `src/app/core/theme/themes.generated.ts` : `export const AVAILABLE_THEMES = ['dark'] as const; export const
+     DEFAULT_THEME = 'dark';` (liste lue dans `color.themes`) ;
    - en-tête « Généré depuis docs/design/strata/tokens.json — ne pas modifier ».
    Option `--check` : régénère en mémoire et sort en code 1 si les fichiers diffèrent. Scripts npm `tokens`,
    `tokens:check`.
@@ -556,7 +586,8 @@ appelle `/v1/me`.
    — utiliser `isDevMode()`), page « Fondations » : nuancier de toutes les couleurs (nom, valeur, usage),
    échelle typographique, espacements, rayons.
 6. Tests Vitest `scripts/build-tokens.spec.mjs` : sur un `tokens.json` réduit, le CSS produit est exactement
-   celui attendu ; `--check` détecte une différence.
+   celui attendu ; un `tokens.json` de test à **deux thèmes** produit deux blocs et
+   `AVAILABLE_THEMES = ['dark', 'light']` ; `--check` détecte une différence.
 
 ✅ **Vérification automatique.** `npm run tokens:check`, `npm run lint`, `npm test`, `npm run build`.
 
@@ -671,6 +702,15 @@ la galerie (page « Composants ») reproduisant **les mêmes exemples** que `com
    (`crypto.randomUUID()` par commande, conservé pour les réessais), conversion `problem+json` → `ApiError
    { status, code, message, fieldErrors, traceId }`.
 4. Pages `not-found` (template) et `error` (`ApiError` 500 : « Une erreur s'est produite. Référence : <traceId> »).
+4 bis. **Thème** ([DT-30](../technique/01-decisions.md#dt-30--thème-sombre-seul-changement-de-thème-prêt)) : `core/theme/theme.service.ts` (préférence `system|dark|light`, thème effectif, attributs
+   `data-theme` et `color-scheme` sur `<html>`, suivi de `prefers-color-scheme`, mémorisation locale) appliqué au
+   démarrage avant le premier rendu (`provideAppInitializer`) ; `shell/theme-switch/` (`app-ds-segmented` « Système /
+   Sombre / Clair ») **rendu seulement si `AVAILABLE_THEMES.length > 1`** — donc absent aujourd'hui. Tests Vitest :
+   avec un seul thème, le contrôle n'est pas dans le DOM ; avec deux thèmes simulés, il apparaît, et choisir « Clair »
+   pose `data-theme="light"`.
+4 ter. **Langue** ([DT-34](../technique/01-decisions.md#dt-34--langues--français-et-anglais-commutables)) : `shell/language-switch/` (`app-ds-segmented` « FR / EN ») dans le menu utilisateur en
+   bas de la barre latérale (forme de `Sidebar.html`) ; changement immédiat via `LanguageService`, sans rechargement ;
+   intercepteur `Accept-Language`. Test Vitest : basculer sur EN change un libellé de la coquille et `<html lang>`.
 5. Playwright : `npm i -D @playwright/test @axe-core/playwright`, `playwright.config.ts` (projets `desktop`
    1440×900 et `mobile` 390×844, `baseURL` `http://localhost:4200`), `e2e/support/login.ts` (remplit le
    formulaire Keycloak), `e2e/shell.spec.ts` : connexion en alice → coquille visible ; à 390 px aucun défilement
@@ -685,6 +725,9 @@ la galerie (page « Composants ») reproduisant **les mêmes exemples** que `com
 2. Se connecter (chloe) → coquille : logo, barre latérale vide sauf « Accueil », fil d'Ariane.
 3. Réduire à 390 px → la barre latérale disparaît, un bouton menu l'ouvre ; aucun défilement horizontal.
 4. Arrêter la ressource `api` dans le tableau de bord, recharger → page d'erreur avec une référence.
+5. Menu utilisateur → « EN » → les libellés de la coquille passent en anglais immédiatement ; recharger → l'anglais
+   est conservé ; revenir à « FR ».
+6. Aucun choix de thème n'est visible (un seul thème existe) ; outils de développement → `<html data-theme="dark">`.
 
 🧠 **Mémoire.** `04-frontend.md` (coquille, registre de navigation, intercepteurs, e2e).
 

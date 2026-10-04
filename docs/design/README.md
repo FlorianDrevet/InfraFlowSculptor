@@ -52,7 +52,7 @@ strata/
 | Défaut | Effet | Traitement |
 |---|---|---|
 | ~~11 écrans passaient `options="a,b,c"` (`Segmented`) ou `items="a,b,c"` (`Tabs`) en chaîne au lieu d'un tableau~~ | L'artboard ne se rendait pas (`options.map is not a function`) | **Corrigé dans le canvas le 2026-10-04** (version 28) : valeurs déplacées dans `renderVals()`. Le correctif de rendu de `tools/design/export_design.py` reste en filet de sécurité |
-| Strata est sombre uniquement | Pas de thème clair ([RG-UI-07](../specs/26-interface.md)) | [DT-30](../technique/01-decisions.md#dt-30--thème-clair) |
+| Strata est sombre uniquement | Pas de thème clair ([RG-UI-07](../specs/26-interface.md)) | [DT-30](../technique/01-decisions.md#dt-30--thème-sombre-seul-changement-de-thème-prêt) |
 
 ## Mettre à jour l'export
 

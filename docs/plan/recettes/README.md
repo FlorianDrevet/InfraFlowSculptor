@@ -22,6 +22,6 @@ bout ; elle est exigée à chaque verrou 🔒 avant l'approbation de Claude.
 
 ## Utilisateurs de démonstration
 
-Voir [technique 05 § 3](../../technique/05-execution-locale.md#3-utilisateurs-de-démonstration-royaume-keycloak-ifs). Mot de
+Guide de Keycloak : [technique 09](../../technique/09-keycloak.md). Voir [technique 05 § 3](../../technique/05-execution-locale.md#3-utilisateurs-de-démonstration-royaume-keycloak-ifs). Mot de
 passe commun en local : `Ifs-Demo-2026!`. Utiliser une fenêtre de navigation privée par utilisateur pour en tenir
 plusieurs à la fois.

@@ -109,12 +109,14 @@ l'ancien dépôt `infra-pipeline-editor`, dossier de transmission et de sortie.
 
 | | |
 |---|---|
-| **Spécifications** | [EXG-03](../specs/27-exigences-non-fonctionnelles.md) (test d'intrusion), [EXG-12](../specs/27-exigences-non-fonctionnelles.md), [EXG-13](../specs/27-exigences-non-fonctionnelles.md), [DT-30](../technique/01-decisions.md#dt-30--thème-clair) |
+| **Spécifications** | [EXG-03](../specs/27-exigences-non-fonctionnelles.md) (test d'intrusion), [EXG-12](../specs/27-exigences-non-fonctionnelles.md), [EXG-13](../specs/27-exigences-non-fonctionnelles.md), [DT-30](../technique/01-decisions.md#dt-30--thème-sombre-seul-changement-de-thème-prêt) |
 | **Commit** | `chore(produit): préparation de l'ouverture` |
 
 🎯 **Objectif.** Tout ce qui conditionne la vente : sécurité auditée, accessibilité, langues, thème, licences d'icônes.
 🔧 **À faire.** Corrections du test d'intrusion externe, audit WCAG 2.2 AA complet, thème clair si Strata le publie,
-validation juridique des icônes Azure (note de licence Strata), environnement `prod`.
+validation juridique des icônes Azure (note de licence Strata), environnement `prod`. Thème clair : si Strata le
+publie, il s'ajoute **sans toucher aux écrans** ([DT-30](../technique/01-decisions.md#dt-30--thème-sombre-seul-changement-de-thème-prêt)) —
+réexport, `npm run tokens`, le sélecteur de thème apparaît seul ; vérification des contrastes et des captures en clair.
 ✅ **Vérification automatique.** `axe` sur tous les écrans ; aucune clé de traduction manquante.
 🧪 **Test manuel.** Parcours P-01 complet au lecteur d'écran (NVDA).
 

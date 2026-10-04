@@ -68,7 +68,9 @@ src/frontend/ifs-web/
 6. **Petit écran** ([RG-UI-16](../specs/26-interface.md)) : sous 760 px la barre latérale disparaît
    (menu), les grilles passent à une colonne, les tableaux défilent dans leur boîte ; aucun défilement
    horizontal de la page.
-7. **Saisie préservée** ([RG-UI-15](../specs/26-interface.md)) : brouillon local des formulaires non sensibles,
+7. **Thème et langue** : uniquement via `ThemeService` / `LanguageService` ; aucun composant ne lit
+   `prefers-color-scheme` ni la langue lui-même ([DT-30](01-decisions.md#dt-30--thème-sombre-seul-changement-de-thème-prêt), [DT-34](01-decisions.md#dt-34--langues--français-et-anglais-commutables)).
+8. **Saisie préservée** ([RG-UI-15](../specs/26-interface.md)) : brouillon local des formulaires non sensibles,
    état d'enregistrement visible, `Idempotency-Key` sur chaque commande.
 
 ## 4. Correspondance Strata → Angular

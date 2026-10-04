@@ -43,7 +43,10 @@ administrateur et choisit l'organisation active. Le cadre des tests d'isolation 
    `Members` : `OrganizationMember (UserProfileId, Roles : OrganizationRole[])`, version) ; `OrganizationRole` :
    `Administrator`, `ConnectionManager`, `Auditor`, `Member` ([10 § 3.1](../specs/10-organisations-et-acces.md)).
 2. Middleware `UserProfileSyncMiddleware` : à chaque requête authentifiée, crée ou met à jour le profil depuis les
-   revendications si `LastSeenAt` a plus de 5 min ([RG-ORG-02](../specs/10-organisations-et-acces.md)).
+   revendications si `LastSeenAt` a plus de 5 min ([RG-ORG-02](../specs/10-organisations-et-acces.md)). `PreferredLanguage`
+   et `PreferredTheme` (`system` par défaut) sont exposés par `GET /v1/me` et modifiables par `PUT /v1/me/preferences` ;
+   `LanguageService` et `ThemeService` du frontend lisent la préférence serveur en premier ([RG-UI-07](../specs/26-interface.md),
+   [DT-34](../technique/01-decisions.md#dt-34--langues--français-et-anglais-commutables)).
 3. Tranches : `CreateOrganization` (UC-ORG-01, créateur administrateur), `ListMyOrganizations`,
    `GetOrganization`, `RenameOrganization` (administrateur). Routes `/v1/organizations` (non soumises à
    l'en-tête d'organisation) et `/v1/organizations/{id}`.
@@ -120,7 +123,9 @@ administrateur et choisit l'organisation active. Le cadre des tests d'isolation 
    autorisé ([RG-ORG-06](../specs/10-organisations-et-acces.md)) ; acceptation : `ICurrentUser.VerifiedEmail` doit
    égaler l'adresse (insensible à la casse), tenant autorisé, sinon erreur expliquant qu'une nouvelle invitation
    doit être envoyée à la bonne adresse.
-3. Port `IEmailSender` + adaptateurs SMTP (MailKit → MailPit, client Aspire) et ACS ; gabarit
+3. Port `IEmailSender` + adaptateurs SMTP (MailKit → MailPit) et ACS (`EmailClient(Uri, IfsAzureCredential)`),
+   choisis par la règle de [DT-33](../technique/01-decisions.md#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local) (nom `email` : chaîne `ConnectionStrings:email` = MailPit, sinon
+   `Azure:email:Endpoint` + identité managée) ; gabarit
    `Invitation.fr.html/.txt` et `.en` (nom de l'organisation, lien `/invitations/{jeton}`, expiration ; rien
    d'autre). Envoi par la file `notifications` (outbox).
 4. Interface : section invitations ; page d'acceptation (`InviteAccept.html`) avec les trois issues (acceptée,
@@ -767,7 +772,7 @@ déterministe) ; `ReferenceOutputTests` étendu à **toute** l'arborescence.
 2. Worker : `GenerateRevisionJobHandler` ; `OutputChecker` (CLI Bicep épinglée, cache AVM, schéma YAML,
    PSScriptAnalyzer) ; échec → révision `Failed`, compteur `ifs.output_check_failures`, incident interne (journal
    d'erreur structuré `OutputCheckFailed` sans contenu client) et message « incident IFS ».
-3. Stockage blob adressé par empreinte ; archive zip à la demande ; périmée ([RG-GEN-02](../specs/21-generation-et-revisions.md)) ;
+3. Stockage blob adressé par empreinte (client `AddIfsBlobServiceClient`, [DT-33](../technique/01-decisions.md#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local)) ; archive zip à la demande ; périmée ([RG-GEN-02](../specs/21-generation-et-revisions.md)) ;
    purge des fichiers non publiés après 90 jours.
 4. Image du worker : `Dockerfile` avec Bicep CLI, PowerShell, PSScriptAnalyzer (versions de `pins.json`).
 5. Écrans ; visualiseur de code `shared/code-viewer/` (Shiki : bicep, yaml, json, powershell, markdown ;
@@ -842,7 +847,10 @@ de repli à expiration obligatoire ; en local, à Gitea.
 
 🔧 **À faire.** `GitConnectionAggregate` (type, nom, organisation Azure DevOps, mode, expiration du jeton de repli,
 dépôts ouverts : tous les projets ou liste) ; port `IGitProvider` ([DT-13](../technique/01-decisions.md#dt-13--fournisseurs-git-derrière-un-port-unique--gitea-comme-émulateur))
-et adaptateurs `AzureReposProvider` (jeton Entra du principal « IFS Git », repli PAT dans `ISecretStore`) et
+et adaptateurs `AzureReposProvider` (jeton Entra du principal « IFS Git » obtenu par **fédération depuis l'identité
+managée** du worker — `ClientAssertionCredential` alimenté par un jeton de `IfsAzureCredential` pour
+`api://AzureADTokenExchange` —, sans secret client ; repli PAT dans `ISecretStore`, lui-même sur Key Vault par
+identité managée, [DT-33](../technique/01-decisions.md#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local)) et
 `GiteaProvider` (développement) ; test de connexion à l'ajout et à chaque modification ; alertes d'expiration
 15 et 3 jours (tâche planifiée, e-mail) ; retrait refusé si un plan de publication l'utilise.
 
@@ -1016,13 +1024,19 @@ après la release de `core` en dev, la matrice passe « révision 1 déployée �
 AVM épinglés) ; `infra/entra/Configure-IfsEntraApps.ps1` (trois inscriptions, idempotent, `-WhatIf`) ; Dockerfiles
 `api`, `worker`, `web` ; `.github/workflows/deploy.yml` (images, what-if, déploiement, job de migration, Container
 Apps ; fédération OIDC ; approbation manuelle pour `pilot`) ; `config.json` de `web` en mode Entra ; contrôles de santé
-et alertes ; sauvegarde PITR. Luna ne déploie rien : `az bicep build`, `bicep lint`, Pester des scripts.
+et alertes ; sauvegarde PITR. **Aucune clé** ([DT-33](../technique/01-decisions.md#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local)) : chaque Container App a son identité affectée et reçoit
+seulement des variables `Azure__<nom>__Endpoint` (et `AZURE_CLIENT_ID`) ; PostgreSQL en authentification Entra seule
+(identités déclarées comme rôles par un script post-déploiement du workflow), stockage `allowSharedKeyAccess: false`,
+Service Bus et Application Insights `disableLocalAuth: true`, Redis en Entra seul, registre sans utilisateur admin,
+ACS par identité. Test Pester / `bicep` : aucun `listKeys(`, aucune sortie sensible dans `infra/`. Luna ne déploie rien : `az bicep build`, `bicep lint`, Pester des scripts.
 
 ✅ **Vérification automatique.** `bicep build`/`lint` sans avertissement ; Pester (`-WhatIf` n'écrit rien) ; job
 `images` de la CI vert.
 
 🧪 **Test manuel.** Suivre `infra/README.md` : exécuter le script Entra, lancer le workflow `deploy` vers `dev`,
-ouvrir l'URL → connexion avec votre compte Microsoft professionnel → créer une organisation ; un compte
+ouvrir l'URL → connexion avec votre compte Microsoft professionnel → créer une organisation ; portail Azure : aucune
+Container App n'a de secret ni de chaîne de connexion dans ses variables, le compte de stockage refuse la clé partagée,
+PostgreSQL est en « Microsoft Entra authentication only » ; un compte
 personnel (outlook.com) est refusé avec un message clair (les comptes personnels arrivent au jalon 2).
 
 🧠 **Mémoire.** `09-auth-and-build.md` (déploiement), `08-runtime-and-orchestration.md`.
@@ -1040,7 +1054,8 @@ personnel (outlook.com) est refusé avec un message clair (les comptes personnel
 
 🎯 **Objectif.** Le parcours P-01 complet tient d'un bout à l'autre, mesuré, et prêt pour les équipes pilotes.
 
-🔧 **À faire.** Accueil ; profil (langue FR/EN, persistée côté serveur) ; e2e `pilot-journey.spec.ts` (dans l'AppHost,
+🔧 **À faire.** Accueil ; profil (langue FR/EN et, quand plusieurs thèmes existeront, thème — persistés côté serveur par
+`PUT /v1/me/preferences`, appliqués sans rechargement) ; e2e `pilot-journey.spec.ts` (dans l'AppHost,
 Gitea) : créer l'organisation, la connexion, le projet par l'assistant, modéliser le projet pilote, corriger les
 constats, générer, publier, vérifier la pull request ; instrumentation des indicateurs du pilote (temps actif par
 étape, [04 § 2.0](../specs/04-perimetre-et-lots.md)) en télémétrie produit pseudonymisée ([DEC-83](../specs/03-decisions.md)) ;

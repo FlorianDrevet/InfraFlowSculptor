@@ -34,10 +34,16 @@ pipelines générés, Azure Resource Manager (what-if, piles de déploiement), l
 Les tests les remplacent par des réponses enregistrées (WireMock.Net) ; la recette les exerce sur une vraie
 organisation Azure DevOps et de vrais abonnements ([plan, phase P](../plan/01-preuves.md)).
 
+**Chaînes de connexion et identité managée.** Aspire passe aux processus des chaînes de connexion vers les émulateurs
+(`ConnectionStrings__<nom>`) ; en Azure, ils reçoivent à la place `Azure__<nom>__Endpoint` et se connectent par
+identité managée. Une seule règle le décide : [DT-33](01-decisions.md#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local).
+
 Ports fixes (les URI de redirection OIDC et l'émetteur des jetons en dépendent) : `web` 4200, `keycloak`
 8080, `gitea` 3000. Les autres ports sont attribués par Aspire.
 
 ## 3. Utilisateurs de démonstration (royaume Keycloak `ifs`)
+
+Guide complet de Keycloak (console, ajout d'utilisateurs, jetons, remise à zéro) : [09](09-keycloak.md).
 
 Fichier : `src/backend/InfraFlowSculptor.AppHost/Realms/ifs-realm.json`. Mot de passe de tous les comptes :
 `Ifs-Demo-2026!` (développement uniquement).
