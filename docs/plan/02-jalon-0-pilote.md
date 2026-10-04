@@ -61,6 +61,15 @@ administrateur et choisit l'organisation active. Le cadre des tests d'isolation 
 7. Interface : `ActiveOrganizationStore` (signal, persistance locale de la dernière organisation choisie) ;
    sélecteur d'organisation dans la barre latérale (forme de `Sidebar.html`) ; page « Créer une organisation »
    quand l'utilisateur n'en a aucune ; page réglages de l'organisation (nom). Entrées de navigation enregistrées.
+8. **Disponibilité des fonctions et limites** ([DT-38](../technique/01-decisions.md#dt-38--disponibilité-des-fonctions-et-limites-de-plan)) : `Domain/Common/Features/FeatureCatalog.cs` (clés de **toutes**
+   les fonctions des lots 1 à 4, état `Released`/`EarlyAccess`/`NotReleased` ; seules celles déjà livrées sont
+   `Released`), `IFeatureAvailability` (+ activation par organisation pour l'accès anticipé), extension
+   `.RequireFeature(Features.X)` sur les groupes de routes (404 sinon), `GET /v1/features` ; `IPlanLimitGuard`
+   (implémentation `UnlimitedPlanLimitGuard`) appelé par `CreateOrganization` et, ensuite, par toute commande de
+   création ; frontend : `FeatureAvailabilityService`, `featureGuard()`, le `NavigationRegistry` filtre par fonction.
+9. **Autorisation d'organisation** ([DT-40](../technique/01-decisions.md#dt-40--ordre-des-comportements-du-médiateur)) : `AuthorizationBehavior` créé ici avec l'attribut
+   `[RequiresOrganizationRole(OrganizationRole.Administrator)]` (rôles de [10 § 3.1](../specs/10-organisations-et-acces.md)) ;
+   J0-05 l'étend aux permissions de projet.
 
 ✅ **Vérification automatique.** Tests de domaine (nom 2–80, administrateur à la création), d'application
 (`CreateOrganization`), d'API (isolation : david ne voit pas Contoso → 404) ; e2e `organization.spec.ts`.
@@ -127,7 +136,8 @@ administrateur et choisit l'organisation active. Le cadre des tests d'isolation 
    choisis par la règle de [DT-33](../technique/01-decisions.md#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local) (nom `email` : chaîne `ConnectionStrings:email` = MailPit, sinon
    `Azure:email:Endpoint` + identité managée) ; gabarit
    `Invitation.fr.html/.txt` et `.en` (nom de l'organisation, lien `/invitations/{jeton}`, expiration ; rien
-   d'autre). Envoi par la file `notifications` (outbox).
+   d'autre). Envoi par un gestionnaire de l'événement de domaine `InvitationCreated` ([DT-37](../technique/01-decisions.md#dt-37--événements-de-domaine-par-loutbox)) qui passe par
+   `INotificationChannel : IKeyed<NotificationChannel>` (canal e-mail seul ; [DT-35](../technique/01-decisions.md#dt-35--registres-et-stratégies-pas-de-switch)) et la file `notifications`.
 4. Interface : section invitations ; page d'acceptation (`InviteAccept.html`) avec les trois issues (acceptée,
    adresse non vérifiée ou différente, expirée).
 
@@ -197,8 +207,10 @@ composant), avec « introuvable » ou « interdit » selon [RG-ORG-13](../specs/
    (UC-ORG-10). Le port `IProjectOwnershipCheck` de J0-02 devient réel.
 4. L'administrateur d'organisation lit tous les projets ; la **prise de propriété** est une commande journalisée.
 5. Écran membres du projet, limité aux trois rôles du pilote (les autres existent côté serveur).
-   *(Les projets n'existent qu'en J0-07 : les tests de cette étape utilisent un projet créé directement en base
-   par la fixture ; l'écran est relié en J0-09.)*
+   *Le projet complet arrive en J0-07 : cette étape crée l'agrégat `Project` **minimal** (`Id`, `OrganizationId`,
+   `Name`, `Code`, `Version`, `DeletedAt`, `RoleAssignments`) et une commande interne de test pour l'alimenter ; J0-07
+   ajoute les autres champs à ce même agrégat (migration additive), sans le renommer ni le déplacer. L'écran est relié
+   en J0-09.*
 
 ✅ **Vérification automatique.** Tests par règle ; matrice rôle × permission (une ligne par rôle de 10 § 4.2) ;
 isolation : membre sans rôle → 404 ; lectrice sur commande → 403 nommant la permission.
@@ -281,6 +293,14 @@ après publication et suppression réversible.
    région après publication (liste des ressources, confirmation explicite — [RG-ENV-03](../specs/11-projets-et-environnements.md)).
 3. `ModelChangeTracker` (Application) : toute commande marquée `[ModelChange]` incrémente `ModelVersion` dans la
    même transaction.
+3 bis. **Commandes du modèle comme données** ([DT-36](../technique/01-decisions.md#dt-36--commandes-du-modèle-comme-données-et-espaces-de-travail)) : `IModelCommand` (avec `ModelWorkspaceId Workspace`, seule
+   valeur possible au jalon 0 : `ModelWorkspaceId.Main(projectId)`), attribut `[ModelCommand("<Nom>")]`,
+   `IModelCommandExecutor` (liste de commandes, une transaction, modes `Apply` et `DryRun` — `DryRun` renvoie effets,
+   constats et résumé puis annule la transaction), `ModelCommandSerializer` (JSON polymorphe par nom). Toutes les
+   commandes qui modifient le modèle, de cette étape à la fin du plan, sont des `IModelCommand` et passent par
+   l'exécuteur (les points de terminaison envoient une liste d'une commande). Tests : aller-retour JSON de chaque
+   commande (test qui énumère les types par réflexion) ; `DryRun` ne laisse rien en base ; deux commandes dont la
+   seconde échoue → aucune appliquée.
 4. Suppression (30 jours, restauration) et tâche de purge quotidienne.
 
 ✅ **Vérification automatique.** Tests : formats (`^[a-z][a-z0-9]{1,9}$`…), unicité insensible à la casse, ordre,
@@ -517,6 +537,11 @@ elle.
    portée externe, composant propriétaire de chaque attribution ([DEC-98](../specs/03-decisions.md)), noms
    déterministes ([RG-LIA-16](../specs/16-liaisons-identites-et-acces.md)), droits des identités de déploiement
    ([RG-LIA-18](../specs/16-liaisons-identites-et-acces.md)) ; accès aux données (niveaux, composant source).
+2 bis. **Types de liaison extensibles** ([DT-35](../technique/01-decisions.md#dt-35--registres-et-stratégies-pas-de-switch)) : `ILinkKindHandler : IKeyed<LinkKind>` (types source/cible acceptés,
+   identité requise, éléments implicites produits, `CreatesDeploymentDependency` — vrai pour journalisation et
+   diagnostics, [DT-39](../technique/01-decisions.md#dt-39--journalisation-et-diagnostics-sont-des-dépendances-de-création) —, forme dans le plan) et `LinkKindRegistry` ; une implémentation par type de liaison du pilote ;
+   `WiringEngine` ne connaît aucun type de liaison en dur. `IDataAccessProvider : IKeyed<DataEngine>` (script
+   idempotent et retrait) avec l'implémentation Azure SQL. Ajouter `LinkKind` et `DataEngine` à `ExtensionKeys.Types`.
 3. `ImpactAnalyzer` (UC-LIA-02) : ce qui disparaît ou casse, gravités ; branché sur `DeleteResource` (solde la
    dette de J0-11), `RemoveLink`, détachement d'identité ([RG-LIA-11](../specs/16-liaisons-identites-et-acces.md)).
 4. API : liaisons sortantes et entrantes (explicites et implicites) d'une ressource ; impact d'un retrait.
@@ -569,7 +594,8 @@ conversion ; forcer en déclarant la valeur non secrète → accepté, événeme
 
 🔧 **À faire.** Propriété `exposure` (surchargeable) et `allowedIpRanges` (CIDR IPv4, 1 à 100) portées par les
 descripteurs du pilote qui la supportent ; contrôle des CIDR à la saisie ; prise en compte dans le plan
-(règles de pare-feu, restrictions d'accès) — la génération suit en J0-22 ; composant `app-ds-cidr-field`.
+(règles de pare-feu, restrictions d'accès) — la génération suit en J0-22 ; composant `app-ds-cidr-field`. `Exposure` est un record polymorphe (`PublicExposure`, `RestrictedExposure(ranges)`) traité
+ par `IExposureHandler` ; le mode privé (lot 2) s'ajoutera comme nouveau cas sans modifier les deux premiers ([technique 10](../technique/10-extensibilite.md) § 2).
 
 ✅ **Vérification automatique.** Tests CIDR ; liste vide en mode restreint → constat (validation, J0-20).
 
@@ -616,7 +642,10 @@ commande : `POST …/links/preview`).
 
 🔧 **À faire.** `Application` (sur ContainerApp) ; catalogue d'étapes du pilote (`DependencyCache`, `ImageScan`) ;
 registre de build déduit des liaisons « tirage d'image » ([RG-APP-07](../specs/19-applications-build-et-deploiement.md)) ;
-points d'extension (chemins de modèles d'étapes, contrôlés à la publication en J0-28) ; écran.
+points d'extension (chemins de modèles d'étapes, contrôlés à la publication en J0-28) ; écran. Coutures ([DT-35](../technique/01-decisions.md#dt-35--registres-et-stratégies-pas-de-switch)) :
+`IDeploymentStrategy : IKeyed<DeploymentStrategyKind>` (prérequis d'infrastructure implicites + étapes logiques du stage
+de déploiement) avec la seule implémentation « directe » ; profils de build en descripteurs (`catalog/<version>/build-profiles/`,
+profil `Container` seul) ; ajouter `DeploymentStrategyKind` à `ExtensionKeys.Types`.
 
 ✅ **Vérification automatique.** Tests : registre de build `crshopmainshared` sans promotion pour le pilote ; étape
 sans valeur pour la pile → constat `VAL-APP-ETAPE`.
@@ -638,9 +667,11 @@ d'image `shop/orders/api`, registre `platform / cr main` affiché, scan Trivy bl
 🎯 **Objectif.** Un seul moteur de règles produit les constats, identiques pour l'écran, l'API et (plus tard) le MCP ;
 la génération est refusée tant qu'il reste une erreur.
 
-🔧 **À faire.** `ComponentOrdering` (dépendances de création, sorties calculables depuis le nom, tri topologique avec
-ex æquo par code, cycle → `VAL-CMP-CYCLE` avec les liaisons) ; `ValidationEngine` : une classe par règle
-(`IValidationRule`, code, gravité, objet, environnement, message FR/EN, correction) ; cache `HybridCache` par
+🔧 **À faire.** `ComponentOrdering` (dépendances de création déclarées par les `ILinkKindHandler`, journalisation et diagnostics compris — [DT-39](../technique/01-decisions.md#dt-39--journalisation-et-diagnostics-sont-des-dépendances-de-création) —, sorties calculables depuis le nom, tri topologique avec
+ex æquo par code, cycle → `VAL-CMP-CYCLE` avec les liaisons) ; `ValidationEngine` : règles fournies par des `IRuleSource` (source « code » au lot 1 ; politiques d'organisation au
+lot 2), une classe par règle (`IValidationRule`, code, gravité, lot, objet, environnement, message FR/EN), corrections
+en un clic par `IFindingFix : IKeyed<string>` (code de règle) qui produisent des `IModelCommand` exécutées par
+`IModelCommandExecutor` ; cache `HybridCache` par
 (projet, version du modèle, catalogue) ; acquittement des avertissements (commentaire obligatoire, tombe si
 l'objet change, journalisé) ; niveaux de préparation ([RG-VAL-04](../specs/20-validation.md)) ; test de performance
 300 ressources < 2 s ; écrans.
@@ -662,7 +693,8 @@ ordre `core, data, platform, orders` ; performance.
 
 **Périmètre** : `J0-06` à `J0-20`. **Branche** : `impl/j0-modele` → `[R-05] Modèle, moteur et écrans de modélisation`.
 
-**Claude vérifie** : un seul lieu de calcul (aucune règle métier dans l'API ni le frontend), pureté du moteur,
+**Claude vérifie** : points d'extension posés comme le prévoit [technique 10](../technique/10-extensibilite.md) (registres, `IModelCommand` et exécuteur, liaisons par
+`ILinkKindHandler`, aucun `switch` sur une clé d'extension) ; un seul lieu de calcul (aucune règle métier dans l'API ni le frontend), pureté du moteur,
 descripteurs exacts et vérifiés, résultats du projet pilote identiques à [reference-pilote § 2](reference-pilote.md#2-résultats-attendus-du-calcul),
 règles RG/VAL toutes testées, permissions sur chaque commande, secrets jamais stockés, fidélité des écrans,
 P9 respecté.
@@ -712,7 +744,11 @@ données par identité système, dépendances `core`, `data`, `platform`.
 
 🎯 **Objectif.** Le plan du projet pilote donne, **octet pour octet**, les fichiers Bicep de `reference/pilot/bicep-azdo/`.
 
-🔧 **À faire.** Projet `InfraFlowSculptor.Emitters.Bicep` + `tests/InfraFlowSculptor.Emitters.Tests` ; `BicepWriter`
+🔧 **À faire.** Registres ([DT-35](../technique/01-decisions.md#dt-35--registres-et-stratégies-pas-de-switch), [technique 10](../technique/10-extensibilite.md) § 2) dans `Application/Generation/` : `IInfrastructureEmitter : IKeyed<EmitterKey>`
+(`EmitterKey` = `IacLanguage` + variante facultative, pour les langages Pulumi), `IOutputChecker : IKeyed<IacLanguage>`,
+`IModuleSourceStrategy : IKeyed<ModuleSource>` choisie **par type** de ressource ([RG-GEN-21](../specs/21-generation-et-revisions.md)) ;
+`IacLanguage` et `ModuleSource` contiennent toutes les valeurs de la spec mais seules les valeurs livrées sont `Released`
+dans le `FeatureCatalog`. Le Bicep est la première implémentation de chacun. Projet `InfraFlowSculptor.Emitters.Bicep` + `tests/InfraFlowSculptor.Emitters.Tests` ; `BicepWriter`
 (indentation 2, ordre, commentaires, `LF`) ; une classe par forme (`TypesFileEmitter`, `MainFileEmitter`,
 `ParamFileEmitter`, `ReleaseDataEmitter`, `DataAccessScriptEmitter`) ; table type → module AVM et correspondance
 des propriétés **lues dans le descripteur** (aucun nom de propriété en dur dans l'émetteur) ;
@@ -740,7 +776,9 @@ de test) pour voir sa lisibilité.
 🎯 **Objectif.** L'arborescence complète de [reference-pilote § 3](reference-pilote.md#3-sortie-attendue-dépôt-shop),
 identique à la référence.
 
-🔧 **À faire.** `InfraFlowSculptor.Emitters.AzureDevOps` (`YamlWriter`, pipelines par composant et application,
+🔧 **À faire.** Registres ([DT-35](../technique/01-decisions.md#dt-35--registres-et-stratégies-pas-de-switch)) : `IPipelineEmitter : IKeyed<CiPlatform>`, `IInstallKitPlatformEmitter : IKeyed<CiPlatform>`
+(la partie Azure du kit — `azure-setup.ps1` — est commune et ne dépend pas de la plateforme), `IStepTranslator :
+IKeyed<CiPlatform>` ; `CiPlatform` dans `ExtensionKeys.Types`. `InfraFlowSculptor.Emitters.AzureDevOps` (`YamlWriter`, pipelines par composant et application,
 modèles partagés et module PowerShell copiés comme **ressources embarquées** depuis `reference/pilot/bicep-azdo/.ifs/templates/`
 par une cible MSBuild — une seule source), `InfraFlowSculptor.Emitters.InstallKit` (`azure-setup.ps1` avec ses
 données par cible, `install.pipeline.yml`, `SETUP.md`), `ReadmeEmitter` (`README.ifs.md`, diagramme Mermaid
@@ -820,7 +858,8 @@ d'audit : « Export du projet shop ».
 
 **Périmètre** : `J0-21` à `J0-25`. **Branche** : `impl/j0-generation` → `[R-06] Plan de déploiement, émetteurs et révisions`.
 
-**Claude vérifie** : émetteurs sans décision métier (tout vient du plan), parité octet pour octet avec la
+**Claude vérifie** : émetteurs enregistrés dans leurs registres et choisis par clé (ajouter Terraform ou GitHub Actions ne
+doit toucher aucun code existant) ; émetteurs sans décision métier (tout vient du plan), parité octet pour octet avec la
 référence prouvée, déterminisme, contrôles de sortie complets et en échec testé, équité des files, immuabilité,
 aucune donnée client dans les incidents.
 
@@ -846,7 +885,8 @@ aucune donnée client dans les incidents.
 de repli à expiration obligatoire ; en local, à Gitea.
 
 🔧 **À faire.** `GitConnectionAggregate` (type, nom, organisation Azure DevOps, mode, expiration du jeton de repli,
-dépôts ouverts : tous les projets ou liste) ; port `IGitProvider` ([DT-13](../technique/01-decisions.md#dt-13--fournisseurs-git-derrière-un-port-unique--gitea-comme-émulateur))
+dépôts ouverts : tous les projets ou liste) ; port `IGitProvider : IKeyed<GitProviderKind>` et `GitProviderRegistry` ([DT-35](../technique/01-decisions.md#dt-35--registres-et-stratégies-pas-de-switch)) — `GitProviderKind` contient Azure Repos,
+GitHub et GitLab, seuls les livrés sont `Released` — ([DT-13](../technique/01-decisions.md#dt-13--fournisseurs-git-derrière-un-port-unique--gitea-comme-émulateur))
 et adaptateurs `AzureReposProvider` (jeton Entra du principal « IFS Git » obtenu par **fédération depuis l'identité
 managée** du worker — `ClientAssertionCredential` alimenté par un jeton de `IfsAzureCredential` pour
 `api://AzureADTokenExchange` —, sans secret client ; repli PAT dans `ISecretStore`, lui-même sur Key Vault par
@@ -896,7 +936,7 @@ nouveau projet propose maintenant le dépôt à l'étape 5.
 
 | | |
 |---|---|
-| **Spécifications** | [24 § 5-6](../specs/24-depots-et-publication.md) : RG-PUB-08 à 16, 20, UC-PUB-02, 03, 04 ; [DEC-01](../specs/03-decisions.md), [DEC-22](../specs/03-decisions.md), [DEC-94](../specs/03-decisions.md) ; [91 S12](../specs/90-projet-de-reference.md) (idempotence) |
+| **Spécifications** | [24 § 5-6](../specs/24-depots-et-publication.md) : RG-PUB-08 à 16, 20, UC-PUB-02, 03, 04 ; [DEC-01](../specs/03-decisions.md), [DEC-22](../specs/03-decisions.md), [DEC-94](../specs/03-decisions.md) ; [90 § 4, critère 16](../specs/90-projet-de-reference.md) (idempotence) |
 | **Maquette** | [PublishDialog](../design/maquette-v1/preview/PublishDialog.html) — **exclu** : mode direct (masqué au pilote : « publication par pull request uniquement ») ; [PublishResult](../design/maquette-v1/preview/PublishResult.html) ; onglet Publications de [RevisionDetail](../design/maquette-v1/preview/RevisionDetail.html) ; étape Publier du rail |
 | **Dépend de** | J0-27 |
 | **Commit** | `feat(publication): préparer et publier par pull request` |
@@ -988,7 +1028,9 @@ du script Azure prête à copier ; cocher « secrets saisis en dev » → l'audi
 🎯 **Objectif.** Savoir, sans accès à Azure, quelle révision tourne où, ce qui attend une approbation, ce qui a
 échoué et comment reprendre.
 
-🔧 **À faire.** Adaptateur `AzureDevOpsPipelinesReader` (exécutions des définitions gérées, timeline, artefacts
+🔧 **À faire.** Port `ICiRunReader : IKeyed<CiPlatform>` et son registre ([DT-35](../technique/01-decisions.md#dt-35--registres-et-stratégies-pas-de-switch)) ; analyse **commune** des rapports
+(`ReleaseReportParser` pour `ifs-report/v1`, `ifs-app-report/v1`, `ifs-preview/v1`) — un nouveau type de rapport (dérive,
+lot 2) s'y ajoute ; adaptateur `AzureDevOpsPipelinesReader` (exécutions des définitions gérées, timeline, artefacts
 `ifs-report`, `ifs-app-report`, `ifs-preview`, approbations en attente) ; tâche planifiée 2 min / 15 min ;
 corrélation par rapport et empreinte du manifeste ([RG-SUI-02](../specs/28-suivi-des-deploiements.md)) ; états
 calculés depuis les événements immuables ([RG-DON-04](../specs/05-modele-de-donnees.md)) : déployée, partiellement
@@ -1022,7 +1064,7 @@ après la release de `core` en dev, la matrice passe « révision 1 déployée �
 
 🔧 **À faire.** `infra/main.bicep` + `infra/parameters/{dev,pilot}.bicepparam` (ressources de [technique 08 § 2](../technique/08-hebergement.md#2-ressources),
 AVM épinglés) ; `infra/entra/Configure-IfsEntraApps.ps1` (trois inscriptions, idempotent, `-WhatIf`) ; Dockerfiles
-`api`, `worker`, `web` ; `.github/workflows/deploy.yml` (images, what-if, déploiement, job de migration, Container
+`api` et `web` (celui du `worker` existe depuis J0-24) ; `.github/workflows/deploy.yml` (images, what-if, déploiement, job de migration, Container
 Apps ; fédération OIDC ; approbation manuelle pour `pilot`) ; `config.json` de `web` en mode Entra ; contrôles de santé
 et alertes ; sauvegarde PITR. **Aucune clé** ([DT-33](../technique/01-decisions.md#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local)) : chaque Container App a son identité affectée et reçoit
 seulement des variables `Azure__<nom>__Endpoint` (et `AZURE_CLIENT_ID`) ; PostgreSQL en authentification Entra seule

@@ -33,6 +33,7 @@ Langue : français pour les échanges, les commits, la documentation ; anglais p
 | Versions de [DT-03](docs/technique/01-decisions.md#dt-03--versions-épinglées) et sa règle sans arbitrage | Ajouter une dépendance, un service Azure ou une technologie absents du plan |
 | Constantes pour les politiques, revendications, clés de configuration, routes | Chaîne magique, `object`/`dynamic`/`any` quand le schéma est connu |
 | Un type public par fichier | Secret, jeton ou chaîne de connexion dans le dépôt, un journal ou la mémoire |
+| Passer par les points d'extension de [`docs/technique/10-extensibilite.md`](docs/technique/10-extensibilite.md) (registres, `IModelCommand`, événements, `FeatureCatalog`) | `switch` sur un langage, une plateforme, un fournisseur, un type de liaison ; fonction non livrée visible ou appelable |
 
 **Opérations externes.** Aucune commande qui écrit dans Azure, Entra, Azure DevOps ou GitHub (hors `git push` de
 ta branche et ouverture de pull request) : ces actions sont celles de l'utilisateur, décrites dans les tests manuels.

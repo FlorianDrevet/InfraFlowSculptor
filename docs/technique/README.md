@@ -21,6 +21,7 @@
 | Fournisseurs git, Azure DevOps, e-mail, Entra | [07 — Intégrations](07-integrations.md) |
 | L'hébergement d'IFS lui-même dans Azure | [08 — Hébergement](08-hebergement.md) |
 | Se servir de Keycloak (connexion locale) | [09 — Keycloak](09-keycloak.md) |
+| Ajouter une fonction sans refactoriser : points d'extension | [10 — Extensibilité](10-extensibilite.md) |
 | Dans quel ordre construire | [`../plan/`](../plan/README.md) |
 | À quoi ressemblent les écrans | [`../design/`](../design/README.md) |
 

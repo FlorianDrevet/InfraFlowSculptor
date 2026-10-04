@@ -109,9 +109,9 @@ public static class ProjectsController
 }
 ```
 
-Comportements du médiateur (`Mediator`, [DT-22](01-decisions.md#dt-22--mediator-à-la-place-de-mediatr)), dans cet ordre : `LoggingBehavior` → `ValidationBehavior` (template, FluentValidation)
-→ `AuthorizationBehavior` (permission, portée composant, effets indirects, [DEC-89](../specs/03-decisions.md))
-→ `UnitOfWorkBehavior` (commandes seulement : une transaction, version du modèle, audit, outbox).
+Comportements du médiateur (`Mediator`, [DT-22](01-decisions.md#dt-22--mediator-à-la-place-de-mediatr)), dans cet ordre ([DT-40](01-decisions.md#dt-40--ordre-des-comportements-du-médiateur)) : `LoggingBehavior` → `AuthorizationBehavior`
+(permission, portée composant, effets indirects, [DEC-89](../specs/03-decisions.md)) → `ValidationBehavior` (template,
+FluentValidation, forme de la requête seulement) → `UnitOfWorkBehavior` (commandes seulement : une transaction, version du modèle, audit, outbox).
 
 ## 3. Domaine
 

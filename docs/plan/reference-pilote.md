@@ -116,7 +116,7 @@ Azure. Pour les preuves, le code projet peut devenir `shopNN` (deux chiffres de 
 ### 2.2 Ordre de déploiement
 
 1. `core` (aucune dépendance)
-2. `data` (dépend de `core` : paramètres de diagnostic vers `log main`)
+2. `data` (dépend de `core` : paramètres de diagnostic vers `log main`, dépendance de création selon [DT-39](../technique/01-decisions.md#dt-39--journalisation-et-diagnostics-sont-des-dépendances-de-création))
 3. `platform` (aucune dépendance ; après `data` par ordre de code)
 4. `orders` (dépend de `core`, `data` — accès aux données —, `platform`)
 

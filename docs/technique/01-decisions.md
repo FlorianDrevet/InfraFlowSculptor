@@ -43,6 +43,12 @@ l'utilisateur peut les inverser avant l'étape qui les applique ; le plan indiqu
 | [DT-32](#dt-32--files-et-équité) | Files et équité | Décidée |
 | [DT-33](#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local) | Identité managée partout ; chaîne de connexion seulement en local | Décidée |
 | [DT-34](#dt-34--langues--français-et-anglais-commutables) | Langues : français et anglais commutables | Décidée |
+| [DT-35](#dt-35--registres-et-stratégies-pas-de-switch) | Registres et stratégies, pas de `switch` | Décidée |
+| [DT-36](#dt-36--commandes-du-modèle-comme-données-et-espaces-de-travail) | Commandes du modèle comme données, espaces de travail | Décidée |
+| [DT-37](#dt-37--événements-de-domaine-par-loutbox) | Événements de domaine par l'outbox | Décidée |
+| [DT-38](#dt-38--disponibilité-des-fonctions-et-limites-de-plan) | Disponibilité des fonctions et limites de plan | Décidée |
+| [DT-39](#dt-39--journalisation-et-diagnostics-sont-des-dépendances-de-création) | Journalisation et diagnostics : dépendances de création (écart de spec) | Décidée |
+| [DT-40](#dt-40--ordre-des-comportements-du-médiateur) | Ordre des comportements du médiateur | Décidée |
 
 ---
 
@@ -590,3 +596,52 @@ Décidée (2026-10-04). Transloco (option `i18n` du template), `fr` par défaut,
 - L'intercepteur envoie `Accept-Language` ; l'API rend ses messages (constats, `problem+json`) dans cette langue ; les
   codes de règles ne sont jamais traduits.
 - CI : `npm run i18n:check` — toute clé de `fr.json` existe dans `en.json` et inversement, aucune clé inutilisée.
+
+### DT-35 — Registres et stratégies, pas de `switch`
+
+Décidée (2026-10-04). Toute dimension que la feuille de route agrandit (langage, plateforme CI, fournisseur git, type de
+liaison, stratégie de déploiement, moteur de base pour l'accès aux données, canal de notification, source des modules)
+est une clé servie par un `Registry<TKey, TService>` d'implémentations `IKeyed<TKey>` enregistrées en DI. Ajouter une
+valeur = ajouter une implémentation. Interdit par test d'architecture : `switch`/`if` sur ces clés hors des registres.
+Liste complète et étape de création : [10 § 2](10-extensibilite.md#2-points-dextension-par-domaine).
+
+### DT-36 — Commandes du modèle comme données, et espaces de travail
+
+Décidée (2026-10-04). Brouillons, propositions, restauration, import, aperçu « à blanc » du MCP et demandes d'accès
+rejouent des commandes : chaque commande qui modifie le modèle est un `record` sérialisable `IModelCommand` portant
+`[ModelCommand("<Nom>")]` et ciblant un `ModelWorkspaceId` (le modèle principal au jalon 0, un brouillon au jalon 2).
+`IModelCommandExecutor` exécute une liste de commandes en une transaction, en mode `Apply` ou `DryRun` (effets,
+constats et résumé calculés, puis annulation). L'API envoie des listes d'une commande. Créé à J0-07.
+Détail : [10 § 1.2](10-extensibilite.md#12-les-commandes-du-modèle-sont-des-données).
+
+### DT-37 — Événements de domaine par l'outbox
+
+Décidée (2026-10-04). Les agrégats lèvent des événements de domaine ; `UnitOfWorkBehavior` les écrit dans
+`outbox_messages` dans la transaction de la commande ; le worker les distribue aux `IDomainEventHandler<T>`. Toute
+réaction (e-mail, historique, index de recherche, webhooks) est un gestionnaire ajouté, jamais du code dans la commande.
+Créé à S-06 (écriture) et S-08 (distribution). Détail : [10 § 1.3](10-extensibilite.md#13-événements-de-domaine-par-loutbox).
+
+### DT-38 — Disponibilité des fonctions et limites de plan
+
+Décidée (2026-10-04). `FeatureCatalog` (clé, état `Released|EarlyAccess|NotReleased`), `IFeatureAvailability`,
+`.RequireFeature()` sur les routes, `GET /v1/features`, filtrage des valeurs d'énumération et de la navigation : c'est
+le mécanisme unique de [P9](../specs/01-principes.md) et de l'accès anticipé ([UC-EXP-06](../specs/40-exploitation-ifs.md)).
+`IPlanLimitGuard` est appelé par toute commande de création dès J0 (implémentation illimitée jusqu'à J3-07). Créé à
+J0-01. Détail : [10 § 1.4](10-extensibilite.md#14-disponibilité-des-fonctions-et-limites-de-plan).
+
+### DT-39 — Journalisation et diagnostics sont des dépendances de création
+
+Décidée (2026-10-04), **écart de spec signalé**. [RG-CMP-05](../specs/12-composants-et-groupes-de-ressources.md) ne cite
+ni la journalisation ni les diagnostics parmi les dépendances de création, et exclut les sorties « calculables depuis le
+nom ». Or un paramètre de diagnostic ou une liaison de journalisation exige que l'espace Log Analytics **existe** au
+déploiement, même si son identifiant se calcule : déployer `data` avant `core` dans un abonnement vide échouerait
+([P1](../specs/04-perimetre-et-lots.md)). Le moteur traite donc « Journalisation » et « Diagnostics » comme dépendances de
+création (`ILinkKindHandler.CreatesDeploymentDependency = true`). Claude propose l'amendement de RG-CMP-05 dans les specs
+(nouvelle `DEC-113`) au verrou R-03.
+
+### DT-40 — Ordre des comportements du médiateur
+
+Décidée (2026-10-04). `LoggingBehavior` → `AuthorizationBehavior` → `ValidationBehavior` → `UnitOfWorkBehavior`.
+L'autorisation passe **avant** la validation : un utilisateur sans accès au projet doit recevoir « introuvable »
+([RG-ORG-13](../specs/10-organisations-et-acces.md)), jamais des erreurs de validation qui révéleraient l'existence ou la
+forme de l'objet. Les validateurs ne contrôlent que la forme de la requête ; ils ne lisent pas la base.

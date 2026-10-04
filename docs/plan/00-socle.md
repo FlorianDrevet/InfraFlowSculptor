@@ -147,21 +147,23 @@ erreurs `problem+json`, sans aucune trace d'authentification locale.
    recopié de VPD (évolution E13) ; ajouter `IHasVersion` (`int Version { get; }`).
 6. **Remplacer MediatR par `Mediator`** ([DT-22](../technique/01-decisions.md#dt-22--mediator-à-la-place-de-mediatr)) :
    retirer `MediatR` de `Directory.Packages.props` et de tous les `.csproj` ; ajouter `Mediator.Abstractions`
-   (Application) et `Mediator.SourceGenerator` (Api, puis Worker à S-08), dernière version stable `3.x` ; dans le projet
-   Api, `services.AddMediator(o => { o.ServiceLifetime = ServiceLifetime.Scoped; o.PipelineBehaviors =
+   et `Mediator.SourceGenerator` **dans Application** (le générateur s'exécute dans le projet qui contient les
+   gestionnaires), dernière version stable `3.x` ; dans `Application/DependencyInjection.cs` (`AddApplication()`, appelé
+   par l'Api puis par le Worker à S-08), `services.AddMediator(o => { o.ServiceLifetime = ServiceLifetime.Scoped; o.PipelineBehaviors =
    [typeof(LoggingBehavior<,>), typeof(ValidationBehavior<,>)]; });` ; remplacer les `using MediatR;` par
    `using Mediator;` ; gestionnaires `ValueTask<ErrorOr<T>> Handle(TRequest request, CancellationToken ct)` ;
    `ValidationBehavior` du template adapté à `ValueTask<TResponse> Handle(TMessage message,
    MessageHandlerDelegate<TMessage, TResponse> next, CancellationToken ct)` avec `await next(message, ct)` ;
    `LoggingBehavior` (nouveau : journalise le nom de la requête et la durée, jamais le contenu) ; validateurs
    FluentValidation par `AddValidatorsFromAssembly`. Les points de terminaison gardent `IMediator` et `Send`.
-   Vérifier `grep -ri mediatr src/backend` → aucun résultat.
+   Vérifier `grep -ri mediatr src/backend` → aucun résultat. L'ordre final des comportements est celui de [DT-40](../technique/01-decisions.md#dt-40--ordre-des-comportements-du-médiateur) :
+   chaque étape qui en ajoute un l'insère à sa place.
 7. `Api/Errors/` : remplacer `ErrorOrStatusCode.cs` par `ProblemDetailsMapper.cs` (extension
    `ToProblem(this List<Error>)`) qui applique le tableau de [DT-06](../technique/01-decisions.md#dt-06--erreurs--erroror--problemjson)
    à partir de `ErrorType` et de `Error.Metadata` (clés constantes dans `Api/Errors/ProblemMetadataKeys.cs` :
    `field`, `permission`, `currentVersion`, `current`, `limit`, `plan`) ; `ErrorHandling.cs` renvoie
    `code: "INTERNAL"` et `traceId` (`Activity.Current?.Id ?? HttpContext.TraceIdentifier`), sans détail.
-8. `Api/Program.cs` réécrit dans cet ordre : `AddServiceDefaults()` (S-05 crée le projet : à cette étape, créer
+8. `Api/Program.cs` réécrit dans cet ordre : `AddServiceDefaults()` (créer à cette étape le projet
    `InfraFlowSculptor.ServiceDefaults` par `dotnet new aspire-servicedefaults -n InfraFlowSculptor.ServiceDefaults`
    avec les modèles Aspire `13.5.3`, et ajouter dans `Extensions.cs` l'exportateur Azure Monitor quand
    `APPLICATIONINSIGHTS_CONNECTION_STRING` existe — évolution E8) ; `AddProblemDetails()` ; en-têtes transférés
@@ -175,6 +177,10 @@ erreurs `problem+json`, sans aucune trace d'authentification locale.
    `MapScalarApiReference()` en développement, puis `var v1 = app.MapGroup("/v1");` et les contrôleurs.
 9. `Api/Controllers/SystemController.cs` : `GET /v1/version` → `{ "version": "<AssemblyInformationalVersion>",
    "environment": "<nom>" }`, anonyme, nom `GetVersion`.
+9 bis. `Application/Common/Extensibility/` : `IKeyed<TKey>`, `Registry<TKey, TService>` (clé absente → erreur
+    explicite citant la clé ; test) ; attributs `ModelCommandAttribute`, `TokenScopeAttribute`,
+    `AdministrativeOperationAttribute`, `RequiresFeatureAttribute` (posés par les étapes suivantes) — [DT-35](../technique/01-decisions.md#dt-35--registres-et-stratégies-pas-de-switch), [DT-36](../technique/01-decisions.md#dt-36--commandes-du-modèle-comme-données-et-espaces-de-travail),
+    [technique 10](../technique/10-extensibilite.md).
 10. Constantes : `Api/Common/EndpointNames.cs`, `Api/Common/RateLimitingPolicies.cs`,
     `Api/Common/AuthorizationPolicies.cs` (vide pour l'instant), `Infrastructure/Configuration/ConfigurationKeys.cs`
     (`Cors:AllowedOrigins`…).
@@ -222,6 +228,9 @@ mécaniquement dès maintenant.
    applicables aux projets existants (Domain, Application, Contracts, Api) ; `OneTopLevelTypePerFileTests.cs`
    (lit les `.cs` de `src/backend` hors `tests/`, `obj/`, `bin/`, `Migrations/` et échoue si un fichier
    déclare plus d'un type public de premier niveau).
+5 bis. `Architecture.Tests/NoSwitchOnExtensionKeysTests.cs` : aucun `switch` ni comparaison sur les énumérations
+   déclarées dans `ExtensionKeys.Types` (liste vide à ce stade, complétée par chaque étape qui crée une clé) hors des
+   classes `*Registry` et de leurs implémentations ([DT-35](../technique/01-decisions.md#dt-35--registres-et-stratégies-pas-de-switch)).
 6. Créer `.github/test-debt.md` (tableau vide : `Étape | Code non couvert | Raison | Étape qui solde`).
 
 ✅ **Vérification automatique.** `dotnet test src/backend/InfraFlowSculptor.slnx` : tous verts, 0 avertissement.
@@ -362,6 +371,13 @@ concurrence optimiste, des identifiants v7 et de l'idempotence des commandes.
    `outbox_messages (id, organization_id, queue, session_id, type, payload jsonb, created_at, sent_at, attempts)`,
    `idempotency_keys (organization_id, key, request_hash, status_code, response jsonb, created_at)` avec clé
    primaire `(organization_id, key)`, `scheduled_job_leases (job_name pk, holder, expires_at)`.
+5 bis. `Domain/Common/ObjectRef.cs` (`ObjectType` énumération + `Guid Id`) : référence unique d'un objet pour l'audit,
+   l'historique, les constats, les notifications et plus tard les commentaires ([technique 10](../technique/10-extensibilite.md) § 2).
+5 ter. `UnitOfWorkBehavior` (Application, comportement du médiateur, commandes seulement) : une transaction ;
+   `SaveChangesAsync` une fois ; collecte des événements de domaine levés par les agrégats
+   (`AggregateRoot.DomainEvents`, `IDomainEvent`) et écriture dans `outbox_messages` (file vide = événement de domaine)
+   dans la **même** transaction ([DT-37](../technique/01-decisions.md#dt-37--événements-de-domaine-par-loutbox)) ; traduction du conflit de concurrence (point 6). Tests : un événement levé est
+   dans l'outbox après la commande ; une commande en échec n'en laisse aucun.
 6. `Infrastructure/Persistence/ConcurrencyConflictException` traduite par `UnitOfWork` en
    `Error.Conflict("CONFLICT_VERSION")` ; le mapping 409 existe déjà (S-03).
 7. `Api/Common/Idempotency/IdempotencyEndpointFilter.cs` : appliqué par une extension
@@ -464,6 +480,9 @@ plusieurs réplicas.
    noms de files en constantes), `IJob` (marqueur), `JobEnvelope (JobId, OrganizationId, Type, Payload,
    TraceParent)`, `IJobDispatcher.Enqueue<TJob>(JobQueue, OrganizationId, TJob)` qui écrit dans
    `outbox_messages` (même transaction que la commande), `IJobHandler<TJob>`.
+2 bis. Worker : `DomainEventDispatcherService` — lit les messages d'outbox sans file (événements de domaine), les
+   distribue à chaque `IDomainEventHandler<T>` enregistré, idempotence par `(événement, gestionnaire)` dans
+   `processed_jobs` ([DT-37](../technique/01-decisions.md#dt-37--événements-de-domaine-par-loutbox)) ; test avec un gestionnaire de test.
 3. Worker : `OutboxRelayService` (BackgroundService) lit par lots les messages non envoyés (`FOR UPDATE SKIP
    LOCKED`), les envoie sur la file avec `SessionId = organization_id` et `MessageId = id`, marque `sent_at` ;
    réessai exponentiel, `attempts` incrémenté.

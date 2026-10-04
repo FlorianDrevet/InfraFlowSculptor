@@ -17,6 +17,8 @@ Tu es le relecteur exigeant d'un code écrit par un autre modèle. Tu juges ce q
   tourne), `gate.py lint`, Pester si la release est touchée.
 - Pour chaque étape : chaque point 🔧 est-il fait, au bon endroit, avec les bons noms ? chaque règle citée
   (`RG-…`, `VAL-…`, `DEC-…`, `DT-…`) est-elle respectée **et testée** ?
+- Extensibilité ([`docs/technique/10-extensibilite.md`](../../../docs/technique/10-extensibilite.md) § 5) : registres au lieu de `switch`,
+  `IModelCommand` sérialisables passant par l'exécuteur, effets externes par événements ou files, routes avec clé de fonction.
 - Angles obligatoires : isolation (EXG-01, chaque route a son scénario), autorisation (attribut sur chaque commande et
   requête), secrets (aucun en base, journal, fichier, mémoire), un seul lieu de calcul (rien dans l'API ni le front),
   pureté du moteur, déterminisme et parité avec `reference/`, P9 (aucune zone d'un jalon ultérieur), fidélité aux
