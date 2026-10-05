@@ -11,3 +11,4 @@
 | 2026-10-05 | Luna | S-02 — squelette CQRS généré dans `src/backend/` et solution compilée |
 | 2026-10-05 | Luna | S-03 — backend .NET 10, ServiceDefaults, Mediator, API `/v1/version`, ProblemDetails et retrait de l'auth locale |
 | 2026-10-05 | Luna | S-04 — cinq projets de tests, tests Domain/API et règles d'architecture automatisées |
+| 2026-10-05 | Luna | S-05 — AppHost Aspire, émulateurs, résolution de clients Azure, tests d'acceptation et recette locale |

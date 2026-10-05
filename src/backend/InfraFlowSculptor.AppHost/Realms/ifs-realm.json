@@ -1,0 +1,250 @@
+{
+  "realm": "ifs",
+  "enabled": true,
+  "displayName": "InfraFlowSculptor",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "clients": [
+    {
+      "clientId": "ifs-web",
+      "name": "IFS Web",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "rootUrl": "http://localhost:4200",
+      "redirectUris": ["http://localhost:4200/*"],
+      "webOrigins": ["http://localhost:4200"],
+      "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "email", "ifs-claims"]
+    },
+    {
+      "clientId": "ifs-api",
+      "name": "IFS API",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "ifs-scalar",
+      "name": "IFS Scalar",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "rootUrl": "http://localhost:5257",
+      "redirectUris": [
+        "http://localhost:5257/scalar/*",
+        "https://localhost:7246/scalar/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5257",
+        "https://localhost:7246"
+      ],
+      "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "email", "ifs-claims"]
+    }
+  ],
+  "roles": {
+    "client": {
+      "ifs-api": [
+        { "name": "Ifs.Support", "composite": false },
+        { "name": "Ifs.CatalogEditor", "composite": false },
+        { "name": "Ifs.PlatformAdmin", "composite": false }
+      ]
+    }
+  },
+  "clientScopes": [
+    {
+      "name": "ifs-claims",
+      "description": "IFS organization and user claims",
+      "protocol": "openid-connect",
+      "attributes": {
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "oid claim",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "oid",
+            "claim.name": "oid",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "tid claim",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tid",
+            "claim.name": "tid",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "amr claim",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "amr",
+            "claim.name": "amr",
+            "jsonType.label": "JSON",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "multivalued": "true"
+          }
+        },
+        {
+          "name": "ifs-api audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "ifs-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "ifs-api client roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "usermodel.clientRoleMapping.clientId": "ifs-api",
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false",
+            "multivalued": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "alice@contoso.example",
+      "email": "alice@contoso.example",
+      "firstName": "Alice",
+      "lastName": "Martin",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "oid": ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"],
+        "tid": ["11111111-1111-1111-1111-111111111111"],
+        "amr": ["pwd"]
+      },
+      "credentials": [{ "type": "password", "value": "Ifs-Demo-2026!", "temporary": false }]
+    },
+    {
+      "username": "bob@contoso.example",
+      "email": "bob@contoso.example",
+      "firstName": "Bob",
+      "lastName": "Durand",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "oid": ["bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"],
+        "tid": ["11111111-1111-1111-1111-111111111111"],
+        "amr": ["pwd"]
+      },
+      "credentials": [{ "type": "password", "value": "Ifs-Demo-2026!", "temporary": false }]
+    },
+    {
+      "username": "chloe@contoso.example",
+      "email": "chloe@contoso.example",
+      "firstName": "Chloe",
+      "lastName": "Petit",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "oid": ["cccccccc-cccc-4ccc-8ccc-cccccccccccc"],
+        "tid": ["11111111-1111-1111-1111-111111111111"],
+        "amr": ["pwd"]
+      },
+      "credentials": [{ "type": "password", "value": "Ifs-Demo-2026!", "temporary": false }]
+    },
+    {
+      "username": "david@fabrikam.example",
+      "email": "david@fabrikam.example",
+      "firstName": "David",
+      "lastName": "Leroy",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "oid": ["dddddddd-dddd-4ddd-8ddd-dddddddddddd"],
+        "tid": ["22222222-2222-2222-2222-222222222222"],
+        "amr": ["pwd"]
+      },
+      "credentials": [{ "type": "password", "value": "Ifs-Demo-2026!", "temporary": false }]
+    },
+    {
+      "username": "emma@outlook.example",
+      "email": "emma@outlook.example",
+      "firstName": "Emma",
+      "lastName": "Bernard",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "oid": ["eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"],
+        "tid": ["9188040d-6c67-4c5b-b112-36a304b66dad"],
+        "amr": ["pwd"]
+      },
+      "credentials": [{ "type": "password", "value": "Ifs-Demo-2026!", "temporary": false }]
+    },
+    {
+      "username": "nina@contoso.example",
+      "email": "nina@contoso.example",
+      "firstName": "Nina",
+      "lastName": "Moreau",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "oid": ["ffffffff-ffff-4fff-8fff-ffffffffffff"],
+        "tid": ["11111111-1111-1111-1111-111111111111"],
+        "amr": ["pwd"]
+      },
+      "credentials": [{ "type": "password", "value": "Ifs-Demo-2026!", "temporary": false }]
+    },
+    {
+      "username": "ops@ifs.example",
+      "email": "ops@ifs.example",
+      "firstName": "IFS",
+      "lastName": "Operations",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "oid": ["99999999-9999-4999-8999-999999999999"],
+        "tid": ["33333333-3333-3333-3333-333333333333"],
+        "amr": ["pwd", "mfa"]
+      },
+      "clientRoles": {
+        "ifs-api": ["Ifs.Support", "Ifs.CatalogEditor"]
+      },
+      "credentials": [{ "type": "password", "value": "Ifs-Demo-2026!", "temporary": false }]
+    }
+  ]
+}

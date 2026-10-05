@@ -36,15 +36,16 @@ audience (`ifs-api`), mêmes noms de revendications.
   utilisateurs, clients, mappers. Il est **importé au démarrage** du conteneur.
 - **Données** : un volume Docker garde l'état de Keycloak entre deux `aspire run`. Si le royaume existe déjà, Keycloak
   ne réimporte **pas** le fichier (voir § 7, « Repartir de zéro »).
-- **Port** : `8080`, fixe (l'émetteur des jetons, `http://localhost:8080/realms/ifs`, en dépend).
+- **Port** : `8080`, fixe et exposé en HTTPS par Aspire (l'émetteur des jetons est
+  `https://localhost:8080/realms/ifs`).
 
 ## 4. Se connecter
 
 | Pour… | Aller sur | Identifiants |
 |---|---|---|
 | Utiliser IFS | `http://localhost:4200` → bouton de connexion → page Keycloak | un utilisateur de démonstration, mot de passe `Ifs-Demo-2026!` |
-| Voir son compte | `http://localhost:8080/realms/ifs/account` | idem |
-| Administrer Keycloak | `http://localhost:8080/admin` (lien dans le tableau de bord Aspire) | `admin` / valeur du paramètre Aspire `keycloak-admin-password` (affichée dans le tableau de bord, ressource `keycloak`, onglet *Parameters*, ou `dotnet user-secrets list --project src/backend/InfraFlowSculptor.AppHost`) |
+| Voir son compte | `https://localhost:8080/realms/ifs/account` | idem |
+| Administrer Keycloak | `https://localhost:8080/admin` (lien dans le tableau de bord Aspire) | `admin` / valeur du paramètre Aspire `keycloak-admin-password` (affichée dans le tableau de bord, ressource `keycloak`, onglet *Parameters*, ou `dotnet user-secrets list --project src/backend/InfraFlowSculptor.AppHost`) |
 
 **Plusieurs utilisateurs à la fois** : une fenêtre de navigation privée (ou un profil de navigateur) par utilisateur.
 La session Keycloak est un cookie : dans la même fenêtre, on est une seule personne.
@@ -53,7 +54,7 @@ La session Keycloak est un cookie : dans la même fenêtre, on est une seule per
 
 ### Changer d'utilisateur
 Se déconnecter dans IFS (menu utilisateur), ou ouvrir une autre fenêtre privée. Si la page Keycloak vous reconnecte
-sans demander le mot de passe, c'est que la session Keycloak est encore ouverte : `http://localhost:8080/realms/ifs/account`
+sans demander le mot de passe, c'est que la session Keycloak est encore ouverte : `https://localhost:8080/realms/ifs/account`
 → *Sign out*, ou vider les cookies de `localhost:8080`.
 
 ### Ajouter un utilisateur
@@ -92,7 +93,7 @@ que vous le voyiez ; remettre 5 minutes ensuite.
 - Utiliser ces comptes ou ce mot de passe ailleurs qu'en local : ils sont publics dans le dépôt.
 - Changer le port 8080 ou le nom du royaume : les jetons ne seraient plus acceptés par l'API ni par l'application.
 - Modifier le royaume **master** : c'est l'administration de Keycloak lui-même.
-- Exposer Keycloak sur le réseau : il tourne en mode développement (`start-dev`), sans TLS.
+- Exposer Keycloak sur le réseau : il tourne en mode développement (`start-dev`) ; Aspire fournit le HTTPS local, qui n'est pas une configuration de production.
 
 ## 7. Repartir de zéro
 
@@ -109,7 +110,7 @@ par ce menu : les recopier à la main dans `users` du fichier.
 
 | Symptôme | Cause | Remède |
 |---|---|---|
-| `401` sur toutes les requêtes de l'API | Émetteur différent (port ou nom d'hôte changé) | Vérifier `Auth__Authority` = `http://localhost:8080/realms/ifs` dans le tableau de bord Aspire, ressource `api` |
+| `401` sur toutes les requêtes de l'API | Émetteur différent (port, schéma ou nom d'hôte changé) | Vérifier `Auth__Authority` = `https://localhost:8080/realms/ifs` dans le tableau de bord Aspire, ressource `api` |
 | « Invalid redirect uri » sur la page de connexion | L'application n'est pas sur `http://localhost:4200` | Lancer l'application par Aspire (port fixe), ou ajouter l'URL dans *Clients* → `ifs-web` → *Valid redirect URIs* |
 | Le nouvel utilisateur du fichier n'apparaît pas | Le royaume existait déjà : pas de réimport | § 7 |
 | `/v1/me` sans `tenantId` | Attribut `tid` absent ou mapper manquant | Vérifier les attributs de l'utilisateur et les mappers du client `ifs-api` |

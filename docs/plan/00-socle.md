@@ -284,7 +284,7 @@ nommant la dépendance ; annuler la modification.
      `.github/memory/08-runtime-and-orchestration.md` ;
    - `AddProject<Projects.InfraFlowSculptor_Api>(api)` avec `WithReference` + `WaitFor` sur la base, les
      blobs, Service Bus, Redis, MailPit, Keycloak ; variables `Auth__Authority =
-     http://localhost:8080/realms/ifs`, `Auth__Audience = ifs-api`, `Auth__Provider = Keycloak`,
+     https://localhost:8080/realms/ifs`, `Auth__Audience = ifs-api`, `Auth__Provider = Keycloak`,
      `Cors__AllowedOrigins__0 = http://localhost:4200`, `Ifs__Development__EnableGitea = true` ;
      `WithExternalHttpEndpoints()`.
 5. `AppHost/Realms/ifs-realm.json` : royaume `ifs`, clients `ifs-web`, `ifs-api`, `ifs-scalar`, mappers et les
@@ -311,8 +311,9 @@ nommant la dépendance ; annuler la modification.
    `dotnet user-secrets set "Gitea:Token" <jeton> --project src/backend/InfraFlowSculptor.AppHost`.
    Idempotent : une seconde exécution n'échoue pas et ne crée rien en double.
 8. `tests/InfraFlowSculptor.Acceptance.Tests` (nouveau, `Aspire.Hosting.Testing`) :
-   `AppHostStartupTests.Api_is_healthy_when_all_emulators_run` — démarre l'AppHost, attend `api` en état
-   « Running », `GET /health` → 200. Trait `Category=Acceptance`.
+   `AppHostStartupTests.ApiIsHealthyWhenAllEmulatorsRun` — démarre l'AppHost, attend que PostgreSQL, Storage,
+   Service Bus, Redis, MailPit et Keycloak soient sains, puis réessaie `GET /health` jusqu'à obtenir HTTP 200.
+   Trait `Category=Acceptance`.
 
 ✅ **Vérification automatique.**
 - `dotnet build` sans avertissement.
@@ -324,7 +325,7 @@ nommant la dépendance ; annuler la modification.
 2. Cliquer le lien de `pgweb` → la base `ifs` est vide.
 3. Cliquer `mailpit` → boîte vide.
 4. Cliquer `redis` → RedisInsight se connecte.
-5. Ouvrir `http://localhost:8080/realms/ifs/account` → se connecter `alice@contoso.example` /
+5. Ouvrir `https://localhost:8080/realms/ifs/account` → se connecter `alice@contoso.example` /
    `Ifs-Demo-2026!` → la page de compte Keycloak affiche Alice.
 6. `pwsh tools/dev/gitea-init.ps1` → « 3 dépôts prêts ». Ouvrir `http://localhost:3000` → l'organisation
    `contoso` et ses trois dépôts. Relancer le script → aucune erreur.

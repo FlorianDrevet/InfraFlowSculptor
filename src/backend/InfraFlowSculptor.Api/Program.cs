@@ -44,7 +44,7 @@ builder.Services.AddOpenApiExtensions();
 builder.Services.AddRateLimiting();
 builder.Services
     .AddApplication()
-    .AddInfrastructure()
+    .AddInfrastructure(builder.Configuration)
     .AddPresentation();
 
 var app = builder.Build();
