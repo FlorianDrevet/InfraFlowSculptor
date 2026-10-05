@@ -7,3 +7,4 @@
 | Date | Étape / section | Résultat | Remarques (écart, capture, référence du run) |
 |---|---|---|---|
 | 2026-10-05 | S-01 — Prérequis de la machine et garde-fous du plan | Partiel, écarts consignés dans `NEXT.md` | `check-prereqs.ps1` : Node 24.13.0 et Azure CLI 2.88.0 sous les minimums; Bicep mis à jour en 0.47.16. Les mises à jour Node/Azure CLI n'ont pas abouti. `gate.py status` et `git config core.hooksPath` conformes. |
+| 2026-10-05 | S-02 — Squelette backend | Partiel | `dotnet build src/backend/InfraFlowSculptor.slnx` : 6 projets, 0 erreur, 31 avertissements tolérés par S-02. `dotnet sln list` confirme les cinq projets et aucune référence au nom du template; ouverture dans Rider non vérifiée, le canal d'automatisation n'expose aucune fenêtre native. Suivi dans `NEXT.md`. |

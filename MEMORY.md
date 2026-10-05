@@ -5,8 +5,8 @@
 
 ## État
 
-- **2026-10-05** : S-01 a posé les prérequis machine et les garde-fous du dépôt. Les outils manquants ou à mettre à jour
-  sont suivis dans [`NEXT.md`](NEXT.md).
+- **2026-10-05** : S-01 a posé les prérequis et garde-fous; S-02 a généré le squelette backend de cinq projets.
+  Les outils manquants et tests manuels restants sont suivis dans [`NEXT.md`](NEXT.md).
 - Cible : backend .NET 10 (template CQRS modernisé), Angular 22 (ng-template), Aspire 13.5 avec émulateurs,
   PostgreSQL, Service Bus, génération Bicep + Azure DevOps.
 
@@ -47,6 +47,7 @@
 | Vérifier les prérequis | `pwsh tools/dev/check-prereqs.ps1` |
 | Tester les garde-fous | `python -m unittest discover tools/plan/tests` |
 | Tester le vérificateur de prérequis | `python -m unittest discover tools/dev/tests` |
+| Compiler le backend | `dotnet build src/backend/InfraFlowSculptor.slnx` |
 | Étape terminée | `python tools/plan/gate.py done <ID>` |
 | Réexporter maquette / Strata | `python tools/design/export_design.py maquette|strata …` (voir `docs/design/README.md`) |
 

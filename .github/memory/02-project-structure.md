@@ -15,6 +15,7 @@
 | `tools/design/export_design.py` | Export statique de la maquette et du design system |
 | `.githooks/pre-commit` | Appelle `tools/plan/gate.py precommit` avant chaque commit |
 | `.editorconfig`, `.gitattributes`, `.gitignore`, `.nvmrc` | Fins de ligne, indentations, fichiers ignorés et version Node |
+| `src/backend/` | Solution CQRS générée avec cinq projets : Api, Application, Contracts, Domain, Infrastructure |
 | `.agents/skills/`, `.claude/skills/`, `.github/skills/` | Skills de Luna, de Claude, partagées |
 | `.github/memory/` | Cette mémoire |
 

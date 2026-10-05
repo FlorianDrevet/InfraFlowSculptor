@@ -10,7 +10,7 @@
 | | |
 |---|---|
 | **Étape courante** | [`S-02`](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) — Squelette backend généré depuis le template CQRS |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`S-01`](docs/plan/00-socle.md#s-01--prérequis-de-la-machine-et-garde-fous-du-plan) — Prérequis de la machine et garde-fous du plan (commit `3d7fe87`) |
 | **Étape suivante** | `S-03` — Moderniser le squelette (évolutions de Vole-Papillon-Damour) |
 | **Verrou** | aucun |
@@ -58,8 +58,10 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 
 ## Tests manuels en attente de vous
 
-Aucun. (Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
-[`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.)
+- S-02 — [ouvrir `src/backend/InfraFlowSculptor.slnx` dans Rider](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) : vérifier les cinq projets et l'absence de références à `Web.Template.CQRS`.
+
+Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
+[`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.
 
 ## Questions pour Claude
 

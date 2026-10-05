@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/SolutionFolder/">
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+  </Folder>
+  <Project Path="InfraFlowSculptor.Api/InfraFlowSculptor.Api.csproj" />
+  <Project Path="InfraFlowSculptor.Application/InfraFlowSculptor.Application.csproj" />
+  <Project Path="InfraFlowSculptor.Contracts/InfraFlowSculptor.Contracts.csproj" />
+  <Project Path="InfraFlowSculptor.Domain/InfraFlowSculptor.Domain.csproj" />
+  <Project Path="InfraFlowSculptor.Infrastructure/InfraFlowSculptor.Infrastructure.csproj" />
+</Solution>
