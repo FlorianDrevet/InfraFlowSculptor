@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`S-07`](docs/plan/00-socle.md#s-07--authentification-oidc-et-utilisateur-courant) — Authentification OIDC et utilisateur courant |
+| **Étape courante** | [`S-08`](docs/plan/00-socle.md#s-08--worker-outbox-et-files-à-sessions) — Worker, outbox et files à sessions |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`S-06`](docs/plan/00-socle.md#s-06--persistance-de-base--postgresql-conventions-concurrence-idempotence) — Persistance de base : PostgreSQL, conventions, concurrence, idempotence (commit `119bca7`) |
-| **Étape suivante** | `S-08` — Worker, outbox et files à sessions |
+| **Dernière étape terminée** | [`S-07`](docs/plan/00-socle.md#s-07--authentification-oidc-et-utilisateur-courant) — Authentification OIDC et utilisateur courant (commit `992b2b6`) |
+| **Étape suivante** | `S-09` — Application Angular générée depuis le template |
 | **Verrou** | aucun |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
 | **Dernière mise à jour** | 2026-10-05 — Luna |
