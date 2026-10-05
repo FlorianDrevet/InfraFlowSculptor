@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`S-02`](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) — Squelette backend généré depuis le template CQRS |
-| **Statut** | `EN_COURS` |
-| **Dernière étape terminée** | [`S-01`](docs/plan/00-socle.md#s-01--prérequis-de-la-machine-et-garde-fous-du-plan) — Prérequis de la machine et garde-fous du plan (commit `3d7fe87`) |
-| **Étape suivante** | `S-03` — Moderniser le squelette (évolutions de Vole-Papillon-Damour) |
+| **Étape courante** | [`S-03`](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour) — Moderniser le squelette (évolutions de Vole-Papillon-Damour) |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`S-02`](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) — Squelette backend généré depuis le template CQRS (commit `9e2ffe0`) |
+| **Étape suivante** | `S-04` — Projets de tests et règles d'architecture |
 | **Verrou** | aucun |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
 | **Dernière mise à jour** | 2026-10-05 — Luna |

@@ -7,3 +7,4 @@
 |---|---|---|---|
 | 2026-10-03 23:59 | Claude | plan initial | aucune étape commencée |
 | 2026-10-05 11:54 | Luna | `S-01` terminée | commit `3d7fe87` |
+| 2026-10-05 12:05 | Luna | `S-02` terminée | commit `9e2ffe0` |
