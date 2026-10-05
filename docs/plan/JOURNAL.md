@@ -11,3 +11,4 @@
 | 2026-10-05 12:47 | Luna | `S-03` terminée | commit `baf78dd` |
 | 2026-10-05 13:18 | Luna | `S-04` terminée | commit `e83d255` |
 | 2026-10-05 15:51 | Luna | `S-05` terminée | commit `4e4bba0` |
+| 2026-10-05 19:42 | Luna | `S-06` terminée | commit `119bca7` |
