@@ -9,14 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`S-01`](docs/plan/00-socle.md#s-01--prérequis-de-la-machine-et-garde-fous-du-plan) — Prérequis de la machine et garde-fous du plan |
-| **Statut** | `EN_COURS` |
-| **Dernière étape terminée** | — |
-| **Étape suivante** | `S-02` — Squelette backend généré depuis le template CQRS |
+| **Étape courante** | [`S-02`](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) — Squelette backend généré depuis le template CQRS |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`S-01`](docs/plan/00-socle.md#s-01--prérequis-de-la-machine-et-garde-fous-du-plan) — Prérequis de la machine et garde-fous du plan (commit `3d7fe87`) |
+| **Étape suivante** | `S-03` — Moderniser le squelette (évolutions de Vole-Papillon-Damour) |
 | **Verrou** | aucun |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
-| **Dernière mise à jour** | 2026-10-03 — Claude (plan initial) |
-
+| **Dernière mise à jour** | 2026-10-05 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
 résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question ci-dessous).
 
