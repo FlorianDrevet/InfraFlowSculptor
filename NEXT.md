@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`S-04`](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture) — Projets de tests et règles d'architecture |
-| **Statut** | `EN_COURS` |
-| **Dernière étape terminée** | [`S-03`](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour) — Moderniser le squelette (évolutions de Vole-Papillon-Damour) (commit `baf78dd`) |
-| **Étape suivante** | `S-05` — AppHost Aspire et émulateurs |
+| **Étape courante** | [`S-05`](docs/plan/00-socle.md#s-05--apphost-aspire-et-émulateurs) — AppHost Aspire et émulateurs |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`S-04`](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture) — Projets de tests et règles d'architecture (commit `e83d255`) |
+| **Étape suivante** | `S-06` — Persistance de base : PostgreSQL, conventions, concurrence, idempotence |
 | **Verrou** | aucun |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
 | **Dernière mise à jour** | 2026-10-05 — Luna |
