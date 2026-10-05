@@ -9,6 +9,7 @@ using InfraFlowSculptor.Api.Errors;
 using InfraFlowSculptor.Application;
 using InfraFlowSculptor.Infrastructure;
 using InfraFlowSculptor.Infrastructure.Configuration;
+using InfraFlowSculptor.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,8 +47,11 @@ builder.Services
     .AddApplication()
     .AddInfrastructure(builder.Configuration)
     .AddPresentation();
+builder.AddIfsDbContext("ifs");
 
 var app = builder.Build();
+
+await app.ApplyMigrationsIfNeededAsync();
 
 app.UseForwardedHeaders();
 app.UseErrorHandling();

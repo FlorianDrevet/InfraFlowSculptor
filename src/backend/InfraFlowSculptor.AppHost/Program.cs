@@ -9,7 +9,8 @@ var keycloakAdminPassword = builder.AddParameter("keycloak-admin-password", secr
 
 var postgres = builder
     .AddPostgres(ResourceNames.Postgres, password: postgresPassword)
-    .WithDataVolume()
+    .WithImageTag("17")
+    .WithDataVolume("ifs-postgres-17-data")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithPgWeb();
 var database = postgres.AddDatabase(ResourceNames.Database);

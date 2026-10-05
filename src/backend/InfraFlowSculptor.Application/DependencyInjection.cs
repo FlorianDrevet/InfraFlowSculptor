@@ -15,7 +15,8 @@ public static class DependencyInjection
             options.PipelineBehaviors =
             [
                 typeof(LoggingBehavior<,>),
-                typeof(ValidationBehavior<,>)
+                typeof(ValidationBehavior<,>),
+                typeof(UnitOfWorkBehavior<,>)
             ];
         });
 

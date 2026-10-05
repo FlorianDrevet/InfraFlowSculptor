@@ -2,7 +2,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Azure.Core;
 using Azure.Storage.Blobs;
 using HealthChecks.Azure.Storage.Blobs;
+using InfraFlowSculptor.Application.Common.Persistence;
+using InfraFlowSculptor.Application.Common.Security;
+using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Infrastructure.Azure;
+using InfraFlowSculptor.Infrastructure.Persistence;
+using InfraFlowSculptor.Infrastructure.Persistence.Admin;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -19,6 +24,10 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddAzureClientsCore();
+        services.TryAddSingleton<TimeProvider>(TimeProvider.System);
+        services.TryAddScoped<ICurrentOrganization>(_ => NoCurrentOrganization.Instance);
+        services.TryAddScoped<IIdempotencyStore, EfIdempotencyStore>();
+        services.TryAddScoped<IdempotencyKeyPurge>();
 
         var credential = new IfsAzureCredential();
         services.TryAddSingleton(credential);
@@ -66,5 +75,12 @@ public static class DependencyInjection
         }
 
         return services;
+    }
+
+    private sealed class NoCurrentOrganization : ICurrentOrganization
+    {
+        public static NoCurrentOrganization Instance { get; } = new();
+
+        public OrganizationId? Id => null;
     }
 }

@@ -14,6 +14,7 @@
       <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
       <PackageReference Include="Mediator.Abstractions" />
       <PackageReference Include="Mediator.SourceGenerator" PrivateAssets="all" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     </ItemGroup>
 
