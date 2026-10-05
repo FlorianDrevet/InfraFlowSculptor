@@ -10,6 +10,10 @@
   <Project Path="InfraFlowSculptor.Infrastructure/InfraFlowSculptor.Infrastructure.csproj" />
   <Project Path="InfraFlowSculptor.ServiceDefaults/InfraFlowSculptor.ServiceDefaults.csproj" />
   <Folder Name="/tests/">
+    <Project Path="tests/InfraFlowSculptor.Api.Tests/InfraFlowSculptor.Api.Tests.csproj" />
     <Project Path="tests/InfraFlowSculptor.Application.Tests/InfraFlowSculptor.Application.Tests.csproj" />
+    <Project Path="tests/InfraFlowSculptor.Architecture.Tests/InfraFlowSculptor.Architecture.Tests.csproj" />
+    <Project Path="tests/InfraFlowSculptor.Domain.Tests/InfraFlowSculptor.Domain.Tests.csproj" />
+    <Project Path="tests/InfraFlowSculptor.Infrastructure.Tests/InfraFlowSculptor.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>

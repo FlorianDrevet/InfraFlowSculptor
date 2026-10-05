@@ -73,3 +73,7 @@ var v1 = app.MapGroup("/v1");
 v1.MapSystemEndpoints();
 
 app.Run();
+
+public partial class Program
+{
+}

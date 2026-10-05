@@ -9,7 +9,8 @@
 - Le contrôle automatisé est couvert par `python -m unittest discover tools/dev/tests`; les scénarios utilisent des commandes `.cmd` simulées.
 - S-02 compile le squelette avec `dotnet build src/backend/InfraFlowSculptor.slnx`; la génération initiale a réussi avec 31 avertissements tolérés par cette étape.
 - S-03 fixe le SDK avec `global.json` (`10.0.203`, `latestFeature`) et applique `Directory.Build.props` (nullable, analyse `latest-recommended`, `TreatWarningsAsErrors`). Le build actuel passe avec 0 avertissement et 0 erreur.
-- `dotnet test src/backend/InfraFlowSculptor.slnx` passe; le seul test actuel couvre le registre de clés absent. Les autres projets de tests sont prévus en S-04.
+- S-04 ajoute cinq projets xUnit (`Domain`, `Application`, `Infrastructure`, `Api`, `Architecture`) sous `src/backend/tests/`. `dotnet test src/backend/InfraFlowSculptor.slnx` passe avec 13 tests et 0 avertissement; `dotnet build` passe avec 0 avertissement et 0 erreur. Le projet Infrastructure.Tests est prêt pour les premières vérifications de persistance en S-06.
+- Les projets de test partagent les versions centrales de xUnit 2.9.3, AwesomeAssertions, NSubstitute, coverlet, MVC Testing et NetArchTest. Le projet d'architecture utilise aussi Roslyn pour vérifier les fichiers source et les clés d'extension.
 - `InfraFlowSculptor.ServiceDefaults` vient des modèles Aspire `13.5.3`; il fournit OpenTelemetry, la découverte/résilience HTTP et `/alive` en développement.
 - Le parcours d'authentification local et ses configurations/secrets du template ont été retirés en S-03. OIDC local arrivera en S-07.
 - Écarts de versions à revoir en R-01 : les versions `10.0.7` de `Microsoft.Extensions.Http.Resilience` et `Microsoft.Extensions.ServiceDiscovery` n'existent pas; les deux sont épinglées à `10.10.0`. `Microsoft.OpenApi` est épinglé directement à `2.7.5` pour corriger GHSA-v5pm-xwqc-g5wc.

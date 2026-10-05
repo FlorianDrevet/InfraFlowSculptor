@@ -2,17 +2,17 @@
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <RootNamespace>InfraFlowSculptor.Application.Tests</RootNamespace>
+    <RootNamespace>InfraFlowSculptor.Architecture.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="NetArchTest.Rules" />
     <PackageReference Include="coverlet.collector">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio">
       <PrivateAssets>all</PrivateAssets>
@@ -25,6 +25,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\InfraFlowSculptor.Api\InfraFlowSculptor.Api.csproj" />
     <ProjectReference Include="..\..\InfraFlowSculptor.Application\InfraFlowSculptor.Application.csproj" />
+    <ProjectReference Include="..\..\InfraFlowSculptor.Contracts\InfraFlowSculptor.Contracts.csproj" />
+    <ProjectReference Include="..\..\InfraFlowSculptor.Domain\InfraFlowSculptor.Domain.csproj" />
   </ItemGroup>
 </Project>

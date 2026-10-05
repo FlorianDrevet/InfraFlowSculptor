@@ -5,7 +5,7 @@
 
 ## État
 
-- **2026-10-05** : S-01/S-02 posent le socle du dépôt; S-03 modernise le backend .NET 10 et l'API système. Le build est à 0 avertissement, 0 erreur; les tests manuels restants sont suivis dans [`NEXT.md`](NEXT.md).
+- **2026-10-05** : S-01/S-02 posent le socle du dépôt; S-03 modernise le backend .NET 10 et l'API système; S-04 ajoute cinq projets xUnit et des règles d'architecture. Build sans avertissement/erreur, 13 tests verts; les vérifications Rider non accessibles sont suivies dans [`NEXT.md`](NEXT.md).
   Les outils manquants et tests manuels restants sont suivis dans [`NEXT.md`](NEXT.md).
 - Cible : backend .NET 10 (template CQRS modernisé), Angular 22 (ng-template), Aspire 13.5 avec émulateurs,
   PostgreSQL, Service Bus, génération Bicep + Azure DevOps.

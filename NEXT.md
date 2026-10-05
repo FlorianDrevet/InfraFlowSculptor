@@ -10,7 +10,7 @@
 | | |
 |---|---|
 | **Étape courante** | [`S-04`](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture) — Projets de tests et règles d'architecture |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`S-03`](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour) — Moderniser le squelette (évolutions de Vole-Papillon-Damour) (commit `baf78dd`) |
 | **Étape suivante** | `S-05` — AppHost Aspire et émulateurs |
 | **Verrou** | aucun |
@@ -60,6 +60,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 
 - S-02 — [ouvrir `src/backend/InfraFlowSculptor.slnx` dans Rider](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) : vérifier les cinq projets et l'absence de références à `Web.Template.CQRS`.
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
+- S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
 
 Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.
