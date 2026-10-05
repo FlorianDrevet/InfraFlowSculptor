@@ -6,3 +6,4 @@
 
 | Date | Étape / section | Résultat | Remarques (écart, capture, référence du run) |
 |---|---|---|---|
+| 2026-10-05 | S-01 — Prérequis de la machine et garde-fous du plan | Partiel, écarts consignés dans `NEXT.md` | `check-prereqs.ps1` : Node 24.13.0 et Azure CLI 2.88.0 sous les minimums; Bicep mis à jour en 0.47.16. Les mises à jour Node/Azure CLI n'ont pas abouti. `gate.py status` et `git config core.hooksPath` conformes. |

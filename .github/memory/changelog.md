@@ -7,3 +7,4 @@
 | 2026-10-04 | Claude | DT-22 confirmée : Mediator remplace MediatR |
 | 2026-10-04 | Claude | DT-08 confirmée : toutes les décisions techniques sont tranchées |
 | 2026-10-04 | Claude | Revue du plan par Luna traitée (18 constats) : statut EN_ATTENTE_DE_RECETTE, jalons découpés refusés par gate.py |
+| 2026-10-05 | Luna | S-01 — prérequis machine, configurations du dépôt, tests du garde-fou et hook pre-commit |

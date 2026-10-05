@@ -10,11 +10,11 @@
 | | |
 |---|---|
 | **Étape courante** | [`S-01`](docs/plan/00-socle.md#s-01--prérequis-de-la-machine-et-garde-fous-du-plan) — Prérequis de la machine et garde-fous du plan |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | — |
 | **Étape suivante** | `S-02` — Squelette backend généré depuis le template CQRS |
 | **Verrou** | aucun |
-| **Branche** | `impl/socle` (à créer depuis `origin/main` à S-01) |
+| **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
 | **Dernière mise à jour** | 2026-10-03 — Claude (plan initial) |
 
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
@@ -37,11 +37,15 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 
 | Outil | Version attendue | Posé ? |
 |---|---|---|
-| SDK .NET | `10.0.203` | Oui (constaté le 2026-10-03) |
-| Node | `24.15.0` | Oui (constaté le 2026-10-03) |
-| Docker | — | Oui (`29.4.3`) |
-| CLI Aspire | `13.5.3` | Non |
-| PowerShell 7, Azure CLI, Bicep, gh | voir `tools/versions.json` (S-01) | À vérifier |
+| SDK .NET | `10.0.203` | Oui (`10.0.301`) |
+| Node | `24.15.0` | Non (`24.13.0`; le MSI winget demande les droits administrateur) |
+| Docker | `27.0.0` | Oui (`29.5.3`, daemon répond) |
+| CLI Aspire | `13.5.3` | Oui (`13.6.0`) |
+| Python | `3.11` | Oui (`3.14.2`) |
+| PowerShell 7 | `7.5.0` | Oui (`7.6.6`) |
+| Azure CLI | `2.90.0` | Non (`2.88.0`; mise à jour MSI interrompue, version inchangée) |
+| Bicep CLI | `0.47.16` | Oui (`0.47.16`) |
+| Git / GitHub CLI | présence | Oui (`2.52.0` / `2.88.1`) |
 
 ## État hors dépôt 📌
 

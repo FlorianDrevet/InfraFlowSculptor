@@ -5,8 +5,8 @@
 
 ## État
 
-- **2026-10-04** : spécifications v1, conception technique, plan, maquette et design system exportés. **Aucun code.**
-  Étape courante : voir [`NEXT.md`](NEXT.md).
+- **2026-10-05** : S-01 a posé les prérequis machine et les garde-fous du dépôt. Les outils manquants ou à mettre à jour
+  sont suivis dans [`NEXT.md`](NEXT.md).
 - Cible : backend .NET 10 (template CQRS modernisé), Angular 22 (ng-template), Aspire 13.5 avec émulateurs,
   PostgreSQL, Service Bus, génération Bicep + Azure DevOps.
 
@@ -44,6 +44,9 @@
 |---|---|
 | État du plan | `python tools/plan/gate.py status` |
 | Contrôle avant de coder | `python tools/plan/gate.py check` |
+| Vérifier les prérequis | `pwsh tools/dev/check-prereqs.ps1` |
+| Tester les garde-fous | `python -m unittest discover tools/plan/tests` |
+| Tester le vérificateur de prérequis | `python -m unittest discover tools/dev/tests` |
 | Étape terminée | `python tools/plan/gate.py done <ID>` |
 | Réexporter maquette / Strata | `python tools/design/export_design.py maquette|strata …` (voir `docs/design/README.md`) |
 
