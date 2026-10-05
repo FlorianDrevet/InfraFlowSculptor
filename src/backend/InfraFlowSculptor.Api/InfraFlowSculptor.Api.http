@@ -1,6 +1,14 @@
-@VPD.Api_HostAddress = http://localhost:5257
+@InfraFlowSculptor.Api_HostAddress = http://localhost:5257
 
-GET {{VPD.Api_HostAddress}}/weatherforecast/
+GET {{InfraFlowSculptor.Api_HostAddress}}/alive
 Accept: application/json
 
 ###
+
+GET {{InfraFlowSculptor.Api_HostAddress}}/v1/version
+Accept: application/json
+
+###
+
+GET {{InfraFlowSculptor.Api_HostAddress}}/v1/nope
+Accept: application/json

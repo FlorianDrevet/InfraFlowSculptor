@@ -10,7 +10,7 @@
 | | |
 |---|---|
 | **Étape courante** | [`S-03`](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour) — Moderniser le squelette (évolutions de Vole-Papillon-Damour) |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`S-02`](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) — Squelette backend généré depuis le template CQRS (commit `9e2ffe0`) |
 | **Étape suivante** | `S-04` — Projets de tests et règles d'architecture |
 | **Verrou** | aucun |
@@ -59,6 +59,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 ## Tests manuels en attente de vous
 
 - S-02 — [ouvrir `src/backend/InfraFlowSculptor.slnx` dans Rider](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) : vérifier les cinq projets et l'absence de références à `Web.Template.CQRS`.
+- S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 
 Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.

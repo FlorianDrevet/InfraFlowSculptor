@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics;
 
 namespace InfraFlowSculptor.Api.Errors;
@@ -6,21 +7,19 @@ public static class ErrorHandling
 {
     public static IApplicationBuilder UseErrorHandling(this IApplicationBuilder builder)
     {
-        return builder.UseExceptionHandler(exceptionHandlerApp
-            => exceptionHandlerApp.Run(async context
-                    =>
-                {
-                    var (statusCode, message) = context.Features.Get<IExceptionHandlerFeature>()?.Error switch
+        return builder.UseExceptionHandler(exceptionHandlerApp =>
+            exceptionHandlerApp.Run(async context =>
+            {
+                var traceId = Activity.Current?.Id ?? context.TraceIdentifier;
+
+                await Results.Problem(
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "An unexpected error occurred.",
+                    extensions: new Dictionary<string, object?>
                     {
-                        _ => (StatusCodes.Status500InternalServerError, "An error occurred.")
-                    };
-                    await Results.Problem(
-                            statusCode: statusCode,
-                            detail: message
-                        )
-                        .ExecuteAsync(context);
-                }
-            )
-        );
+                        ["code"] = "INTERNAL",
+                        ["traceId"] = traceId
+                    }).ExecuteAsync(context);
+            }));
     }
 }

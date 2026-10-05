@@ -8,4 +8,8 @@
   <Project Path="InfraFlowSculptor.Contracts/InfraFlowSculptor.Contracts.csproj" />
   <Project Path="InfraFlowSculptor.Domain/InfraFlowSculptor.Domain.csproj" />
   <Project Path="InfraFlowSculptor.Infrastructure/InfraFlowSculptor.Infrastructure.csproj" />
+  <Project Path="InfraFlowSculptor.ServiceDefaults/InfraFlowSculptor.ServiceDefaults.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="tests/InfraFlowSculptor.Application.Tests/InfraFlowSculptor.Application.Tests.csproj" />
+  </Folder>
 </Solution>

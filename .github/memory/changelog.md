@@ -9,3 +9,4 @@
 | 2026-10-04 | Claude | Revue du plan par Luna traitée (18 constats) : statut EN_ATTENTE_DE_RECETTE, jalons découpés refusés par gate.py |
 | 2026-10-05 | Luna | S-01 — prérequis machine, configurations du dépôt, tests du garde-fou et hook pre-commit |
 | 2026-10-05 | Luna | S-02 — squelette CQRS généré dans `src/backend/` et solution compilée |
+| 2026-10-05 | Luna | S-03 — backend .NET 10, ServiceDefaults, Mediator, API `/v1/version`, ProblemDetails et retrait de l'auth locale |

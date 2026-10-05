@@ -1,60 +1,75 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Scalar.AspNetCore;
 using InfraFlowSculptor.Api;
+using InfraFlowSculptor.Api.Common;
 using InfraFlowSculptor.Api.Common.RateLimiting;
+using InfraFlowSculptor.Api.Configuration;
 using InfraFlowSculptor.Api.Controllers;
 using InfraFlowSculptor.Api.Errors;
 using InfraFlowSculptor.Application;
 using InfraFlowSculptor.Infrastructure;
+using InfraFlowSculptor.Infrastructure.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddEndpointsApiExplorer();
+builder.AddServiceDefaults();
+builder.Services.AddProblemDetails();
+
+// Container Apps' ingress is the only external route to the application container.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("CorsPolicy", policy =>
+    options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyHeader().AllowAnyMethod().WithOrigins(
-            "http://localhost:4200"
-        );
+        var allowedOrigins = builder.Configuration
+            .GetSection(ConfigurationKeys.CorsAllowedOrigins)
+            .Get<string[]>() ?? [];
+
+        policy.AllowAnyHeader().AllowAnyMethod();
+
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins);
+        }
     });
 });
 
-builder.Services.AddAuthorizationBuilder()
-    .AddPolicy("IsAdmin", policy => policy.RequireRole("Admin"));
-
+builder.Services.AddOpenApiExtensions();
+builder.Services.AddRateLimiting();
 builder.Services
-    .AddPresentation()
     .AddApplication()
-    .AddInfrastructure(builder.Configuration)
-    .AddRateLimiting();
+    .AddInfrastructure()
+    .AddPresentation();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+app.UseForwardedHeaders();
+app.UseErrorHandling();
+app.UseStatusCodePages();
+app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseRateLimiter();
+
+app.MapDefaultEndpoints();
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
     app.MapOpenApi();
     app.MapScalarApiReference(options =>
     {
         options.AddDocuments("v1");
-        options.Layout = ScalarLayout.Classic;
+        options.WithTitle("InfraFlowSculptor API v1");
     });
 }
 
-//Middleware
-app.UseCors("CorsPolicy");
-
-app.UseErrorHandling();
-app.UseHttpsRedirection();
-app.UseRouting();
-app.UseRateLimiter(); //After UseRouting
-app.UseStatusCodePages();
-app.UseAuthentication();
-app.UseAuthorization();
-
-//Controllers
-app.UseAuthenticationController();
+var v1 = app.MapGroup("/v1");
+v1.MapSystemEndpoints();
 
 app.Run();

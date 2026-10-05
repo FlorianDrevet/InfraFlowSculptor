@@ -15,7 +15,8 @@
 | `tools/design/export_design.py` | Export statique de la maquette et du design system |
 | `.githooks/pre-commit` | Appelle `tools/plan/gate.py precommit` avant chaque commit |
 | `.editorconfig`, `.gitattributes`, `.gitignore`, `.nvmrc` | Fins de ligne, indentations, fichiers ignorés et version Node |
-| `src/backend/` | Solution CQRS générée avec cinq projets : Api, Application, Contracts, Domain, Infrastructure |
+| `src/backend/` | Solution .NET 10 : Api, Application, Contracts, Domain, Infrastructure, ServiceDefaults ; test Application dans `tests/` |
+| `src/backend/Directory.Build.props` | Framework commun, nullable, analyse recommandée, erreurs sur avertissements, globalisation invariante |
 | `.agents/skills/`, `.claude/skills/`, `.github/skills/` | Skills de Luna, de Claude, partagées |
 | `.github/memory/` | Cette mémoire |
 

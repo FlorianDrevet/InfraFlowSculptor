@@ -1,35 +1,39 @@
 using ErrorOr;
 using FluentValidation;
-using MediatR;
+using Mediator;
 
 namespace InfraFlowSculptor.Application.Common.Behaviors;
 
-public class ValidationBehavior<TRequest, TResponse>(IValidator<TRequest>? validator = null) :
-    IPipelineBehavior<TRequest, TResponse>
-    where TRequest: IRequest<TResponse>
-    where TResponse: IErrorOr
+public sealed class ValidationBehavior<TMessage, TResponse>(
+    IEnumerable<IValidator<TMessage>> validators)
+    : IPipelineBehavior<TMessage, TResponse>
+    where TMessage : IMessage
+    where TResponse : IErrorOr
 {
-    public async Task<TResponse> Handle(
-        TRequest request,
-        RequestHandlerDelegate<TResponse> next,
+    public async ValueTask<TResponse> Handle(
+        TMessage message,
+        MessageHandlerDelegate<TMessage, TResponse> next,
         CancellationToken cancellationToken)
     {
-        if (validator is null)
+        var failures = new List<FluentValidation.Results.ValidationFailure>();
+
+        foreach (var validator in validators)
         {
-            return await next();
+            var result = await validator.ValidateAsync(message, cancellationToken);
+            failures.AddRange(result.Errors);
         }
 
-        var validationResult = await validator.ValidateAsync(request, cancellationToken);
-
-        if (validationResult.IsValid)
+        if (failures.Count == 0)
         {
-            return await next();
+            return await next(message, cancellationToken);
         }
 
-        var errors = validationResult.Errors
-            .ConvertAll(validationError => Error.Validation(
-                validationError.PropertyName,
-                validationError.ErrorMessage));
+        var errors = failures
+            .Select(failure => Error.Validation(
+                failure.ErrorCode,
+                failure.ErrorMessage,
+                new Dictionary<string, object> { ["field"] = failure.PropertyName }))
+            .ToList();
 
         return (dynamic)errors;
     }
