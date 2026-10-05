@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`S-05`](docs/plan/00-socle.md#s-05--apphost-aspire-et-émulateurs) — AppHost Aspire et émulateurs |
-| **Statut** | `EN_COURS` |
-| **Dernière étape terminée** | [`S-04`](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture) — Projets de tests et règles d'architecture (commit `e83d255`) |
-| **Étape suivante** | `S-06` — Persistance de base : PostgreSQL, conventions, concurrence, idempotence |
+| **Étape courante** | [`S-06`](docs/plan/00-socle.md#s-06--persistance-de-base--postgresql-conventions-concurrence-idempotence) — Persistance de base : PostgreSQL, conventions, concurrence, idempotence |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`S-05`](docs/plan/00-socle.md#s-05--apphost-aspire-et-émulateurs) — AppHost Aspire et émulateurs (commit `4e4bba0`) |
+| **Étape suivante** | `S-07` — Authentification OIDC et utilisateur courant |
 | **Verrou** | aucun |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
 | **Dernière mise à jour** | 2026-10-05 — Luna |
