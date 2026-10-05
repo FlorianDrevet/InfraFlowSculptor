@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Scalar.AspNetCore;
 using InfraFlowSculptor.Api;
 using InfraFlowSculptor.Api.Common;
+using InfraFlowSculptor.Api.Authentication;
 using InfraFlowSculptor.Api.Common.RateLimiting;
 using InfraFlowSculptor.Api.Configuration;
 using InfraFlowSculptor.Api.Controllers;
@@ -41,12 +42,14 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddOpenApiExtensions();
+var authAuthority = builder.Configuration[AuthOptions.AuthorityConfigurationKey]
+    ?? throw new InvalidOperationException($"{AuthOptions.AuthorityConfigurationKey} is required.");
+builder.Services.AddOpenApiExtensions(authAuthority);
 builder.Services.AddRateLimiting();
 builder.Services
     .AddApplication()
     .AddInfrastructure(builder.Configuration)
-    .AddPresentation();
+    .AddPresentation(builder.Configuration, builder.Environment);
 builder.AddIfsDbContext("ifs");
 
 var app = builder.Build();
@@ -65,16 +68,26 @@ app.MapDefaultEndpoints();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
     app.MapScalarApiReference(options =>
     {
         options.AddDocuments("v1");
         options.WithTitle("InfraFlowSculptor API v1");
-    });
+        options.AddAuthorizationCodeFlow(ScalarOAuth2.SecuritySchemeName, flow =>
+        {
+            flow.ClientId = ScalarOAuth2.ClientId;
+            flow.AuthorizationUrl = ScalarOAuth2.AuthorizationUrl(authAuthority);
+            flow.TokenUrl = ScalarOAuth2.TokenUrl(authAuthority);
+            flow.Pkce = Pkce.Sha256;
+            flow.SelectedScopes = ScalarOAuth2.Scopes;
+        });
+    }).AllowAnonymous();
 }
 
 var v1 = app.MapGroup("/v1");
 v1.MapSystemEndpoints();
+v1.MapMeEndpoints();
+app.MapFallback(() => Results.NotFound()).AllowAnonymous();
 
 app.Run();
 

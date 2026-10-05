@@ -13,3 +13,4 @@
 | 2026-10-05 | Luna | S-04 — cinq projets de tests, tests Domain/API et règles d'architecture automatisées |
 | 2026-10-05 | Luna | S-05 — AppHost Aspire, émulateurs, résolution de clients Azure, tests d'acceptation et recette locale |
 | 2026-10-05 | Luna | S-06 — EF Core/PostgreSQL 17, isolation par organisation, concurrence, outbox, idempotence et migration initiale |
+| 2026-10-05 | Luna | S-07 — authentification OIDC Keycloak/Entra, utilisateur courant, résolution d'adresse vérifiée, `/v1/me` et OAuth2 PKCE dans Scalar; recette locale partielle, volume Keycloak conservé |

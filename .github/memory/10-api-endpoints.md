@@ -9,5 +9,6 @@
 - `GET /v1/version` — `GetVersion`, anonyme : version informative de l'assembly et environnement (`VersionResponse`).
 - Développement : OpenAPI `GET /openapi/v1.json`, Scalar `/scalar`, titre « InfraFlowSculptor API v1 ».
 - Routes inconnues : `application/problem+json`, statut 404 et `traceId` via ProblemDetails/status-code pages.
+- `GET /v1/me` — `GetMe`, authentification requise, limite `read` : `tenantId`, `objectId`, `displayName`, `verifiedEmail` dérivés de `ICurrentUser`.
 - Limites disponibles : `read` 600/min, `write` 120/min, `generate` 10/min, `publish` 5/min; partition `oid`, sinon adresse IP; rejet 429 avec `Retry-After` et ProblemDetails.
 - `ProblemDetailsMapper.ToProblem(List<Error>)` applique ErrorOr/metadata; les exceptions renvoient `code: INTERNAL` et `traceId` sans détail.

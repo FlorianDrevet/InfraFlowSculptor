@@ -6,6 +6,7 @@ using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Infrastructure.Azure;
+using InfraFlowSculptor.Infrastructure.Authentication;
 using InfraFlowSculptor.Infrastructure.Persistence;
 using InfraFlowSculptor.Infrastructure.Persistence.Admin;
 using Microsoft.Extensions.Configuration;
@@ -26,6 +27,9 @@ public static class DependencyInjection
         services.AddAzureClientsCore();
         services.TryAddSingleton<TimeProvider>(TimeProvider.System);
         services.TryAddScoped<ICurrentOrganization>(_ => NoCurrentOrganization.Instance);
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUser, HttpCurrentUser>();
+        services.AddSingleton<IVerifiedEmailResolver, VerifiedEmailResolver>();
         services.TryAddScoped<IIdempotencyStore, EfIdempotencyStore>();
         services.TryAddScoped<IdempotencyKeyPurge>();
 
