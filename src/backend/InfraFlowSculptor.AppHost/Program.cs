@@ -9,6 +9,8 @@ var builder = DistributedApplication.CreateBuilder(args);
 var postgresPassword = builder.AddParameter("postgres-password", secret: true);
 var persistentContainers = builder.Configuration.GetValue<bool>("AppHost:PersistentContainers");
 var isTesting = builder.Environment.IsEnvironment("Testing");
+var enableDevelopmentExtras = builder.Configuration.GetValue<bool?>("AppHost:EnableDevelopmentExtras")
+    ?? builder.Environment.IsDevelopment();
 var containerLifetime = persistentContainers
     ? ContainerLifetime.Persistent
     : ContainerLifetime.Session;
@@ -22,7 +24,7 @@ if (persistentContainers)
 }
 
 var postgres = postgresBuilder.WithLifetime(containerLifetime);
-if (!isTesting)
+if (enableDevelopmentExtras)
 {
     postgres = postgres.WithPgWeb();
 }
@@ -47,7 +49,7 @@ var serviceBus = builder
     .RunAsEmulator(emulator => emulator
         // Aspire applies this lifetime to the emulator and its SQL sidecar.
         .WithLifetime(containerLifetime)
-        // A cold SQL Server needs the emulator's default readiness window.
+        // The emulator waits for SQL before seeding its entities.
         .WithEnvironment("SQL_WAIT_INTERVAL", "15")
         .WithConfiguration(configuration =>
         {
@@ -70,7 +72,7 @@ foreach (var queueName in new[]
 var redis = builder
     .AddRedis(ResourceNames.Redis)
     .WithLifetime(containerLifetime);
-if (!isTesting)
+if (enableDevelopmentExtras)
 {
     redis = redis.WithRedisInsight();
 }
@@ -89,7 +91,7 @@ var api = builder
     .WithEnvironment("Auth__Audience", "ifs-api")
     .WithEnvironment("Auth__Provider", "Keycloak")
     .WithEnvironment("Cors__AllowedOrigins__0", "http://localhost:4200")
-    .WithEnvironment("Ifs__Development__EnableGitea", isTesting ? "false" : "true")
+    .WithEnvironment("Ifs__Development__EnableGitea", enableDevelopmentExtras ? "true" : "false")
     .WithEnvironment("DOTNET_ENVIRONMENT", builder.Environment.EnvironmentName)
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", builder.Environment.EnvironmentName)
     .WithExternalHttpEndpoints()
@@ -103,10 +105,13 @@ if (isTesting)
 }
 else
 {
-    var mailpit = builder
-        .AddMailPit(ResourceNames.MailPit)
-        .WithLifetime(containerLifetime);
-    api = api.WithReference(mailpit).WaitFor(mailpit);
+    if (enableDevelopmentExtras)
+    {
+        var mailpit = builder
+            .AddMailPit(ResourceNames.MailPit)
+            .WithLifetime(containerLifetime);
+        api = api.WithReference(mailpit).WaitFor(mailpit);
+    }
 
     var keycloakAdminPassword = builder.AddParameter("keycloak-admin-password", secret: true);
     var keycloakBuilder = builder
@@ -121,25 +126,31 @@ else
         .WithRealmImport("./Realms");
     api = api.WithReference(keycloak).WaitFor(keycloak);
 
-    builder.AddAzureKeyVaultEmulator(ResourceNames.KeyVault);
-
-    var giteaBuilder = builder
-        .AddContainer(ResourceNames.Gitea, "gitea/gitea", "1.24")
-        .WithHttpEndpoint(
-            port: persistentContainers ? 3000 : null,
-            targetPort: 3000,
-            name: "http",
-            isProxied: false)
-        .WithEnvironment("GITEA__security__INSTALL_LOCK", "true")
-        .WithEnvironment("GITEA__server__ROOT_URL", "http://localhost:3000/");
-    if (persistentContainers)
+    if (enableDevelopmentExtras)
     {
-        giteaBuilder = giteaBuilder
-            .WithContainerName("ifs-gitea")
-            .WithVolume("ifs-gitea-data", "/data");
+        builder.AddAzureKeyVaultEmulator(ResourceNames.KeyVault);
     }
 
-    _ = giteaBuilder.WithLifetime(containerLifetime);
+    if (enableDevelopmentExtras)
+    {
+        var giteaBuilder = builder
+            .AddContainer(ResourceNames.Gitea, "gitea/gitea", "1.24")
+            .WithHttpEndpoint(
+                port: persistentContainers ? 3000 : null,
+                targetPort: 3000,
+                name: "http",
+                isProxied: false)
+            .WithEnvironment("GITEA__security__INSTALL_LOCK", "true")
+            .WithEnvironment("GITEA__server__ROOT_URL", "http://localhost:3000/");
+        if (persistentContainers)
+        {
+            giteaBuilder = giteaBuilder
+                .WithContainerName("ifs-gitea")
+                .WithVolume("ifs-gitea-data", "/data");
+        }
+
+        _ = giteaBuilder.WithLifetime(containerLifetime);
+    }
 
     builder.AddJavaScriptApp(ResourceNames.Web, "../../frontend/ifs-web")
         .WithRunScript("start")

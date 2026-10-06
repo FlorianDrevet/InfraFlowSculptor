@@ -55,6 +55,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 | Groupes Entra (`sg-shop-sql-admins`) et Azure DevOps (« Shop Release Approvers ») | — | — |
 | Inscriptions Entra d'IFS (`dev`) | — | — |
 | Protection de la branche `main` sur GitHub | À activer par vous dans *Settings → Branches* | 2026-10-06 |
+| Secret de dépôt GitHub Actions `IFS_E2E_PASSWORD` | Configuré (valeur masquée) | 2026-10-06 |
 
 ## Tests manuels en attente de vous
 
