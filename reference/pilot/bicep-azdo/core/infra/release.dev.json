@@ -1,0 +1,25 @@
+{
+  "schema": "ifs-release/v1",
+  "project": "shop",
+  "component": "core",
+  "target": "dev",
+  "unit": "ifs-shop-core-dev",
+  "subscriptionId": "<A>",
+  "location": "francecentral",
+  "protected": false,
+  "deploymentIdentityObjectId": null,
+  "dependencies": [],
+  "secretWrites": [
+    {
+      "variable": "MAIN_PAYMENTS_API_KEY",
+      "vault": "kv-shop-main-dev",
+      "secret": "payments-api-key",
+      "source": "pipeline"
+    }
+  ],
+  "secretReferences": [],
+  "appOwnedState": [],
+  "dataAccess": [],
+  "accessObjectTypes": ["Microsoft.Insights/diagnosticSettings"],
+  "restartOnSecretChange": []
+}

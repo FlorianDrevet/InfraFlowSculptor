@@ -1,0 +1,18 @@
+{
+  "schema": "ifs-release/v1",
+  "project": "shop",
+  "component": "platform",
+  "target": "shared",
+  "unit": "ifs-shop-platform-shared",
+  "subscriptionId": "<C>",
+  "location": "francecentral",
+  "protected": true,
+  "deploymentIdentityObjectId": null,
+  "dependencies": [],
+  "secretWrites": [],
+  "secretReferences": [],
+  "appOwnedState": [],
+  "dataAccess": [],
+  "accessObjectTypes": [],
+  "restartOnSecretChange": []
+}

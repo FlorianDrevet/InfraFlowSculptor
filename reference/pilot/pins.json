@@ -1,0 +1,57 @@
+{
+  "readDate": "2026-10-06",
+  "bicepCliVersion": "0.47.16",
+  "startupImage": {
+    "reference": "mcr.microsoft.com/k8se/quickstart@sha256:3a4d93c34c6753f24765ab17a36f1754aee9b02082b7d9553d17697b9e8252c4",
+    "source": "https://mcr.microsoft.com/v2/k8se/quickstart/manifests/latest"
+  },
+  "modules": {
+    "operational-insights/workspace": {
+      "reference": "br/public:avm/res/operational-insights/workspace:0.16.0",
+      "version": "0.16",
+      "versionSource": "https://raw.githubusercontent.com/Azure/bicep-registry-modules/main/avm/res/operational-insights/workspace/version.json"
+    },
+    "insights/component": {
+      "reference": "br/public:avm/res/insights/component:0.8.0",
+      "version": "0.8",
+      "versionSource": "https://raw.githubusercontent.com/Azure/bicep-registry-modules/main/avm/res/insights/component/version.json"
+    },
+    "key-vault/vault": {
+      "reference": "br/public:avm/res/key-vault/vault:0.14.0",
+      "version": "0.14",
+      "versionSource": "https://raw.githubusercontent.com/Azure/bicep-registry-modules/main/avm/res/key-vault/vault/version.json"
+    },
+    "managed-identity/user-assigned-identity": {
+      "reference": "br/public:avm/res/managed-identity/user-assigned-identity:0.6.0",
+      "version": "0.6",
+      "versionSource": "https://raw.githubusercontent.com/Azure/bicep-registry-modules/main/avm/res/managed-identity/user-assigned-identity/version.json"
+    },
+    "container-registry/registry": {
+      "reference": "br/public:avm/res/container-registry/registry:0.13.0",
+      "version": "0.13",
+      "versionSource": "https://raw.githubusercontent.com/Azure/bicep-registry-modules/main/avm/res/container-registry/registry/version.json"
+    },
+    "app/managed-environment": {
+      "reference": "br/public:avm/res/app/managed-environment:0.16.0",
+      "version": "0.16",
+      "versionSource": "https://raw.githubusercontent.com/Azure/bicep-registry-modules/main/avm/res/app/managed-environment/version.json"
+    },
+    "app/container-app": {
+      "reference": "br/public:avm/res/app/container-app:0.23.0",
+      "version": "0.23",
+      "versionSource": "https://raw.githubusercontent.com/Azure/bicep-registry-modules/main/avm/res/app/container-app/version.json"
+    },
+    "sql/server": {
+      "reference": "br/public:avm/res/sql/server:0.22.0",
+      "version": "0.22",
+      "versionSource": "https://raw.githubusercontent.com/Azure/bicep-registry-modules/main/avm/res/sql/server/version.json"
+    }
+  },
+  "nativeResources": {
+    "roleAssignment": {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "reason": "Le nom déterministe guid(scope, principal, rôle) est défini directement dans le composant."
+    }
+  }
+}

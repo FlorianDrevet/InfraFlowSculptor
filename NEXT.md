@@ -10,7 +10,7 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-02`](docs/plan/01-preuves.md#p-02--bicep-du-projet-pilote-écrit-à-la-main) — Bicep du projet pilote, écrit à la main |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`P-01`](docs/plan/01-preuves.md#p-01--application-témoin) — Application témoin (commit `884b323`) |
 | **Étape suivante** | `P-03` — Module de release PowerShell |
 | **Verrou** | aucun |
