@@ -10,6 +10,7 @@
 - Développement : OpenAPI `GET /openapi/v1.json`, Scalar `/scalar`, titre « InfraFlowSculptor API v1 ».
 - Routes inconnues : `application/problem+json`, statut 404 et `traceId` via ProblemDetails/status-code pages.
 - `GET /v1/me` — `GetMe`, authentification requise, limite `read` : `tenantId`, `objectId`, `displayName`, `verifiedEmail` dérivés de `ICurrentUser`.
+- En développement et en test, `POST /v1/dev/ping-job` enfile un job authentifié et renvoie 202 ; `GET /v1/dev/ping-job/{jobId}` retourne son état pour l'organisation courante. Ces routes sont exclues du document OpenAPI.
 - Limites disponibles : `read` 600/min, `write` 120/min, `generate` 10/min, `publish` 5/min; partition `oid`, sinon adresse IP; rejet 429 avec `Retry-After` et ProblemDetails.
 - `ProblemDetailsMapper.ToProblem(List<Error>)` applique ErrorOr/metadata; les exceptions renvoient `code: INTERNAL` et `traceId` sans détail.
 - S-14 versionne `src/backend/InfraFlowSculptor.Api/openapi/v1.json`, produit au build par `Microsoft.Extensions.ApiDescription.Server`; `dotnet build` régénère le document. Le contexte de génération force l'autorité locale Keycloak pour garder le contrat déterministe, tandis que Scalar runtime utilise l'autorité configurée.

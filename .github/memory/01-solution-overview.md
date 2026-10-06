@@ -13,4 +13,5 @@ Modéliser → valider → générer une révision immuable → publier par pull
 IFS suit les déploiements par les rapports `ifs-report.json`.
 
 ## État
-2026-10-04 : aucun code ; conception, plan, maquette et design system prêts.
+2026-10-06 : S-01 à S-16 du socle sont implémentés ; S-17 met à jour la mémoire, le graphe de code et le guide de démarrage.
+R-01 est le prochain verrou. Les fonctions métier décrites par la cible restent à construire dans les phases suivantes.

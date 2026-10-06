@@ -10,7 +10,7 @@
 | | |
 |---|---|
 | **Étape courante** | [`S-17`](docs/plan/00-socle.md#s-17--mémoire-graphe-de-code-et-démarrage-rapide) — Mémoire, graphe de code et démarrage rapide |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`S-16`](docs/plan/00-socle.md#s-16--observabilité-transverse) — Observabilité transverse (commit `6e3e086`) |
 | **Étape suivante** | `R-01` — Revue du socle |
 | **Verrou** | aucun |
@@ -42,7 +42,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 | CLI Aspire | `13.5.3` | Oui (`13.6.0`) |
 | Python | `3.11` | Oui (`3.14.2`) |
 | PowerShell 7 | `7.5.0` | Oui (`7.6.6`) |
-| Azure CLI | `2.90.0` | Non (`2.88.0`; mise à jour MSI interrompue, version inchangée) |
+| Azure CLI | `2.90.0` | Oui (`2.90.0`, vérifié par `pwsh tools/dev/check-prereqs.ps1` le 2026-10-06) |
 | Bicep CLI | `0.47.16` | Oui (`0.47.16`) |
 | Git / GitHub CLI | présence | Oui (`2.52.0` / `2.88.1`) |
 
@@ -64,6 +64,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 - S-02 — [ouvrir `src/backend/InfraFlowSculptor.slnx` dans Rider](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) : vérifier les cinq projets et l'absence de références à `Web.Template.CQRS`.
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 - S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
+- S-17 — sur un clone neuf, suivre [README — Démarrer](README.md#démarrer-windows) jusqu'à « Bonjour Alice Martin ». Les prérequis passent ; le démarrage du clone reste à vérifier quand les ports fixes 4200, 8080, 5257 et 3000 seront libres, car l'AppHost de travail reste actif.
 Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.
 

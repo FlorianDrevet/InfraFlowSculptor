@@ -21,4 +21,7 @@
 - La route `/dev/design-system` n'est enregistrée qu'en développement (`isDevMode()`); sa page « Fondations » lit les exports générés et expose toutes les couleurs, les groupes typographiques, les espacements et les rayons.
 - Validations : `npm test` (3 tests Angular + 3 générateur), lint/i18n (11 clés), `tokens:check`, build Angular. La galerie locale a été inspectée; l'ouverture de la référence `file://` a été bloquée par la politique du navigateur, donc la comparaison visuelle côte à côte est partielle. Les valeurs affichées ont été comparées aux exports produits depuis le JSON source.
 
-S-11 et S-12 : composants Strata et motifs à documenter d'après le code réel.
+### S-11 et S-12 — composants et motifs
+- La galerie `/dev/design-system` expose les neuf composants Strata de base, puis les types d'icônes Azure et les motifs `ResourceRow`, `GeneratedName` et `GoldenPath`; les projections sont consultables dans la galerie.
+- La recette S-11 vérifie le focus clavier, Toggle, Tabs, Segmented et les hauteurs de boutons. La recette S-12 vérifie le piège et le retour du focus du dialogue, les 25 types d'icônes/tuiles et le tableau.
+- La comparaison côte à côte aux références `docs/design/strata/rendered/*.html` reste partielle car l'automatisation Chrome bloque `file://`; le contrôle du tableau à 390 px reste à effectuer manuellement (voir `NEXT.md`).

@@ -7,4 +7,4 @@
 
 - `Domain/Common/Models/` contient `Entity<TId>`, `AggregateRoot<TId>`, `ValueObject`, `EnumValueObject<TEnum>` et `IHasVersion`.
 - `Application/Common/Extensibility/` contient `IKeyed<TKey>`, `Registry<TKey,TService>` et les attributs de métadonnées du plan.
-- Le seul test applicatif actuel vérifie qu'une clé absente du registre est citée dans l'exception.
+- Les tests Application couvrent le registre, le dispatcher de jobs, les événements de domaine, la confidentialité des journaux et les compteurs de télémétrie.

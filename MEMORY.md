@@ -5,10 +5,12 @@
 
 ## État
 
-- **2026-10-05** : S-01/S-02 posent le socle du dépôt; S-03 modernise le backend .NET 10 et l'API système; S-04 ajoute cinq projets xUnit et des règles d'architecture. Build sans avertissement/erreur, 13 tests verts; les vérifications Rider non accessibles sont suivies dans [`NEXT.md`](NEXT.md).
-  Les outils manquants et tests manuels restants sont suivis dans [`NEXT.md`](NEXT.md).
-- Cible : backend .NET 10 (template CQRS modernisé), Angular 22 (ng-template), Aspire 13.5 avec émulateurs,
-  PostgreSQL, Service Bus, génération Bicep + Azure DevOps.
+- **2026-10-06** : S-01 à S-16 du socle sont implémentés. Backend .NET 10, Aspire, émulateurs, PostgreSQL, Worker/outbox,
+  OIDC Keycloak local, Angular 22, Strata, OpenAPI/client généré, CI et observabilité sont en place. Le run CI
+  `37460726122` est vert ; détails et écarts de recette restent dans [`NEXT.md`](NEXT.md) et
+  [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md).
+- **S-17 en cours** : mémoire vérifiée, graphe de code local et guide « Démarrer » à terminer ; le prochain verrou est
+  R-01. Les moteurs/catalogues et intégrations métier restent des étapes futures du plan.
 
 ## Fichiers thématiques
 
@@ -23,7 +25,7 @@
 | `.github/memory/04-frontend.md` | Angular : génération, coquille, conventions, e2e |
 | `.github/memory/05-data-and-storage.md` | PostgreSQL, blob, outbox, audit, secrets |
 | `.github/memory/06-agents-skills.md` | Agents, skills, verrous, règles d'architecture |
-| `.github/memory/07-code-graph.md` | graphify |
+| `.github/memory/07-code-graph.md` | graphify : installation locale, génération sans LLM et requêtes |
 | `.github/memory/08-runtime-and-orchestration.md` | Aspire, émulateurs, worker, release |
 | `.github/memory/09-auth-and-build.md` | Authentification, build, tests, CI, déploiement |
 | `.github/memory/10-api-endpoints.md` | Routes `/v1`, OpenAPI |
@@ -31,11 +33,11 @@
 | `.github/memory/12-engine.md` | Moteur, catalogue, émetteurs |
 | `.github/memory/13-integrations.md` | Entra, Azure DevOps, GitHub, e-mail |
 | `.github/memory/changelog.md` | Une ligne par mise à jour non triviale |
-| `.github/memory/dream-state.md` | Dernière consolidation |
+| `.github/memory/dream-state.md` | État de consolidation de la mémoire |
 
 ## Repères
 
-1. Lire `NEXT.md` avant tout ; `python tools/plan/gate.py check` avant d'écrire du code.
+1. Lire `NEXT.md` avant tout ; `python tools/plan/gate.py check` avant une étape.
 2. Un seul moteur de calcul (`InfraFlowSculptor.Engine`), pur ; le frontend ne calcule rien.
 3. La sortie de référence (`reference/`) fait foi pour les émetteurs.
 4. Chaque route a son test d'isolation (EXG-01).
@@ -51,7 +53,7 @@
 | Tester les garde-fous | `python -m unittest discover tools/plan/tests` |
 | Tester le vérificateur de prérequis | `python -m unittest discover tools/dev/tests` |
 | Compiler le backend | `dotnet build src/backend/InfraFlowSculptor.slnx` |
+| Démarrer l'application locale | `cd src/backend; aspire run` |
+| Mettre à jour le graphe de code, sans LLM | `python -m graphify update .` (à la racine) |
 | Étape terminée | `python tools/plan/gate.py done <ID>` |
 | Réexporter maquette / Strata | `python tools/design/export_design.py maquette|strata …` (voir `docs/design/README.md`) |
-
-*(Les commandes de build, de test et d'exécution s'ajoutent ici à partir de S-01.)*
