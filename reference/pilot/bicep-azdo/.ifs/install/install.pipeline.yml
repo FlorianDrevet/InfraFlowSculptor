@@ -1,0 +1,159 @@
+# Généré par InfraFlowSculptor. Ne pas modifier : la prochaine publication remplacera ce fichier.
+trigger: none
+pr: none
+
+pool:
+  vmImage: windows-latest
+
+steps:
+- checkout: self
+  persistCredentials: 'true'
+
+- task: PowerShell@2
+  displayName: Préparer environnements, pipelines, groupes de variables et permissions
+  inputs:
+    targetType: filePath
+    filePath: .ifs/install/scripts/Install-Azdo.ps1
+    arguments: -Phase Prepare -RepositoryPath "$(Build.SourcesDirectory)"
+    pwsh: true
+  env:
+    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+- task: AzureCLI@2
+  displayName: Vérifier l'identité d'infrastructure dev et lancer un what-if vide
+  continueOnError: true
+  inputs:
+    azureSubscription: ifs-shop-dev
+    scriptType: pscore
+    scriptLocation: inlineScript
+    inlineScript: |
+      $ErrorActionPreference = 'Stop'
+      try {
+        az account get-access-token --resource https://management.azure.com/ --output none
+        if ($LASTEXITCODE -ne 0) { throw 'Obtention du jeton ARM impossible.' }
+        az deployment sub what-if --location francecentral --template-file .ifs/install/readiness.bicep --only-show-errors
+        if ($LASTEXITCODE -ne 0) { throw 'What-if de souscription refuse.' }
+        Write-Host '##vso[task.setvariable variable=IFS_READINESS_DEV]Succeeded'
+      }
+      catch {
+        Write-Host '##vso[task.setvariable variable=IFS_READINESS_DEV]Failed'
+        throw
+      }
+
+- task: AzureCLI@2
+  displayName: Vérifier la federation de l'identité applicative dev
+  continueOnError: true
+  inputs:
+    azureSubscription: ifs-shop-dev-app
+    scriptType: pscore
+    scriptLocation: inlineScript
+    inlineScript: |
+      $ErrorActionPreference = 'Stop'
+      try {
+        az account get-access-token --resource https://management.azure.com/ --output none
+        if ($LASTEXITCODE -ne 0) { throw 'Obtention du jeton ARM impossible.' }
+        Write-Host '##vso[task.setvariable variable=IFS_APP_AUTH_DEV]Succeeded'
+      }
+      catch {
+        Write-Host '##vso[task.setvariable variable=IFS_APP_AUTH_DEV]Failed'
+        throw
+      }
+
+- task: AzureCLI@2
+  displayName: Vérifier l'identité d'infrastructure prd et lancer un what-if vide
+  continueOnError: true
+  inputs:
+    azureSubscription: ifs-shop-prd
+    scriptType: pscore
+    scriptLocation: inlineScript
+    inlineScript: |
+      $ErrorActionPreference = 'Stop'
+      try {
+        az account get-access-token --resource https://management.azure.com/ --output none
+        if ($LASTEXITCODE -ne 0) { throw 'Obtention du jeton ARM impossible.' }
+        az deployment sub what-if --location francecentral --template-file .ifs/install/readiness.bicep --only-show-errors
+        if ($LASTEXITCODE -ne 0) { throw 'What-if de souscription refuse.' }
+        Write-Host '##vso[task.setvariable variable=IFS_READINESS_PRD]Succeeded'
+      }
+      catch {
+        Write-Host '##vso[task.setvariable variable=IFS_READINESS_PRD]Failed'
+        throw
+      }
+
+- task: AzureCLI@2
+  displayName: Vérifier la federation de l'identité applicative prd
+  continueOnError: true
+  inputs:
+    azureSubscription: ifs-shop-prd-app
+    scriptType: pscore
+    scriptLocation: inlineScript
+    inlineScript: |
+      $ErrorActionPreference = 'Stop'
+      try {
+        az account get-access-token --resource https://management.azure.com/ --output none
+        if ($LASTEXITCODE -ne 0) { throw 'Obtention du jeton ARM impossible.' }
+        Write-Host '##vso[task.setvariable variable=IFS_APP_AUTH_PRD]Succeeded'
+      }
+      catch {
+        Write-Host '##vso[task.setvariable variable=IFS_APP_AUTH_PRD]Failed'
+        throw
+      }
+
+- task: AzureCLI@2
+  displayName: Vérifier l'identité d'infrastructure shared et lancer un what-if vide
+  continueOnError: true
+  inputs:
+    azureSubscription: ifs-shop-shared
+    scriptType: pscore
+    scriptLocation: inlineScript
+    inlineScript: |
+      $ErrorActionPreference = 'Stop'
+      try {
+        az account get-access-token --resource https://management.azure.com/ --output none
+        if ($LASTEXITCODE -ne 0) { throw 'Obtention du jeton ARM impossible.' }
+        az deployment sub what-if --location francecentral --template-file .ifs/install/readiness.bicep --only-show-errors
+        if ($LASTEXITCODE -ne 0) { throw 'What-if de souscription refuse.' }
+        Write-Host '##vso[task.setvariable variable=IFS_READINESS_SHARED]Succeeded'
+      }
+      catch {
+        Write-Host '##vso[task.setvariable variable=IFS_READINESS_SHARED]Failed'
+        throw
+      }
+
+- task: AzureCLI@2
+  displayName: Vérifier la federation de l'identité applicative shared
+  continueOnError: true
+  inputs:
+    azureSubscription: ifs-shop-shared-app
+    scriptType: pscore
+    scriptLocation: inlineScript
+    inlineScript: |
+      $ErrorActionPreference = 'Stop'
+      try {
+        az account get-access-token --resource https://management.azure.com/ --output none
+        if ($LASTEXITCODE -ne 0) { throw 'Obtention du jeton ARM impossible.' }
+        Write-Host '##vso[task.setvariable variable=IFS_APP_AUTH_SHARED]Succeeded'
+      }
+      catch {
+        Write-Host '##vso[task.setvariable variable=IFS_APP_AUTH_SHARED]Failed'
+        throw
+      }
+
+- task: PowerShell@2
+  displayName: Installer les contrôles, les politiques main et retirer l'accès temporaire
+  condition: always()
+  inputs:
+    targetType: filePath
+    filePath: .ifs/install/scripts/Install-Azdo.ps1
+    arguments: -Phase Finalize -RepositoryPath "$(Build.SourcesDirectory)"
+    pwsh: true
+  env:
+    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+- task: PublishPipelineArtifact@1
+  displayName: Publier le rapport d'installation
+  condition: always()
+  inputs:
+    targetPath: $(Agent.TempDirectory)/ifs-install-report.json
+    artifact: ifs-install-report
+    publishLocation: pipeline

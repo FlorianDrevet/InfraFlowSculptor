@@ -111,7 +111,7 @@ function Test-LocalReference {
 }
 
 $yamlFiles = @(Get-ChildItem -LiteralPath $pipelineRoot -Filter '*.yml' -File -Recurse | Sort-Object FullName)
-if ($yamlFiles.Count -ne 23) { throw "23 fichiers YAML étaient attendus pour P-04 ; trouvé : $($yamlFiles.Count)." }
+if ($yamlFiles.Count -ne 24) { throw "24 fichiers YAML sont attendus après P-05 ; trouvé : $($yamlFiles.Count)." }
 $expectedFiles = @(
     '.ifs/templates/infra-pr.yml', '.ifs/templates/infra-ci.yml', '.ifs/templates/infra-release.yml', '.ifs/templates/infra-target-stages.yml',
     '.ifs/templates/app-pr.yml', '.ifs/templates/app-ci.yml', '.ifs/templates/app-release.yml', '.ifs/templates/app-target-stage.yml',
@@ -119,7 +119,8 @@ $expectedFiles = @(
     'data/infra/pipelines/pr.yml', 'data/infra/pipelines/ci.yml', 'data/infra/pipelines/release.yml',
     'platform/infra/pipelines/pr.yml', 'platform/infra/pipelines/ci.yml', 'platform/infra/pipelines/release.yml',
     'orders/infra/pipelines/pr.yml', 'orders/infra/pipelines/ci.yml', 'orders/infra/pipelines/release.yml',
-    'orders/apps/api/pipelines/pr.yml', 'orders/apps/api/pipelines/ci.yml', 'orders/apps/api/pipelines/release.yml'
+    'orders/apps/api/pipelines/pr.yml', 'orders/apps/api/pipelines/ci.yml', 'orders/apps/api/pipelines/release.yml',
+    '.ifs/install/install.pipeline.yml'
 )
 foreach ($expectedFile in $expectedFiles) {
     if (-not (Test-Path -LiteralPath (Join-Path $pipelineRoot $expectedFile) -PathType Leaf)) { throw "Pipeline P-04 manquante : $expectedFile" }
@@ -139,12 +140,17 @@ foreach ($file in $yamlFiles) {
     foreach ($match in [regex]::Matches($text, '\.ifs/templates/scripts/([A-Za-z0-9_.-]+\.ps1)')) {
         Test-LocalReference -Path ('.ifs/templates/scripts/{0}' -f $match.Groups[1].Value) -Description 'Script de pipeline'
     }
+    foreach ($match in [regex]::Matches($text, '\.ifs/install/scripts/([A-Za-z0-9_.-]+\.ps1)')) {
+        Test-LocalReference -Path ('.ifs/install/scripts/{0}' -f $match.Groups[1].Value) -Description 'Script du kit installation'
+    }
 
     $isTemplate = $file.FullName.StartsWith((Join-Path $pipelineRoot '.ifs/templates'), [StringComparison]::OrdinalIgnoreCase)
     $schema = if ($isTemplate) { $templateSchemaPath } else { $schemaPath }
     $schemaDocument = if ($isTemplate) { ConvertTo-IfsSchemaDocument -Node $document -Context $null } else { $document }
     $json = ConvertTo-Json -InputObject $schemaDocument -Depth 100 -Compress
-    if (-not (Test-Json -Json $json -SchemaFile $schema -ErrorAction Stop)) { throw "Le schéma Azure Pipelines refuse $($file.FullName)." }
+    try { $isValid = Test-Json -Json $json -SchemaFile $schema -ErrorAction Stop }
+    catch { throw "Le schéma Azure Pipelines refuse $($file.FullName) : $($_.Exception.Message)" }
+    if (-not $isValid) { throw "Le schéma Azure Pipelines refuse $($file.FullName)." }
 
     if ($file.Name -eq 'pr.yml') {
         $templatePath = @($document.extends.template)[0]
