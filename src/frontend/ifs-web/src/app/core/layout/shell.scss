@@ -1,40 +1,43 @@
-.shell {
-  display: flex;
-  flex-direction: column;
+:host {
+  display: block;
   min-height: 100dvh;
 }
 
-.shell__header {
+.shell {
   display: flex;
-  align-items: center;
-  gap: var(--space-4, 1rem);
-  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
-  border-bottom: 1px solid var(--color-border, #e2e2e2);
+  min-height: 100dvh;
+  overflow-x: clip;
 }
 
-.shell__brand {
-  font-weight: 600;
-  text-decoration: none;
-  color: inherit;
-}
-
-.shell__nav {
+.shell__workspace {
   display: flex;
-  gap: var(--space-3, 0.75rem);
-
-  a.is-active {
-    font-weight: 600;
-  }
-}
-
-.shell__main {
+  min-width: 0;
   flex: 1;
-  padding: var(--space-4, 1rem);
+  flex-direction: column;
 }
 
-.shell__footer {
-  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
-  border-top: 1px solid var(--color-border, #e2e2e2);
-  font-size: 0.875rem;
-  color: var(--color-text-muted, #666);
+.shell__content {
+  width: min(100%, var(--ifs-content-max));
+  min-width: 0;
+  flex: 1;
+  align-self: center;
+  padding: var(--ifs-space-8);
+}
+
+.shell__mobile-menu {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .shell__sidebar {
+    display: none;
+  }
+
+  .shell__mobile-menu {
+    display: block;
+  }
+
+  .shell__content {
+    padding: var(--ifs-space-4);
+  }
 }

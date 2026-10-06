@@ -41,6 +41,16 @@
   font-size: 12px;
 }
 
+.st-btn-lg {
+  height: 44px;
+  padding-inline: 18px;
+  font-size: 14px;
+}
+
+.st-btn-full-width {
+  width: 100%;
+}
+
 .st-btn-primary {
   background: var(--ifs-signal);
   color: var(--ifs-signal-ink);

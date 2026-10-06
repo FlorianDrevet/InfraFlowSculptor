@@ -1,0 +1,180 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+
+.login {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 100dvh;
+  background: var(--ifs-bg);
+}
+
+.login__intro {
+  display: flex;
+  flex: 1 1 520px;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+  padding: 56px 64px;
+  border-right: 1px solid var(--ifs-line);
+  background: var(--ifs-surface-sidebar);
+}
+
+.login__pitch h1 {
+  max-width: 560px;
+  margin: 0;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.login__pitch p {
+  max-width: 540px;
+  margin: var(--ifs-space-4) 0 0;
+  color: var(--ifs-text-2);
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.login__steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ifs-space-2);
+  max-width: 560px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.login__steps li {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--ifs-space-2);
+}
+
+.login__step-mark {
+  height: 4px;
+  border-radius: var(--ifs-radius-sm);
+  background: var(--ifs-signal);
+}
+
+.login__steps strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.login__steps li > span:last-child {
+  color: var(--ifs-text-3);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.login__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ifs-space-2);
+}
+
+.login__form {
+  display: flex;
+  flex: 1 1 420px;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 64px;
+}
+
+.login__form-content {
+  display: flex;
+  width: 100%;
+  max-width: 400px;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login__form header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 30px;
+}
+
+.login__form header p {
+  margin: var(--ifs-space-1) 0 0;
+  color: var(--ifs-text-2);
+}
+
+.login__submit {
+  display: block;
+  width: 100%;
+}
+
+.login__microsoft {
+  color: var(--ifs-signal-ink);
+}
+
+.login__notice {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+  color: var(--ifs-text-2);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.login__notice p,
+.login__discovery,
+.login__footer {
+  margin: 0;
+}
+
+.login__notice strong,
+.login__discovery strong {
+  color: var(--ifs-text);
+  font-weight: 500;
+}
+
+.login__discovery {
+  color: var(--ifs-text-2);
+  font-size: 13px;
+}
+
+.login__footer {
+  color: var(--ifs-text-3);
+  font-size: 12px;
+}
+
+@media (max-width: 939px) {
+  .login__intro,
+  .login__form {
+    padding: var(--ifs-space-8) var(--ifs-space-6);
+  }
+
+  .login__intro {
+    border-right: 0;
+    border-bottom: 1px solid var(--ifs-line);
+  }
+}
+
+@media (max-width: 480px) {
+  .login__intro,
+  .login__form {
+    padding: var(--ifs-space-6) var(--ifs-space-4);
+  }
+
+  .login__pitch h1 {
+    font-size: 32px;
+  }
+
+  .login__steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: var(--ifs-space-4);
+  }
+}

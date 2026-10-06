@@ -1,17 +1,34 @@
 import { isDevMode } from '@angular/core';
 import { Routes } from '@angular/router';
-import { autoLoginPartialRoutesGuard } from 'angular-auth-oidc-client';
+import { authenticatedGuard } from './core/auth/authenticated.guard';
 
 export const routes: Routes = [
   {
-    path: '',
-    loadComponent: () => import('./features/home/home').then((m) => m.Home),
-    canActivate: [autoLoginPartialRoutesGuard],
+    path: 'login',
+    loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
+    title: 'InfraFlowSculptor — Connexion',
   },
   {
-    path: 'profile',
-    loadComponent: () => import('./features/profile/profile').then((m) => m.Profile),
-    canActivate: [autoLoginPartialRoutesGuard],
+    path: '',
+    canActivate: [authenticatedGuard],
+    loadComponent: () => import('./core/layout/shell').then((m) => m.Shell),
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./features/home/home').then((m) => m.Home),
+        title: 'Accueil',
+      },
+      {
+        path: 'profile',
+        loadComponent: () => import('./features/profile/profile').then((m) => m.Profile),
+        title: 'Profil',
+      },
+      {
+        path: 'error',
+        loadComponent: () => import('./features/error/error').then((m) => m.ErrorPage),
+        title: 'Erreur',
+      },
+    ],
   },
   {
     path: 'unauthorized',
@@ -21,7 +38,8 @@ export const routes: Routes = [
     ? [
         {
           path: 'dev/design-system',
-          loadComponent: () => import('./features/dev/design-system/design-system').then((m) => m.DesignSystem),
+          loadComponent: () =>
+            import('./features/dev/design-system/design-system').then((m) => m.DesignSystem),
         },
       ]
     : []),

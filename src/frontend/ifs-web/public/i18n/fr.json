@@ -15,7 +15,48 @@
     "signOut": "Se déconnecter",
     "notSignedIn": "Vous n’êtes pas connecté."
   },
-  "nav": {
-    "home": "Accueil"
+  "login": {
+    "tagline": "Décrivez votre infrastructure Azure une fois. Déployez-la sans retouche.",
+    "description": "IFS produit le code d'infrastructure, les pipelines et le kit d'installation dans vos dépôts, avec les identités, les rôles et les secrets déjà câblés.",
+    "model": "Modéliser",
+    "modelDetail": "Composants, ressources, liaisons",
+    "generate": "Générer",
+    "generateDetail": "Une révision validée",
+    "publish": "Publier",
+    "publishDetail": "Pull request par dépôt",
+    "deploy": "Déployer",
+    "deployDetail": "Vos pipelines, vos identités",
+    "badgeDescription": "Formats et plateformes pris en charge",
+    "title": "Connexion",
+    "providerDescription": "Avec votre compte professionnel Microsoft Entra ID ou un compte Microsoft personnel.",
+    "continue": "Continuer avec Microsoft",
+    "noPasswordTitle": "Pas de mot de passe IFS.",
+    "noPassword": "Votre identité reste gérée par Microsoft ; l'authentification multifacteur de votre organisation s'applique.",
+    "invitationTitle": "Une invitation ?",
+    "invitation": "Ouvrez le lien reçu par e-mail : il vous connecte à la bonne organisation.",
+    "newUser": "Nouveau sur IFS ?",
+    "discoveryPlan": "Le plan Découverte est gratuit : modélisez, validez et téléchargez sans connecter de dépôt.",
+    "hosting": "Hébergé dans l'Union européenne",
+    "serviceStatus": "État des services",
+    "privacy": "Confidentialité"
+  },
+  "shell": {
+    "home": "Accueil InfraFlowSculptor",
+    "primaryNavigation": "Navigation principale",
+    "breadcrumb": "Fil d’Ariane",
+    "openMenu": "Menu",
+    "closeMenu": "Fermer",
+    "chooseLanguage": "Langue"
+  },
+  "error": {
+    "title": "Une erreur s'est produite.",
+    "message": "La requête n'a pas pu aboutir. Réessayez dans quelques instants.",
+    "reference": "Référence",
+    "retry": "Réessayer"
+  },
+  "notFound": {
+    "title": "Cette page n'existe pas.",
+    "message": "Vérifiez l'adresse ou revenez à l'accueil.",
+    "home": "Retour à l'accueil"
   }
 }

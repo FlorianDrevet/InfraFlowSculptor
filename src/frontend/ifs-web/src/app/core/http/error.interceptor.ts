@@ -1,5 +1,6 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { catchError, throwError } from 'rxjs';
+import { normalizeHttpError } from './api-error';
 
 /**
  * Central place to react to HTTP failures (logging, telemetry, normalizing
@@ -12,7 +13,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) =>
   next(req).pipe(
     catchError((error: unknown) => {
       if (error instanceof HttpErrorResponse) {
-        console.error(`[http] ${req.method} ${req.url} failed with ${error.status}`, error.error);
+        const normalized = normalizeHttpError(error);
+        console.error(
+          `[http] ${req.method} ${req.url} failed with ${normalized.status} (${normalized.code})`,
+        );
+        return throwError(() => normalized);
       }
       return throwError(() => error);
     }),

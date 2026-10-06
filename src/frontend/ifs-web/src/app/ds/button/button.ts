@@ -13,7 +13,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { DsIcon, IconName } from '../icon/icon';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
-export type ButtonSize = 'md' | 'sm';
+export type ButtonSize = 'md' | 'sm' | 'lg';
 export type ButtonType = 'button' | 'submit' | 'reset';
 
 @Component({
@@ -29,6 +29,7 @@ export class DsButton implements AfterViewInit {
   readonly size = input<ButtonSize>('md');
   readonly icon = input<IconName | undefined>();
   readonly iconPosition = input<'start' | 'end'>('start');
+  readonly fullWidth = input(false);
   readonly href = input<string | undefined>();
   readonly type = input<ButtonType>('button');
   readonly disabled = input(false);

@@ -673,3 +673,4 @@ graphify-out/
 **/TestResults/
 **/playwright-report/
 **/test-results/
+**/e2e/__captures__/

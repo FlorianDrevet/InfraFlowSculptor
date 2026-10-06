@@ -1,0 +1,9 @@
+<section class="error-page" role="alert" aria-labelledby="error-title">
+  <p class="error-page__code">500</p>
+  <h1 id="error-title">{{ 'error.title' | transloco }}</h1>
+  <p>{{ 'error.message' | transloco }}</p>
+  <p class="error-page__reference">
+    {{ 'error.reference' | transloco }}: <code>{{ reference }}</code>
+  </p>
+  <a routerLink="/">{{ 'error.retry' | transloco }}</a>
+</section>

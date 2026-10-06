@@ -1,0 +1,83 @@
+<main class="login">
+  <section class="login__intro" aria-labelledby="login-tagline">
+    <app-brand />
+    <div class="login__pitch">
+      <h1 id="login-tagline">{{ 'login.tagline' | transloco }}</h1>
+      <p>{{ 'login.description' | transloco }}</p>
+    </div>
+
+    <ol class="login__steps">
+      <li>
+        <span class="login__step-mark"></span>
+        <strong>{{ 'login.model' | transloco }}</strong>
+        <span>{{ 'login.modelDetail' | transloco }}</span>
+      </li>
+      <li>
+        <span class="login__step-mark"></span>
+        <strong>{{ 'login.generate' | transloco }}</strong>
+        <span>{{ 'login.generateDetail' | transloco }}</span>
+      </li>
+      <li>
+        <span class="login__step-mark"></span>
+        <strong>{{ 'login.publish' | transloco }}</strong>
+        <span>{{ 'login.publishDetail' | transloco }}</span>
+      </li>
+      <li>
+        <span class="login__step-mark"></span>
+        <strong>{{ 'login.deploy' | transloco }}</strong>
+        <span>{{ 'login.deployDetail' | transloco }}</span>
+      </li>
+    </ol>
+
+    <div class="login__badges" [attr.aria-label]="'login.badgeDescription' | transloco">
+      <app-ds-badge [mono]="true">Bicep · Terraform · OpenTofu · Pulumi</app-ds-badge>
+      <app-ds-badge [mono]="true">Azure DevOps · GitHub Actions · GitLab CI</app-ds-badge>
+    </div>
+  </section>
+
+  <section class="login__form" aria-labelledby="login-title">
+    <div class="login__form-content">
+      <header>
+        <h2 id="login-title">{{ 'login.title' | transloco }}</h2>
+        <p>{{ 'login.providerDescription' | transloco }}</p>
+      </header>
+
+      <app-ds-button
+        class="login__submit"
+        data-testid="login-with-microsoft"
+        variant="primary"
+        size="lg"
+        [fullWidth]="true"
+        (click)="continueWithMicrosoft()"
+      >
+        <svg class="login__microsoft" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="2" y="2" width="9.5" height="9.5" fill="currentColor" />
+          <rect x="12.5" y="2" width="9.5" height="9.5" fill="currentColor" opacity="0.75" />
+          <rect x="2" y="12.5" width="9.5" height="9.5" fill="currentColor" opacity="0.75" />
+          <rect x="12.5" y="12.5" width="9.5" height="9.5" fill="currentColor" opacity="0.5" />
+        </svg>
+        {{ 'login.continue' | transloco }}
+      </app-ds-button>
+
+      <div class="login__notice">
+        <p>
+          <strong>{{ 'login.noPasswordTitle' | transloco }}</strong>
+          {{ 'login.noPassword' | transloco }}
+        </p>
+        <p>
+          <strong>{{ 'login.invitationTitle' | transloco }}</strong>
+          {{ 'login.invitation' | transloco }}
+        </p>
+      </div>
+
+      <p class="login__discovery">
+        <strong>{{ 'login.newUser' | transloco }}</strong>
+        {{ 'login.discoveryPlan' | transloco }}
+      </p>
+      <p class="login__footer">
+        {{ 'login.hosting' | transloco }} · {{ 'login.serviceStatus' | transloco }} ·
+        {{ 'login.privacy' | transloco }}
+      </p>
+    </div>
+  </section>
+</main>

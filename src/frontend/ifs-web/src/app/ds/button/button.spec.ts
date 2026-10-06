@@ -23,6 +23,14 @@ describe('app-ds-button', () => {
     expect(container.querySelector('button')?.type).toBe('submit');
   });
 
+  it('stretches the control to the available width when requested', async () => {
+    await render(DsButton, {
+      bindings: [inputBinding('fullWidth', () => true)],
+    });
+
+    expect(screen.getByRole('button').classList.contains('st-btn-full-width')).toBe(true);
+  });
+
   it('requires an accessible name for an icon-only action', async () => {
     await expect(
       render(DsButton, { bindings: [inputBinding('icon', () => 'plus')] }),

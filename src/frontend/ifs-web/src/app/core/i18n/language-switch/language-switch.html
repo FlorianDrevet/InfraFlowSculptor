@@ -1,0 +1,7 @@
+<app-ds-segmented
+  [options]="options"
+  [value]="language.activeLanguage()"
+  (valueChange)="setLanguage($event ?? '')"
+  [ariaLabel]="'shell.chooseLanguage' | transloco"
+  [mono]="true"
+/>

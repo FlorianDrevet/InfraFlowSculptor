@@ -1,7 +1,10 @@
 import { authInterceptor } from 'angular-auth-oidc-client';
 import { HttpInterceptorFn } from '@angular/common/http';
 import { apiBaseUrlInterceptor } from './api-base-url.interceptor';
+import { acceptLanguageInterceptor } from './accept-language.interceptor';
 import { errorInterceptor } from './error.interceptor';
+import { idempotencyInterceptor } from './idempotency.interceptor';
+import { organizationInterceptor } from './organization.interceptor';
 
 /**
  * The functional HTTP interceptor chain, in order, passed to
@@ -11,4 +14,11 @@ import { errorInterceptor } from './error.interceptor';
  * `auth` schematic can append an auth interceptor to it without having to
  * parse the `provideHttpClient(...)` call itself.
  */
-export const httpInterceptors: HttpInterceptorFn[] = [apiBaseUrlInterceptor, authInterceptor(), errorInterceptor];
+export const httpInterceptors: HttpInterceptorFn[] = [
+  apiBaseUrlInterceptor,
+  authInterceptor(),
+  organizationInterceptor,
+  idempotencyInterceptor,
+  acceptLanguageInterceptor,
+  errorInterceptor,
+];
