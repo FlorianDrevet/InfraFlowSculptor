@@ -28,6 +28,7 @@ public static class OpenApiExtensions
             options.AddDocumentTransformer((document, _, _) =>
             {
                 document.Info.Title = "InfraFlowSculptor API v1";
+                document.Servers = [];
                 document.Components ??= new OpenApiComponents();
                 document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
                 document.Components.SecuritySchemes[ScalarOAuth2.SecuritySchemeName] = new OpenApiSecurityScheme

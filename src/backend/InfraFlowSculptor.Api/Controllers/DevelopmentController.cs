@@ -30,6 +30,7 @@ public static class DevelopmentController
                 return Results.Accepted($"/v1/dev/ping-job/{jobId:D}", new { jobId });
             })
             .RequireAuthorization()
+            .ExcludeFromDescription()
             .WithName("EnqueueDevelopmentPingJob");
 
         v1.MapGet("/dev/ping-job/{jobId:guid}", async (
@@ -53,6 +54,7 @@ public static class DevelopmentController
                     : Results.Accepted($"/v1/dev/ping-job/{jobId:D}", new { jobId, processed = false });
             })
             .RequireAuthorization()
+            .ExcludeFromDescription()
             .WithName("GetDevelopmentPingJobStatus");
 
         return v1;

@@ -1,4 +1,3 @@
-import { httpResource } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,14 +6,13 @@ import {
   OnDestroy,
   OnInit,
 } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { Router } from '@angular/router';
+import { timeout } from 'rxjs';
+import { Api, getMe, GetMe$Params, MeResponse } from '../../core/api/generated';
 import { ApiError } from '../../core/http/api-error';
 import { NavigationRegistry } from '../../core/layout/navigation.registry';
-
-interface CurrentUser {
-  displayName: string;
-}
 
 @Component({
   selector: 'app-home',
@@ -24,10 +22,11 @@ interface CurrentUser {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Home implements OnInit, OnDestroy {
-  protected readonly currentUser = httpResource<CurrentUser>(() => ({
-    url: '/v1/me',
-    timeout: 10_000,
-  }));
+  protected readonly currentUser = rxResource<MeResponse, GetMe$Params>({
+    params: () => ({}),
+    stream: ({ params }) => this.api.invoke(getMe, params).pipe(timeout({ first: 10_000 })),
+  });
+  private readonly api = inject(Api);
   private readonly router = inject(Router);
   private readonly navigation = inject(NavigationRegistry);
   private unregisterNavigation?: () => void;

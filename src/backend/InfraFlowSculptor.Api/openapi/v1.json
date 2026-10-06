@@ -1,0 +1,127 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "InfraFlowSculptor API v1",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/version": {
+      "get": {
+        "tags": [
+          "InfraFlowSculptor.Api"
+        ],
+        "summary": "Get API version and environment.",
+        "operationId": "GetVersion",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "tags": [
+          "InfraFlowSculptor.Api"
+        ],
+        "operationId": "GetMe",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "MeResponse": {
+        "required": [
+          "tenantId",
+          "objectId",
+          "displayName",
+          "verifiedEmail"
+        ],
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "objectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "verifiedEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "VersionResponse": {
+        "required": [
+          "version",
+          "environment"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "OAuth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://localhost:8080/realms/ifs/protocol/openid-connect/auth",
+            "tokenUrl": "https://localhost:8080/realms/ifs/protocol/openid-connect/token",
+            "scopes": {
+              "openid": "Authenticate the user",
+              "profile": "Read the user's profile",
+              "email": "Read the user's email address"
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "InfraFlowSculptor.Api"
+    }
+  ]
+}

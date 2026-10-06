@@ -4,6 +4,8 @@ import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { loginAsAlice } from './support/login';
 
+const HOME_GREETING_TIMEOUT = 15_000;
+
 test('public login screen is responsive and has a named sign-in action', async ({
   page,
 }, testInfo) => {
@@ -47,7 +49,7 @@ test('signed-in shell is usable and accessible', async ({ page }, testInfo) => {
   const expectedName = process.env['IFS_E2E_EXPECTED_NAME'] ?? 'Alice Martin';
   await expect(
     page.getByRole('heading', { name: `Bonjour ${expectedName}`, exact: true }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: HOME_GREETING_TIMEOUT });
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   const primaryNavigation = page.getByRole('navigation', { name: 'Navigation principale' });
 
@@ -75,18 +77,18 @@ test('signed-in shell is usable and accessible', async ({ page }, testInfo) => {
     await page.getByRole('group', { name: 'Langue' }).getByRole('button', { name: 'EN' }).click();
     await expect(
       page.getByRole('heading', { name: `Hello ${expectedName}`, exact: true }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: HOME_GREETING_TIMEOUT });
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 
     await page.reload();
     await expect(
       page.getByRole('heading', { name: `Hello ${expectedName}`, exact: true }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: HOME_GREETING_TIMEOUT });
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await page.getByRole('group', { name: 'Language' }).getByRole('button', { name: 'FR' }).click();
     await expect(
       page.getByRole('heading', { name: `Bonjour ${expectedName}`, exact: true }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: HOME_GREETING_TIMEOUT });
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
   }
 

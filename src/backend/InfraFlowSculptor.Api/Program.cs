@@ -8,11 +8,14 @@ using InfraFlowSculptor.Api.Configuration;
 using InfraFlowSculptor.Api.Controllers;
 using InfraFlowSculptor.Api.Errors;
 using InfraFlowSculptor.Application;
+using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Infrastructure;
+using InfraFlowSculptor.Infrastructure.Authentication;
 using InfraFlowSculptor.Infrastructure.Configuration;
 using InfraFlowSculptor.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+var isOpenApiBuild = OpenApiBuildContext.IsDocumentGeneration;
 
 builder.AddServiceDefaults();
 builder.Services.AddProblemDetails();
@@ -42,29 +45,43 @@ builder.Services.AddCors(options =>
     });
 });
 
-var authAuthority = builder.Configuration[AuthOptions.AuthorityConfigurationKey]
-    ?? throw new InvalidOperationException($"{AuthOptions.AuthorityConfigurationKey} is required.");
+var authAuthority = isOpenApiBuild
+    ? AuthOptions.LocalKeycloakAuthority
+    : builder.Configuration[AuthOptions.AuthorityConfigurationKey]
+        ?? throw new InvalidOperationException($"{AuthOptions.AuthorityConfigurationKey} is required.");
 builder.Services.AddOpenApiExtensions(authAuthority);
 builder.Services.AddRateLimiting();
-builder.Services
-    .AddApplication()
-    .AddInfrastructure(builder.Configuration)
-    .AddPresentation(builder.Configuration, builder.Environment);
-builder.AddIfsDbContext("ifs");
+builder.Services.AddApplication();
+if (isOpenApiBuild)
+{
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddSingleton<IVerifiedEmailResolver, VerifiedEmailResolver>();
+    builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
+}
+else
+{
+    builder.Services
+        .AddInfrastructure(builder.Configuration)
+        .AddPresentation(builder.Configuration, builder.Environment);
+    builder.AddIfsDbContext("ifs");
+}
 
 var app = builder.Build();
 
-await app.ApplyMigrationsIfNeededAsync();
+if (!isOpenApiBuild)
+{
+    await app.ApplyMigrationsIfNeededAsync();
 
-app.UseForwardedHeaders();
-app.UseErrorHandling();
-app.UseStatusCodePages();
-app.UseCors();
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseRateLimiter();
+    app.UseForwardedHeaders();
+    app.UseErrorHandling();
+    app.UseStatusCodePages();
+    app.UseCors();
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.UseRateLimiter();
 
-app.MapDefaultEndpoints();
+    app.MapDefaultEndpoints();
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -87,11 +104,14 @@ if (app.Environment.IsDevelopment())
 var v1 = app.MapGroup("/v1");
 v1.MapSystemEndpoints();
 v1.MapMeEndpoints();
-if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
+if (!isOpenApiBuild && (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing")))
 {
     v1.MapDevelopmentEndpoints();
 }
-app.MapFallback(() => Results.NotFound()).AllowAnonymous();
+if (!isOpenApiBuild)
+{
+    app.MapFallback(() => Results.NotFound()).AllowAnonymous();
+}
 
 app.Run();
 

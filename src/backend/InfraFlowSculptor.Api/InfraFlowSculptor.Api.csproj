@@ -4,12 +4,19 @@
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
       <UserSecretsId>3af4547e-7898-4c08-bcb0-8f452e799be0</UserSecretsId>
       <RootNamespace>InfraFlowSculptor.Api</RootNamespace>
+      <OpenApiGenerateDocumentsOnBuild>true</OpenApiGenerateDocumentsOnBuild>
+      <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)/openapi</OpenApiDocumentsDirectory>
+      <OpenApiGenerateDocumentsOptions>--file-name v1</OpenApiGenerateDocumentsOptions>
   </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Mapster" />
         <PackageReference Include="Mapster.DependencyInjection" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+        <PackageReference Include="Microsoft.Extensions.ApiDescription.Server">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
         <PackageReference Include="Microsoft.Identity.Web" />
         <PackageReference Include="Microsoft.OpenApi" />

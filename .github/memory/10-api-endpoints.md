@@ -1,6 +1,6 @@
 # 10 — Routes de l'API
 
-> **Rien d'implémenté au 2026-10-04.** À remplir par Luna aux étapes citées, d'après le code réel.
+> S-14 implémenté le 2026-10-06 ; compléter aux étapes suivantes, d'après le code réel.
 > Cible : DT-05, DT-06. Chaque étape qui ajoute une route l'inscrit ici (méthode, chemin, nom, permission, portée de débit).
 
 ## Faits vérifiés
@@ -12,3 +12,7 @@
 - `GET /v1/me` — `GetMe`, authentification requise, limite `read` : `tenantId`, `objectId`, `displayName`, `verifiedEmail` dérivés de `ICurrentUser`.
 - Limites disponibles : `read` 600/min, `write` 120/min, `generate` 10/min, `publish` 5/min; partition `oid`, sinon adresse IP; rejet 429 avec `Retry-After` et ProblemDetails.
 - `ProblemDetailsMapper.ToProblem(List<Error>)` applique ErrorOr/metadata; les exceptions renvoient `code: INTERNAL` et `traceId` sans détail.
+- S-14 versionne `src/backend/InfraFlowSculptor.Api/openapi/v1.json`, produit au build par `Microsoft.Extensions.ApiDescription.Server`; `dotnet build` régénère le document. Le contexte de génération force l'autorité locale Keycloak pour garder le contrat déterministe, tandis que Scalar runtime utilise l'autorité configurée.
+- Le client généré par `ng-openapi-gen` est normalisé en LF avec une seule fin de ligne afin que `git diff --check` et la comparaison soient reproductibles sous Windows/Linux.
+- `OpenApiDocumentTests.BuildDocumentMatchesRuntimeOpenApiDocument` compare le document runtime au fichier commité. Si un endpoint ajoute des services injectés, garder leurs registrations de contexte build alignées avec la configuration runtime; le test protège le contrat.
+- `ApiFactory` fixe `Auth:Authority` par `UseSetting` et une source mémoire ajoutée en dernier; `OpenApiDocumentTests` passe même quand le processus fournit volontairement une autre `Auth__Authority`.
