@@ -6,6 +6,6 @@
 | `lastLock` | — |
 | `codeGraphEngine` | graphify |
 | `lastImplementationReview` | 2026-10-06 — Luna, S-17 avant R-01 |
-| `currentStep` | S-17 — graphe et démarrage rapide |
+| `currentStep` | R-01 — revue du socle |
 
 Règle : Claude consolide la mémoire à chaque verrou (`.claude/skills/consolider-memoire/SKILL.md`).

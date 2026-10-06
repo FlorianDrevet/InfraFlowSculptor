@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`S-17`](docs/plan/00-socle.md#s-17--mémoire-graphe-de-code-et-démarrage-rapide) — Mémoire, graphe de code et démarrage rapide |
-| **Statut** | `EN_COURS` |
-| **Dernière étape terminée** | [`S-16`](docs/plan/00-socle.md#s-16--observabilité-transverse) — Observabilité transverse (commit `6e3e086`) |
-| **Étape suivante** | `R-01` — Revue du socle |
+| **Étape courante** | [`R-01`](docs/plan/00-socle.md#-r-01--revue-du-socle) — Revue du socle |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`S-17`](docs/plan/00-socle.md#s-17--mémoire-graphe-de-code-et-démarrage-rapide) — Mémoire, graphe de code et démarrage rapide (commit `4fbd85c`) |
+| **Étape suivante** | `P-01` — Application témoin |
 | **Verrou** | aucun |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
 | **Dernière mise à jour** | 2026-10-06 — Luna |

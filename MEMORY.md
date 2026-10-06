@@ -9,8 +9,9 @@
   OIDC Keycloak local, Angular 22, Strata, OpenAPI/client généré, CI et observabilité sont en place. Le run CI
   `37460726122` est vert ; détails et écarts de recette restent dans [`NEXT.md`](NEXT.md) et
   [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md).
-- **S-17 en cours** : mémoire vérifiée, graphe de code local et guide « Démarrer » à terminer ; le prochain verrou est
-  R-01. Les moteurs/catalogues et intégrations métier restent des étapes futures du plan.
+- **S-17 terminé le 2026-10-06** : mémoire vérifiée, graphe de code local et guide « Démarrer » ajoutés. Le contrôle de
+  prérequis passe; le parcours sur clone neuf reste en attente dans [`NEXT.md`](NEXT.md), car l'AppHost actif occupe les
+  ports fixes. Le verrou courant est R-01. Les moteurs/catalogues et intégrations métier restent des étapes futures.
 
 ## Fichiers thématiques
 

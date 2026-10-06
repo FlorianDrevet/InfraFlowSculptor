@@ -23,3 +23,4 @@
 | 2026-10-06 12:48 | Luna | `S-15` terminée | commit `80b2250` |
 | 2026-10-06 13:58 | Luna | `S-16` commencée | observabilité transverse et diagnostic du Service Bus local |
 | 2026-10-06 14:09 | Luna | `S-16` terminée | commit `6e3e086` |
+| 2026-10-06 14:31 | Luna | `S-17` terminée | commit `4fbd85c` |

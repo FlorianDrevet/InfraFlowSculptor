@@ -8,7 +8,7 @@ déploient, avec le câblage de sécurité (identités, rôles, secrets) déduit
 
 ## État du dépôt
 
-Le socle technique S-01 à S-16 est implémenté. S-17 met à jour la mémoire et le démarrage ; le verrou R-01 reste à passer. **Où on en est : [`NEXT.md`](NEXT.md).**
+Le socle technique S-01 à S-17 est implémenté ; le verrou R-01 — revue du socle — est la prochaine étape. La recette clone neuf reste à exécuter lorsque les ports locaux seront libres. **Où on en est : [`NEXT.md`](NEXT.md).**
 
 | Dossier | Contenu |
 |---|---|
