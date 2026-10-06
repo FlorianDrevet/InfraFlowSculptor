@@ -1,0 +1,75 @@
+<main class="foundations">
+  <header class="page-header">
+    <p class="eyebrow">STRATA · DESIGN SYSTEM</p>
+    <h1>Fondations</h1>
+    <p class="intro">Valeurs générées depuis <code>docs/design/strata/tokens.json</code>.</p>
+  </header>
+
+  <section aria-labelledby="colors-title">
+    <h2 id="colors-title">Couleurs</h2>
+    <div class="color-grid">
+      @for (token of colors; track token.name) {
+        <article class="color-card">
+          <span class="color-swatch" [style.backgroundColor]="'var(--ifs-' + token.name + ')'" aria-hidden="true"></span>
+          <strong class="token-name">{{ token.name }}</strong>
+          <code class="token-value">{{ token.value }}</code>
+          <p class="token-usage">{{ token.usage }}</p>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section aria-labelledby="type-title">
+    <h2 id="type-title">Typographie</h2>
+    @for (group of typography; track group.name) {
+      <div class="type-group">
+        @for (style of group.styles; track style.name) {
+          <article class="type-row">
+            <div class="type-meta">
+              <strong class="token-name">{{ style.name }}</strong>
+              <span>{{ style.fontSize }} / {{ style.lineHeight }}</span>
+              <p class="token-usage">{{ style.usage }}</p>
+            </div>
+            <p
+              class="type-sample"
+              [style.fontFamily]="familyVariable(group.family)"
+              [style.fontSize]="tokenVariable('text', style.name)"
+              [style.fontWeight]="style.fontWeight"
+              [style.lineHeight]="tokenVariable('line-height', style.name)"
+            >
+              {{ style.sample }}
+            </p>
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  <section aria-labelledby="spacing-title">
+    <h2 id="spacing-title">Espacements</h2>
+    <div class="scale-list">
+      @for (token of spacing; track token.name) {
+        <article class="scale-row">
+          <strong class="token-name">{{ token.name }}</strong>
+          <span class="space-track"><span class="space-bar" [style.inlineSize]="'var(--ifs-' + token.name + ')'" aria-hidden="true"></span></span>
+          <code class="token-value">{{ token.value }}</code>
+          <p class="token-usage">{{ token.usage }}</p>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section aria-labelledby="radius-title">
+    <h2 id="radius-title">Rayons</h2>
+    <div class="radius-grid">
+      @for (token of radii; track token.name) {
+        <article class="radius-card">
+          <span class="radius-sample" [style.borderRadius]="'var(--ifs-' + token.name + ')'" aria-hidden="true"></span>
+          <strong class="token-name">{{ token.name }}</strong>
+          <code class="token-value">{{ token.value }}</code>
+          <p class="token-usage">{{ token.usage }}</p>
+        </article>
+      }
+    </div>
+  </section>
+</main>
