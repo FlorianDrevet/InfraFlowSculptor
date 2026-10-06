@@ -29,7 +29,7 @@
     "badgeDescription": "Formats et plateformes pris en charge",
     "title": "Connexion",
     "providerDescription": "Avec votre compte professionnel Microsoft Entra ID ou un compte Microsoft personnel.",
-    "continue": "Continuer avec Microsoft",
+    "continue": "",
     "noPasswordTitle": "Pas de mot de passe IFS.",
     "noPassword": "Votre identité reste gérée par Microsoft ; l'authentification multifacteur de votre organisation s'applique.",
     "invitationTitle": "Une invitation ?",
