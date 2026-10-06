@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`S-08`](docs/plan/00-socle.md#s-08--worker-outbox-et-files-à-sessions) — Worker, outbox et files à sessions |
-| **Statut** | `EN_COURS` |
-| **Dernière étape terminée** | [`S-07`](docs/plan/00-socle.md#s-07--authentification-oidc-et-utilisateur-courant) — Authentification OIDC et utilisateur courant (commit `992b2b6`) |
-| **Étape suivante** | `S-09` — Application Angular générée depuis le template |
+| **Étape courante** | [`S-09`](docs/plan/00-socle.md#s-09--application-angular-générée-depuis-le-template) — Application Angular générée depuis le template |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`S-08`](docs/plan/00-socle.md#s-08--worker-outbox-et-files-à-sessions) — Worker, outbox et files à sessions (commit `a9c5736`) |
+| **Étape suivante** | `S-10` — Tokens Strata, polices et styles de base |
 | **Verrou** | aucun |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
 | **Dernière mise à jour** | 2026-10-06 — Luna |
