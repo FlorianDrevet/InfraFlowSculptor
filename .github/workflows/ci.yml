@@ -77,7 +77,7 @@ jobs:
   acceptance:
     name: Acceptance tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
 
@@ -292,6 +292,7 @@ jobs:
             exit 1
           fi
           echo "::add-mask::$IFS_E2E_PASSWORD"
+          python3 "$repo_root/.github/scripts/set_e2e_realm_password.py"
           mkdir -p "$artifact_dir"
 
           # Aspire's Linux AppHost backchannel requires a private Unix socket directory.
