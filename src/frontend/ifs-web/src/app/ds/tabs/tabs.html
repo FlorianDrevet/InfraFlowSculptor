@@ -1,0 +1,20 @@
+<div class="st-tabs" role="tablist" [attr.aria-label]="ariaLabel() || null">
+  @for (item of items(); track item.id; let index = $index) {
+    <button
+      class="st-tab"
+      type="button"
+      role="tab"
+      [attr.aria-selected]="item.id === selectedId()"
+      [attr.tabindex]="item.id === selectedId() ? 0 : -1"
+      (click)="select(item.id)"
+      (keydown)="onKeydown($event, index)"
+    >
+      {{ item.label }}
+      @if (item.count !== undefined && item.count !== null) {
+        <span class="st-tab-count" [class.st-tab-count-ember]="item.countTone === 'ember'">{{
+          item.count
+        }}</span>
+      }
+    </button>
+  }
+</div>

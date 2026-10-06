@@ -1,0 +1,24 @@
+<div class="st-field" [class.st-field-error]="!!error()" [class.st-field-changed]="changed()">
+  @if (label()) {
+    <label class="st-field-label" [for]="fieldId()">{{ label() }}</label>
+  }
+  <input
+    class="st-field-input"
+    [class.st-mono]="mono()"
+    [id]="fieldId()"
+    [type]="type()"
+    [attr.name]="name() || null"
+    [placeholder]="placeholder() || ''"
+    [required]="required()"
+    [readOnly]="readonly()"
+    [disabled]="disabled() || controlDisabled()"
+    [value]="displayValue()"
+    [attr.aria-describedby]="describedBy()"
+    [attr.aria-invalid]="error() ? 'true' : null"
+    (input)="onInput($event)"
+    (blur)="onTouched()"
+  />
+  @if (error() || hint()) {
+    <span class="st-field-hint" [id]="messageId()">{{ error() || hint() }}</span>
+  }
+</div>

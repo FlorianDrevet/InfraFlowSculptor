@@ -1,0 +1,57 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.st-tabs {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--ifs-line);
+}
+
+.st-tab {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ifs-text-2);
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.st-tab[aria-selected='true'] {
+  border-bottom-color: var(--ifs-signal);
+  color: var(--ifs-text);
+  font-weight: 500;
+}
+
+.st-tab:focus-visible {
+  outline: 2px solid var(--ifs-signal);
+  outline-offset: -2px;
+}
+
+.st-tab-count {
+  color: var(--ifs-text-3);
+  font-family: var(--ifs-font-mono);
+  font-size: 11px;
+}
+
+.st-tab-count-ember {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: var(--ifs-radius-pill);
+  background: var(--ifs-ember-soft);
+  color: var(--ifs-ember-text);
+}

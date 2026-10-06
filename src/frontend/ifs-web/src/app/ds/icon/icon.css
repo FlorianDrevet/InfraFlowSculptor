@@ -1,0 +1,11 @@
+:host {
+  display: inline-flex;
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+
+.st-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: middle;
+}

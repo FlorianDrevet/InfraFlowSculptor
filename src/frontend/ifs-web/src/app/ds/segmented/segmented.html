@@ -1,0 +1,20 @@
+<div
+  class="st-seg"
+  [class.st-seg-mono]="mono()"
+  role="group"
+  [attr.aria-label]="ariaLabel() || null"
+>
+  @for (option of options(); track option.value) {
+    <button
+      class="st-seg-btn"
+      type="button"
+      [attr.aria-pressed]="option.value === selectedValue()"
+      (click)="select(option.value)"
+    >
+      @if (option.icon) {
+        <app-ds-icon [name]="option.icon" [size]="14" />
+      }
+      {{ option.label }}
+    </button>
+  }
+</div>

@@ -10,7 +10,11 @@
     <div class="color-grid">
       @for (token of colors; track token.name) {
         <article class="color-card">
-          <span class="color-swatch" [style.backgroundColor]="'var(--ifs-' + token.name + ')'" aria-hidden="true"></span>
+          <span
+            class="color-swatch"
+            [style.backgroundColor]="'var(--ifs-' + token.name + ')'"
+            aria-hidden="true"
+          ></span>
           <strong class="token-name">{{ token.name }}</strong>
           <code class="token-value">{{ token.value }}</code>
           <p class="token-usage">{{ token.usage }}</p>
@@ -51,7 +55,13 @@
       @for (token of spacing; track token.name) {
         <article class="scale-row">
           <strong class="token-name">{{ token.name }}</strong>
-          <span class="space-track"><span class="space-bar" [style.inlineSize]="'var(--ifs-' + token.name + ')'" aria-hidden="true"></span></span>
+          <span class="space-track"
+            ><span
+              class="space-bar"
+              [style.inlineSize]="'var(--ifs-' + token.name + ')'"
+              aria-hidden="true"
+            ></span
+          ></span>
           <code class="token-value">{{ token.value }}</code>
           <p class="token-usage">{{ token.usage }}</p>
         </article>
@@ -64,12 +74,216 @@
     <div class="radius-grid">
       @for (token of radii; track token.name) {
         <article class="radius-card">
-          <span class="radius-sample" [style.borderRadius]="'var(--ifs-' + token.name + ')'" aria-hidden="true"></span>
+          <span
+            class="radius-sample"
+            [style.borderRadius]="'var(--ifs-' + token.name + ')'"
+            aria-hidden="true"
+          ></span>
           <strong class="token-name">{{ token.name }}</strong>
           <code class="token-value">{{ token.value }}</code>
           <p class="token-usage">{{ token.usage }}</p>
         </article>
       }
+    </div>
+  </section>
+
+  <section id="components" aria-labelledby="components-title" class="component-gallery">
+    <h2 id="components-title">Composants</h2>
+    <p class="intro">Composants de base Strata et leurs principaux états interactifs.</p>
+
+    <div class="component-grid">
+      <article class="component-card" aria-labelledby="icon-title">
+        <div class="component-card-heading">
+          <h3 id="icon-title">Icon</h3>
+          <p>Icônes d’interface, trait 1,75 px</p>
+        </div>
+        <div class="icon-grid">
+          @for (name of iconNames; track name) {
+            <div class="icon-sample">
+              <app-ds-icon [name]="name" /><code>{{ name }}</code>
+            </div>
+          }
+        </div>
+      </article>
+
+      <article class="component-card" aria-labelledby="button-title">
+        <div class="component-card-heading">
+          <h3 id="button-title">Button</h3>
+          <p>primary · secondary · ghost · danger</p>
+        </div>
+        <div class="component-samples">
+          <div class="sample-row">
+            <app-ds-button variant="primary" icon="zap">Générer</app-ds-button>
+            <app-ds-button variant="secondary" icon="plus">Ajouter une ressource</app-ds-button>
+            <app-ds-button variant="ghost" icon="clock">Historique</app-ds-button>
+            <app-ds-button variant="danger">Supprimer</app-ds-button>
+          </div>
+          <div class="sample-row">
+            <app-ds-button variant="primary" size="sm">Relancer</app-ds-button>
+            <app-ds-button variant="secondary" size="sm">Accorder le rôle</app-ds-button>
+            <app-ds-button variant="secondary" [disabled]="true">Indisponible</app-ds-button>
+            <app-ds-button href="/projects">Voir les projets</app-ds-button>
+          </div>
+        </div>
+      </article>
+
+      <article class="component-card" aria-labelledby="badge-title">
+        <div class="component-card-heading">
+          <h3 id="badge-title">Badge</h3>
+          <p>neutral · signal · ember · success · danger</p>
+        </div>
+        <div class="component-samples">
+          <div class="sample-row">
+            <app-ds-badge tone="success">Généré</app-ds-badge>
+            <app-ds-badge tone="ember">Modifiée</app-ds-badge>
+            <app-ds-badge tone="danger">Push échoué</app-ds-badge>
+            <app-ds-badge tone="signal">En cours</app-ds-badge>
+            <app-ds-badge>Infra / code séparés</app-ds-badge>
+          </div>
+          <div class="sample-row">
+            <app-ds-badge [mono]="true">dev · staging · prod</app-ds-badge>
+            <app-ds-badge icon="lock">Privé</app-ds-badge>
+            <app-ds-badge tone="danger" [dot]="true">Push partiel</app-ds-badge>
+          </div>
+        </div>
+      </article>
+
+      <article class="component-card" aria-labelledby="field-title">
+        <div class="component-card-heading">
+          <h3 id="field-title">TextField</h3>
+          <p>standard · mono · modifié · erreur</p>
+        </div>
+        <div class="field-grid">
+          <app-ds-text-field label="Nom logique" [defaultValue]="'orders-api'" />
+          <app-ds-text-field
+            label="Subnet des Private Endpoints"
+            [mono]="true"
+            [defaultValue]="'snet-private-endpoints · 10.20.4.0/24'"
+          />
+          <app-ds-text-field
+            label="Instances (prod)"
+            [defaultValue]="'3'"
+            [changed]="true"
+            hint="Diffère de dev (1)"
+          />
+          <app-ds-text-field
+            label="Jeton d’accès"
+            [defaultValue]="'ifs_****'"
+            error="Azure DevOps refuse ce jeton : il a expiré le 28/09."
+          />
+        </div>
+      </article>
+
+      <article class="component-card" aria-labelledby="segmented-title">
+        <div class="component-card-heading">
+          <h3 id="segmented-title">Segmented</h3>
+          <p>choix exclusif entre 2 à 4 options</p>
+        </div>
+        <div class="component-samples">
+          <div class="sample-row">
+            <app-ds-segmented
+              ariaLabel="Vue des ressources"
+              [options]="[
+                { value: 'list', label: 'Liste', icon: 'list' },
+                { value: 'graph', label: 'Graphe', icon: 'graph' },
+              ]"
+            />
+            <app-ds-segmented
+              ariaLabel="Environnement"
+              [mono]="true"
+              [options]="[
+                { value: 'dev', label: 'dev' },
+                { value: 'staging', label: 'staging' },
+                { value: 'prod', label: 'prod' },
+              ]"
+            />
+          </div>
+          <app-ds-segmented
+            ariaLabel="Résolution DNS"
+            [options]="[
+              { value: 'managed', label: 'Zone privée gérée' },
+              { value: 'hub', label: 'Hub DNS existant' },
+            ]"
+          />
+        </div>
+      </article>
+
+      <article class="component-card" aria-labelledby="toggle-title">
+        <div class="component-card-heading">
+          <h3 id="toggle-title">Toggle</h3>
+          <p>interrupteur on / off</p>
+        </div>
+        <div class="sample-row sample-row-spaced">
+          <app-ds-toggle label="Always On" [checked]="true" />
+          <app-ds-toggle label="Identité system-assigned" />
+          <app-ds-toggle label="Seulement les différences" />
+        </div>
+      </article>
+
+      <article class="component-card component-card-wide" aria-labelledby="tabs-title">
+        <div class="component-card-heading">
+          <h3 id="tabs-title">Tabs</h3>
+          <p>sections d’une page, compteurs</p>
+        </div>
+        <app-ds-tabs
+          ariaLabel="Sections de la configuration"
+          [items]="[
+            { id: 'resources', label: 'Ressources', count: 10 },
+            { id: 'naming', label: 'Nommage' },
+            { id: 'tags', label: 'Tags' },
+            { id: 'xref', label: 'Références cross-config', count: 3 },
+            { id: 'repos', label: 'Dépôts', count: 2 },
+            { id: 'diag', label: 'Diagnostics', count: 2, countTone: 'ember' },
+          ]"
+        />
+      </article>
+
+      <article class="component-card component-card-wide" aria-labelledby="banner-title">
+        <div class="component-card-heading">
+          <h3 id="banner-title">Banner</h3>
+          <p>ember · danger · success · signal</p>
+        </div>
+        <div class="banner-samples">
+          <app-ds-banner tone="ember" title="Push partiel : 4 dépôts sur 5 mis à jour"
+            >Les dépôts déjà poussés restent tels quels. Corrigez le dépôt en échec, puis
+            relancez-le seul.</app-ds-banner
+          >
+          <app-ds-banner tone="danger" title="Azure DevOps a refusé l’authentification">
+            Le jeton du dépôt catalog-app a expiré le 28/09.
+            <app-ds-button action size="sm">Remplacer le jeton</app-ds-button>
+          </app-ds-banner>
+          <app-ds-banner tone="success" title="Prêt à générer"
+            >VNet et subnet définis, zone DNS privée résolue.</app-ds-banner
+          >
+          <app-ds-banner tone="signal" title="Génération en cours"
+            >orders-service · 14 fichiers</app-ds-banner
+          >
+        </div>
+      </article>
+
+      <article class="component-card component-card-wide" aria-labelledby="panel-title">
+        <div class="component-card-heading">
+          <h3 id="panel-title">Panel</h3>
+          <p>bloc de contenu titré</p>
+        </div>
+        <div class="panel-grid">
+          <app-ds-panel title="Depuis la dernière génération">
+            <div class="panel-content">
+              <span><code class="tone-success">+ </code>st-orders créée</span>
+              <span><code class="tone-ember">~ </code>orders-api · 3 réglages</span>
+              <app-ds-button variant="primary">Générer orders-service</app-ds-button>
+            </div>
+          </app-ds-panel>
+          <app-ds-panel
+            title="Identité & accès"
+            subtitle="Rôles accordés par orders-api"
+            [level]="3"
+          >
+            <app-ds-button actions size="sm" icon="plus">Accorder un rôle</app-ds-button>
+            <div class="panel-resource">Key Vault · kv-orders — Secrets User</div>
+          </app-ds-panel>
+        </div>
+      </article>
     </div>
   </section>
 </main>

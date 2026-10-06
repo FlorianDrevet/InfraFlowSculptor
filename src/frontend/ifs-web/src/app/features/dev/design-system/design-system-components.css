@@ -1,0 +1,139 @@
+:host {
+  display: block;
+}
+
+.component-gallery {
+  scroll-margin-block-start: var(--ifs-space-4);
+}
+
+.component-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  gap: var(--ifs-space-3);
+}
+
+.component-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+}
+
+.component-card-wide {
+  grid-column: 1 / -1;
+}
+
+.component-card-heading {
+  padding: var(--ifs-space-3) var(--ifs-space-4);
+  border-bottom: 1px solid var(--ifs-line-subtle);
+}
+
+.component-card-heading h3,
+.component-card-heading p {
+  margin: 0;
+}
+
+.component-card-heading p {
+  margin-block-start: var(--ifs-space-1);
+  color: var(--ifs-text-2);
+  font-size: var(--ifs-text-caption);
+}
+
+.component-samples,
+.banner-samples,
+.panel-grid {
+  display: grid;
+  gap: var(--ifs-space-3);
+  padding: var(--ifs-space-4);
+}
+
+.sample-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ifs-space-2);
+}
+
+.sample-row-spaced {
+  justify-content: space-between;
+  gap: var(--ifs-space-4);
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+  gap: var(--ifs-space-3);
+  padding: var(--ifs-space-4);
+}
+
+.icon-sample {
+  display: flex;
+  align-items: center;
+  gap: var(--ifs-space-2);
+  min-width: 0;
+  color: var(--ifs-text-2);
+  font-size: var(--ifs-text-overline);
+}
+
+.icon-sample app-ds-icon {
+  color: var(--ifs-text);
+}
+
+.icon-sample code,
+.panel-content code {
+  font-family: var(--ifs-font-mono);
+}
+
+.field-grid,
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field-grid {
+  gap: var(--ifs-space-4);
+  padding: var(--ifs-space-4);
+}
+
+.banner-samples {
+  gap: 10px;
+}
+
+.panel-grid {
+  align-items: start;
+}
+
+.panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ifs-space-2);
+  font-size: var(--ifs-text-body-dense);
+}
+
+.tone-success {
+  color: var(--ifs-success-text);
+}
+
+.tone-ember {
+  color: var(--ifs-ember-text);
+}
+
+.panel-resource {
+  font-size: var(--ifs-text-body-dense);
+}
+
+@media (max-width: 48rem) {
+  .field-grid,
+  .panel-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .component-card-wide {
+    grid-column: auto;
+  }
+
+  .sample-row-spaced {
+    justify-content: flex-start;
+  }
+}
