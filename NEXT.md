@@ -10,10 +10,10 @@
 | | |
 |---|---|
 | **Étape courante** | [`R-01`](docs/plan/00-socle.md#-r-01--revue-du-socle) — Revue du socle |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `EN_ATTENTE_DE_REVUE` |
 | **Dernière étape terminée** | [`S-17`](docs/plan/00-socle.md#s-17--mémoire-graphe-de-code-et-démarrage-rapide) — Mémoire, graphe de code et démarrage rapide (commit `4fbd85c`) |
 | **Étape suivante** | `P-01` — Application témoin |
-| **Verrou** | aucun |
+| **Verrou** | 🔒 `R-01` — revue demandée le 2026-10-06, voir [R-01-demande.md](docs/plan/revues/R-01-demande.md) |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
 | **Dernière mise à jour** | 2026-10-06 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
@@ -59,8 +59,6 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 
 ## Tests manuels en attente de vous
 
-- S-12 — comparer `ResourceIcon` (25 icônes et tuiles) à `docs/design/strata/rendered/ResourceIcon.html`; réduire le navigateur à 390 px et vérifier le défilement interne du tableau. Le dialogue et son clavier sont vérifiés; Chrome est resté à 1 920 px malgré le réglage du viewport.
-- S-11 — comparer les neuf sections de `/dev/design-system` aux fichiers `docs/design/strata/rendered/*.html`; Chrome bloque ces références locales en automatisation (`file://`). Les interactions clavier, le focus et les dimensions des boutons ont été vérifiés.
 - S-02 — [ouvrir `src/backend/InfraFlowSculptor.slnx` dans Rider](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) : vérifier les cinq projets et l'absence de références à `Web.Template.CQRS`.
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 - S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.

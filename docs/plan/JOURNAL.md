@@ -24,3 +24,4 @@
 | 2026-10-06 13:58 | Luna | `S-16` commencée | observabilité transverse et diagnostic du Service Bus local |
 | 2026-10-06 14:09 | Luna | `S-16` terminée | commit `6e3e086` |
 | 2026-10-06 14:31 | Luna | `S-17` terminée | commit `4fbd85c` |
+| 2026-10-06 16:14 | Luna | revue `R-01` demandée | R-01-demande.md |
