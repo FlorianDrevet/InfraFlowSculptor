@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`S-10`](docs/plan/00-socle.md#s-10--tokens-strata-polices-et-styles-de-base) — Tokens Strata, polices et styles de base |
+| **Étape courante** | [`S-11`](docs/plan/00-socle.md#s-11--composants-strata-de-base) — Composants Strata de base |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`S-09`](docs/plan/00-socle.md#s-09--application-angular-générée-depuis-le-template) — Application Angular générée depuis le template (commit `09d7a79`) |
-| **Étape suivante** | `S-11` — Composants Strata de base |
+| **Dernière étape terminée** | [`S-10`](docs/plan/00-socle.md#s-10--tokens-strata-polices-et-styles-de-base) — Tokens Strata, polices et styles de base (commit `c5c65ee`) |
+| **Étape suivante** | `S-12` — Composants produit Strata et motifs |
 | **Verrou** | aucun |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
 | **Dernière mise à jour** | 2026-10-06 — Luna |

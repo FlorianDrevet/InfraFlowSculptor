@@ -11,3 +11,4 @@
 - La page d'accueil utilise `httpResource('/v1/me')`; le test navigateur S-09 s'est connecté en Bob, a affiché « Hello Bob Durand » et a conservé la session au rechargement.
 - `npm run lint`, les tests Angular et `npm run build` passent après la configuration OIDC; le test de configuration couvre API absolue, hôte ressemblant et API de même origine.
 - La route d'échec OIDC (`/unauthorized`) et la page profil utilisent Transloco en français et anglais; le scope de contrôle i18n vérifie les 11 clés utilisées. `prebuild` et `prestart` régénèrent `public/config.json`, ignoré par Git.
+- S-10 génère les tokens Strata, le thème Tailwind v4, les thèmes et les données de galerie; la route `/dev/design-system` est visible seulement en mode dev. Les polices Instrument Sans et JetBrains Mono sont servies depuis Fontsource localement.

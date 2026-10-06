@@ -13,6 +13,7 @@
 ## Fichiers thématiques
 
 - **2026-10-06** : S-08 ajoute le worker/outbox avec 57 tests verts et des conteneurs locaux persistants. S-09 ajoute Angular 22; connexion Keycloak Bob, `/v1/me`, déconnexion, session après rechargement et configuration runtime vérifiés. 57 tests .NET, 4 Python et 3 Angular passent; OIDC limite le bearer token à `/v1/`.
+- **2026-10-06** : S-10 génère le design system depuis `docs/design/strata/tokens.json`, embarque les polices Fontsource localement et ajoute la galerie de développement. 3 tests du générateur couvrent sortie exacte, thèmes multiples et `--check`; build frontend et lint verts. La référence statique `file://` n'a pas pu être ouverte via l'automatisation navigateur.
 
 | Fichier | Contenu |
 |---|---|
