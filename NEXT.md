@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`S-13`](docs/plan/00-socle.md#s-13--coquille-de-lapplication-connexion-et-playwright) — Coquille de l'application, connexion et Playwright |
+| **Étape courante** | [`S-14`](docs/plan/00-socle.md#s-14--openapi-au-build-et-client-angular-généré) — OpenAPI au build et client Angular généré |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`S-12`](docs/plan/00-socle.md#s-12--composants-produit-strata-et-motifs) — Composants produit Strata et motifs (commit `9a95ae2`) |
-| **Étape suivante** | `S-14` — OpenAPI au build et client Angular généré |
+| **Dernière étape terminée** | [`S-13`](docs/plan/00-socle.md#s-13--coquille-de-lapplication-connexion-et-playwright) — Coquille de l'application, connexion et Playwright (commit `26a3252`) |
+| **Étape suivante** | `S-15` — Intégration continue |
 | **Verrou** | aucun |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
 | **Dernière mise à jour** | 2026-10-06 — Luna |
