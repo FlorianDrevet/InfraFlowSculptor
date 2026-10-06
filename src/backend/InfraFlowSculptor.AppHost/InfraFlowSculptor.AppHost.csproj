@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\InfraFlowSculptor.Api\InfraFlowSculptor.Api.csproj" />
+    <ProjectReference Include="..\InfraFlowSculptor.Worker\InfraFlowSculptor.Worker.csproj" />
   </ItemGroup>
 
 </Project>

@@ -3,6 +3,7 @@ using Azure.Core;
 using Azure.Storage.Blobs;
 using HealthChecks.Azure.Storage.Blobs;
 using InfraFlowSculptor.Application.Common.Persistence;
+using InfraFlowSculptor.Application.Common.Jobs;
 using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Infrastructure.Azure;
@@ -26,12 +27,15 @@ public static class DependencyInjection
     {
         services.AddAzureClientsCore();
         services.TryAddSingleton<TimeProvider>(TimeProvider.System);
-        services.TryAddScoped<ICurrentOrganization>(_ => NoCurrentOrganization.Instance);
+        services.TryAddScoped<ICurrentOrganization, HttpCurrentOrganization>();
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, HttpCurrentUser>();
         services.AddSingleton<IVerifiedEmailResolver, VerifiedEmailResolver>();
         services.TryAddScoped<IIdempotencyStore, EfIdempotencyStore>();
         services.TryAddScoped<IdempotencyKeyPurge>();
+        services.TryAddScoped<IOrganizationJobBudgetStore, EfOrganizationJobBudgetStore>();
+        services.TryAddScoped<IScheduledJobLeaseStore, EfScheduledJobLeaseStore>();
+        services.TryAddScoped<IJobProcessingStatusStore, EfJobProcessingStatusStore>();
 
         var credential = new IfsAzureCredential();
         services.TryAddSingleton(credential);
@@ -81,10 +85,4 @@ public static class DependencyInjection
         return services;
     }
 
-    private sealed class NoCurrentOrganization : ICurrentOrganization
-    {
-        public static NoCurrentOrganization Instance { get; } = new();
-
-        public OrganizationId? Id => null;
-    }
 }

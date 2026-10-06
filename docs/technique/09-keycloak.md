@@ -37,7 +37,25 @@ audience (`ifs-api`), mêmes noms de revendications.
 - **Données** : un volume Docker garde l'état de Keycloak entre deux `aspire run`. Si le royaume existe déjà, Keycloak
   ne réimporte **pas** le fichier (voir § 7, « Repartir de zéro »).
 - **Port** : `8080`, fixe et exposé en HTTPS par Aspire (l'émetteur des jetons est
-  `https://localhost:8080/realms/ifs`).
+`https://localhost:8080/realms/ifs`).
+
+Le royaume déclare ses scopes standards (`web-origins`, `acr`, `roles`, `basic`, `profile`, `email`) et les applique
+par défaut aux clients Keycloak intégrés. C'est nécessaire à l'Account Console : sans le scope `roles`, son jeton ne
+contient pas `resource_access.account.roles` et `/realms/ifs/account/` répond 403. Les clients IFS reçoivent aussi
+`ifs-claims` explicitement; ce scope n'est pas global, afin de ne pas ajouter les revendications propres à l'API aux
+jetons des clients d'administration Keycloak.
+
+Un import vierge Keycloak 26.6 confirme ces scopes par défaut et les revendications des comptes Alice et Nina. Keycloak
+crée aussi le scope `offline_access`; `phone` et `address` ne font pas partie du jeu de scopes de ce royaume. Les ajouter
+au JSON du royaume seulement si un client en a besoin.
+
+Le mapper `amr` utilise `jsonType.label: "String"` et `multivalued: "true"` : les valeurs stockées (`pwd`, `mfa`)
+sont des chaînes, et Keycloak émet la revendication `amr` comme un tableau de chaînes.
+
+Les utilisateurs de démonstration ont les rôles Keycloak intégrés `account/manage-account` et `account/view-profile` :
+ils peuvent ouvrir la console de compte. Modifier le JSON ne met pas à jour un royaume déjà créé. Pour réparer un
+royaume existant, modifier uniquement le client ou les rôles concernés dans la console d'administration ; cela conserve
+les utilisateurs et leurs mots de passe. Ne pas remplacer tout le royaume pour corriger une URI ou un rôle.
 
 ## 4. Se connecter
 
@@ -45,7 +63,7 @@ audience (`ifs-api`), mêmes noms de revendications.
 |---|---|---|
 | Utiliser IFS | `http://localhost:4200` → bouton de connexion → page Keycloak | un utilisateur de démonstration, mot de passe `Ifs-Demo-2026!` |
 | Voir son compte | `https://localhost:8080/realms/ifs/account` | idem |
-| Administrer Keycloak | `https://localhost:8080/admin` (lien dans le tableau de bord Aspire) | `admin` / valeur du paramètre Aspire `keycloak-admin-password` (affichée dans le tableau de bord, ressource `keycloak`, onglet *Parameters*, ou `dotnet user-secrets list --project src/backend/InfraFlowSculptor.AppHost`) |
+| Administrer Keycloak | `https://localhost:8080/admin` (lien dans le tableau de bord Aspire) | `admin` / valeur locale du paramètre Aspire `keycloak-admin-password`, conservée dans User Secrets |
 
 **Plusieurs utilisateurs à la fois** : une fenêtre de navigation privée (ou un profil de navigateur) par utilisateur.
 La session Keycloak est un cookie : dans la même fenêtre, on est une seule personne.
@@ -61,9 +79,11 @@ sans demander le mot de passe, c'est que la session Keycloak est encore ouverte 
 1. Console d'administration → en haut à gauche, choisir le royaume **ifs** (pas `master`).
 2. *Users* → *Add user* : *Username* = l'adresse e-mail, *Email*, *First name*, *Last name*, *Email verified* = Oui.
 3. Onglet *Credentials* → *Set password* → `Ifs-Demo-2026!`, *Temporary* = Non.
-4. Onglet *Attributes* : `oid` = un GUID nouveau (PowerShell : `[guid]::NewGuid()`), `tid` = le GUID du tenant simulé
+4. Définir `oid` = un GUID nouveau (PowerShell : `[guid]::NewGuid()`), `tid` = le GUID du tenant simulé
    (Contoso `11111111-1111-1111-1111-111111111111`, Fabrikam `22222222-…`, comptes personnels
-   `9188040d-6c67-4c5b-b112-36a304b66dad`).
+   `9188040d-6c67-4c5b-b112-36a304b66dad`). Dans Keycloak 26, les attributs personnalisés peuvent être masqués par le
+   profil utilisateur par défaut : utilisez l'Admin REST API ou configurez ces champs dans *Realm settings* → *User
+   profile*. Vérifiez le résultat par les revendications du jeton, pas seulement dans l'onglet utilisateur.
 5. Pour le garder après une remise à zéro : l'ajouter aussi dans `ifs-realm.json` (même structure que les autres
    utilisateurs) et commiter — sinon il disparaîtra au prochain réimport.
 
@@ -97,10 +117,14 @@ que vous le voyiez ; remettre 5 minutes ensuite.
 
 ## 7. Repartir de zéro
 
-Quand `ifs-realm.json` a changé (nouvel utilisateur commité, nouveau mapper) ou que la configuration est cassée :
-1. Arrêter `aspire run`.
-2. `docker volume ls | Select-String keycloak` puis `docker volume rm <nom du volume>`.
-3. Relancer `aspire run` : le royaume est réimporté depuis le fichier.
+Le fichier de royaume est importé au premier démarrage du volume. Pour mettre à jour un royaume existant, appliquez
+les changements ciblés dans l'Admin Console ou via l'Admin REST API : attachez les scopes manquants, corrigez le
+mapper concerné et ajoutez les rôles aux seuls comptes visés. Cela conserve les utilisateurs, mots de passe et
+autres données locales.
+
+La suppression du volume Keycloak est une remise à zéro complète : elle efface le royaume, ses utilisateurs, ses
+sessions et ses personnalisations. Ne le faites que pour un environnement jetable dont les données peuvent être
+perdues; un changement de `ifs-realm.json` seul ne justifie pas sa suppression.
 
 Pour **exporter** des modifications faites à la main dans la console vers le fichier : console → *Realm settings* →
 menu *Action* (en haut à droite) → *Partial export* (cocher *Include clients*) — les utilisateurs ne sont pas exportés

@@ -87,6 +87,10 @@ if (app.Environment.IsDevelopment())
 var v1 = app.MapGroup("/v1");
 v1.MapSystemEndpoints();
 v1.MapMeEndpoints();
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
+{
+    v1.MapDevelopmentEndpoints();
+}
 app.MapFallback(() => Results.NotFound()).AllowAnonymous();
 
 app.Run();

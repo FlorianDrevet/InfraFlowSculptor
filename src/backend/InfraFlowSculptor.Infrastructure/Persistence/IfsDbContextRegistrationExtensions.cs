@@ -21,7 +21,8 @@ public static class IfsDbContextRegistrationExtensions
                 .UseSnakeCaseNamingConvention());
         builder.Services.AddScoped<IIfsDbContext>(serviceProvider =>
             serviceProvider.GetRequiredService<IfsDbContext>());
-        builder.EnrichNpgsqlDbContext<IfsDbContext>();
+        // This unit of work owns explicit transactions, so retries must wrap the full operation.
+        builder.EnrichNpgsqlDbContext<IfsDbContext>(settings => settings.DisableRetry = true);
 
         return builder;
     }

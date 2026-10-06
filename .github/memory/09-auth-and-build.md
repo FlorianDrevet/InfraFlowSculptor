@@ -1,6 +1,6 @@
 # 09 — Authentification et build
 
-> À remplir par Luna aux étapes citées, d'après le code réel.
+> À compléter par Luna aux étapes citées, d'après le code réel.
 > Cible : DT-03, DT-07, `docs/technique/06-tests-et-qualite.md`. Étapes S-01, S-03, S-07, S-15, J0-05, J0-31.
 
 ## Faits vérifiés
@@ -24,4 +24,6 @@
 - Exceptions de versions pour l'hébergement S-05 : Keycloak Aspire `13.5.3-preview.1.26425.3`, MailPit Aspire `13.6.0`, émulateur Key Vault `3.1.3`; détails d'exécution et namespace Service Bus dans `08-runtime-and-orchestration.md`.
 - S-07 ajoute OIDC Keycloak/Entra, le schéma `Bearer` qui route les jetons `ifs_` vers le handler ApiToken réservé à J1, `ICurrentUser`, le résolveur d'adresse vérifiée, la politique d'authentification par défaut et `GET /v1/me`. `Microsoft.Identity.Web` est épinglé à `4.14.2`; la clé de signature de test est refusée hors `Testing`.
 - S-07 : 45 tests hors acceptation passent dans 6 projets, sans avertissement; le build de solution réussit sur 14 projets sans avertissement/erreur. Un premier test complet (40 réussis, 6 échoués) a exposé la référence ASP.NET Core manquante dans Infrastructure.Tests; la référence de framework a été ajoutée et les 19 tests Infrastructure repassent.
-- Recette S-07 partielle : Scalar affiche OAuth2 Authorization Code + PKCE S256, le client `ifs-scalar` et les scopes `openid profile email`; OpenAPI renvoie 200 et `/v1/me` sans jeton renvoie 401. Le Keycloak local actuellement démarré refuse les callbacks `http://localhost:5257/scalar/` et `/scalar/callback`, malgré les motifs locaux présents dans `ifs-realm.json`. Le volume persistant n'a pas été touché; la connexion Alice/Nina attend une réimport autorisée du royaume.
+- S-07 validée : Scalar Authorization Code + PKCE fonctionne pour Alice et Nina; `/v1/me` retourne leurs identifiants et `verifiedEmail` vaut `null` pour Nina, 401 sans jeton. Le grant direct activé pendant un contrôle API a été rétabli à `false`.
+- S-08 après la revue Sonnet : les tests complets passent avec 57 tests et 0 avertissement dans 6 projets; le build compile 15 projets sans avertissement ni erreur. Les tests Infrastructure couvrent le dispatcher d'événements de domaine, le backoff du relais et son seuil d'échec définitif, ainsi que le renouvellement atomique du bail. Les branches d'échec budget/réessai du processeur de sessions restent un point de couverture non bloquant pour R-01.
+- Import Keycloak vierge 26.6 vérifié dans un conteneur jetable sans volume : scopes par défaut et clients chargés; claims Alice `oid`, `tid`, `amr`; Nina garde `email_verified=false`; `/realms/ifs/account/` répond 200. Les données du volume Keycloak local ont été conservées.

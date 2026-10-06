@@ -9,6 +9,7 @@
   <Project Path="InfraFlowSculptor.Domain/InfraFlowSculptor.Domain.csproj" />
   <Project Path="InfraFlowSculptor.Infrastructure/InfraFlowSculptor.Infrastructure.csproj" />
   <Project Path="InfraFlowSculptor.ServiceDefaults/InfraFlowSculptor.ServiceDefaults.csproj" />
+  <Project Path="InfraFlowSculptor.Worker/InfraFlowSculptor.Worker.csproj" />
   <Folder Name="/AppHost/">
     <Project Path="InfraFlowSculptor.AppHost/InfraFlowSculptor.AppHost.csproj" />
   </Folder>

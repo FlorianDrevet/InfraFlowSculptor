@@ -16,7 +16,11 @@ public sealed class OutboxMessageEntityConfiguration : IEntityTypeConfiguration<
         builder.Property(message => message.Type).HasMaxLength(500).IsRequired();
         builder.Property(message => message.Payload).HasColumnType("jsonb").IsRequired();
         builder.Property(message => message.CreatedAt).IsRequired();
+        builder.Property(message => message.FailedAt);
         builder.Property(message => message.Attempts).HasDefaultValue(0).IsRequired();
+        builder.Property(message => message.NextAttemptAt);
         builder.HasIndex(message => new { message.OrganizationId, message.CreatedAt });
+        builder.HasIndex(message => new { message.SentAt, message.NextAttemptAt, message.CreatedAt })
+            .HasFilter("sent_at IS NULL AND failed_at IS NULL");
     }
 }

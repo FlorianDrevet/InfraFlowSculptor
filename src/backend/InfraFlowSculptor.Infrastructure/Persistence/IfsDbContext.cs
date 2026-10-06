@@ -23,6 +23,10 @@ public class IfsDbContext(
 
     public DbSet<ScheduledJobLeaseEntity> ScheduledJobLeases => Set<ScheduledJobLeaseEntity>();
 
+    public DbSet<ProcessedJobEntity> ProcessedJobs => Set<ProcessedJobEntity>();
+
+    public DbSet<OrganizationJobBudgetEntity> OrganizationJobBudgets => Set<OrganizationJobBudgetEntity>();
+
     public OrganizationId? CurrentOrganizationId => currentOrganization.Id;
 
     DbSet<TEntity> IIfsDbContext.Query<TEntity>() => Set<TEntity>();

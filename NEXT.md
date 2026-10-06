@@ -10,12 +10,12 @@
 | | |
 |---|---|
 | **Étape courante** | [`S-08`](docs/plan/00-socle.md#s-08--worker-outbox-et-files-à-sessions) — Worker, outbox et files à sessions |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`S-07`](docs/plan/00-socle.md#s-07--authentification-oidc-et-utilisateur-courant) — Authentification OIDC et utilisateur courant (commit `992b2b6`) |
 | **Étape suivante** | `S-09` — Application Angular générée depuis le template |
 | **Verrou** | aucun |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
-| **Dernière mise à jour** | 2026-10-05 — Luna |
+| **Dernière mise à jour** | 2026-10-06 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
 résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question ci-dessous).
 
@@ -61,9 +61,6 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 - S-02 — [ouvrir `src/backend/InfraFlowSculptor.slnx` dans Rider](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) : vérifier les cinq projets et l'absence de références à `Web.Template.CQRS`.
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 - S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
-- S-05 — résultat visuel ([recette](docs/plan/00-socle.md#s-05--apphost-aspire-et-émulateurs)) : Gitea affiche l'organisation privée `contoso` et ses trois dépôts privés. La connexion Alice à Keycloak aboutit, mais Account Management affiche « Something went wrong » avec des réponses 401 sur ses API; à corriger.
-- S-07 — recette OIDC locale ([étape](docs/plan/00-socle.md#s-07--authentification-oidc-et-utilisateur-courant)) : Scalar expose OAuth2 Authorization Code + PKCE S256 et `/v1/me` sans jeton renvoie 401. Keycloak refuse `redirect_uri` pour `/scalar/` et `/scalar/callback`, tandis que le fichier de royaume versionné déclare les origines locales. Les données actuellement persistées dans le volume Keycloak ne semblent pas alignées; Alice et Nina restent à vérifier après réimport du royaume. La remise à zéro du volume efface les changements locaux faits dans Keycloak : demander l'accord avant cette suppression.
-
 Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.
 

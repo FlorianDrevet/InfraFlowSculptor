@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\InfraFlowSculptor.Infrastructure\InfraFlowSculptor.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\InfraFlowSculptor.Worker\InfraFlowSculptor.Worker.csproj" />
   </ItemGroup>
 
   <ItemGroup>

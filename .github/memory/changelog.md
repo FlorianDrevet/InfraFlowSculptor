@@ -14,3 +14,4 @@
 | 2026-10-05 | Luna | S-05 — AppHost Aspire, émulateurs, résolution de clients Azure, tests d'acceptation et recette locale |
 | 2026-10-05 | Luna | S-06 — EF Core/PostgreSQL 17, isolation par organisation, concurrence, outbox, idempotence et migration initiale |
 | 2026-10-05 | Luna | S-07 — authentification OIDC Keycloak/Entra, utilisateur courant, résolution d'adresse vérifiée, `/v1/me` et OAuth2 PKCE dans Scalar; recette locale partielle, volume Keycloak conservé |
+| 2026-10-06 | Luna | S-08 — worker, outbox, sessions, fairness, leases et traces; conteneurs locaux persistants entre les lancements; corrections additives Keycloak conservant le volume; revue Sonnet traitée (renouvellement de bail, warmup worker, batch/retries d'outbox); recette Alice/Nina et import 26.6 validés; 57 tests et build 15 projets verts |

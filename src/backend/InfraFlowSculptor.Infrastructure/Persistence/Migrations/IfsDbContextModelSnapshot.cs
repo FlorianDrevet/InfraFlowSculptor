@@ -60,6 +60,30 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.ToTable("idempotency_keys", (string)null);
                 });
 
+            modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Common.OrganizationJobBudgetEntity", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<int>("JobsPerMinute")
+                        .HasColumnType("integer")
+                        .HasColumnName("jobs_per_minute");
+
+                    b.Property<int>("JobsProcessed")
+                        .HasColumnType("integer")
+                        .HasColumnName("jobs_processed");
+
+                    b.Property<DateTimeOffset>("WindowStartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("window_started_at");
+
+                    b.HasKey("OrganizationId")
+                        .HasName("pk_organization_budgets");
+
+                    b.ToTable("organization_budgets", (string)null);
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Common.OutboxMessageEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -75,6 +99,14 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("FailedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("failed_at");
+
+                    b.Property<DateTimeOffset?>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
 
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid")
@@ -112,7 +144,32 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "CreatedAt")
                         .HasDatabaseName("ix_outbox_messages_organization_id_created_at");
 
+                    b.HasIndex("SentAt", "NextAttemptAt", "CreatedAt")
+                        .HasDatabaseName("ix_outbox_messages_sent_at_next_attempt_at_created_at")
+                        .HasFilter("sent_at IS NULL AND failed_at IS NULL");
+
                     b.ToTable("outbox_messages", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Common.ProcessedJobEntity", b =>
+                {
+                    b.Property<Guid>("JobId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("job_id");
+
+                    b.Property<string>("HandlerType")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("handler_type");
+
+                    b.Property<DateTimeOffset>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at");
+
+                    b.HasKey("JobId", "HandlerType")
+                        .HasName("pk_processed_jobs");
+
+                    b.ToTable("processed_jobs", (string)null);
                 });
 
             modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Common.ScheduledJobLeaseEntity", b =>
