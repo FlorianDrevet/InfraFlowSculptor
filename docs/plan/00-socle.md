@@ -562,7 +562,7 @@ appelle `/v1/me`.
    adapté pour écrire le même JSON.
 5. `core/auth/oidc.providers.ts` : remplacer les constantes par `StsConfigHttpLoader` qui lit
    `/config.json` (configuration de [technique 04 § 6](../technique/04-frontend.md#6-configuration-à-lexécution-et-authentification)).
-   Portée Keycloak : `openid profile email offline_access`.
+   Portée Keycloak : `openid profile email`. `offline_access` reste optionnel pour les clients qui doivent agir après la déconnexion de l'utilisateur; l'application navigateur utilise une session en ligne.
 6. Page d'accueil provisoire `features/home/` : « Bonjour {{ displayName }} » depuis `GET /v1/me` (client écrit
    à la main ici, remplacé par le client généré en S-14).
 7. Transloco ([DT-34](../technique/01-decisions.md#dt-34--langues--français-et-anglais-commutables)) : langue par défaut `fr`, disponibles `fr`, `en` ; textes de l'accueil dans

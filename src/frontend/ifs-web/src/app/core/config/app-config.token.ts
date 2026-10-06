@@ -27,7 +27,7 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
     provider: 'keycloak',
     authority: 'https://localhost:8080/realms/ifs',
     clientId: 'ifs-web',
-    scope: 'openid profile email offline_access',
+    scope: 'openid profile email',
   },
 };
 

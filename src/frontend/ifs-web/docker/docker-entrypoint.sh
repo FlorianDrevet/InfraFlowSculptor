@@ -9,7 +9,7 @@ API_URL="${IFS_API_URL:-https://localhost:7246}"
 OIDC_PROVIDER="${IFS_OIDC_PROVIDER:-keycloak}"
 OIDC_AUTHORITY="${IFS_OIDC_AUTHORITY:-https://localhost:8080/realms/ifs}"
 OIDC_CLIENT_ID="${IFS_OIDC_CLIENT_ID:-ifs-web}"
-OIDC_SCOPE="${IFS_OIDC_SCOPE:-openid profile email offline_access}"
+OIDC_SCOPE="${IFS_OIDC_SCOPE:-openid profile email}"
 
 cat <<JSON > "$CONFIG_PATH"
 {

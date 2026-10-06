@@ -27,6 +27,7 @@ export function buildOidcConfiguration(config: AppConfig, origin: string) {
     unauthorizedRoute: '/unauthorized',
     responseType: 'code',
     scope: oidc.scope,
+    disableRefreshTokenOfflineAccessScopeWarning: !isEntra,
     secureRoutes: [apiBaseUrl ? `${apiBaseUrl}/v1/` : '/v1/'],
     silentRenew: true,
     useRefreshToken: true,

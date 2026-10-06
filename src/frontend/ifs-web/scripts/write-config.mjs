@@ -14,7 +14,7 @@ const config = {
     provider,
     authority: env('IFS_OIDC_AUTHORITY', 'https://localhost:8080/realms/ifs'),
     clientId: env('IFS_OIDC_CLIENT_ID', 'ifs-web'),
-    scope: env('IFS_OIDC_SCOPE', 'openid profile email offline_access'),
+    scope: env('IFS_OIDC_SCOPE', 'openid profile email'),
   },
 };
 

@@ -160,7 +160,7 @@ else
         .WithEnvironment("IFS_OIDC_PROVIDER", "keycloak")
         .WithEnvironment("IFS_OIDC_AUTHORITY", "https://localhost:8080/realms/ifs")
         .WithEnvironment("IFS_OIDC_CLIENT_ID", "ifs-web")
-        .WithEnvironment("IFS_OIDC_SCOPE", "openid profile email offline_access")
+        .WithEnvironment("IFS_OIDC_SCOPE", "openid profile email")
         .WaitFor(api)
         .WaitFor(keycloak);
 }

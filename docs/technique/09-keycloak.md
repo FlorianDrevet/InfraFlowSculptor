@@ -47,14 +47,30 @@ jetons des clients d'administration Keycloak.
 
 Un import vierge Keycloak 26.6 confirme ces scopes par défaut et les revendications des comptes Alice et Nina.
 `offline_access` est un scope intégré de Keycloak : il n'est ni redéfini ni ajouté à `clientScopes` dans
-`ifs-realm.json`. Pour émettre des jetons hors ligne, le client `ifs-web` le lie comme scope **optionnel**
-(`optionalClientScopes: ["offline_access"]`). Il n'est émis que si le client le demande, ce que fait la configuration
-Angular (`openid profile email offline_access`) pour obtenir un jeton de rafraîchissement hors ligne. `phone` et `address` ne
-font pas partie du jeu de scopes de ce royaume ; les ajouter au JSON seulement si un client en a besoin.
-Keycloak exige aussi que l'utilisateur porte le rôle de royaume `offline_access`. Les sept utilisateurs seed locaux le
-reçoivent dans `realmRoles` afin que `ifs-web` puisse obtenir son jeton de rafraîchissement ; cette attribution reste
-limitée au royaume de développement. Un utilisateur ajouté manuellement doit recevoir ce rôle s'il utilise l'application
-Web.
+`ifs-realm.json`. Le client `ifs-web` le conserve comme scope **optionnel** pour les consommateurs qui ont réellement
+besoin d'un jeton utilisable après la déconnexion de l'utilisateur. L'application navigateur ne le demande pas par défaut
+et utilise les scopes `openid profile email` avec la session en ligne et son jeton de rafraîchissement normal.
+
+Depuis Keycloak 26.1, la documentation indique qu'une première authentification demandant `offline_access` crée une
+session hors ligne et supprime la session en ligne/SSO associée. Une SPA qui n'agit que pendant la présence de
+l'utilisateur n'a pas besoin de ce jeton longue durée; `openid profile email` suffit pour le flux Web local.
+Voir le [guide de mise à niveau Keycloak
+26.1](https://www.keycloak.org/docs/26.4.0/upgrading/#offline-access-removes-the-associated-online-session-if-the-offline_scope-is-requested-in-the-initial-exchange).
+
+Diagnostic local du 2026-10-06 : avec Keycloak 26.6.4 et le flux Authorization Code + PKCE de `ifs-web`, la demande
+initiale avec `offline_access` aboutit à un jeton signé, mais `/userinfo` répond 401 `invalid_token`; l'événement
+Keycloak ne donne pas de raison plus précise et seule la session hors ligne est présente. Le même parcours sans ce
+scope renvoie 200 et la connexion Angular réussit. Ce test A/B valide le scope sans `offline_access` comme
+contournement sûr pour la SPA; il ne prouve pas la cause interne exacte du refus. L'incident est proche de l'[issue
+Keycloak #39037](https://github.com/keycloak/keycloak/issues/39037), qui décrivait un refus similaire pendant un flux
+hybride, avant l'échange du code. Le parcours d'IFS utilise Authorization Code + PKCE, donc cette issue n'est pas
+présentée comme la même cause. Si l'application a un jour besoin d'agir après déconnexion, reproduire le cas et
+inspecter la validation de session côté Keycloak avant de remettre `offline_access` dans son scope par défaut.
+
+Pour un client qui doit agir hors ligne, lier le scope intégré comme optionnel et attribuer le rôle de royaume
+`offline_access` aux utilisateurs concernés. Les sept utilisateurs seed locaux gardent ce rôle pour cet usage explicite;
+il n'est pas requis pour l'application Web. `phone` et `address` ne font pas partie du jeu de scopes de ce royaume;
+ajouter les scopes nécessaires au JSON seulement si un client en a besoin.
 
 Le mapper `amr` utilise `jsonType.label: "String"` et `multivalued: "true"` : les valeurs stockées (`pwd`, `mfa`)
 sont des chaînes, et Keycloak émet la revendication `amr` comme un tableau de chaînes.
@@ -174,8 +190,8 @@ client `ifs-scalar`, scopes par défaut, rôles `ifs-api`) : voir § 3 et § 7, 
 | `invalid_grant` à la connexion de l'administrateur | Le mot de passe du volume diffère du secret Aspire | § 8 |
 | Scalar : « Invalid redirect uri » ou jeton sans `roles` | Royaume persistant plus ancien que `ifs-realm.json` | Console → royaume `ifs` → *Clients* → `ifs-scalar` : *Valid redirect URIs* = `http://localhost:5257/scalar/*` et `https://localhost:7246/scalar/*`, onglet *Client scopes* : `roles`, `ifs-claims` ; pour un rôle, *Users* → *Role mapping* (filtre client `ifs-api`) |
 | `401` sur toutes les requêtes de l'API | Émetteur différent (port, schéma ou nom d'hôte changé) | Vérifier `Auth__Authority` = `https://localhost:8080/realms/ifs` dans le tableau de bord Aspire, ressource `api` |
-| Connexion refusée, journal Keycloak `KC-SERVICES0093 Invalid parameter value for scope` / `LOGIN_ERROR … Invalid scopes: openid profile email offline_access` | Royaume persistant importé avant l'ajout d'`optionalClientScopes` : le scope intégré `offline_access` n'est pas lié à `ifs-web` | Console → royaume `ifs` → *Clients* → `ifs-web` → onglet *Client scopes* → *Add client scope* → sélectionner le scope intégré `offline_access` → *Add* en **Optional**. Ne pas créer de nouveau scope, ne pas toucher aux utilisateurs ni au volume |
-| Journal Keycloak `Offline tokens not allowed for the user or client` pendant l'échange du code OIDC | L'utilisateur n'a pas le rôle de royaume `offline_access`, même si le client a lié le scope optionnel | Console → royaume `ifs` → *Users* → utilisateur → *Role mapping* → ajouter `offline_access`. Pour un royaume persistant, cette correction est additive et ne demande ni réimport ni suppression du volume |
+| Connexion refusée, journal Keycloak `KC-SERVICES0093 Invalid parameter value for scope` / `LOGIN_ERROR … Invalid scopes: openid profile email offline_access` | Un consommateur hors ligne demande `offline_access`, mais le scope intégré n'est pas lié à `ifs-web` | Pour l'application Web, vérifier que `/config.json` ne demande plus `offline_access`. Pour un autre consommateur, lier le scope intégré en **Optional** dans *Clients* → `ifs-web` → *Client scopes*. Ne pas créer de nouveau scope ni toucher aux utilisateurs ou au volume |
+| Journal Keycloak `Offline tokens not allowed for the user or client` | Un client demande explicitement `offline_access`, mais l'utilisateur ne porte pas le rôle de royaume requis | N'ajouter le rôle dans *Users* → *Role mapping* que pour un client qui a réellement besoin d'agir après déconnexion. Pour un royaume persistant, cette correction est additive et ne demande ni réimport ni suppression du volume |
 | « Invalid redirect uri » sur la page de connexion | L'application n'est pas sur `http://localhost:4200` | Lancer l'application par Aspire (port fixe), ou ajouter l'URL dans *Clients* → `ifs-web` → *Valid redirect URIs* |
 | Le nouvel utilisateur du fichier n'apparaît pas | Le royaume existait déjà : pas de réimport | § 7 |
 | `/v1/me` sans `tenantId` | Attribut `tid` absent ou mapper manquant | Vérifier les attributs de l'utilisateur et les mappers du client `ifs-api` |

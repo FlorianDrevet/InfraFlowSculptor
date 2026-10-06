@@ -5,7 +5,7 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: process.env['CI'] === 'true',
   retries: process.env['CI'] === 'true' ? 1 : 0,
-  timeout: process.env['CI'] === 'true' ? 60_000 : 30_000,
+  timeout: 60_000,
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
@@ -15,7 +15,9 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:4200',
     locale: 'fr-FR',
-    ignoreHTTPSErrors: process.env['CI'] === 'true',
+    // The local API and Keycloak use development certificates; CI has always
+    // ignored certificate errors for the same E2E endpoints.
+    ignoreHTTPSErrors: true,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
