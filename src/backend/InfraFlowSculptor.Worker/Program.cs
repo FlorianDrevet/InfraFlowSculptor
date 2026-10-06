@@ -8,7 +8,6 @@ using InfraFlowSculptor.Worker.Jobs;
 using InfraFlowSculptor.Worker.Services;
 using InfraFlowSculptor.Worker;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using OpenTelemetry.Trace;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -26,8 +25,6 @@ builder.Services.AddScoped<IdempotencyKeyPurge>();
 builder.Services.AddJobHandlersFromAssembly(typeof(PingJob).Assembly);
 builder.Services.AddJobHandlersFromAssembly(typeof(PingJobHandler).Assembly);
 builder.Services.AddScoped<IScheduledJob, PurgeIdempotencyKeysJob>();
-builder.Services.AddOpenTelemetry().WithTracing(tracing =>
-    tracing.AddSource(JobActivity.SourceName));
 builder.Services.AddHostedService<WorkerDatabaseReadinessService>();
 builder.Services.AddHostedService<OutboxRelayService>();
 builder.Services.AddHostedService<DomainEventDispatcherService>();

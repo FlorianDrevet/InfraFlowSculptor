@@ -170,7 +170,8 @@ var worker = builder.AddProject<Projects.InfraFlowSculptor_Worker>(ResourceNames
     .WithReference(serviceBus)
     .WaitFor(postgres)
     .WaitFor(serviceBus)
-    .WithEnvironment("DOTNET_ENVIRONMENT", builder.Environment.EnvironmentName);
+    .WithEnvironment("DOTNET_ENVIRONMENT", builder.Environment.EnvironmentName)
+    .WithEnvironment("Ifs__ServiceBus__IsEmulator", "true");
 var configuredMaxConcurrentSessions = builder.Configuration.GetValue<int?>("Jobs:MaxConcurrentSessions");
 if (isTesting || configuredMaxConcurrentSessions.HasValue)
 {

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using InfraFlowSculptor.Application.Common.Observability;
 using InfraFlowSculptor.Application.Common.Jobs;
 using InfraFlowSculptor.Worker.Jobs;
 
@@ -49,10 +50,14 @@ public sealed partial class ScheduledJobRunner(
                 continue;
             }
 
-            using var activity = JobActivity.Source.StartActivity(
+            using var activity = IfsTelemetry.ActivitySource.StartActivity(
                 "scheduled-job.run",
                 ActivityKind.Internal);
             activity?.SetTag("job.name", job.Name);
+            using var logScope = IfsTelemetry.BeginLogScope(
+                logger,
+                organizationId: null,
+                traceId: activity?.TraceId.ToString());
 
             using var jobCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             var leaseLost = RenewLeaseWhileRunningAsync(job.Name, jobCancellation);

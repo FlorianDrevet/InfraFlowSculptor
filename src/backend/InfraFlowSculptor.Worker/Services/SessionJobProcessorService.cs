@@ -1,10 +1,12 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
+using InfraFlowSculptor.Application.Common.Observability;
 using Azure.Messaging.ServiceBus;
 using InfraFlowSculptor.Application.Common.Jobs;
 using InfraFlowSculptor.Infrastructure.Persistence;
 using InfraFlowSculptor.Worker.Jobs;
+using InfraFlowSculptor.Domain.Common.Identifiers;
 using Microsoft.EntityFrameworkCore;
 
 namespace InfraFlowSculptor.Worker.Services;
@@ -13,6 +15,7 @@ public sealed partial class SessionJobProcessorService(
     IServiceScopeFactory scopeFactory,
     ServiceBusClient serviceBusClient,
     IConfiguration configuration,
+    IHostEnvironment hostEnvironment,
     TimeProvider clock,
     ILogger<SessionJobProcessorService> logger) : BackgroundService
 {
@@ -77,10 +80,13 @@ public sealed partial class SessionJobProcessorService(
 
     private async Task ProcessMessageAsync(string queueName, ProcessSessionMessageEventArgs args)
     {
+        OrganizationId? organizationId = null;
+        string? traceId = null;
         try
         {
             var envelope = JsonSerializer.Deserialize<JobEnvelope>(args.Message.Body.ToString(), JobSerialization.Options)
                 ?? throw new JsonException("The Service Bus job envelope was empty.");
+            organizationId = envelope.OrganizationId;
 
             await using var scope = scopeFactory.CreateAsyncScope();
             var organization = scope.ServiceProvider.GetRequiredService<WorkerOrganizationContext>();
@@ -129,13 +135,16 @@ public sealed partial class SessionJobProcessorService(
                 ActivityContext.TryParse(envelope.TraceParent, null, out parentContext);
             }
 
-            using var activity = JobActivity.Source.StartActivity(
+            using var activity = IfsTelemetry.ActivitySource.StartActivity(
                 "job.process",
                 ActivityKind.Consumer,
                 parentContext);
             activity?.SetTag("job.id", envelope.JobId);
             activity?.SetTag("job.type", envelope.Type);
-            activity?.SetTag("organization.id", envelope.OrganizationId.Value);
+            IfsTelemetry.SetCurrentActivityTags(envelope.OrganizationId);
+            traceId = activity?.TraceId.ToString()
+                ?? (parentContext.TraceId == default ? null : parentContext.TraceId.ToString());
+            using var logScope = IfsTelemetry.BeginLogScope(logger, envelope.OrganizationId, traceId: traceId);
 
             await handler.HandleAsync(
                 envelope.Payload,
@@ -143,10 +152,12 @@ public sealed partial class SessionJobProcessorService(
                 args.CancellationToken);
             await dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
+            IfsTelemetry.RecordJob(envelope.OrganizationId);
             await args.CompleteMessageAsync(args.Message);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
+            using var failureScope = IfsTelemetry.BeginLogScope(logger, organizationId, traceId: traceId);
             MessageFailure(logger, exception, args.Message.MessageId);
             try
             {
@@ -254,6 +265,18 @@ public sealed partial class SessionJobProcessorService(
 
     private Task ProcessErrorAsync(ProcessErrorEventArgs args)
     {
+        if (ServiceBusProcessorErrorClassifier.IsExpectedLocalEmulatorIdleAcceptSessionFailure(
+                ServiceBusProcessorErrorClassifier.IsLocalServiceBusEmulator(
+                    configuration.GetValue<bool>("Ifs:ServiceBus:IsEmulator"),
+                    hostEnvironment.IsDevelopment(),
+                    serviceBusClient.FullyQualifiedNamespace),
+                args.ErrorSource,
+                args.Exception))
+        {
+            EmulatorIdleAcceptSessionLinkClosed(logger, args.Exception, args.EntityPath);
+            return Task.CompletedTask;
+        }
+
         ProcessorError(logger, args.Exception, args.EntityPath, args.ErrorSource.ToString());
         return Task.CompletedTask;
     }
@@ -283,4 +306,12 @@ public sealed partial class SessionJobProcessorService(
         Exception exception,
         string entityPath,
         string errorSource);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Local Service Bus emulator closed an idle session-accept AMQP link on {EntityPath}.")]
+    private static partial void EmulatorIdleAcceptSessionLinkClosed(
+        ILogger logger,
+        Exception exception,
+        string entityPath);
 }

@@ -7,6 +7,7 @@ using InfraFlowSculptor.Api.Common.RateLimiting;
 using InfraFlowSculptor.Api.Configuration;
 using InfraFlowSculptor.Api.Controllers;
 using InfraFlowSculptor.Api.Errors;
+using InfraFlowSculptor.Api.Observability;
 using InfraFlowSculptor.Application;
 using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Infrastructure;
@@ -87,6 +88,7 @@ if (!isOpenApiBuild)
     app.UseStatusCodePages();
     app.UseCors();
     app.UseAuthentication();
+    app.UseMiddleware<RequestLoggingScopeMiddleware>();
     app.UseAuthorization();
     app.UseRateLimiter();
 

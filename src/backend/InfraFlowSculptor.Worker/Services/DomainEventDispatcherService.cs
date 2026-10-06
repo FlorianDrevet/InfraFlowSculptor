@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using InfraFlowSculptor.Application.Common.Observability;
 using InfraFlowSculptor.Application.Common.Events;
 using InfraFlowSculptor.Domain.Common.Models;
 using InfraFlowSculptor.Infrastructure.Persistence;
@@ -86,6 +88,15 @@ public sealed partial class DomainEventDispatcherService(
 
             var organizationContext = scope.ServiceProvider.GetRequiredService<WorkerOrganizationContext>();
             organizationContext.Set(message.OrganizationId);
+            using var activity = IfsTelemetry.ActivitySource.StartActivity(
+                "domain-event.dispatch",
+                ActivityKind.Consumer);
+            activity?.SetTag("event.id", message.Id);
+            IfsTelemetry.SetCurrentActivityTags(message.OrganizationId);
+            using var logScope = IfsTelemetry.BeginLogScope(
+                logger,
+                message.OrganizationId,
+                traceId: activity?.TraceId.ToString());
             var eventType = typeof(IDomainEvent).Assembly.GetType(message.Type)
                 ?? throw new InvalidOperationException($"Domain event type '{message.Type}' was not found.");
             var handlers = scope.ServiceProvider.GetServices<IDomainEventHandler>()
@@ -123,6 +134,7 @@ public sealed partial class DomainEventDispatcherService(
                 throw;
             }
 
+            using var failureScope = IfsTelemetry.BeginLogScope(logger, message.OrganizationId);
             EventFailure(logger, exception, message.Id);
             await RecordFailureAsync(message.Id, cancellationToken);
             return true;
@@ -153,6 +165,7 @@ public sealed partial class DomainEventDispatcherService(
         await transaction.CommitAsync(cancellationToken);
         if (permanentlyFailed)
         {
+            using var failureScope = IfsTelemetry.BeginLogScope(logger, message.OrganizationId);
             EventAbandoned(logger, message.Id, message.Attempts);
         }
     }
