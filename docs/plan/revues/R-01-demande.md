@@ -1,7 +1,7 @@
 # Demande de revue R-01 — Revue du socle
 
 - **Segment** : S-01 → S-17
-- **Branche / pull request** : `impl/socle` → `main` — PR à créer après le push (aucune PR ouverte actuellement)
+- **Branche / pull request** : `impl/socle` → `main` — [PR #1](https://github.com/FlorianDrevet/InfraFlowSculptor/pull/1)
 - **Commits** : `3d7fe87..b00d64a`
 
 | Étape | Commits du segment |
