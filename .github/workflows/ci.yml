@@ -261,25 +261,42 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p artifacts/apphost
           apphost=src/backend/InfraFlowSculptor.AppHost/InfraFlowSculptor.AppHost.csproj
           log="$RUNNER_TEMP/aspire-start.log"
-          if ! aspire start --apphost "$apphost" --non-interactive --nologo >"$log" 2>&1; then
-            sed -E 's#(login\?t=)[^[:space:]&]+#\1[REDACTED]#g' "$log"
+          set +e
+          aspire start --apphost "$apphost" --non-interactive --nologo >"$log" 2>&1
+          start_status=$?
+          set -e
+          redact_aspire_output() {
+            sed -E \
+              -e 's#(login\?t=)[^[:space:]&]+#\1[REDACTED]#g' \
+              -e 's#([[:alnum:]_.-]*(password|secret|token|key)[[:space:]]*=[[:space:]]*)[^;[:space:],]+#\1[REDACTED]#Ig' \
+              -e 's#ci-postgres-password#[REDACTED]#g' \
+              -e 's#ci-keycloak-password#[REDACTED]#g' \
+              "$1"
+          }
+          if ! redact_aspire_output "$log" > artifacts/apphost/aspire-start.log; then
+            printf '%s\n' 'Aspire start log redaction failed; raw output omitted.' > artifacts/apphost/aspire-start.log
+            echo '::error::Could not safely redact the Aspire start log.'
             exit 1
+          fi
+          if [ "$start_status" -ne 0 ]; then
+            cat artifacts/apphost/aspire-start.log
+            exit "$start_status"
           fi
 
       - name: Wait for API and web
         shell: bash
         run: |
-          timeout 300s bash -euo pipefail -c '
-            apphost=src/backend/InfraFlowSculptor.AppHost/InfraFlowSculptor.AppHost.csproj
-            aspire wait api --timeout 300 --apphost "$apphost" --non-interactive
-            aspire wait web --status up --timeout 300 --apphost "$apphost" --non-interactive
-            curl --fail --silent --show-error --retry 60 --retry-delay 5 --retry-connrefused \
-              --retry-max-time 300 --max-time 5 --output /dev/null http://localhost:4200/
-            curl --insecure --fail --silent --show-error --retry 60 --retry-delay 5 --retry-connrefused \
-              --retry-max-time 300 --max-time 5 --output /dev/null https://localhost:7246/health
-          '
+          set -euo pipefail
+          apphost=src/backend/InfraFlowSculptor.AppHost/InfraFlowSculptor.AppHost.csproj
+          aspire wait api --timeout 300 --apphost "$apphost" --non-interactive
+          aspire wait web --status up --timeout 300 --apphost "$apphost" --non-interactive
+          curl --fail --silent --show-error --retry 60 --retry-delay 5 --retry-connrefused \
+            --retry-max-time 300 --max-time 5 --output /dev/null http://localhost:4200/
+          curl --insecure --fail --silent --show-error --retry 60 --retry-delay 5 --retry-connrefused \
+            --retry-max-time 300 --max-time 5 --output /dev/null https://localhost:7246/health
 
       - name: Run Playwright scenarios
         working-directory: src/frontend/ifs-web
@@ -297,7 +314,17 @@ jobs:
           mkdir -p artifacts/apphost
           apphost=src/backend/InfraFlowSculptor.AppHost/InfraFlowSculptor.AppHost.csproj
           aspire logs --apphost "$apphost" --non-interactive --nologo --format Table > "$RUNNER_TEMP/aspire-resources.log" 2>&1
-          sed -E 's#(login\?t=)[^[:space:]&]+#\1[REDACTED]#g' "$RUNNER_TEMP/aspire-resources.log" > artifacts/apphost/resources.log
+          redact_aspire_output() {
+            sed -E \
+              -e 's#(login\?t=)[^[:space:]&]+#\1[REDACTED]#g' \
+              -e 's#([[:alnum:]_.-]*(password|secret|token|key)[[:space:]]*=[[:space:]]*)[^;[:space:],]+#\1[REDACTED]#Ig' \
+              -e 's#ci-postgres-password#[REDACTED]#g' \
+              -e 's#ci-keycloak-password#[REDACTED]#g' \
+              "$1"
+          }
+          if ! redact_aspire_output "$RUNNER_TEMP/aspire-resources.log" > artifacts/apphost/resources.log; then
+            printf '%s\n' 'Aspire resource log redaction failed; raw output omitted.' > artifacts/apphost/resources.log
+          fi
           aspire stop --apphost "$apphost" --non-interactive --nologo
 
       - name: Publish Playwright reports, traces, captures, and AppHost logs

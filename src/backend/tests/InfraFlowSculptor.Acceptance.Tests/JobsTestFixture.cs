@@ -7,6 +7,7 @@ using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 using InfraFlowSculptor.AppHost;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 
 namespace InfraFlowSculptor.Acceptance.Tests;
@@ -170,16 +171,41 @@ public sealed class JobsTestFixture : IAsyncLifetime
 
     private string GetResourceDiagnostics(string resourceName)
     {
-        if (application is null || !application.ResourceNotifications.TryGetCurrentState(resourceName, out var resourceEvent))
+        var currentApplication = application;
+        if (currentApplication is null)
         {
-            return $"No current Aspire state is available for resource '{resourceName}'.";
+            return $"No current Aspire state is available for resource '{resourceName}' because the AppHost is unavailable.";
         }
 
-        var snapshot = resourceEvent.Snapshot;
-        var state = snapshot.State?.Text ?? "unknown";
-        var health = snapshot.HealthStatus?.ToString() ?? "unknown";
-        var checks = string.Join(", ", snapshot.HealthReports.Select(report => $"{report.Name}={report.Status}"));
-        return $"Current state: {state}; health: {health}; checks: {checks}.";
+        var model = currentApplication.Services.GetRequiredService<DistributedApplicationModel>();
+        var resourceStates = model.Resources
+            .OrderBy(resource => resource.Name, StringComparer.Ordinal)
+            .Select(resource =>
+            {
+                if (!currentApplication.ResourceNotifications.TryGetCurrentState(resource.Name, out var resourceEvent))
+                {
+                    return $"{resource.Name}: no current state";
+                }
+
+                var snapshot = resourceEvent.Snapshot;
+                var state = snapshot.State?.Text ?? "unknown";
+                var health = snapshot.HealthStatus?.ToString() ?? "unknown";
+                var checks = string.Join(", ", snapshot.HealthReports.Select(report => $"{report.Name}={report.Status}"));
+                if (checks.Length == 0)
+                {
+                    checks = "none";
+                }
+
+                var created = snapshot.CreationTimeStamp?.ToString("O") ?? "null";
+                var started = snapshot.StartTimeStamp?.ToString("O") ?? "null";
+                var stopped = snapshot.StopTimeStamp?.ToString("O") ?? "null";
+                var exitCode = snapshot.ExitCode?.ToString() ?? "null";
+
+                return $"{resource.Name}: state={state}; health={health}; created={created}; started={started}; stopped={stopped}; exitCode={exitCode}; checks={checks}";
+            });
+
+        return $"Current Aspire resource states while waiting for '{resourceName}':{Environment.NewLine}" +
+            string.Join(Environment.NewLine, resourceStates.Select(state => $"- {state}"));
     }
 
     public string CreateAccessToken(Guid tenantId)
