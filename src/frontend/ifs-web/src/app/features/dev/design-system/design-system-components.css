@@ -125,7 +125,7 @@
 
 .resource-icon-gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: var(--ifs-space-3);
   padding: var(--ifs-space-4);
 }
@@ -216,6 +216,6 @@
   }
 
   .resource-icon-gallery {
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 12.5rem), 1fr));
   }
 }
