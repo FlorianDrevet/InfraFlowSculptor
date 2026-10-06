@@ -12,10 +12,9 @@ test('public login screen is responsive and has a named sign-in action', async (
   await page.addInitScript(() => localStorage.setItem('ifs.language', 'fr'));
   await page.goto('/login');
   await expect(page.getByRole('heading', { level: 2, name: 'Connexion' })).toBeVisible();
-  await expect(page.getByTestId('login-with-microsoft')).toBeVisible();
-  await expect(page.getByTestId('login-with-microsoft')).toHaveAccessibleName(
-    'Continuer avec Microsoft',
-  );
+  const loginButton = page.getByTestId('login-with-microsoft').getByRole('button');
+  await expect(loginButton).toBeVisible();
+  await expect(loginButton).toHaveAccessibleName('Continuer avec Microsoft');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
   if (testInfo.project.name === 'desktop') {
