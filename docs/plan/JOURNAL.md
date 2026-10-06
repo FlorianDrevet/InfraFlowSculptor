@@ -29,3 +29,4 @@
 | 2026-10-06 21:56 | Luna | `P-01` terminée | commit `884b323` |
 | 2026-10-06 22:34 | Luna | `P-02` terminée | commit `784d7c9` |
 | 2026-10-06 23:25 | Luna | `P-03` terminée | commit `02cf2b2` |
+| 2026-10-07 00:04 | Luna | `P-04` terminée | commit `784be86` |

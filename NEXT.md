@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`P-04`](docs/plan/01-preuves.md#p-04--pipelines-azure-devops-du-projet-pilote) — Pipelines Azure DevOps du projet pilote |
+| **Étape courante** | [`P-05`](docs/plan/01-preuves.md#p-05--kit-dinstallation-du-projet-pilote) — Kit d'installation du projet pilote |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`P-03`](docs/plan/01-preuves.md#p-03--module-de-release-powershell) — Module de release PowerShell (commit `02cf2b2`) |
-| **Étape suivante** | `P-05` — Kit d'installation du projet pilote |
+| **Dernière étape terminée** | [`P-04`](docs/plan/01-preuves.md#p-04--pipelines-azure-devops-du-projet-pilote) — Pipelines Azure DevOps du projet pilote (commit `784be86`) |
+| **Étape suivante** | `P-06` — README.ifs.md, manifeste d'exemple et contrôles en CI |
 | **Verrou** | aucun |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
-| **Dernière mise à jour** | 2026-10-06 — Luna |
+| **Dernière mise à jour** | 2026-10-07 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
 résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question ci-dessous).
 
