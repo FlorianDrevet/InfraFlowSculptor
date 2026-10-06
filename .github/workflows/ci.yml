@@ -294,6 +294,10 @@ jobs:
           echo "::add-mask::$IFS_E2E_PASSWORD"
           mkdir -p "$artifact_dir"
 
+          # Aspire's Linux AppHost backchannel requires a private Unix socket directory.
+          mkdir -p "$HOME/.aspire/cli/bch"
+          chmod 700 "$HOME/.aspire/cli/bch"
+
           redact_aspire_output() {
             python3 "$repo_root/.github/scripts/redact_aspire_log.py" "$1"
           }
