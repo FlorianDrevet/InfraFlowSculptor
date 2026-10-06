@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`R-01`](docs/plan/00-socle.md#-r-01--revue-du-socle) — Revue du socle |
-| **Statut** | `EN_ATTENTE_DE_REVUE` |
-| **Dernière étape terminée** | [`S-17`](docs/plan/00-socle.md#s-17--mémoire-graphe-de-code-et-démarrage-rapide) — Mémoire, graphe de code et démarrage rapide (commit `4fbd85c`) |
-| **Étape suivante** | `P-01` — Application témoin |
-| **Verrou** | 🔒 `R-01` — revue demandée le 2026-10-06, voir [R-01-demande.md](docs/plan/revues/R-01-demande.md) |
+| **Étape courante** | [`P-01`](docs/plan/01-preuves.md#p-01--application-témoin) — Application témoin |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`R-01`](docs/plan/00-socle.md#-r-01--revue-du-socle) — Revue du socle (approuvée) |
+| **Étape suivante** | `P-02` — Bicep du projet pilote, écrit à la main |
+| **Verrou** | aucun |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
-| **Dernière mise à jour** | 2026-10-06 — Luna |
+| **Dernière mise à jour** | 2026-10-06 — Claude (revue R-01) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
 résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question ci-dessous).
 
