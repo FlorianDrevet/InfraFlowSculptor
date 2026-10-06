@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`P-03`](docs/plan/01-preuves.md#p-03--module-de-release-powershell) — Module de release PowerShell |
+| **Étape courante** | [`P-04`](docs/plan/01-preuves.md#p-04--pipelines-azure-devops-du-projet-pilote) — Pipelines Azure DevOps du projet pilote |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`P-02`](docs/plan/01-preuves.md#p-02--bicep-du-projet-pilote-écrit-à-la-main) — Bicep du projet pilote, écrit à la main (commit `784d7c9`) |
-| **Étape suivante** | `P-04` — Pipelines Azure DevOps du projet pilote |
+| **Dernière étape terminée** | [`P-03`](docs/plan/01-preuves.md#p-03--module-de-release-powershell) — Module de release PowerShell (commit `02cf2b2`) |
+| **Étape suivante** | `P-05` — Kit d'installation du projet pilote |
 | **Verrou** | aucun |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
 | **Dernière mise à jour** | 2026-10-06 — Luna |
