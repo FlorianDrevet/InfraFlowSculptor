@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`S-16`](docs/plan/00-socle.md#s-16--observabilité-transverse) — Observabilité transverse |
-| **Statut** | `EN_COURS` |
-| **Dernière étape terminée** | [`S-15`](docs/plan/00-socle.md#s-15--intégration-continue) — Intégration continue (commit `80b2250`) |
-| **Étape suivante** | `S-17` — Mémoire, graphe de code et démarrage rapide |
+| **Étape courante** | [`S-17`](docs/plan/00-socle.md#s-17--mémoire-graphe-de-code-et-démarrage-rapide) — Mémoire, graphe de code et démarrage rapide |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`S-16`](docs/plan/00-socle.md#s-16--observabilité-transverse) — Observabilité transverse (commit `6e3e086`) |
+| **Étape suivante** | `R-01` — Revue du socle |
 | **Verrou** | aucun |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
-| **Dernière mise à jour** | 2026-10-06 — Luna (S-16 en cours) |
+| **Dernière mise à jour** | 2026-10-06 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
 résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question ci-dessous).
 
