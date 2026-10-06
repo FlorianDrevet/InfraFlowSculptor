@@ -12,6 +12,8 @@
 
 ## Fichiers thématiques
 
+- **2026-10-06** : S-08 ajoute le worker/outbox avec 57 tests verts et des conteneurs locaux persistants. S-09 ajoute Angular 22; connexion Keycloak Bob, `/v1/me`, déconnexion, session après rechargement et configuration runtime vérifiés. 57 tests .NET, 4 Python et 3 Angular passent; OIDC limite le bearer token à `/v1/`.
+
 | Fichier | Contenu |
 |---|---|
 | `.github/memory/01-solution-overview.md` | Le produit, les surfaces, les flux critiques |

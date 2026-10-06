@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`S-09`](docs/plan/00-socle.md#s-09--application-angular-générée-depuis-le-template) — Application Angular générée depuis le template |
+| **Étape courante** | [`S-10`](docs/plan/00-socle.md#s-10--tokens-strata-polices-et-styles-de-base) — Tokens Strata, polices et styles de base |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`S-08`](docs/plan/00-socle.md#s-08--worker-outbox-et-files-à-sessions) — Worker, outbox et files à sessions (commit `a9c5736`) |
-| **Étape suivante** | `S-10` — Tokens Strata, polices et styles de base |
+| **Dernière étape terminée** | [`S-09`](docs/plan/00-socle.md#s-09--application-angular-générée-depuis-le-template) — Application Angular générée depuis le template (commit `09d7a79`) |
+| **Étape suivante** | `S-11` — Composants Strata de base |
 | **Verrou** | aucun |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
 | **Dernière mise à jour** | 2026-10-06 — Luna |
@@ -37,7 +37,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 | Outil | Version attendue | Posé ? |
 |---|---|---|
 | SDK .NET | `10.0.203` | Oui (`10.0.301`) |
-| Node | `24.15.0` | Non (`24.13.0`; le MSI winget demande les droits administrateur) |
+| Node | `24.15.0` | Oui (`24.19.0`) |
 | Docker | `27.0.0` | Oui (`29.5.3`, daemon répond) |
 | CLI Aspire | `13.5.3` | Oui (`13.6.0`) |
 | Python | `3.11` | Oui (`3.14.2`) |
