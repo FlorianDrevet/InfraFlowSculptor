@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://infraflowsculptor.example/schemas/ifs-report.schema.json",
+  "title": "IFS infrastructure release report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "project", "component", "unit", "target", "revision", "commit", "manifestFingerprint", "generatedAt", "steps", "journal", "detachedResources", "revokedAccess", "temporaryFirewallRules", "cleanedFirewallRules", "result", "error"],
+  "properties": {
+    "schema": { "const": "ifs-report/v1" },
+    "project": { "type": "string", "minLength": 1 },
+    "component": { "enum": ["core", "data", "platform", "orders"] },
+    "unit": { "type": "string", "minLength": 1 },
+    "target": { "enum": ["dev", "prd", "shared"] },
+    "revision": { "type": "integer", "minimum": 1 },
+    "commit": { "type": "string", "minLength": 1 },
+    "manifestFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "steps": { "type": "array", "items": { "type": "object" } },
+    "journal": { "$ref": "#/$defs/operationJournal" },
+    "detachedResources": { "type": "array", "items": { "type": "string" } },
+    "revokedAccess": { "type": "array", "items": { "type": "string" } },
+    "temporaryFirewallRules": { "type": "array", "items": { "type": "string" } },
+    "cleanedFirewallRules": { "type": "array", "items": { "type": "string" } },
+    "result": { "enum": ["Succeeded", "PartiallyApplied", "FailedBeforeMutation"] },
+    "error": { "type": ["string", "null"] }
+  },
+  "$defs": {
+    "operationJournal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "unit", "target", "operations"],
+      "properties": {
+        "schema": { "const": "ifs-operation-journal/v1" },
+        "unit": { "type": "string", "minLength": 1 },
+        "target": { "enum": ["dev", "prd", "shared"] },
+        "operations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "revision", "commit", "kind", "objectId", "state", "createdAt", "updatedAt"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+              "revision": { "type": "integer", "minimum": 1 },
+              "commit": { "type": "string", "minLength": 1 },
+              "kind": { "type": "string", "minLength": 1 },
+              "objectId": { "type": "string", "minLength": 1 },
+              "state": { "enum": ["ToDo", "Started", "Done"] },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "updatedAt": { "type": "string", "format": "date-time" },
+              "note": { "type": ["string", "null"] },
+              "details": {}
+            }
+          }
+        }
+      }
+    }
+  }
+}

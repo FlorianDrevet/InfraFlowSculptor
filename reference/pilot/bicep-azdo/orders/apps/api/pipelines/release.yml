@@ -1,0 +1,25 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+name: $(Date:yyyyMMdd).$(Rev:r)
+trigger: none
+resources:
+  pipelines:
+  - pipeline: build
+    source: 'shop · orders · api · CI'
+    trigger:
+      branches:
+        include:
+        - main
+extends:
+  template: .ifs/templates/app-release.yml
+  parameters:
+    project: shop
+    component: orders
+    application: api
+    targets:
+    - name: dev
+      protected: false
+      dependsOn: []
+    - name: prd
+      protected: true
+      dependsOn:
+      - Deploy_dev

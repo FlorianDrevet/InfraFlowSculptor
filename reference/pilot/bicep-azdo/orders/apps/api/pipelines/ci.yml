@@ -1,0 +1,21 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+name: $(Date:yyyyMMdd).$(Rev:r)
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - src/api/**
+    - orders/apps/api/**
+    - .ifs/templates/**
+    - .ifs/pins.json
+extends:
+  template: .ifs/templates/app-ci.yml
+  parameters:
+    project: shop
+    component: orders
+    application: api
+    registryServiceConnection: ifs-shop-shared-app
+    buildContext: src/api
+    dockerfile: src/api/Dockerfile

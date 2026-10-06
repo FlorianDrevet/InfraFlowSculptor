@@ -1,0 +1,28 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+name: $(Date:yyyyMMdd).$(Rev:r)
+trigger: none
+resources:
+  pipelines:
+  - pipeline: ci
+    source: 'shop · core · infra · CI'
+    trigger:
+      branches:
+        include:
+        - main
+extends:
+  template: .ifs/templates/infra-release.yml
+  parameters:
+    project: shop
+    component: core
+    defaultBranch: main
+    secretWrites:
+    - name: MAIN_PAYMENTS_API_KEY
+      value: $(MAIN_PAYMENTS_API_KEY)
+    targets:
+    - name: dev
+      protected: false
+      dependsOn: []
+    - name: prd
+      protected: true
+      dependsOn:
+      - Deploy_dev

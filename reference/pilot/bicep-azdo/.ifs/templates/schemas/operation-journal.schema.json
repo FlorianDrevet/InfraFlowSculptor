@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://infraflowsculptor.example/schemas/operation-journal.schema.json",
+  "title": "IFS operation journal v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "unit", "target", "operations"],
+  "properties": {
+    "schema": { "const": "ifs-operation-journal/v1" },
+    "unit": { "type": "string", "minLength": 1 },
+    "target": { "enum": ["dev", "prd", "shared"] },
+    "operations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "revision", "commit", "kind", "objectId", "state", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "revision": { "type": "integer", "minimum": 1 },
+          "commit": { "type": "string", "minLength": 1 },
+          "kind": { "type": "string", "minLength": 1 },
+          "objectId": { "type": "string", "minLength": 1 },
+          "state": { "enum": ["ToDo", "Started", "Done"] },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "note": { "type": ["string", "null"] },
+          "details": {}
+        }
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$script:IfsSchemaDirectory = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../../../release-module/schemas'))
+$script:IfsSchemaDirectory = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../schemas'))
 
 function Invoke-IfsAz {
     [CmdletBinding()]
@@ -846,7 +846,7 @@ function Invoke-IfsSecretWrite {
 }
 
 function Get-IfsSqlModuleVersion {
-    $pinsPath = Join-Path $PSScriptRoot '../../../../pins.json'
+    $pinsPath = Join-Path $PSScriptRoot '../../pins.json'
     if (-not (Test-Path -LiteralPath $pinsPath)) { throw ('Le fichier de versions épinglées est absent : {0}' -f $pinsPath) }
     $pins = Get-Content -LiteralPath $pinsPath -Raw | ConvertFrom-Json -Depth 50
     $version = Get-IfsValue (Get-IfsValue $pins 'powerShellModules') 'SqlServer'
@@ -894,7 +894,7 @@ function Invoke-IfsDataAccess {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][object] $ReleaseData,
-        [Parameter(Mandatory)][string] $SqlScript,
+        [string] $SqlScript = '',
         [Parameter(Mandatory)][string] $RunId
     )
     $scriptPath = (Resolve-Path -LiteralPath $SqlScript).Path
@@ -1091,6 +1091,12 @@ function Invoke-IfsInfraDeploy {
         [string] $RunId = [guid]::NewGuid().ToString('N')
     )
     $data = Read-IfsReleaseData -Path $ReleasePath
+    if (@($data.dataAccess).Count -gt 0 -and [string]::IsNullOrWhiteSpace($SqlScript)) {
+        throw 'Le script SQL des accès sortants est requis pour ce composant.'
+    }
+    if (@($data.dataAccess).Count -gt 0 -and -not (Test-Path -LiteralPath $SqlScript -PathType Leaf)) {
+        throw ('Le script SQL des accès sortants est introuvable : {0}' -f $SqlScript)
+    }
     $metadata = Get-IfsManifestInfo -ManifestPath $ManifestPath
     $approved = Get-Content -LiteralPath $PreviewPath -Raw | ConvertFrom-Json -Depth 100
     $context = $null

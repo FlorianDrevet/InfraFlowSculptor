@@ -1,0 +1,10 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+name: $(Date:yyyyMMdd).$(Rev:r)
+trigger: none
+# Azure Repos Git déclenche cette validation par une Build Validation branch policy, configurée par le kit d’installation.
+pr: none
+extends:
+  template: .ifs/templates/infra-pr.yml
+  parameters:
+    project: shop
+    component: data

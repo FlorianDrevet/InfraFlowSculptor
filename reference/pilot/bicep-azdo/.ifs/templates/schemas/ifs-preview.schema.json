@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://infraflowsculptor.example/schemas/ifs-preview.schema.json",
+  "title": "IFS infrastructure preview v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "project", "component", "unit", "target", "generatedAt", "fingerprint", "pendingOperations", "created", "modified", "recreated", "detachedOrDeleted", "revokedAccess", "dataWrites", "appOwnedState", "limitations"],
+  "properties": {
+    "schema": { "const": "ifs-preview/v1" },
+    "project": { "type": "string", "minLength": 1 },
+    "component": { "enum": ["core", "data", "platform", "orders"] },
+    "unit": { "type": "string", "minLength": 1 },
+    "target": { "enum": ["dev", "prd", "shared"] },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "pendingOperations": { "type": "array", "items": { "type": "object" } },
+    "created": { "type": "array", "items": { "type": "object" } },
+    "modified": { "type": "array", "items": { "type": "object" } },
+    "recreated": { "type": "array", "items": { "type": "object" } },
+    "detachedOrDeleted": { "type": "array", "items": { "type": "string" } },
+    "revokedAccess": { "type": "array", "items": { "type": "object" } },
+    "dataWrites": { "type": "array", "items": { "type": "object" } },
+    "appOwnedState": { "type": "array", "items": { "type": "object" } },
+    "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  }
+}
