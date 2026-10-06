@@ -140,6 +140,18 @@ else
     }
 
     _ = giteaBuilder.WithLifetime(containerLifetime);
+
+    builder.AddJavaScriptApp(ResourceNames.Web, "../../frontend/ifs-web")
+        .WithRunScript("start")
+        .WithArgs("--", "--port", "4200")
+        .WithHttpEndpoint(port: 4200, targetPort: 4200, name: "http", isProxied: false)
+        .WithEnvironment("IFS_API_URL", api.GetEndpoint("https"))
+        .WithEnvironment("IFS_OIDC_PROVIDER", "keycloak")
+        .WithEnvironment("IFS_OIDC_AUTHORITY", "https://localhost:8080/realms/ifs")
+        .WithEnvironment("IFS_OIDC_CLIENT_ID", "ifs-web")
+        .WithEnvironment("IFS_OIDC_SCOPE", "openid profile email offline_access")
+        .WaitFor(api)
+        .WaitFor(keycloak);
 }
 
 var worker = builder.AddProject<Projects.InfraFlowSculptor_Worker>(ResourceNames.Worker)

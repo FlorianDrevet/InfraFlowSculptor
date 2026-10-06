@@ -1,0 +1,21 @@
+{
+  "home": {
+    "greeting": "Hello {{ displayName }}",
+    "loading": "Loading your profile…",
+    "error": "Your profile could not be loaded."
+  },
+  "auth": {
+    "signInFailed": "Sign-in failed",
+    "signInIncomplete": "Your sign-in could not be completed.",
+    "tryAgain": "Try again"
+  },
+  "profile": {
+    "title": "Profile",
+    "signedInAs": "Signed in as",
+    "signOut": "Sign out",
+    "notSignedIn": "Not signed in."
+  },
+  "nav": {
+    "home": "Home"
+  }
+}

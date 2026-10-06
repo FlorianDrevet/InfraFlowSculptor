@@ -1,0 +1,21 @@
+{
+  "home": {
+    "greeting": "Bonjour {{ displayName }}",
+    "loading": "Chargement du profil…",
+    "error": "Impossible de charger votre profil."
+  },
+  "auth": {
+    "signInFailed": "Échec de la connexion",
+    "signInIncomplete": "Votre connexion n’a pas pu aboutir.",
+    "tryAgain": "Réessayer"
+  },
+  "profile": {
+    "title": "Profil",
+    "signedInAs": "Connecté en tant que",
+    "signOut": "Se déconnecter",
+    "notSignedIn": "Vous n’êtes pas connecté."
+  },
+  "nav": {
+    "home": "Accueil"
+  }
+}

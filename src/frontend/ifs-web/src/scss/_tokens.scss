@@ -1,0 +1,32 @@
+// Design tokens shared by the whole app. Plain CSS custom properties (not
+// Sass variables) so they can be read from any stylesheet without an
+// explicit `@use`, and overridden at runtime (e.g. per-theme) if needed.
+//
+// When the `ui=material` option is selected, Angular Material's own
+// system-level variables (`--mat-sys-*`, see https://material.angular.dev/guide/system-variables)
+// take over color/typography; these tokens stay for spacing and the pieces
+// Material doesn't cover.
+:root {
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  --color-text: #1a1a1a;
+  --color-text-muted: #666666;
+  --color-border: #e2e2e2;
+  --color-background: #ffffff;
+  --color-primary: #3f51b5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: #f2f2f2;
+    --color-text-muted: #a0a0a0;
+    --color-border: #3a3a3a;
+    --color-background: #121212;
+    --color-primary: #7986cb;
+  }
+}

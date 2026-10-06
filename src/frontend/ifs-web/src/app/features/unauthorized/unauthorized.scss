@@ -1,0 +1,6 @@
+.unauthorized {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3, 0.75rem);
+}

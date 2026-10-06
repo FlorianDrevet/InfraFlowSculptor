@@ -45,9 +45,16 @@ contient pas `resource_access.account.roles` et `/realms/ifs/account/` répond 4
 `ifs-claims` explicitement; ce scope n'est pas global, afin de ne pas ajouter les revendications propres à l'API aux
 jetons des clients d'administration Keycloak.
 
-Un import vierge Keycloak 26.6 confirme ces scopes par défaut et les revendications des comptes Alice et Nina. Keycloak
-crée aussi le scope `offline_access`; `phone` et `address` ne font pas partie du jeu de scopes de ce royaume. Les ajouter
-au JSON du royaume seulement si un client en a besoin.
+Un import vierge Keycloak 26.6 confirme ces scopes par défaut et les revendications des comptes Alice et Nina.
+`offline_access` est un scope intégré de Keycloak : il n'est ni redéfini ni ajouté à `clientScopes` dans
+`ifs-realm.json`. Pour émettre des jetons hors ligne, le client `ifs-web` le lie comme scope **optionnel**
+(`optionalClientScopes: ["offline_access"]`). Il n'est émis que si le client le demande, ce que fait la configuration
+Angular (`openid profile email offline_access`) pour obtenir un jeton de rafraîchissement hors ligne. `phone` et `address` ne
+font pas partie du jeu de scopes de ce royaume ; les ajouter au JSON seulement si un client en a besoin.
+Keycloak exige aussi que l'utilisateur porte le rôle de royaume `offline_access`. Les sept utilisateurs seed locaux le
+reçoivent dans `realmRoles` afin que `ifs-web` puisse obtenir son jeton de rafraîchissement ; cette attribution reste
+limitée au royaume de développement. Un utilisateur ajouté manuellement doit recevoir ce rôle s'il utilise l'application
+Web.
 
 Le mapper `amr` utilise `jsonType.label: "String"` et `multivalued: "true"` : les valeurs stockées (`pwd`, `mfa`)
 sont des chaînes, et Keycloak émet la revendication `amr` comme un tableau de chaînes.
@@ -130,17 +137,51 @@ Pour **exporter** des modifications faites à la main dans la console vers le fi
 menu *Action* (en haut à droite) → *Partial export* (cocher *Include clients*) — les utilisateurs ne sont pas exportés
 par ce menu : les recopier à la main dans `users` du fichier.
 
-## 8. Dépannage
+## 8. Récupérer l'accès administrateur (`invalid_grant`)
+
+Le paramètre `keycloak-admin-password` n'est lu par Keycloak qu'à la **création** du volume (variables
+`KC_BOOTSTRAP_ADMIN_*`). Si le secret a changé depuis, ou si le volume vient d'une autre configuration, le volume
+persistant garde l'ancien mot de passe et la console répond `invalid_grant`. Le royaume et ses utilisateurs ne sont
+pas en cause : ne supprimez pas le volume. La procédure suivante ajoute un administrateur temporaire sans modifier
+les données existantes.
+
+1. Arrêter l'AppHost (`aspire stop`) : les conteneurs persistants restent démarrés.
+2. Arrêter (sans le supprimer) le conteneur Keycloak, car la base H2 du mode développement ne s'ouvre qu'une fois :
+   ```powershell
+   docker ps --filter "name=keycloak" --format "{{.Names}}  {{.Image}}"
+   docker stop <nom-du-conteneur-keycloak>
+   docker inspect --format '{{range .Mounts}}{{.Name}} -> {{.Destination}}{{println}}{{end}}' <nom-du-conteneur-keycloak>
+   ```
+   Repérer le volume monté sur `/opt/keycloak/data`.
+3. Créer l'administrateur dans un conteneur jetable, avec la même image et le même volume (saisie interactive du
+   mot de passe, rien n'est écrit sur disque) :
+   ```powershell
+   docker run --rm -it -v <volume>:/opt/keycloak/data <image> bootstrap-admin user --username recovery-admin
+   ```
+   Si le nom `recovery-admin` existe déjà, en choisir un autre. Si Keycloak a été lancé avec des options de base de
+   données particulières (variables `KC_DB*` du conteneur), les passer aussi avec `-e`.
+4. Redémarrer : `docker start <nom-du-conteneur-keycloak>`, puis `aspire start`.
+5. Console → royaume **master** → *Users* → `admin` → *Credentials* → *Reset password* avec la valeur du secret
+   `keycloak-admin-password`. Se connecter ensuite avec `admin`, puis supprimer `recovery-admin`.
+
+Le même compte sert à corriger un royaume importé avant une modification de `ifs-realm.json` (URI de redirection du
+client `ifs-scalar`, scopes par défaut, rôles `ifs-api`) : voir § 3 et § 7, en modifiant les seuls éléments concernés.
+
+## 9. Dépannage
 
 | Symptôme | Cause | Remède |
 |---|---|---|
+| `invalid_grant` à la connexion de l'administrateur | Le mot de passe du volume diffère du secret Aspire | § 8 |
+| Scalar : « Invalid redirect uri » ou jeton sans `roles` | Royaume persistant plus ancien que `ifs-realm.json` | Console → royaume `ifs` → *Clients* → `ifs-scalar` : *Valid redirect URIs* = `http://localhost:5257/scalar/*` et `https://localhost:7246/scalar/*`, onglet *Client scopes* : `roles`, `ifs-claims` ; pour un rôle, *Users* → *Role mapping* (filtre client `ifs-api`) |
 | `401` sur toutes les requêtes de l'API | Émetteur différent (port, schéma ou nom d'hôte changé) | Vérifier `Auth__Authority` = `https://localhost:8080/realms/ifs` dans le tableau de bord Aspire, ressource `api` |
+| Connexion refusée, journal Keycloak `KC-SERVICES0093 Invalid parameter value for scope` / `LOGIN_ERROR … Invalid scopes: openid profile email offline_access` | Royaume persistant importé avant l'ajout d'`optionalClientScopes` : le scope intégré `offline_access` n'est pas lié à `ifs-web` | Console → royaume `ifs` → *Clients* → `ifs-web` → onglet *Client scopes* → *Add client scope* → sélectionner le scope intégré `offline_access` → *Add* en **Optional**. Ne pas créer de nouveau scope, ne pas toucher aux utilisateurs ni au volume |
+| Journal Keycloak `Offline tokens not allowed for the user or client` pendant l'échange du code OIDC | L'utilisateur n'a pas le rôle de royaume `offline_access`, même si le client a lié le scope optionnel | Console → royaume `ifs` → *Users* → utilisateur → *Role mapping* → ajouter `offline_access`. Pour un royaume persistant, cette correction est additive et ne demande ni réimport ni suppression du volume |
 | « Invalid redirect uri » sur la page de connexion | L'application n'est pas sur `http://localhost:4200` | Lancer l'application par Aspire (port fixe), ou ajouter l'URL dans *Clients* → `ifs-web` → *Valid redirect URIs* |
 | Le nouvel utilisateur du fichier n'apparaît pas | Le royaume existait déjà : pas de réimport | § 7 |
 | `/v1/me` sans `tenantId` | Attribut `tid` absent ou mapper manquant | Vérifier les attributs de l'utilisateur et les mappers du client `ifs-api` |
 | La connexion boucle | Cookies d'une ancienne session | Vider les cookies de `localhost:4200` et `localhost:8080` |
 
-## 9. Pour aller plus loin
+## 10. Pour aller plus loin
 
 Documentation officielle : `https://www.keycloak.org/documentation` (Server Administration Guide : *Realms*, *Users*,
 *Clients*, *Protocol mappers*). Intégration Aspire : `https://aspire.dev/integrations/security/keycloak/`.

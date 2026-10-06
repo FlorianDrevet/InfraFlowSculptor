@@ -1,0 +1,58 @@
+{
+  "name": "ifs-web",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . && npm run i18n:check",
+    "start": "ng serve",
+    "prestart": "node scripts/write-config.mjs",
+    "prebuild": "node scripts/write-config.mjs",
+    "prepare": "husky",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "i18n:check": "node scripts/check-i18n.mjs"
+  },
+  "private": true,
+  "packageManager": "npm@11.17.0",
+  "dependencies": {
+    "@angular/common": "^22.2.0",
+    "@angular/compiler": "^22.2.0",
+    "@angular/core": "^22.2.0",
+    "@angular/forms": "^22.2.0",
+    "@angular/platform-browser": "^22.2.0",
+    "@angular/router": "^22.2.0",
+    "@jsverse/transloco": "^8.4.0",
+    "angular-auth-oidc-client": "^22.0.1",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^22.2.1",
+    "@angular/cli": "^22.2.1",
+    "@angular/compiler-cli": "^22.2.0",
+    "@eslint/js": "^9.38.0",
+    "@tailwindcss/postcss": "^4.1.12",
+    "angular-eslint": "^22.5.0",
+    "eslint": "^10.11.0",
+    "husky": "^9.1.7",
+    "jsdom": "^30.0.0",
+    "lint-staged": "^17.5.1",
+    "postcss": "^8.5.3",
+    "prettier": "^3.8.1",
+    "tailwindcss": "^4.1.12",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.70.1",
+    "vitest": "^5.0.0"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix"
+    ],
+    "*.{ts,html,scss,json,md}": [
+      "prettier --write"
+    ]
+  }
+}
