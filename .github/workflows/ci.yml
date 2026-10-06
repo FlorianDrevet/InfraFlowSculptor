@@ -1,0 +1,314 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: src/backend/global.json
+
+      - name: Cache NuGet
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('src/backend/Directory.Packages.props', 'src/backend/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: dotnet restore src/backend/InfraFlowSculptor.slnx
+
+      - name: Build without warnings
+        run: dotnet build src/backend/InfraFlowSculptor.slnx --configuration Release --no-restore --warnaserror
+
+      - name: OpenAPI artifact is current
+        run: git diff --exit-code -- src/backend/InfraFlowSculptor.Api/openapi/v1.json
+
+      - name: Test backend projects and collect coverage
+        shell: bash
+        run: |
+          set -uo pipefail
+          results="$RUNNER_TEMP/backend-test-results"
+          failed=0
+          mkdir -p "$results"
+          for project in \
+            src/backend/tests/InfraFlowSculptor.Api.Tests/InfraFlowSculptor.Api.Tests.csproj \
+            src/backend/tests/InfraFlowSculptor.Application.Tests/InfraFlowSculptor.Application.Tests.csproj \
+            src/backend/tests/InfraFlowSculptor.Architecture.Tests/InfraFlowSculptor.Architecture.Tests.csproj \
+            src/backend/tests/InfraFlowSculptor.Domain.Tests/InfraFlowSculptor.Domain.Tests.csproj \
+            src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/InfraFlowSculptor.Infrastructure.Tests.csproj; do
+            name="${project##*/}"
+            name="${name%.csproj}"
+            if ! dotnet test "$project" --configuration Release --no-build --no-restore \
+              --collect:"XPlat Code Coverage" \
+              --logger "trx;LogFileName=$name.trx" \
+              --results-directory "$results"; then
+              failed=1
+            fi
+          done
+          exit "$failed"
+
+      - name: Publish backend test results and coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-test-results
+          path: ${{ runner.temp }}/backend-test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+  acceptance:
+    name: Acceptance tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: src/backend/global.json
+
+      - name: Cache NuGet
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('src/backend/Directory.Packages.props', 'src/backend/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: dotnet restore src/backend/InfraFlowSculptor.slnx
+
+      - name: Prepare acceptance test results
+        run: mkdir -p "$RUNNER_TEMP/acceptance-test-results"
+
+      - name: Run acceptance tests with Docker
+        run: >-
+          dotnet test
+          src/backend/tests/InfraFlowSculptor.Acceptance.Tests/InfraFlowSculptor.Acceptance.Tests.csproj
+          --configuration Release --no-restore
+          --logger "trx;LogFileName=InfraFlowSculptor.Acceptance.Tests.trx"
+          --results-directory "$RUNNER_TEMP/acceptance-test-results"
+
+      - name: Publish acceptance test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: acceptance-test-results
+          path: ${{ runner.temp }}/acceptance-test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/frontend/ifs-web
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: src/frontend/ifs-web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Prepare unit-test results
+        run: mkdir -p test-results
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:ci
+
+      - name: Publish unit-test JUnit results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-test-results
+          path: src/frontend/ifs-web/test-results/*.xml
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Production build
+        run: npm run build
+
+      - name: Generated API client is current
+        run: npm run api:check
+
+  supply-chain:
+    name: Supply chain
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: src/backend/global.json
+
+      - name: Cache NuGet
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('src/backend/Directory.Packages.props', 'src/backend/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore .NET dependencies
+        run: dotnet restore src/backend/InfraFlowSculptor.slnx
+
+      - name: Reject critical vulnerable .NET packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/dotnet-vulnerabilities.json"
+          dotnet package list --project src/backend/InfraFlowSculptor.slnx \
+            --include-transitive --vulnerable --format json --output-version 1 > "$report"
+          if ! jq -e '(if ((.problems // []) | type) == "array" then ((.problems // []) | length) == 0 else false end) and (([.. | objects | select(.severity? == "Critical")] | length) == 0)' "$report" >/dev/null; then
+            echo "::error::Critical vulnerable .NET packages were found, or the audit report could not be parsed."
+            jq '.' "$report"
+            exit 1
+          fi
+          echo "No critical vulnerable .NET packages."
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: src/frontend/ifs-web/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: src/frontend/ifs-web
+        run: npm ci --no-audit --no-fund
+
+      - name: Reject critical vulnerable npm packages
+        working-directory: src/frontend/ifs-web
+        run: |
+          npm audit --audit-level=critical
+          echo "No critical vulnerable npm packages."
+
+  e2e:
+    name: End-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: src/backend/global.json
+
+      - name: Cache NuGet
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('src/backend/Directory.Packages.props', 'src/backend/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: src/frontend/ifs-web/package-lock.json
+
+      - name: Install Aspire CLI
+        run: npm install --global @microsoft/aspire-cli@13.5.3
+
+      - name: Verify Aspire CLI installation
+        run: aspire --version
+
+      - name: Install frontend dependencies
+        working-directory: src/frontend/ifs-web
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Playwright Chromium and system dependencies
+        working-directory: src/frontend/ifs-web
+        run: npx playwright install --with-deps chromium
+
+      - name: Start Aspire AppHost
+        id: start-apphost
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          DOTNET_ENVIRONMENT: Development
+          AppHost__PersistentContainers: "false"
+          Parameters__postgres-password: ci-postgres-password
+          Parameters__keycloak-admin-password: ci-keycloak-password
+        shell: bash
+        run: |
+          set -euo pipefail
+          apphost=src/backend/InfraFlowSculptor.AppHost/InfraFlowSculptor.AppHost.csproj
+          log="$RUNNER_TEMP/aspire-start.log"
+          if ! aspire start --apphost "$apphost" --non-interactive --nologo >"$log" 2>&1; then
+            sed -E 's#(login\?t=)[^[:space:]&]+#\1[REDACTED]#g' "$log"
+            exit 1
+          fi
+
+      - name: Wait for API and web
+        shell: bash
+        run: |
+          timeout 300s bash -euo pipefail -c '
+            apphost=src/backend/InfraFlowSculptor.AppHost/InfraFlowSculptor.AppHost.csproj
+            aspire wait api --timeout 300 --apphost "$apphost" --non-interactive
+            aspire wait web --status up --timeout 300 --apphost "$apphost" --non-interactive
+            curl --fail --silent --show-error --retry 60 --retry-delay 5 --retry-connrefused \
+              --retry-max-time 300 --max-time 5 --output /dev/null http://localhost:4200/
+            curl --insecure --fail --silent --show-error --retry 60 --retry-delay 5 --retry-connrefused \
+              --retry-max-time 300 --max-time 5 --output /dev/null https://localhost:7246/health
+          '
+
+      - name: Run Playwright scenarios
+        working-directory: src/frontend/ifs-web
+        env:
+          IFS_E2E_PASSWORD: "Ifs-Demo-2026!"
+        run: |
+          echo "::add-mask::$IFS_E2E_PASSWORD"
+          npm run e2e
+
+      - name: Capture AppHost logs and stop it
+        if: always() && steps.start-apphost.outcome == 'success'
+        shell: bash
+        run: |
+          set +e
+          mkdir -p artifacts/apphost
+          apphost=src/backend/InfraFlowSculptor.AppHost/InfraFlowSculptor.AppHost.csproj
+          aspire logs --apphost "$apphost" --non-interactive --nologo --format Table > "$RUNNER_TEMP/aspire-resources.log" 2>&1
+          sed -E 's#(login\?t=)[^[:space:]&]+#\1[REDACTED]#g' "$RUNNER_TEMP/aspire-resources.log" > artifacts/apphost/resources.log
+          aspire stop --apphost "$apphost" --non-interactive --nologo
+
+      - name: Publish Playwright reports, traces, captures, and AppHost logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-artifacts
+          path: |
+            src/frontend/ifs-web/playwright-report
+            src/frontend/ifs-web/test-results
+            src/frontend/ifs-web/e2e/__captures__
+            artifacts/apphost
+          if-no-files-found: warn
+          retention-days: 7

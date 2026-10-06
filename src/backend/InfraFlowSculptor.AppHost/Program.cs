@@ -93,7 +93,7 @@ var api = builder
     .WithEnvironment("DOTNET_ENVIRONMENT", builder.Environment.EnvironmentName)
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", builder.Environment.EnvironmentName)
     .WithExternalHttpEndpoints()
-    .WithHttpHealthCheck("/alive");
+    .WithHttpHealthCheck("/alive", endpointName: "http");
 
 if (isTesting)
 {

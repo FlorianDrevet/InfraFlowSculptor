@@ -4,13 +4,16 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Aspire.Hosting;
+using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
+using InfraFlowSculptor.AppHost;
 using Microsoft.IdentityModel.Tokens;
 
 namespace InfraFlowSculptor.Acceptance.Tests;
 
 public sealed class JobsTestFixture : IAsyncLifetime
 {
+    private static readonly TimeSpan ResourceHealthTimeout = TimeSpan.FromMinutes(5);
     private readonly string signingKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
     private readonly string postgresPassword = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
 
@@ -30,22 +33,42 @@ public sealed class JobsTestFixture : IAsyncLifetime
             configureBuilder: (_, settings) => settings.EnvironmentName = "Testing");
 
         application = await appHost.BuildAsync();
-        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(10));
-        await application.StartAsync(timeout.Token);
-        foreach (var resource in new[]
+        try
         {
-            "postgres",
-            "storage",
-            "servicebus",
-            "redis"
-        })
-        {
-            await application.ResourceNotifications.WaitForResourceHealthyAsync(resource, timeout.Token);
-        }
+            using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(25));
+            await application.StartAsync(timeout.Token);
+            foreach (var resource in new[]
+            {
+                ResourceNames.Postgres,
+                ResourceNames.Storage,
+                ResourceNames.ServiceBus,
+                ResourceNames.Redis
+            })
+            {
+                await WaitForResourceHealthyAsync(resource, timeout.Token);
+            }
 
-        Client = application.CreateHttpClient("api");
-        await WaitForApiAsync(timeout.Token);
-        await WarmWorkerAsync(timeout.Token);
+            // Keep acceptance probes independent of trusting a local development certificate in Linux CI.
+            Client = application.CreateHttpClient(ResourceNames.Api, "http");
+            await WaitForApiAsync(timeout.Token);
+            await WarmWorkerAsync(timeout.Token);
+        }
+        catch (Exception initializationException)
+        {
+            try
+            {
+                await DisposeAsync();
+            }
+            catch (Exception cleanupException)
+            {
+                throw new AggregateException(
+                    "The acceptance AppHost failed to initialize and could not be cleaned up.",
+                    initializationException,
+                    cleanupException);
+            }
+
+            throw;
+        }
     }
 
     private async Task WarmWorkerAsync(CancellationToken cancellationToken)
@@ -113,27 +136,50 @@ public sealed class JobsTestFixture : IAsyncLifetime
 
     private async Task WaitForApiAsync(CancellationToken cancellationToken)
     {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            try
-            {
-                using var response = await Client.GetAsync("/alive", cancellationToken);
-                if (response.IsSuccessStatusCode)
-                {
-                    return;
-                }
-            }
-            catch (HttpRequestException)
-            {
-            }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-            {
-            }
+        await WaitForResourceHealthyAsync(ResourceNames.Api, cancellationToken);
+        using var response = await Client.GetAsync("/alive", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
 
-            await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken);
+    private async Task WaitForResourceHealthyAsync(string resourceName, CancellationToken cancellationToken)
+    {
+        using var resourceTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        resourceTimeout.CancelAfter(ResourceHealthTimeout);
+
+        try
+        {
+            await application!.ResourceNotifications.WaitForResourceHealthyAsync(
+                resourceName,
+                WaitBehavior.StopOnResourceUnavailable,
+                resourceTimeout.Token);
+        }
+        catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"Aspire resource '{resourceName}' did not become healthy within {ResourceHealthTimeout}. " +
+                GetResourceDiagnostics(resourceName),
+                exception);
+        }
+        catch (DistributedApplicationException exception)
+        {
+            throw new InvalidOperationException(
+                $"Aspire resource '{resourceName}' became unavailable. {GetResourceDiagnostics(resourceName)}",
+                exception);
+        }
+    }
+
+    private string GetResourceDiagnostics(string resourceName)
+    {
+        if (application is null || !application.ResourceNotifications.TryGetCurrentState(resourceName, out var resourceEvent))
+        {
+            return $"No current Aspire state is available for resource '{resourceName}'.";
         }
 
-        cancellationToken.ThrowIfCancellationRequested();
+        var snapshot = resourceEvent.Snapshot;
+        var state = snapshot.State?.Text ?? "unknown";
+        var health = snapshot.HealthStatus?.ToString() ?? "unknown";
+        var checks = string.Join(", ", snapshot.HealthReports.Select(report => $"{report.Name}={report.Status}"));
+        return $"Current state: {state}; health: {health}; checks: {checks}.";
     }
 
     public string CreateAccessToken(Guid tenantId)
@@ -163,8 +209,16 @@ public sealed class JobsTestFixture : IAsyncLifetime
         Client?.Dispose();
         if (application is not null)
         {
-            await application.StopAsync();
-            await application.DisposeAsync();
+            var currentApplication = application;
+            application = null;
+            try
+            {
+                await currentApplication.StopAsync();
+            }
+            finally
+            {
+                await currentApplication.DisposeAsync();
+            }
         }
     }
 

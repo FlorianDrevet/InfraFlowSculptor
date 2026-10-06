@@ -1,5 +1,7 @@
 # InfraFlowSculptor
 
+[![CI](https://github.com/FlorianDrevet/InfraFlowSculptor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FlorianDrevet/InfraFlowSculptor/actions/workflows/ci.yml)
+
 Décrivez une fois votre infrastructure Azure et vos conventions. InfraFlowSculptor produit et tient à
 jour, dans vos dépôts git, le Bicep, les pipelines Azure DevOps et le kit d'installation qui la
 déploient, avec le câblage de sécurité (identités, rôles, secrets) déduit automatiquement.

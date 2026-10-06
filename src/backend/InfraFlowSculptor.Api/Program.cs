@@ -17,6 +17,16 @@ using InfraFlowSculptor.Infrastructure.Persistence;
 var builder = WebApplication.CreateBuilder(args);
 var isOpenApiBuild = OpenApiBuildContext.IsDocumentGeneration;
 
+if (isOpenApiBuild)
+{
+    builder.Host.UseDefaultServiceProvider((_, options) =>
+    {
+        // The document generator intentionally omits infrastructure registrations and never activates services.
+        options.ValidateOnBuild = false;
+        options.ValidateScopes = false;
+    });
+}
+
 builder.AddServiceDefaults();
 builder.Services.AddProblemDetails();
 

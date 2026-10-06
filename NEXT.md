@@ -10,7 +10,7 @@
 | | |
 |---|---|
 | **Étape courante** | [`S-15`](docs/plan/00-socle.md#s-15--intégration-continue) — Intégration continue |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`S-14`](docs/plan/00-socle.md#s-14--openapi-au-build-et-client-angular-généré) — OpenAPI au build et client Angular généré (commit `69d33fc`) |
 | **Étape suivante** | `S-16` — Observabilité transverse |
 | **Verrou** | aucun |
@@ -54,7 +54,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 | Organisation / projet Azure DevOps de test | — | — |
 | Groupes Entra (`sg-shop-sql-admins`) et Azure DevOps (« Shop Release Approvers ») | — | — |
 | Inscriptions Entra d'IFS (`dev`) | — | — |
-| Protection de la branche `main` sur GitHub | — | — |
+| Protection de la branche `main` sur GitHub | À activer par vous dans *Settings → Branches* | 2026-10-06 |
 
 ## Tests manuels en attente de vous
 
@@ -63,6 +63,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 - S-02 — [ouvrir `src/backend/InfraFlowSculptor.slnx` dans Rider](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) : vérifier les cinq projets et l'absence de références à `Web.Template.CQRS`.
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 - S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
+- S-15 — vérifier que le dernier run de `impl/socle` passe pour tous les jobs et que `supply-chain` ne trouve aucune vulnérabilité critique; modifier temporairement un libellé de connexion sur une branche jetable et confirmer l'échec d'E2E ([étape](docs/plan/00-socle.md#s-15--intégration-continue)).
 Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.
 

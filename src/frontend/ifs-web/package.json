@@ -13,6 +13,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test --watch=false && npm run tokens:test && npm run icons:test",
+    "test:ci": "ng test --watch=false --reporters=junit --output-file=test-results/angular.xml && npm run tokens:test -- --reporter=junit --outputFile=test-results/tokens.xml && npm run icons:test -- --reporter=junit --outputFile=test-results/icons.xml",
     "e2e": "playwright test",
     "api:generate": "ng-openapi-gen --config ng-openapi-gen.json && node scripts/normalize-generated-api.mjs",
     "api:check": "node scripts/check-api.mjs",
