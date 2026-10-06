@@ -26,3 +26,4 @@
 | 2026-10-06 14:31 | Luna | `S-17` terminée | commit `4fbd85c` |
 | 2026-10-06 16:14 | Luna | revue `R-01` demandée | R-01-demande.md |
 | 2026-10-06 16:34 | Claude | verrou `R-01` levé | R-01-revue.md |
+| 2026-10-06 21:56 | Luna | `P-01` terminée | commit `884b323` |
