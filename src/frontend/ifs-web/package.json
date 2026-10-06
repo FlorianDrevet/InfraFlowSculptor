@@ -12,7 +12,9 @@
     "prepare": "husky",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test --watch=false && npm run tokens:test",
+    "test": "ng test --watch=false && npm run tokens:test && npm run icons:test",
+    "icons": "node scripts/extract-azure-icons.mjs",
+    "icons:test": "vitest run scripts/extract-azure-icons.spec.mjs",
     "tokens": "node scripts/build-tokens.mjs",
     "tokens:check": "node scripts/build-tokens.mjs --check",
     "tokens:test": "vitest run scripts/build-tokens.spec.mjs",
@@ -21,6 +23,7 @@
   "private": true,
   "packageManager": "npm@11.17.0",
   "dependencies": {
+    "@angular/cdk": "^22.2.1",
     "@angular/common": "^22.2.0",
     "@angular/compiler": "^22.2.0",
     "@angular/core": "^22.2.0",

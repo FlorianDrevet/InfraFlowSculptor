@@ -1,0 +1,27 @@
+<ol class="golden-path" [attr.aria-label]="ariaLabel()">
+  @for (step of steps(); track $index; let index = $index) {
+    <li
+      [class]="'golden-path__step golden-path__step--' + step.state"
+      [attr.aria-current]="step.state === 'current' ? 'step' : null"
+    >
+      <span class="golden-path__head">
+        <span class="golden-path__node" aria-hidden="true">
+          @if (step.state === 'done') {
+            <app-ds-icon name="check" [size]="12" [strokeWidth]="2.5" />
+          } @else if (step.state === 'error') {
+            <app-ds-icon name="x" [size]="12" [strokeWidth]="2.5" />
+          } @else {
+            {{ index + 1 < 10 ? '0' : '' }}{{ index + 1 }}
+          }
+        </span>
+        {{ step.label }}
+      </span>
+      @if (step.meta) {
+        <span class="golden-path__meta">{{ step.meta }}</span>
+      }
+      @if (step.hint) {
+        <span class="golden-path__hint">{{ step.hint }}</span>
+      }
+    </li>
+  }
+</ol>

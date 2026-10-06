@@ -1,0 +1,41 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.generated-name {
+  display: flex;
+  align-items: center;
+  gap: var(--ifs-space-2);
+  min-width: 0;
+  height: 32px;
+  padding-inline: 10px;
+  border: 1px dashed var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-1);
+  font-family: var(--ifs-font-mono);
+  font-size: var(--ifs-text-caption);
+}
+
+.generated-name__env {
+  flex: 0 0 auto;
+  min-width: 48px;
+  color: var(--ifs-text-3);
+}
+
+.generated-name__value {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.generated-name__available {
+  flex: 0 0 auto;
+  color: var(--ifs-success-text);
+}
+
+.generated-name__unavailable {
+  flex: 0 0 auto;
+  color: var(--ifs-danger-text);
+}

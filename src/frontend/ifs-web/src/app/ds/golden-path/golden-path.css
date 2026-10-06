@@ -1,0 +1,104 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.golden-path {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+  list-style: none;
+}
+
+.golden-path__step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ifs-space-2);
+  min-width: 0;
+  padding: 18px 20px;
+}
+
+.golden-path__step + .golden-path__step {
+  border-inline-start: 1px solid var(--ifs-line-subtle);
+}
+
+.golden-path__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.golden-path__node {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--ifs-radius-pill);
+  font-family: var(--ifs-font-mono);
+  font-size: var(--ifs-text-overline);
+}
+
+.golden-path__step--done .golden-path__node {
+  background: color-mix(in srgb, var(--ifs-success) 16%, transparent);
+  color: var(--ifs-success-text);
+}
+
+.golden-path__step--attention .golden-path__node {
+  background: color-mix(in srgb, var(--ifs-ember) 16%, transparent);
+  color: var(--ifs-ember-text);
+}
+
+.golden-path__step--error .golden-path__node {
+  background: color-mix(in srgb, var(--ifs-danger) 16%, transparent);
+  color: var(--ifs-danger-text);
+}
+
+.golden-path__step--current {
+  background: color-mix(in srgb, var(--ifs-signal) 8%, transparent);
+}
+
+.golden-path__step--current .golden-path__node {
+  background: var(--ifs-signal);
+  color: var(--ifs-signal-ink);
+}
+
+.golden-path__step--pending .golden-path__node {
+  border: 1px solid var(--ifs-line-strong);
+  color: var(--ifs-text-3);
+}
+
+.golden-path__step--pending .golden-path__head {
+  color: var(--ifs-text-2);
+}
+
+.golden-path__meta {
+  color: var(--ifs-text-2);
+  font-size: var(--ifs-text-body-dense);
+}
+
+.golden-path__hint {
+  color: var(--ifs-text-3);
+  font-size: var(--ifs-text-caption);
+}
+
+.golden-path__step--attention .golden-path__hint {
+  color: var(--ifs-ember-text);
+}
+
+.golden-path__step--error .golden-path__hint {
+  color: var(--ifs-danger-text);
+}
+
+@media (max-width: 40rem) {
+  .golden-path__step + .golden-path__step {
+    border-inline-start: 0;
+    border-block-start: 1px solid var(--ifs-line-subtle);
+  }
+}

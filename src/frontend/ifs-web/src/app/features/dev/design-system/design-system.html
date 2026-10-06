@@ -284,6 +284,169 @@
           </app-ds-panel>
         </div>
       </article>
+
+      <article class="component-card component-card-wide" aria-labelledby="resource-icon-title">
+        <div class="component-card-heading">
+          <h3 id="resource-icon-title">ResourceIcon</h3>
+          <p>25 icônes Azure officielles · tuile de repli par catégorie</p>
+        </div>
+        <div class="resource-icon-gallery">
+          @for (type of resourceTypes; track type) {
+            <div class="resource-icon-sample">
+              <app-ds-resource-icon [type]="type" [alt]="''" />
+              <span>{{ resourceLabel(type) }}</span>
+              <code>{{ type }}</code>
+            </div>
+          }
+        </div>
+        <div class="component-samples">
+          <div class="sample-row resource-icon-sizes">
+            <span>Tailles</span>
+            <app-ds-resource-icon type="WebApp" [size]="16" />
+            <app-ds-resource-icon type="WebApp" [size]="20" />
+            <app-ds-resource-icon type="WebApp" [size]="28" />
+            <app-ds-resource-icon type="WebApp" [size]="40" />
+            <span>Repli tuile</span>
+            <app-ds-resource-icon type="KeyVault" variant="tile" />
+            <app-ds-resource-icon type="SqlServer" variant="tile" />
+            <app-ds-resource-icon type="ServiceBusNamespace" variant="tile" />
+          </div>
+        </div>
+      </article>
+
+      <article class="component-card component-card-wide" aria-labelledby="resource-row-title">
+        <div class="component-card-heading">
+          <h3 id="resource-row-title">ResourceRow</h3>
+          <p>ressource, nom Azure calculé, détail et état</p>
+        </div>
+        <div class="resource-row-gallery">
+          <app-ds-resource-row
+            type="ContainerApp"
+            name="api"
+            generatedName="ca-shop-api-dev"
+            detail="Consumption · 0 à 2 réplicas"
+            [status]="{ tone: 'ember', label: 'Modifiée' }"
+          />
+          <app-ds-resource-row
+            type="KeyVault"
+            name="main"
+            generatedName="kv-shop-main-dev"
+            detail="Publique en dev · privée en prd"
+            [status]="{ tone: 'success', label: 'À jour' }"
+          />
+          <app-ds-resource-row
+            type="ContainerRegistry"
+            name="main"
+            generatedName="crshopmainshared"
+            generatedNote="sans tirets, contrainte Azure"
+            detail="Premium · composant Single"
+            [status]="{ tone: 'success', label: 'À jour' }"
+          />
+          <app-ds-resource-row
+            type="ServiceBusNamespace"
+            name="orders"
+            generatedName="sbns-shop-orders-dev"
+            detail="Standard · 2 files"
+            [status]="{ tone: 'ember', label: 'Nouvelle file' }"
+          />
+        </div>
+      </article>
+
+      <article class="component-card" aria-labelledby="generated-name-title">
+        <div class="component-card-heading">
+          <h3 id="generated-name-title">GeneratedName</h3>
+          <p>résultat calculé, disponibilité vérifiée</p>
+        </div>
+        <div class="generated-name-gallery">
+          <app-ds-generated-name env="dev" value="ca-shop-api-dev" [available]="true" />
+          <app-ds-generated-name env="prd" value="ca-shop-api-prd" [available]="true" />
+          <app-ds-generated-name env="prd" value="kv-shop-main-prd" [available]="false" />
+          <app-ds-generated-name env="shared" value="crshopmainshared" />
+        </div>
+      </article>
+
+      <article class="component-card component-card-wide" aria-labelledby="golden-path-title">
+        <div class="component-card-heading">
+          <h3 id="golden-path-title">GoldenPathRail</h3>
+          <p>modéliser · générer · publier · déployer</p>
+        </div>
+        <div class="golden-path-gallery">
+          <app-ds-golden-path [steps]="deliverySteps" />
+          <app-ds-golden-path [steps]="changeSteps" ariaLabel="Avancement de la modification" />
+        </div>
+      </article>
+
+      <article class="component-card" aria-labelledby="dialog-title">
+        <div class="component-card-heading">
+          <h3 id="dialog-title">Dialogue</h3>
+          <p>piège du focus · Échap · retour du focus</p>
+        </div>
+        <div class="component-samples">
+          <app-ds-dialog title="Publier la configuration" triggerLabel="Ouvrir le dialogue">
+            <div class="dialog-demo-content">
+              <p>Une pull request sera créée dans chacun des dépôts sélectionnés.</p>
+              <div class="dialog-demo-actions">
+                <app-ds-button variant="secondary">Annuler</app-ds-button>
+                <app-ds-button variant="primary">Créer les pull requests</app-ds-button>
+              </div>
+            </div>
+          </app-ds-dialog>
+        </div>
+      </article>
+
+      <article class="component-card component-card-wide" aria-labelledby="table-title">
+        <div class="component-card-heading">
+          <h3 id="table-title">Tableau dense</h3>
+          <p>en-têtes mono · défilement horizontal contenu à 390 px</p>
+        </div>
+        <app-ds-table ariaLabel="Ressources du projet">
+          <thead>
+            <tr>
+              <th scope="col">Ressource</th>
+              <th scope="col">Type</th>
+              <th scope="col">Environnement</th>
+              <th scope="col">Dernière révision</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>orders-api</td>
+              <td>Container App</td>
+              <td>dev</td>
+              <td>Il y a 2 h</td>
+            </tr>
+            <tr>
+              <td>main</td>
+              <td>Key Vault</td>
+              <td>prd</td>
+              <td>À jour</td>
+            </tr>
+            <tr>
+              <td>orders</td>
+              <td>Service Bus</td>
+              <td>staging</td>
+              <td>Révision 16</td>
+            </tr>
+          </tbody>
+        </app-ds-table>
+      </article>
+
+      <article class="component-card" aria-labelledby="select-title">
+        <div class="component-card-heading">
+          <h3 id="select-title">Select</h3>
+          <p>sélecteur natif stylé</p>
+        </div>
+        <div class="component-samples">
+          <div class="select-demo-label">
+            <span>Environnement</span>
+            <app-ds-select ariaLabel="Environnement">
+              <option value="dev">dev</option>
+              <option value="staging">staging</option>
+              <option value="prod">prod</option>
+            </app-ds-select>
+          </div>
+        </div>
+      </article>
     </div>
   </section>
 </main>

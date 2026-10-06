@@ -1,5 +1,14 @@
 @import 'tailwindcss';
+@import '@angular/cdk/overlay-prebuilt.css';
 @import './styles/theme.css';
 @import './styles/tokens.css';
 @import './styles/fonts.css';
 @import './styles/base.css';
+
+.ifs-dialog-backdrop {
+  background: var(--ifs-overlay-scrim);
+}
+
+.ifs-dialog-pane {
+  max-width: calc(100vw - 32px);
+}

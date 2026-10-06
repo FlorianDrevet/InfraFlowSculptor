@@ -1,0 +1,34 @@
+@if (href()) {
+  <a
+    class="resource-row"
+    [class.resource-row--nested]="indent()"
+    [href]="href()"
+    [title]="generatedName()"
+  >
+    <ng-container *ngTemplateOutlet="rowContents" />
+  </a>
+} @else {
+  <div class="resource-row" [class.resource-row--nested]="indent()" [title]="generatedName()">
+    <ng-container *ngTemplateOutlet="rowContents" />
+  </div>
+}
+
+<ng-template #rowContents>
+  <span class="resource-row__identity">
+    <app-ds-resource-icon [type]="type()" [size]="28" alt="" />
+    <span class="resource-row__names">
+      <span class="resource-row__name">{{ name() }}</span>
+      <span class="resource-row__type">{{ displayType() }}</span>
+    </span>
+  </span>
+  <span class="resource-row__generated">
+    {{ generatedName() }}
+    @if (generatedNote()) {
+      <span class="resource-row__note">{{ generatedNote() }}</span>
+    }
+  </span>
+  <span class="resource-row__detail">{{ detail() }}</span>
+  @if (status(); as currentStatus) {
+    <app-ds-badge [tone]="currentStatus.tone || 'neutral'">{{ currentStatus.label }}</app-ds-badge>
+  }
+</ng-template>

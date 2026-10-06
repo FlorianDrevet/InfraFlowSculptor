@@ -1,0 +1,23 @@
+@if (variant() !== 'tile' && imageUrl()) {
+  <span class="resource-icon" [style.width.px]="size()" [style.height.px]="size()">
+    <img
+      [src]="imageUrl()"
+      [width]="size()"
+      [height]="size()"
+      [alt]="accessibleName()"
+      draggable="false"
+    />
+  </span>
+} @else {
+  <span
+    [class]="'resource-icon resource-icon--tile resource-icon--' + resource().category"
+    [style.width.px]="size()"
+    [style.height.px]="size()"
+    [style.fontSize.px]="tileFontSize()"
+    [attr.role]="accessibleName() === '' ? null : 'img'"
+    [attr.aria-label]="accessibleName() || null"
+    [attr.aria-hidden]="accessibleName() === '' ? 'true' : null"
+  >
+    {{ resource().abbr }}
+  </span>
+}

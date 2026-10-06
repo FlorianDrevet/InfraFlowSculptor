@@ -1,0 +1,10 @@
+<div
+  class="table-scroll"
+  [attr.role]="ariaLabel() ? 'region' : null"
+  [attr.aria-label]="ariaLabel() || null"
+  tabindex="0"
+>
+  <table>
+    <ng-content />
+  </table>
+</div>
