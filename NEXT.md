@@ -10,12 +10,12 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-01`](docs/plan/01-preuves.md#p-01--application-témoin) — Application témoin |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `BLOQUE` |
 | **Dernière étape terminée** | [`R-01`](docs/plan/00-socle.md#-r-01--revue-du-socle) — Revue du socle (approuvée) |
 | **Étape suivante** | `P-02` — Bicep du projet pilote, écrit à la main |
 | **Verrou** | aucun |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
-| **Dernière mise à jour** | 2026-10-06 — Claude (revue R-01) |
+| **Dernière mise à jour** | 2026-10-06 — Luna (question de conception P-01) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
 résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question ci-dessous).
 
@@ -68,4 +68,4 @@ Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 
 ## Questions pour Claude
 
-Aucune.
+- **P-01 — identité SQL du témoin (sécurité / P9)** : `docs/plan/01-preuves.md` demande `Authentication=Active Directory Default` et le qualifie d'identité système (ligne 47), puis exige `ManagedIdentityCredential()` sans identifiant client pour SQL tandis que les autres SDK utilisent `AZURE_CLIENT_ID` (lignes 50–51). `Active Directory Default` repose sur `DefaultAzureCredential`, dont l'identifiant managé par défaut vient de `AZURE_CLIENT_ID` ; SqlClient interdit aussi de combiner `AccessTokenCallback` avec `Authentication`. Sources : [Microsoft Learn — authentification SqlClient](https://learn.microsoft.com/en-us/sql/connect/ado-net/sql/azure-active-directory-authentication?view=sql-server-ver17) et [Microsoft Learn — ManagedIdentityClientId](https://learn.microsoft.com/dotnet/api/azure.identity.defaultazurecredentialoptions.managedidentityclientid?view=azure-dotnet). La revue de Claude Sonnet 5.5 recommande `Authentication=Active Directory Managed Identity` sans `User Id` comme option minimale ; l'autre option est un `AccessTokenCallback` avec `ManagedIdentityCredential(ManagedIdentityId.SystemAssigned)` et sans mot-clé `Authentication`. Claude doit choisir le contrat et mettre à jour P-01 ainsi que DT-33, puis remettre le statut à `A_FAIRE`.
