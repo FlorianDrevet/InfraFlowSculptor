@@ -17,6 +17,7 @@
 | `.editorconfig`, `.gitattributes`, `.gitignore`, `.nvmrc` | Fins de ligne, indentations, fichiers ignorés et version Node |
 | `src/backend/` | Solution .NET 10 : AppHost, Api, Application, Contracts, Domain, Infrastructure, ServiceDefaults et Worker ; six projets de test sous `tests/` |
 | `src/frontend/ifs-web/` | Application Angular 22, génération du client depuis OpenAPI et tests Vitest/Playwright |
+| `samples/witness-app/` | Application témoin ASP.NET Core .NET 10, contrôles de santé Azure SQL/Log Analytics/App Configuration/Service Bus et tests xUnit hors solution backend |
 | `src/backend/InfraFlowSculptor.AppHost/Realms/` | Configuration d'import du royaume Keycloak local `ifs` |
 | `src/backend/InfraFlowSculptor.Api/openapi/` | Document OpenAPI versionné et vérifié au build/test |
 | `NEXT.md`, `MEMORY.md` | Étape courante du plan et index de mémoire vérifié |

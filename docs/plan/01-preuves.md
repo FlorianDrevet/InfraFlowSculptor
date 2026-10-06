@@ -44,17 +44,27 @@ chaque accès que le modèle a câblé.
    |---|---|---|
    | `secret` | `Payments__ApiKey` | La variable est présente et non vide (Container Apps l'a résolue depuis Key Vault) |
    | `logs` | `LogAnalytics__WorkspaceId` | `LogsQueryClient.QueryWorkspaceAsync(id, "print 1", 5 min)` avec `DefaultAzureCredential` |
-   | `sql` | `Sql__Server`, `Sql__Database` | Connexion `Authentication=Active Directory Default` (identité **système**) ; insertion puis lecture d'une ligne dans `dbo.witness_checks` (table **préparée** par `sql/witness-schema.sql`, jamais créée par l'application) ; puis contrôle `sql-least-privilege` : un `CREATE TABLE dbo.witness_forbidden(...)` doit être **refusé** (le contrôle échoue s'il réussit) |
+   | `sql` | `Sql__Server`, `Sql__Database` | Connexion `Microsoft.Data.SqlClient` avec `Authentication=Active Directory Managed Identity` et **sans `User Id`** (identité **système**, [DT-33](../technique/01-decisions.md#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local)) ; insertion puis lecture d'une ligne dans `dbo.witness_checks` (table **préparée** par `sql/witness-schema.sql`, jamais créée par l'application) ; puis contrôle `sql-least-privilege` : un `CREATE TABLE dbo.witness_forbidden(...)` doit être **refusé** (le contrôle échoue s'il réussit) |
    | `appconfig` | `AZURE_APPCONFIG_ENDPOINT` | Lecture de la clé `orders:maxItemsPerOrder` (jalon 1) |
    | `servicebus` | `ServiceBus__Namespace` | Envoi d'un message sur `order-created` (jalon 1) |
    `DefaultAzureCredential` utilise `AZURE_CLIENT_ID` (identité affectée `id api`) **sauf** pour SQL, qui
-   force l'identité système (`ManagedIdentityCredential()` sans identifiant client) : c'est ce qu'exige P9.
+   utilise l'identité système : c'est ce qu'exige P9. Contrat SQL, sans choix laissé à l'implémentation :
+   - chaîne de connexion construite par `SqlConnectionStringBuilder` : `DataSource` = `Sql__Server`,
+     `InitialCatalog` = `Sql__Database`, `Authentication = SqlAuthenticationMethod.ActiveDirectoryManagedIdentity`
+     (`Active Directory Managed Identity`), `Encrypt = true`, **aucun** `User Id`, **aucun** mot de passe ;
+   - **interdits** pour SQL : `Authentication=Active Directory Default` (s'appuie sur `DefaultAzureCredential`, donc sur
+     `AZURE_CLIENT_ID` → identité `id api`, ce que P9 interdit), un `User Id` (désignerait une identité affectée),
+     `AccessTokenCallback` / `AccessToken` et toute lecture de `AZURE_CLIENT_ID` dans le code SQL ;
+   - paquet `Microsoft.Data.SqlClient` (pas `System.Data.SqlClient`), version épinglée selon
+     [DT-03](../technique/01-decisions.md#dt-03--versions-épinglées) dans le fichier de versions de `samples/witness-app/`.
 3 bis. `samples/witness-app/sql/witness-schema.sql` : script idempotent qui crée `dbo.witness_checks (id uniqueidentifier
    primary key, written_at datetime2, value nvarchar(100))`. Il est exécuté **une fois par cible** par un membre du
    groupe administrateur SQL (étape de la recette, comme le ferait la migration de schéma d'un client) : les droits de
    l'application restent exactement `db_datareader` + `db_datawriter` ([RG-LIA-20](../specs/16-liaisons-identites-et-acces.md)).
 4. Tests `samples/witness-app/tests/` (xUnit) : un contrôle sans configuration est `skipped` ; un contrôle en
-   erreur rend 503 et un message sans valeur secrète ; `/health` renvoie `IMAGE_TAG`.
+   erreur rend 503 et un message sans valeur secrète ; `/health` renvoie `IMAGE_TAG` ; la fabrique de chaîne SQL
+   produit `Authentication=Active Directory Managed Identity`, un `UserID` vide, et ne lit jamais `AZURE_CLIENT_ID`
+   (test avec la variable positionnée).
 
 ✅ **Vérification automatique.** `dotnet test samples/witness-app/tests` vert ; `docker build samples/witness-app`
 réussit.

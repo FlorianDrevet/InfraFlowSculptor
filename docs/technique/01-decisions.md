@@ -121,6 +121,7 @@ Les versions vivent dans `src/backend/Directory.Packages.props`, `src/frontend/i
 | `Microsoft.Identity.Web` | `4.14.2` |
 | `Scalar.AspNetCore` | dernière `2.x` |
 | `Azure.Identity` | `1.21.0` |
+| `Microsoft.Data.SqlClient` (application témoin seulement, [DT-33](#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local)) | dernière `6.x` stable |
 | `Azure.Storage.Blobs` | `12.27.0` |
 | `Azure.Messaging.ServiceBus` | dernière `7.x` |
 | `Azure.Security.KeyVault.Secrets` | dernière `4.x` |
@@ -587,6 +588,17 @@ singleton (`IfsAzureCredential`) partagé par tous les clients.
 **Exceptions assumées** (secrets qui ne viennent pas d'IFS) : jetons git **de repli** fournis par les clients
 ([DEC-23](../specs/03-decisions.md)) et clé privée de l'application GitHub (jalon 1), stockés dans Key Vault et lus par
 identité managée.
+
+**Exception SQL de l'application témoin** (précision du 2026-10-06, Claude, question P-01 ; P9). La règle ci-dessus
+(`AZURE_CLIENT_ID`) vaut pour IFS et pour les clients Azure SDK du témoin (Log Analytics, App Configuration, Service
+Bus). Pour **SQL**, le témoin doit prouver l'identité **système** alors que la Container App porte aussi l'identité
+affectée `id api` : il utilise `Microsoft.Data.SqlClient` avec `Authentication=Active Directory Managed Identity` et
+**sans `User Id`** (sans `User Id`, SqlClient demande le jeton de l'identité système). Écartés : `Active Directory
+Default` (passe par `DefaultAzureCredential`, dont l'identité managée par défaut vient de `AZURE_CLIENT_ID` → mauvaise
+identité) et `AccessTokenCallback` avec `ManagedIdentityCredential(ManagedIdentityId.SystemAssigned)` (plus de code
+pour le même effet, et SqlClient interdit de le combiner avec `Authentication`). Cette exception ne s'applique pas à
+IFS (PostgreSQL passe par Npgsql, ligne du tableau ci-dessus). `Microsoft.Data.SqlClient` est épinglé en
+[DT-03](#dt-03--versions-épinglées), uniquement pour `samples/witness-app/`.
 
 **Vérifications** : `AzureConnectionResolverTests` (chaîne présente → mode chaîne ; absente + point de terminaison →
 identité managée ; chaîne vide = absente ; aucune → erreur explicite) ; test d'architecture (aucun `new
