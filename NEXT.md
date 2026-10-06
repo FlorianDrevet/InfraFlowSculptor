@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`S-11`](docs/plan/00-socle.md#s-11--composants-strata-de-base) — Composants Strata de base |
+| **Étape courante** | [`S-12`](docs/plan/00-socle.md#s-12--composants-produit-strata-et-motifs) — Composants produit Strata et motifs |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`S-10`](docs/plan/00-socle.md#s-10--tokens-strata-polices-et-styles-de-base) — Tokens Strata, polices et styles de base (commit `c5c65ee`) |
-| **Étape suivante** | `S-12` — Composants produit Strata et motifs |
+| **Dernière étape terminée** | [`S-11`](docs/plan/00-socle.md#s-11--composants-strata-de-base) — Composants Strata de base (commit `4879ded`) |
+| **Étape suivante** | `S-13` — Coquille de l'application, connexion et Playwright |
 | **Verrou** | aucun |
 | **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
 | **Dernière mise à jour** | 2026-10-06 — Luna |
@@ -58,6 +58,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 
 ## Tests manuels en attente de vous
 
+- S-11 — comparer les neuf sections de `/dev/design-system` aux fichiers `docs/design/strata/rendered/*.html`; Chrome bloque ces références locales en automatisation (`file://`). Les interactions clavier, le focus et les dimensions des boutons ont été vérifiés.
 - S-02 — [ouvrir `src/backend/InfraFlowSculptor.slnx` dans Rider](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) : vérifier les cinq projets et l'absence de références à `Web.Template.CQRS`.
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 - S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
