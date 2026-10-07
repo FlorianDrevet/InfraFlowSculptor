@@ -30,3 +30,6 @@
 | 2026-10-06 22:34 | Luna | `P-02` terminée | commit `784d7c9` |
 | 2026-10-06 23:25 | Luna | `P-03` terminée | commit `02cf2b2` |
 | 2026-10-07 00:04 | Luna | `P-04` terminée | commit `784be86` |
+| 2026-10-07 00:51 | Luna | `P-05` terminée | commit `639f3c3` |
+| 2026-10-07 09:29 | Luna | `P-06` terminée | commit `5aba790` |
+| 2026-10-07 09:50 | Luna | revue `R-02` demandée | R-02-demande.md |
