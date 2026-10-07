@@ -25,3 +25,4 @@
 | 2026-10-06 | Luna | P-01 — application témoin .NET 10, contrôles de dépendances à identité managée, schéma SQL, image non-root et tests. |
 | 2026-10-06 | Luna | S-08 — le fixture d'acceptation tolère les notifications API DCP périmées lorsque `/health` répond; budget Service Bus élargi pour le sidecar SQL à froid. |
 | 2026-10-06 | Luna | S-15 — le job Playwright injecte le secret d'Actions dans le royaume Keycloak jetable pour activer les quatre scénarios authentifiés. |
+| 2026-10-06 | Luna | Documentation — ajout d'un REX débutant Keycloak/Aspire, relié depuis l'index technique et la mémoire auth/build. |
