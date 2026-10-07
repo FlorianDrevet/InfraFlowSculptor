@@ -2,7 +2,7 @@
 
 - **Segment** : P-01 → P-06
 - **Branche / pull request** : `impl/preuves` → `impl/socle` ([PR #2](https://github.com/FlorianDrevet/InfraFlowSculptor/pull/2), empilée sur la PR #1 encore ouverte)
-- **Commits de code et de sortie relus** : `origin/impl/socle..f782c1c`, de `884b323` à `f782c1c`
+- **Commits de code et de sortie relus** : `origin/impl/socle..f1021f5`, de `884b323` à `f1021f5`
   - `884b323` — application témoin et contrôle de ses dépendances
   - `7e4fba3` — P-01 terminée
   - `aa9da86` — injection du secret E2E dans le royaume jetable
@@ -28,6 +28,9 @@
   - `f782c1c` — aligner le manifeste, les en-têtes générés et le format Bicep
   - `13df3cb` — actualiser la demande après les corrections
   - `434505f` — enregistrer la demande R-02 au garde-fou du plan
+  - `701bcde` — préciser le périmètre relu pour R-02
+  - `7e27458` — consigner le verdict de revue R-02 et les corrections demandées
+  - `f1021f5` — préparer uniquement les groupes requis par les portées RBAC, vérifier région/tags et couvrir les cas Pester
 
 ## Vérifications exécutées
 
@@ -41,7 +44,8 @@
 | `npm run e2e` local | 2 scénarios publics réussis ; 4 scénarios authentifiés ignorés car `IFS_E2E_PASSWORD` n'est pas disponible dans ce processus |
 | CI GitHub, run `37588979668` | Tous les jobs réussis, dont Acceptance tests et End-to-end tests |
 | CI GitHub, run `37605803893` sur `f782c1c` | 8 contrôles réussis, 0 échec, dont Acceptance, End-to-end, Release module et garde-fou du plan |
-| `Invoke-Pester reference/release-module/tests` | 55 tests réussis, 0 échec, 0 ignoré |
+| CI GitHub, [run `37612167671`](https://github.com/FlorianDrevet/InfraFlowSculptor/actions/runs/37612167671) sur `f1021f5` | 7/7 jobs réussis, dont Acceptance, End-to-end authentifié, Release module, Bicep et garde-fou du plan |
+| `Invoke-Pester -Path ./reference/release-module/tests -CI` | 58 tests réussis, 0 échec, 0 ignoré |
 | PSScriptAnalyzer sur les cinq scripts de la CI | 0 erreur, 0 avertissement ; `PSUseBOMForUnicodeEncodedFile` est exclu car les artefacts imposent UTF-8 sans BOM |
 | Analyse syntaxique PowerShell des cinq scripts modifiés | Réussie |
 | `git diff --check` | Réussi |
@@ -50,7 +54,7 @@
 | `Test-ReferenceBicep.ps1` | Les 4 composants compilent, sont lintés et formatés sans avertissement |
 | `python tools/plan/gate.py lint` | 105 étapes, 18 verrous, aucun problème |
 
-Le run GitHub valide également les scénarios authentifiés avec le secret de dépôt configuré ; aucune valeur de secret n'est stockée dans ce dépôt.
+Le run GitHub valide également les scénarios authentifiés avec le secret de dépôt configuré ; aucune valeur de secret n'est stockée dans ce dépôt. Le secret `IFS_E2E_PASSWORD` est présent dans les secrets du dépôt (valeur non lue). Le correctif DCP `c5d4397` traite l'état `Waiting` comme une notification potentiellement périmée et sonde `/health` avant d'échouer ; le run `37612167671` passe Acceptance et E2E authentifié sur le commit `f1021f5`.
 
 Le run `37604093230` a d'abord signalé un manifeste périmé. Sa correction a ensuite révélé trois en-têtes Bicep manquants, un fichier `data/infra/main.bicep` à reformater et une assertion Pester qui supposait un format sur une ligne. Ces points sont corrigés dans `f782c1c` ; la CI GitHub `37605803893` est verte (8/8 contrôles).
 
@@ -73,7 +77,7 @@ La dette R-02 de validation Azure non disponible localement est détaillée dans
 - **P-02** — comparaison de `orders/infra/main.dev.bicepparam` avec `reference-pilote.md` § 2.1 ; noms exacts, aucune valeur `dev` dans `main.bicep`, image `caApi` laissée vide.
 - **P-03** — import du module et `Get-Help Invoke-IfsPreview -Full` : aide française présente.
 - **P-04** — lecture de la release `orders` et du template de stages : aperçu de production sans environnement, déploiement lié à `shop-prd`, secret `MAIN_PAYMENTS_API_KEY` présent uniquement dans le composant `core`.
-- **P-05** — lecture de `SETUP.md` comme un client : chaque action identifie le rôle responsable et la commande ou l'écran requis. La validation distante reste hors du périmètre avant Azure.
+- **P-05** — lecture de `SETUP.md` comme un client : les groupes de composants sont préparés uniquement pour les portées RBAC, leur région et leurs tags sont vérifiés, et `data` reste créé par Bicep. Chaque action manuelle identifie le rôle responsable et la commande ou l'écran requis. La validation distante reste hors du périmètre avant Azure.
 - **P-06** — aperçu GitHub public de `README.ifs.md` : diagramme Mermaid rendu, noms conformes à `reference-pilote.md` § 2.1, captures aux deux largeurs ci-dessous.
 - **Recette R-02** — aucune recette Azure utilisateur n'est requise à ce verrou ; le plan demande la lecture de `SETUP.md`, effectuée pour P-05.
 
