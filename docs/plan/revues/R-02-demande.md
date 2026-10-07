@@ -1,7 +1,7 @@
 # Demande de revue R-02 — Sortie de référence du pilote
 
 - **Segment** : P-01 → P-06
-- **Branche / pull request** : `impl/preuves` → `impl/socle` (PR empilée sur la PR #1 encore ouverte ; lien à ajouter après création)
+- **Branche / pull request** : `impl/preuves` → `impl/socle` ([PR #2](https://github.com/FlorianDrevet/InfraFlowSculptor/pull/2), empilée sur la PR #1 encore ouverte)
 - **Commits** : `origin/impl/socle..HEAD`, de `884b323` à `1c7e2d8`
   - `884b323` — application témoin et contrôle de ses dépendances
   - `7e4fba3` — P-01 terminée
