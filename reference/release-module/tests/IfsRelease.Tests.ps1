@@ -515,6 +515,65 @@ Describe "Déploiement de pile et application" {
         $stack.detachedResources | Should -BeNullOrEmpty
     }
 
+    It "utilise le principalId Object ID comme SID SQL pour les identités système et utilisateur" {
+        $applicationClientId = '11111111-2222-3333-4444-555555555555'
+        $principalObjectId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+        $global:IFS_SQL_IDENTITY = ConvertTo-Json -InputObject @{
+            clientId = $applicationClientId
+            principalId = $principalObjectId
+            name = 'id-ifs-app-shop-dev'
+        } -Compress
+        $global:IFS_AZ_HANDLER = {
+            param($Arguments)
+            $global:LASTEXITCODE = 0
+            if (($Arguments -join ' ') -match 'containerapp show|identity show') { return $global:IFS_SQL_IDENTITY }
+            return '{}'
+        }
+
+        foreach ($kind in @('systemAssigned', 'userAssigned')) {
+            $access = [pscustomobject]@{
+                principal = [pscustomobject]@{
+                    kind = $kind
+                    resourceId = if ($kind -eq 'systemAssigned') {
+                        '/subscriptions/test/resourceGroups/rg/providers/Microsoft.App/containerApps/orders-api'
+                    }
+                    else {
+                        '/subscriptions/test/resourceGroups/rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-ifs-app-shop-dev'
+                    }
+                }
+                level = 'Read'
+            }
+
+            $principal = InModuleScope IfsRelease -Parameters @{ AccessValue = $access } {
+                Get-IfsSqlPrincipal -Access $AccessValue -SubscriptionId 'test'
+            }
+
+            $principal.ClientId | Should -BeExactly $principalObjectId
+            $principal.ClientId | Should -Not -BeExactly $applicationClientId
+        }
+    }
+
+    It "normalise les ressources détachées objet ou chaîne en identifiants" {
+        $resourceObjectId = '/subscriptions/test/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/one'
+        $resourceStringId = '/subscriptions/test/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/two'
+        $global:IFS_STACK = ConvertTo-Json -InputObject @{ detachedResources = @(@{ id = $resourceObjectId }, $resourceStringId) } -Depth 10 -Compress
+        $global:IFS_AZ_HANDLER = {
+            param($Arguments)
+            $global:LASTEXITCODE = 0
+            if (($Arguments -join ' ') -match 'stack sub create') { return $global:IFS_STACK }
+            return '{}'
+        }
+        $data = [pscustomobject]@{
+            unit = 'ifs-shop-orders-dev'; component = 'orders'; location = 'francecentral'; subscriptionId = 'test'; protected = $false
+        }
+
+        $stack = Invoke-IfsStackDeployment -ReleaseData $data -TemplateFile 'main.bicep' -ParameterFile 'main.bicepparam' -DeploymentIdentityObjectId 'identity' -ApplicationIdentityObjectId '22222222-2222-2222-2222-222222222222'
+
+        $stack.detachedResources.Count | Should -Be 2
+        $stack.detachedResources[0] | Should -Be $resourceObjectId
+        $stack.detachedResources[1] | Should -Be $resourceStringId
+    }
+
     It "transmet l’Object ID de déploiement au Bicep core pour le rôle Key Vault" {
         $data = [pscustomobject]@{
             unit = "ifs-shop-core-dev"; component = "core"; location = "francecentral"; subscriptionId = "test"; protected = $false

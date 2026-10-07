@@ -837,7 +837,12 @@ function Invoke-IfsStackDeployment {
     }
     else { $arguments += @('--deny-settings-mode', 'none') }
     $stack = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments $arguments).Text
-    return [pscustomobject]@{ result = $stack; detachedResources = @(Get-IfsValue $stack 'detachedResources' @()) }
+    $detachedResources = @(Get-IfsValue $stack 'detachedResources' @() | ForEach-Object {
+        $resourceId = if ($_ -is [string]) { $_ } else { [string](Get-IfsValue $_ 'id' '') }
+        if ([string]::IsNullOrWhiteSpace($resourceId)) { throw 'Azure a retourne une ressource detachee sans identifiant.' }
+        $resourceId
+    })
+    return [pscustomobject]@{ result = $stack; detachedResources = $detachedResources }
 }
 
 function Invoke-IfsRevocation {

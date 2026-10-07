@@ -79,7 +79,55 @@ Describe 'Kit installation P-05' {
         @($global:IFS_AZ_CALLS | Where-Object { $_[0] -eq 'role' -and $_[1] -eq 'assignment' -and $_[2] -in @('create', 'update') }).Count | Should -Be 1
     }
 
-    It 'supprime les FIC ADO obsoletes et conserve les autres' {
+    It 'met a jour une attribution RBAC geree avec le document JSON role-assignment' {
+        $scope = '/subscriptions/00000000-0000-0000-0000-000000000001'
+        $principalId = '00000000-0000-0000-0000-000000000002'
+        $roleId = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
+        $condition = "@Request[Microsoft.Authorization/roleAssignments:RoleDefinitionId] GuidEquals {$roleId}"
+        $global:IFS_AZ_HANDLER = {
+            param($Arguments)
+            $global:LASTEXITCODE = 0
+            if ($Arguments[0..2] -join ' ' -eq 'role assignment list') {
+                return ConvertTo-Json -InputObject @($global:IFS_ROLE_ASSIGNMENTS) -Depth 20 -Compress
+            }
+            return '{}'
+        }
+
+        InModuleScope IfsInstall -Parameters @{ ScopeValue = $scope; PrincipalValue = $principalId; RoleValue = $roleId; ConditionValue = $condition } {
+            $script:IfsRevision = 9
+            $assignmentId = Get-IfsStableGuid -Value "$ScopeValue|$PrincipalValue|$RoleValue"
+            $global:IFS_ROLE_ASSIGNMENTS.Add([pscustomobject]@{
+                name = $assignmentId
+                id = "/subscriptions/00000000-0000-0000-0000-000000000001/providers/Microsoft.Authorization/roleAssignments/$assignmentId"
+                type = 'Microsoft.Authorization/roleAssignments'
+                scope = $ScopeValue
+                principalId = $PrincipalValue
+                principalType = 'ServicePrincipal'
+                roleDefinitionId = "/providers/Microsoft.Authorization/roleDefinitions/$RoleValue"
+                description = 'managed-by: infraflowsculptor; ifs-kit-revision: 8'
+                condition = 'old-condition'
+                conditionVersion = '2.0'
+            })
+
+            Set-IfsRoleAssignment -SubscriptionId '00000000-0000-0000-0000-000000000001' -Scope $ScopeValue -PrincipalId $PrincipalValue -RoleDefinitionId $RoleValue -Condition $ConditionValue | Should -Be 'mis a jour'
+        }
+
+        $update = @($global:IFS_AZ_CALLS | Where-Object { $_[0] -eq 'role' -and $_[1] -eq 'assignment' -and $_[2] -eq 'update' })
+        $update.Count | Should -Be 1
+        $update[0] | Should -Contain '--role-assignment'
+        $update[0] | Should -Not -Contain '--ids'
+        $jsonIndex = [Array]::IndexOf([string[]]$update[0], '--role-assignment') + 1
+        $updatedAssignment = [string]$update[0][$jsonIndex] | ConvertFrom-Json
+        $updatedAssignment.id | Should -Match '/roleAssignments/'
+        $updatedAssignment.description | Should -Be 'managed-by: infraflowsculptor; ifs-kit-revision: 9'
+        $updatedAssignment.condition | Should -Be $condition
+        $updatedAssignment.conditionVersion | Should -Be '2.0'
+        $updatedAssignment.scope | Should -Be $scope
+        $updatedAssignment.principalId | Should -Be $principalId
+        $updatedAssignment.roleDefinitionId | Should -Match ([regex]::Escape($roleId))
+    }
+
+    It 'supprime uniquement les FIC IFS obsoletes et conserve les identifiants etrangers' {
         $global:IFS_AZ_HANDLER = { param($Arguments) $global:LASTEXITCODE = 0; return '{}' }
         $existing = @(
             [pscustomobject]@{ name = 'ifs-ado-current' }

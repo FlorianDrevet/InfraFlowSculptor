@@ -373,9 +373,12 @@ function Set-IfsRoleAssignment {
         if (([string]$current.roleDefinitionId).TrimEnd('/') -match [regex]::Escape($roleId) -and $conditionMatches -and $descriptionMatches) {
             return 'laisse tel quel'
         }
-        $arguments = @('role', 'assignment', 'update', '--ids', [string]$current.id, '--description', $expectedDescription, '--subscription', $SubscriptionId)
-        if ($Condition) { $arguments += @('--condition', $Condition, '--condition-version', '2.0') }
-        else { $arguments += @('--condition', '', '--condition-version', '') }
+        $updatedAssignment = ConvertFrom-Json -AsHashtable -InputObject (ConvertTo-Json -InputObject $current -Depth 30 -Compress)
+        $updatedAssignment['description'] = $expectedDescription
+        $updatedAssignment['condition'] = if ($Condition) { $Condition } else { $null }
+        $updatedAssignment['conditionVersion'] = if ($Condition) { '2.0' } else { $null }
+        $assignmentJson = ConvertTo-Json -InputObject $updatedAssignment -Depth 30 -Compress
+        $arguments = @('role', 'assignment', 'update', '--role-assignment', $assignmentJson, '--subscription', $SubscriptionId)
         [void](Invoke-IfsAz -Arguments $arguments -Write)
         return 'mis a jour'
     }
