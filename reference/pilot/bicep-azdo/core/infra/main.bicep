@@ -16,6 +16,11 @@ param logMain logMainConfig
 param appiMain appiMainConfig
 param kvMain kvMainConfig
 
+@description('Object ID de l’identité de déploiement autorisée à écrire les secrets du Key Vault core.')
+param deploymentPrincipalId string = ''
+
+var keyVaultSecretsOfficerRoleId = 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
+
 resource rg_main 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   name: resourceGroups.main.name
   location: resourceGroups.main.location
@@ -137,5 +142,22 @@ module kvMainModule 'br/public:avm/res/key-vault/vault:0.14.0' = if (kvMain.depl
   }
   dependsOn: [
     logMainModule
+  ]
+}
+
+module deploymentSecretsOfficer './key-vault-role-assignment.bicep' = if (kvMain.deploy && !empty(deploymentPrincipalId)) {
+  name: 'deploymentSecretsOfficer-${target.code}-${uniqueString(kvMain.name)}'
+  scope: resourceGroup(target.subscriptionId, resourceGroups.main.name)
+  params: {
+    keyVaultName: kvMain.name
+    principalId: deploymentPrincipalId
+    roleDefinitionId: subscriptionResourceId(
+      target.subscriptionId,
+      'Microsoft.Authorization/roleDefinitions',
+      keyVaultSecretsOfficerRoleId
+    )
+  }
+  dependsOn: [
+    kvMainModule
   ]
 }

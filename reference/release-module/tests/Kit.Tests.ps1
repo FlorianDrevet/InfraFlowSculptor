@@ -113,6 +113,71 @@ Describe 'Kit installation P-05' {
         (Get-IfsRbacCondition -RoleDefinitionIds $roles) | Should -BeExactly $expected
     }
 
+    It 'limite la délégation RBAC aux groupes de ressources utilisés par chaque composant' {
+        $roleIds = @{
+            KeyVaultSecretsOfficer = 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
+            KeyVaultSecretsUser = '4633458b-17de-408a-b874-0445c86b69e6'
+            LogAnalyticsReader = '73c42c96-874c-492b-b04d-ab87d138a893'
+            AcrPull = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+            AcrPush = '8311e382-0749-4cb8-b61a-304f252e45ec'
+            ContainerAppsContributor = '358470bc-b998-42bd-ab17-a7e34c199c0f'
+        }
+        $target = [pscustomobject]@{
+            Name = 'dev'
+            Releases = @(
+                [pscustomobject]@{ Component = 'core'; SubscriptionId = 'sub-dev'; ResourceGroupName = 'rg-core'; Release = [pscustomobject]@{ dependencies = @() } }
+                [pscustomobject]@{
+                    Component = 'orders'; SubscriptionId = 'sub-dev'; ResourceGroupName = 'rg-orders'
+                    Release = [pscustomobject]@{ dependencies = @(
+                        [pscustomobject]@{ resources = @(
+                            [pscustomobject]@{ id = '/subscriptions/sub-dev/resourceGroups/rg-core/providers/Microsoft.KeyVault/vaults/kv' }
+                            [pscustomobject]@{ id = '/subscriptions/sub-dev/resourceGroups/rg-core/providers/Microsoft.OperationalInsights/workspaces/logs' }
+                            [pscustomobject]@{ id = '/subscriptions/sub-shared/resourceGroups/rg-platform/providers/Microsoft.ContainerRegistry/registries/acr' }
+                        ) }
+                    ) }
+                }
+            )
+        }
+
+        $scopes = Get-IfsRbacScopePlan -Target $target -RoleIds $roleIds
+
+        @($scopes | Where-Object Scope -eq '/subscriptions/sub-dev/resourceGroups/rg-core').RoleDefinitionIds | Should -Contain $roleIds.KeyVaultSecretsOfficer
+        @($scopes | Where-Object Scope -eq '/subscriptions/sub-dev/resourceGroups/rg-core').RoleDefinitionIds | Should -Contain $roleIds.KeyVaultSecretsUser
+        @($scopes | Where-Object Scope -eq '/subscriptions/sub-dev/resourceGroups/rg-core').RoleDefinitionIds | Should -Contain $roleIds.LogAnalyticsReader
+        @($scopes | Where-Object Scope -eq '/subscriptions/sub-dev/resourceGroups/rg-orders').RoleDefinitionIds | Should -Contain $roleIds.ContainerAppsContributor
+        @($scopes | Where-Object Scope -eq '/subscriptions/sub-shared/resourceGroups/rg-platform').RoleDefinitionIds | Should -Contain $roleIds.AcrPull
+        $scopes.Scope | Should -Not -Contain '/subscriptions/sub-dev'
+    }
+
+    It "attribue Key Vault Secrets Officer à l'identité de déploiement dans core" {
+        $source = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/core/infra/main.bicep') -Raw
+        $roleModule = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/core/infra/key-vault-role-assignment.bicep') -Raw
+
+        $source | Should -Match 'param deploymentPrincipalId string'
+        $source | Should -Match "module deploymentSecretsOfficer './key-vault-role-assignment.bicep'"
+        $roleModule | Should -Match 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
+        $roleModule | Should -Match 'scope: keyVault'
+        $roleModule | Should -Match 'principalId: principalId'
+    }
+
+    It 'attribue les rôles de livraison au registre et à la Container App' {
+        $platform = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/platform/infra/main.bicep') -Raw
+        $registryRoleModule = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/platform/infra/registry-role-assignment.bicep') -Raw
+        $orders = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/orders/infra/main.bicep') -Raw
+        $containerAppRoleModule = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/orders/infra/container-app-role-assignment.bicep') -Raw
+
+        $platform | Should -Match 'param appDeliveryPrincipalId string'
+        $platform | Should -Match "module appDeliveryAcrPush './registry-role-assignment.bicep'"
+        $registryRoleModule | Should -Match '8311e382-0749-4cb8-b61a-304f252e45ec'
+        $registryRoleModule | Should -Match 'scope: registry'
+        $registryRoleModule | Should -Match 'principalId: principalId'
+        $orders | Should -Match 'param appDeliveryPrincipalId string'
+        $orders | Should -Match "module appDeliveryContainerAppsContributor './container-app-role-assignment.bicep'"
+        $containerAppRoleModule | Should -Match '358470bc-b998-42bd-ab17-a7e34c199c0f'
+        $containerAppRoleModule | Should -Match 'scope: ordersApi'
+        $containerAppRoleModule | Should -Match 'principalId: principalId'
+    }
+
     It 'ne fait aucune mutation Azure pendant le WhatIf du kit complet' {
         $tempRoot = Join-Path ([IO.Path]::GetTempPath()) ('ifs-p05-whatif-' + [guid]::NewGuid().ToString('N'))
         try {
@@ -131,6 +196,13 @@ Describe 'Kit installation P-05' {
                 $content = $content.Replace('<A>', $subscriptionByTarget.dev).Replace('<B>', $subscriptionByTarget.prd).Replace('<C>', $subscriptionByTarget.shared)
                 [IO.File]::WriteAllText($destination, $content, [Text.UTF8Encoding]::new($false))
             }
+            $parameterFiles = @(Get-ChildItem -LiteralPath $sourceRoot -Filter 'main.*.bicepparam' -File -Recurse)
+            foreach ($parameterFile in $parameterFiles) {
+                $relativePath = [IO.Path]::GetRelativePath($sourceRoot, $parameterFile.FullName)
+                $destination = Join-Path $tempRoot $relativePath
+                $null = New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force
+                Copy-Item -LiteralPath $parameterFile.FullName -Destination $destination -Force
+            }
             $null = New-Item -ItemType Directory -Path (Join-Path $tempRoot '.ifs') -Force
             [IO.File]::WriteAllText((Join-Path $tempRoot '.ifs/manifest.json'), '{"revision":1}', [Text.UTF8Encoding]::new($false))
 
@@ -139,6 +211,10 @@ Describe 'Kit installation P-05' {
                 param($Arguments)
                 $global:LASTEXITCODE = 0
                 $command = $Arguments -join ' '
+                if ($Arguments[0] -eq 'bicep' -and $Arguments[1] -eq 'build-params') {
+                    $parameterJson = '{"parameters":{"resourceGroups":{"value":{"main":{"name":"rg-test","location":"francecentral","tags":{"managed-by":"infraflowsculptor"}}}}}}'
+                    return (@{ parametersJson = $parameterJson; templateJson = '{}' } | ConvertTo-Json -Compress)
+                }
                 if ($command -eq 'account show') { return '{"tenantId":"11111111-1111-1111-1111-111111111111"}' }
                 if ($Arguments[0] -eq 'account' -and $Arguments[1] -eq 'show') { return ('{"tenantId":"11111111-1111-1111-1111-111111111111","name":"test","id":"' + $Arguments[[Array]::IndexOf($Arguments, '--subscription') + 1] + '"}') }
                 if ($Arguments[0] -eq 'devops' -and $Arguments[1] -eq 'project') { return '{"id":"22222222-2222-2222-2222-222222222222"}' }

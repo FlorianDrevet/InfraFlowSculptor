@@ -29,16 +29,10 @@ $serviceConnectionClientId = [string]$env:servicePrincipalId
 if ([string]::IsNullOrWhiteSpace($serviceConnectionClientId)) {
     throw "La tâche AzureCLI doit exposer servicePrincipalId pour vérifier l'identité fédérée de déploiement."
 }
-$identityName = 'id-ifs-deploy-{0}-{1}' -f $data.project, $data.target
-$resourceGroup = 'rg-ifs-{0}-{1}' -f $data.project, $data.target
-$identityJson = @(& az identity show --name $identityName --resource-group $resourceGroup --subscription $data.subscriptionId --query '{clientId:clientId,principalId:principalId}' --output json 2>&1)
-if ($LASTEXITCODE -ne 0) { throw "Lecture de l'identité de déploiement $identityName impossible : $($identityJson -join ' ')" }
-$identity = ($identityJson -join [Environment]::NewLine) | ConvertFrom-Json -Depth 10
+$identity = Get-IfsManagedIdentity -ReleaseData $data -Kind deploy
+$applicationIdentity = Get-IfsManagedIdentity -ReleaseData $data -Kind app
 if ([string]$identity.clientId -ne $serviceConnectionClientId) {
-    throw "La connexion Azure authentifiée ne correspond pas à l'identité attendue $identityName."
-}
-if ([string]$identity.principalId -notmatch '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
-    throw "L'identité $identityName ne possède pas de principalId valide."
+    throw "La connexion Azure authentifiée ne correspond pas à l'identité de déploiement attendue pour $($data.project)/$($data.target)."
 }
 
 Invoke-IfsInfraDeploy `
@@ -52,5 +46,6 @@ Invoke-IfsInfraDeploy `
     -DefaultBranch $DefaultBranch `
     -ManifestPathInRepository $ManifestPathInRepository `
     -DeploymentIdentityObjectId ([string]$identity.principalId) `
+    -ApplicationIdentityObjectId ([string]$applicationIdentity.principalId) `
     -RunId $RunId | Out-Null
 Write-Output ('##vso[task.uploadfile]{0}' -f $OutputPath)

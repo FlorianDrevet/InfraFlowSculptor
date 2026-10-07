@@ -23,6 +23,26 @@ function ConvertFrom-IfsJson {
     catch { throw ('La réponse Azure CLI n''est pas un JSON valide : {0}' -f $_.Exception.Message) }
 }
 
+function Get-IfsManagedIdentity {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][object] $ReleaseData,
+        [Parameter(Mandatory)][ValidateSet('deploy', 'app')][string] $Kind
+    )
+
+    $identityName = 'id-ifs-{0}-{1}-{2}' -f $Kind, $ReleaseData.project, $ReleaseData.target
+    $resourceGroup = 'rg-ifs-{0}-{1}' -f $ReleaseData.project, $ReleaseData.target
+    $result = Invoke-IfsAz -Arguments @(
+        'identity', 'show', '--name', $identityName, '--resource-group', $resourceGroup,
+        '--subscription', $ReleaseData.subscriptionId, '--query', '{clientId:clientId,principalId:principalId}', '--output', 'json'
+    )
+    $identity = ConvertFrom-IfsJson $result.Text
+    if ([string]$identity.clientId -notmatch '^[0-9a-fA-F-]{36}$' -or [string]$identity.principalId -notmatch '^[0-9a-fA-F-]{36}$') {
+        throw "L'identite geree '$identityName' ne retourne pas des identifiants client et principal valides."
+    }
+    return $identity
+}
+
 function Get-IfsValue {
     param([AllowNull()][object] $InputObject, [Parameter(Mandatory)][string] $Name, [AllowNull()][object] $Default = $null)
     if ($null -eq $InputObject) { return $Default }
@@ -503,18 +523,27 @@ function Invoke-IfsPreview {
         [Parameter(Mandatory)][object] $ReleaseData,
         [Parameter(Mandatory)][string] $TemplateFile,
         [Parameter(Mandatory)][string] $ParameterFile,
-        [Parameter(Mandatory)][string] $OutputDirectory
+        [Parameter(Mandatory)][string] $OutputDirectory,
+        [string] $DeploymentIdentityObjectId,
+        [string] $ApplicationIdentityObjectId
     )
     [void](Test-IfsReleaseData $ReleaseData)
     $journal = Read-IfsOperationJournal $ReleaseData
     [void](Test-IfsDependency -ReleaseData $ReleaseData -Target $ReleaseData.target)
     [void](Test-IfsSecretVariable $ReleaseData)
     [void](Test-IfsSecretReference $ReleaseData)
-    $whatIfResult = Invoke-IfsAz -Arguments @(
+    $parameters = @($ParameterFile)
+    if ($ReleaseData.component -eq 'core' -and -not [string]::IsNullOrWhiteSpace($DeploymentIdentityObjectId)) {
+        $parameters += "deploymentPrincipalId=$DeploymentIdentityObjectId"
+    }
+    if ($ReleaseData.component -in @('platform', 'orders') -and -not [string]::IsNullOrWhiteSpace($ApplicationIdentityObjectId)) {
+        $parameters += "appDeliveryPrincipalId=$ApplicationIdentityObjectId"
+    }
+    $whatIfResult = Invoke-IfsAz -Arguments (@(
         'deployment', 'sub', 'what-if', '--name', ('ifs-{0}-preview' -f $ReleaseData.unit),
         '--location', $ReleaseData.location, '--template-file', $TemplateFile,
-        '--parameters', $ParameterFile, '--result-format', 'FullResourcePayloads', '--output', 'json'
-    )
+        '--parameters'
+    ) + $parameters + @('--result-format', 'FullResourcePayloads', '--output', 'json'))
     $whatIf = ConvertFrom-IfsJson $whatIfResult.Text
     $changes = @(Get-IfsWhatIfChange $whatIf)
     $stackResult = Invoke-IfsAz -Arguments @('stack', 'sub', 'show', '--name', $ReleaseData.unit, '--subscription', $ReleaseData.subscriptionId, '--output', 'json') -AllowFailure
@@ -712,6 +741,7 @@ function Invoke-IfsPendingOperation {
         [Parameter(Mandatory)][string] $TemplateFile,
         [Parameter(Mandatory)][string] $ParameterFile,
         [Parameter(Mandatory)][string] $DeploymentIdentityObjectId,
+        [string] $ApplicationIdentityObjectId,
         [Parameter(Mandatory)][string] $SqlScript,
         [Parameter(Mandatory)][int] $Revision,
         [Parameter(Mandatory)][string] $Commit,
@@ -748,7 +778,7 @@ function Invoke-IfsPendingOperation {
         }
         if ($operation.kind -eq 'deploy-unit') {
             if ($operation.state -eq 'ToDo') { [void](Set-IfsOperationState -Context $Context -OperationId $operation.id -State 'Started') }
-            $stackOutput = Invoke-IfsStackDeployment -ReleaseData $ReleaseData -TemplateFile $TemplateFile -ParameterFile $ParameterFile -DeploymentIdentityObjectId $DeploymentIdentityObjectId
+            $stackOutput = Invoke-IfsStackDeployment -ReleaseData $ReleaseData -TemplateFile $TemplateFile -ParameterFile $ParameterFile -DeploymentIdentityObjectId $DeploymentIdentityObjectId -ApplicationIdentityObjectId $ApplicationIdentityObjectId
             $summary.detachedResources.AddRange([string[]]$stackOutput.detachedResources)
             if ($env:IFS_TEST_ABORT_AFTER -eq 'deploy-unit') { [Environment]::Exit(137) }
             [void](Set-IfsOperationState -Context $Context -OperationId $operation.id -State 'Done')
@@ -788,9 +818,19 @@ function Invoke-IfsStackDeployment {
         [Parameter(Mandatory)][object] $ReleaseData,
         [Parameter(Mandatory)][string] $TemplateFile,
         [Parameter(Mandatory)][string] $ParameterFile,
-        [Parameter(Mandatory)][string] $DeploymentIdentityObjectId
+        [Parameter(Mandatory)][string] $DeploymentIdentityObjectId,
+        [string] $ApplicationIdentityObjectId
     )
-    $arguments = @('stack', 'sub', 'create', '--name', $ReleaseData.unit, '--location', $ReleaseData.location, '--template-file', $TemplateFile, '--parameters', $ParameterFile, '--action-on-unmanage', 'detachAll', '--subscription', $ReleaseData.subscriptionId, '--yes', '--output', 'json')
+    $parameters = @($ParameterFile)
+    if ($ReleaseData.component -eq 'core') {
+        if ([string]::IsNullOrWhiteSpace($DeploymentIdentityObjectId)) { throw "Le composant core exige l'Object ID de l'identite de deploiement pour le role Key Vault." }
+        $parameters += "deploymentPrincipalId=$DeploymentIdentityObjectId"
+    }
+    if ($ReleaseData.component -in @('platform', 'orders')) {
+        if ([string]::IsNullOrWhiteSpace($ApplicationIdentityObjectId)) { throw "Le composant '$($ReleaseData.component)' exige l'Object ID de l'identite applicative pour ses attributions RBAC." }
+        $parameters += "appDeliveryPrincipalId=$ApplicationIdentityObjectId"
+    }
+    $arguments = @('stack', 'sub', 'create', '--name', $ReleaseData.unit, '--location', $ReleaseData.location, '--template-file', $TemplateFile, '--parameters') + $parameters + @('--action-on-unmanage', 'detachAll', '--subscription', $ReleaseData.subscriptionId, '--yes', '--output', 'json')
     if ($ReleaseData.protected) {
         if ([string]::IsNullOrWhiteSpace($DeploymentIdentityObjectId)) { throw 'La cible protégée exige l''identité de déploiement pour son deny assignment.' }
         $arguments += @('--deny-settings-mode', 'denyDelete', '--deny-settings-excluded-principals', $DeploymentIdentityObjectId)
@@ -1027,9 +1067,16 @@ function Invoke-IfsInfraPreview {
     Exécute les contrôles et l'aperçu de release d'infrastructure sans écriture Azure.
     #>
     [CmdletBinding()]
-    param([Parameter(Mandatory)][string] $ReleasePath, [Parameter(Mandatory)][string] $TemplateFile, [Parameter(Mandatory)][string] $ParameterFile, [Parameter(Mandatory)][string] $OutputDirectory)
+    param(
+        [Parameter(Mandatory)][string] $ReleasePath,
+        [Parameter(Mandatory)][string] $TemplateFile,
+        [Parameter(Mandatory)][string] $ParameterFile,
+        [Parameter(Mandatory)][string] $OutputDirectory,
+        [string] $DeploymentIdentityObjectId,
+        [string] $ApplicationIdentityObjectId
+    )
     $releaseData = Read-IfsReleaseData -Path $ReleasePath
-    $preview = Invoke-IfsPreview -ReleaseData $releaseData -TemplateFile $TemplateFile -ParameterFile $ParameterFile -OutputDirectory $OutputDirectory
+    $preview = Invoke-IfsPreview -ReleaseData $releaseData -TemplateFile $TemplateFile -ParameterFile $ParameterFile -OutputDirectory $OutputDirectory -DeploymentIdentityObjectId $DeploymentIdentityObjectId -ApplicationIdentityObjectId $ApplicationIdentityObjectId
     Write-Output ('##vso[task.uploadfile]{0}' -f (Join-Path $OutputDirectory 'ifs-preview.json'))
     Write-Output ('##vso[task.uploadsummary]{0}' -f (Join-Path $OutputDirectory 'ifs-preview.md'))
     return $preview
@@ -1102,9 +1149,13 @@ function Invoke-IfsInfraDeploy {
         [Parameter(Mandatory)][string] $DefaultBranch,
         [Parameter(Mandatory)][string] $ManifestPathInRepository,
         [Parameter(Mandatory)][string] $DeploymentIdentityObjectId,
+        [string] $ApplicationIdentityObjectId,
         [string] $RunId = [guid]::NewGuid().ToString('N')
     )
     $data = Read-IfsReleaseData -Path $ReleasePath
+    if ($data.component -in @('platform', 'orders') -and [string]::IsNullOrWhiteSpace($ApplicationIdentityObjectId)) {
+        throw "Le composant '$($data.component)' exige l'Object ID de l'identite applicative pour son apercu et son deploiement."
+    }
     if (@($data.dataAccess).Count -gt 0 -and [string]::IsNullOrWhiteSpace($SqlScript)) {
         throw 'Le script SQL des accès sortants est requis pour ce composant.'
     }
@@ -1122,7 +1173,7 @@ function Invoke-IfsInfraDeploy {
     $failure = $null
     try {
         [void](Test-IfsNewerManifest -FrozenManifest $metadata.Manifest -DefaultBranch $DefaultBranch -ManifestPathInRepository $ManifestPathInRepository -ReleaseData $data)
-        $current = Invoke-IfsPreview -ReleaseData $data -TemplateFile $TemplateFile -ParameterFile $ParameterFile -OutputDirectory (Split-Path -Parent $PreviewPath)
+        $current = Invoke-IfsPreview -ReleaseData $data -TemplateFile $TemplateFile -ParameterFile $ParameterFile -OutputDirectory (Split-Path -Parent $PreviewPath) -DeploymentIdentityObjectId $DeploymentIdentityObjectId -ApplicationIdentityObjectId $ApplicationIdentityObjectId
         if ($current.fingerprint -ne $approved.fingerprint) {
             throw 'Les effets ont changé depuis l''aperçu approuvé ; relancez la release pour une nouvelle approbation.'
         }
@@ -1152,7 +1203,7 @@ function Invoke-IfsInfraDeploy {
         }
         $steps.Add([pscustomobject]@{ number = 6; name = 'journal'; result = 'Succeeded'; replayed = @($previousOperations | ForEach-Object { $_.id }) })
         try {
-            $execution = Invoke-IfsPendingOperation -Context $context -ReleaseData $data -TemplateFile $TemplateFile -ParameterFile $ParameterFile -DeploymentIdentityObjectId $DeploymentIdentityObjectId -SqlScript $SqlScript -Revision $metadata.Revision -Commit $metadata.Commit -RunId $RunId
+            $execution = Invoke-IfsPendingOperation -Context $context -ReleaseData $data -TemplateFile $TemplateFile -ParameterFile $ParameterFile -DeploymentIdentityObjectId $DeploymentIdentityObjectId -ApplicationIdentityObjectId $ApplicationIdentityObjectId -SqlScript $SqlScript -Revision $metadata.Revision -Commit $metadata.Commit -RunId $RunId
         }
         catch {
             $createdAfterFailure = [System.Collections.Generic.List[string]]::new()
@@ -1243,6 +1294,7 @@ function Invoke-IfsAppDeploy {
 Export-ModuleMember -Function @(
     'Read-IfsReleaseData', 'Read-IfsOperationJournal', 'Open-IfsOperationJournal', 'Close-IfsOperationJournal',
     'Get-IfsPendingOperation', 'Test-IfsDependency', 'Test-IfsSecretVariable', 'Test-IfsSecretReference',
+    'Get-IfsManagedIdentity',
     'Invoke-IfsPreview', 'Get-IfsEffectFingerprint', 'Read-IfsAppOwnedState', 'Add-IfsOperation',
     'Set-IfsOperationState', 'Invoke-IfsStackDeployment', 'Invoke-IfsRevocation', 'Invoke-IfsSecretWrite',
     'Invoke-IfsDataAccess', 'Write-IfsReleaseReport', 'Invoke-IfsInfraPreview', 'Invoke-IfsInfraDeploy',

@@ -87,6 +87,29 @@ Describe "Aperçu et empreinte" {
         ($global:IFS_AZ_CALLS | ForEach-Object { $_ -join " " } | Where-Object { $_ -match "what-if|storage blob exists|storage blob download" }).Count | Should -BeGreaterThan 0
     }
 
+    It "inclut l'Object ID applicatif dans l'aperçu orders" {
+        $applicationId = "22222222-2222-2222-2222-222222222222"
+        Invoke-IfsPreview -ReleaseData $script:orderData -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -OutputDirectory $script:tempRoot -ApplicationIdentityObjectId $applicationId | Out-Null
+        $call = $global:IFS_AZ_CALLS | Where-Object { ($_ -join " ") -match "deployment sub what-if" } | Select-Object -First 1
+
+        $call | Should -Contain "appDeliveryPrincipalId=$applicationId"
+    }
+
+    It "inclut l'Object ID de déploiement dans l'aperçu core" {
+        $data = Read-IfsReleaseData -Path $script:coreRelease
+        $template = Join-Path $script:repoRoot "reference/pilot/bicep-azdo/core/infra/main.bicep"
+        $parameters = Join-Path $script:repoRoot "reference/pilot/bicep-azdo/core/infra/main.dev.bicepparam"
+        $deploymentId = "11111111-1111-1111-1111-111111111111"
+        $env:MAIN_PAYMENTS_API_KEY = "pester-preview-secret"
+        try {
+            Invoke-IfsPreview -ReleaseData $data -TemplateFile $template -ParameterFile $parameters -OutputDirectory $script:tempRoot -DeploymentIdentityObjectId $deploymentId | Out-Null
+            $call = $global:IFS_AZ_CALLS | Where-Object { ($_ -join " ") -match "deployment sub what-if" } | Select-Object -First 1
+
+            $call | Should -Contain "deploymentPrincipalId=$deploymentId"
+        }
+        finally { Remove-Item Env:MAIN_PAYMENTS_API_KEY -ErrorAction SilentlyContinue }
+    }
+
     It "exclut l'état appartenant à l'application de l'empreinte" {
         $left = [ordered]@{ changes = @(@{ id = "a"; changeType = "Modify" }); appOwnedState = @{ image = "one" } }
         $right = [ordered]@{ changes = @(@{ id = "a"; changeType = "Modify" }); appOwnedState = @{ image = "two" } }
@@ -388,7 +411,7 @@ Describe "Rapports de release" {
         }
 
         {
-            Invoke-IfsInfraDeploy -ReleasePath $script:ordersRelease -ManifestPath $manifestPath -PreviewPath $approvedPath -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -SqlScript (Join-Path $script:repoRoot "reference/pilot/bicep-azdo/orders/infra/scripts/data-access.sql") -OutputPath $reportPath -DefaultBranch "main" -ManifestPathInRepository ".ifs/manifest.json" -DeploymentIdentityObjectId "00000000-0000-0000-0000-000000000001"
+            Invoke-IfsInfraDeploy -ReleasePath $script:ordersRelease -ManifestPath $manifestPath -PreviewPath $approvedPath -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -SqlScript (Join-Path $script:repoRoot "reference/pilot/bicep-azdo/orders/infra/scripts/data-access.sql") -OutputPath $reportPath -DefaultBranch "main" -ManifestPathInRepository ".ifs/manifest.json" -DeploymentIdentityObjectId "00000000-0000-0000-0000-000000000001" -ApplicationIdentityObjectId "00000000-0000-0000-0000-000000000002"
         } | Should -Not -Throw
 
         $calls = @($global:IFS_AZ_CALLS | ForEach-Object { $_ -join " " })
@@ -439,7 +462,7 @@ Describe "Rapports de release" {
         Set-Content -LiteralPath $previewPath -Value '{"fingerprint":"approved"}'
         Mock Test-IfsNewerManifest -ModuleName IfsRelease { throw "Une révision plus récente (5) modifie ce composant." }
         {
-            Invoke-IfsInfraDeploy -ReleasePath $script:ordersRelease -ManifestPath $manifestPath -PreviewPath $previewPath -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -SqlScript (Join-Path $script:repoRoot "reference/pilot/bicep-azdo/orders/infra/scripts/data-access.sql") -OutputPath $reportPath -DefaultBranch "main" -ManifestPathInRepository ".ifs/manifest.json" -DeploymentIdentityObjectId "00000000-0000-0000-0000-000000000001"
+            Invoke-IfsInfraDeploy -ReleasePath $script:ordersRelease -ManifestPath $manifestPath -PreviewPath $previewPath -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -SqlScript (Join-Path $script:repoRoot "reference/pilot/bicep-azdo/orders/infra/scripts/data-access.sql") -OutputPath $reportPath -DefaultBranch "main" -ManifestPathInRepository ".ifs/manifest.json" -DeploymentIdentityObjectId "00000000-0000-0000-0000-000000000001" -ApplicationIdentityObjectId "00000000-0000-0000-0000-000000000002"
         } | Should -Throw "*modifie ce composant*"
         (Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json).result | Should -Be "FailedBeforeMutation"
         $calls = @($global:IFS_AZ_CALLS | ForEach-Object { $_ -join " " })
@@ -480,9 +503,9 @@ Describe "Rapports de release" {
 Describe "Déploiement de pile et application" {
     It "confirme la création de pile et conserve les ressources détachées" {
         $data = [pscustomobject]@{
-            unit = "ifs-shop-orders-dev"; location = "francecentral"; subscriptionId = "test"; protected = $false
+            unit = "ifs-shop-orders-dev"; component = "orders"; location = "francecentral"; subscriptionId = "test"; protected = $false
         }
-        $stack = Invoke-IfsStackDeployment -ReleaseData $data -TemplateFile "main.bicep" -ParameterFile "main.bicepparam" -DeploymentIdentityObjectId "identity"
+        $stack = Invoke-IfsStackDeployment -ReleaseData $data -TemplateFile "main.bicep" -ParameterFile "main.bicepparam" -DeploymentIdentityObjectId "identity" -ApplicationIdentityObjectId "22222222-2222-2222-2222-222222222222"
         $call = $global:IFS_AZ_CALLS | Where-Object { ($_ -join " ") -match "stack sub create" } | Select-Object -First 1
         $call | Should -Contain "--yes"
         $call | Should -Contain "--action-on-unmanage"
@@ -490,6 +513,30 @@ Describe "Déploiement de pile et application" {
         $call | Should -Contain "--deny-settings-mode"
         $call | Should -Contain "none"
         $stack.detachedResources | Should -BeNullOrEmpty
+    }
+
+    It "transmet l’Object ID de déploiement au Bicep core pour le rôle Key Vault" {
+        $data = [pscustomobject]@{
+            unit = "ifs-shop-core-dev"; component = "core"; location = "francecentral"; subscriptionId = "test"; protected = $false
+        }
+        Invoke-IfsStackDeployment -ReleaseData $data -TemplateFile "main.bicep" -ParameterFile "main.dev.bicepparam" -DeploymentIdentityObjectId "11111111-1111-1111-1111-111111111111" | Out-Null
+        $call = $global:IFS_AZ_CALLS | Where-Object { ($_ -join " ") -match "stack sub create" } | Select-Object -First 1
+
+        $call | Should -Contain "deploymentPrincipalId=11111111-1111-1111-1111-111111111111"
+    }
+
+    It "transmet l'Object ID applicatif au Bicep platform et orders" {
+        $applicationId = "22222222-2222-2222-2222-222222222222"
+        foreach ($component in @("platform", "orders")) {
+            $global:IFS_AZ_CALLS.Clear()
+            $data = [pscustomobject]@{
+                unit = "ifs-shop-$component-dev"; component = $component; location = "francecentral"; subscriptionId = "test"; protected = $false
+            }
+            Invoke-IfsStackDeployment -ReleaseData $data -TemplateFile "main.bicep" -ParameterFile "main.dev.bicepparam" -DeploymentIdentityObjectId "11111111-1111-1111-1111-111111111111" -ApplicationIdentityObjectId $applicationId | Out-Null
+            $call = $global:IFS_AZ_CALLS | Where-Object { ($_ -join " ") -match "stack sub create" } | Select-Object -First 1
+
+            $call | Should -Contain "appDeliveryPrincipalId=$applicationId"
+        }
     }
 
     It "livre une image immuable et valide le rapport de santé applicatif" {

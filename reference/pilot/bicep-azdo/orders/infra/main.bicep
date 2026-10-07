@@ -18,6 +18,11 @@ param apiIdentity apiIdentityConfig
 param caeMain caeMainConfig
 param caApi caApiConfig
 
+@description('Object ID de l’identité applicative Azure DevOps autorisée à mettre à jour la Container App.')
+param appDeliveryPrincipalId string = ''
+
+var containerAppsContributorRoleId = '358470bc-b998-42bd-ab17-a7e34c199c0f'
+
 resource rg_main 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   name: resourceGroups.main.name
   location: resourceGroups.main.location
@@ -285,5 +290,22 @@ module caApiModule 'br/public:avm/res/app/container-app:0.23.0' = if (caApi.depl
     keyVaultSecretsUser
     logAnalyticsReader
     acrPull
+  ]
+}
+
+module appDeliveryContainerAppsContributor './container-app-role-assignment.bicep' = if (caApi.deploy && apiIdentity.deploy && caeMain.deploy && !empty(appDeliveryPrincipalId)) {
+  name: 'appDeliveryContainerAppsContributor-${target.code}-${uniqueString(caApi.name)}'
+  scope: resourceGroup(target.subscriptionId, resourceGroups.main.name)
+  params: {
+    containerAppName: caApi.name
+    principalId: appDeliveryPrincipalId
+    roleDefinitionId: subscriptionResourceId(
+      target.subscriptionId,
+      'Microsoft.Authorization/roleDefinitions',
+      containerAppsContributorRoleId
+    )
+  }
+  dependsOn: [
+    caApiModule
   ]
 }

@@ -54,6 +54,62 @@ function Get-IfsRbacCondition {
     return "((!(ActionMatches{'Microsoft.Authorization/roleAssignments/write'}) AND !(ActionMatches{'Microsoft.Authorization/roleAssignments/delete'})) OR (@Request[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals $set)) AND ((!(ActionMatches{'Microsoft.Authorization/roleAssignments/delete'})) OR (@Resource[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals $set))"
 }
 
+function Get-IfsRbacScopePlan {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)] [object] $Target,
+        [Parameter(Mandatory)] [System.Collections.IDictionary] $RoleIds
+    )
+
+    $scopeRoles = @{}
+    $addRole = {
+        param([string] $Scope, [string] $RoleId)
+        if (-not $scopeRoles.ContainsKey($Scope)) {
+            $scopeRoles[$Scope] = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+        }
+        [void]$scopeRoles[$Scope].Add(([guid]$RoleId).ToString())
+    }
+
+    foreach ($release in @($Target.Releases)) {
+        $resourceGroupName = [string](Get-IfsObjectProperty -Object $release -Name 'ResourceGroupName')
+        if ([string]::IsNullOrWhiteSpace($resourceGroupName)) { throw "Le groupe de ressources du composant '$($release.Component)' n'a pas ete compile." }
+        $subscriptionId = [string](Get-IfsObjectProperty -Object $release -Name 'SubscriptionId')
+        $componentScope = "/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName"
+
+        switch ([string]$release.Component) {
+            'core' { & $addRole $componentScope ([string]$RoleIds.KeyVaultSecretsOfficer) }
+            'platform' { & $addRole $componentScope ([string]$RoleIds.AcrPush) }
+            'orders' {
+                & $addRole $componentScope ([string]$RoleIds.ContainerAppsContributor)
+                foreach ($dependency in @(Get-IfsObjectProperty -Object $release.Release -Name 'dependencies')) {
+                    foreach ($resource in @(Get-IfsObjectProperty -Object $dependency -Name 'resources')) {
+                        $resourceId = [string](Get-IfsObjectProperty -Object $resource -Name 'id')
+                        $match = [regex]::Match($resourceId, '^/subscriptions/(?<subscription>[^/]+)/resourceGroups/(?<group>[^/]+)/providers/')
+                        if (-not $match.Success) { continue }
+                        $roleId = $null
+                        if ($resourceId -match '/providers/Microsoft\.KeyVault/vaults/') { $roleId = [string]$RoleIds.KeyVaultSecretsUser }
+                        elseif ($resourceId -match '/providers/Microsoft\.OperationalInsights/workspaces/') { $roleId = [string]$RoleIds.LogAnalyticsReader }
+                        elseif ($resourceId -match '/providers/Microsoft\.ContainerRegistry/registries/') { $roleId = [string]$RoleIds.AcrPull }
+                        if ($roleId) {
+                            $dependencyScope = "/subscriptions/$($match.Groups['subscription'].Value)/resourceGroups/$($match.Groups['group'].Value)"
+                            & $addRole $dependencyScope $roleId
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    foreach ($scope in @($scopeRoles.Keys | Sort-Object)) {
+        $subscription = [regex]::Match($scope, '^/subscriptions/([^/]+)/').Groups[1].Value
+        [pscustomobject]@{
+            SubscriptionId = $subscription
+            Scope = $scope
+            RoleDefinitionIds = @($scopeRoles[$scope] | Sort-Object)
+        }
+    }
+}
+
 function Assert-IfsRevisionNotOlder {
     [CmdletBinding()]
     param(
@@ -208,6 +264,36 @@ function Get-IfsPilotPlan {
     return [pscustomobject]@{ Revision = $revision; Project = $projects[0]; Targets = @($targets); Releases = @($releases) }
 }
 
+function Get-IfsBicepResourceGroup {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)] [object] $Release)
+
+    $directory = Split-Path -Parent ([string]$Release.Path)
+    $parameterFile = Join-Path $directory ('main.{0}.bicepparam' -f $Release.Target)
+    if (-not (Test-Path -LiteralPath $parameterFile -PathType Leaf)) {
+        throw "Fichier de parametres Bicep introuvable pour '$($Release.Component)/$($Release.Target)' : $parameterFile"
+    }
+    $compiled = Invoke-IfsAzJson -Arguments @('bicep', 'build-params', '--file', $parameterFile, '--stdout')
+    $parametersJson = Get-IfsObjectProperty -Object $compiled -Name 'parametersJson'
+    if (-not [string]::IsNullOrWhiteSpace([string]$parametersJson)) {
+        try { $parameters = ([string]$parametersJson | ConvertFrom-Json -Depth 100) }
+        catch { throw "La sortie des parametres Bicep de '$parameterFile' ne contient pas de JSON valide." }
+    }
+    else { $parameters = $compiled }
+    $parameterValues = Get-IfsObjectProperty -Object $parameters -Name 'parameters'
+    $resourceGroups = Get-IfsObjectProperty -Object $parameterValues -Name 'resourceGroups'
+    $resourceGroupValues = Get-IfsObjectProperty -Object $resourceGroups -Name 'value'
+    $resourceGroup = Get-IfsObjectProperty -Object $resourceGroupValues -Name 'main'
+    if ([string]::IsNullOrWhiteSpace([string](Get-IfsObjectProperty -Object $resourceGroup -Name 'name')) -or [string]::IsNullOrWhiteSpace([string](Get-IfsObjectProperty -Object $resourceGroup -Name 'location'))) {
+        throw "Les parametres Bicep de '$($Release.Component)/$($Release.Target)' ne declarent pas resourceGroups.main.name et location."
+    }
+    return [pscustomobject]@{
+        Name = [string](Get-IfsObjectProperty -Object $resourceGroup -Name 'name')
+        Location = [string](Get-IfsObjectProperty -Object $resourceGroup -Name 'location')
+        Tags = Get-IfsObjectProperty -Object $resourceGroup -Name 'tags'
+    }
+}
+
 function Get-IfsRoleDefinitionId {
     [CmdletBinding()]
     param([Parameter(Mandatory)] [string] $RoleName)
@@ -218,7 +304,9 @@ function Get-IfsRoleDefinitionId {
         'AcrPull' = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
         'AcrPush' = '8311e382-0749-4cb8-b61a-304f252e45ec'
         'Key Vault Secrets User' = '4633458b-17de-408a-b874-0445c86b69e6'
-    'Log Analytics Reader' = '73c42c96-874c-492b-b04d-ab87d138a893'
+        'Key Vault Secrets Officer' = 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
+        'Log Analytics Reader' = '73c42c96-874c-492b-b04d-ab87d138a893'
+        'Container Apps Contributor' = '358470bc-b998-42bd-ab17-a7e34c199c0f'
         'Storage Blob Data Contributor' = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
     }
     if ($known.ContainsKey($RoleName)) { return $known[$RoleName] }
@@ -547,14 +635,43 @@ function Invoke-IfsAzureSetup {
     $roleAcrPull = Get-IfsRoleDefinitionId -RoleName 'AcrPull'
     $roleAcrPush = Get-IfsRoleDefinitionId -RoleName 'AcrPush'
     $roleKvSecretsUser = Get-IfsRoleDefinitionId -RoleName 'Key Vault Secrets User'
+    $roleKvSecretsOfficer = Get-IfsRoleDefinitionId -RoleName 'Key Vault Secrets Officer'
     $roleLogsReader = Get-IfsRoleDefinitionId -RoleName 'Log Analytics Reader'
-    $registryIds = @($plan.Releases | ForEach-Object { $_.Release.dependencies } | ForEach-Object { $_.resources } | ForEach-Object { [string]$_.id } | Where-Object { $_ -match '/providers/Microsoft\.ContainerRegistry/registries/' } | Sort-Object -Unique)
-    $registryResourceId = if ($registryIds.Count -gt 0) { $registryIds[0] } else { $null }
-    if ($registryIds.Count -gt 1) { throw 'Le kit pilote attend un seul registre partagé.' }
-    $registrySubscription = $null
-    if ($registryResourceId) {
-        $registrySubscription = [regex]::Match($registryResourceId, '^/subscriptions/([^/]+)/').Groups[1].Value
-        if ($registrySubscription -notmatch '^[0-9a-fA-F-]{36}$') { throw "Identifiant d'abonnement du registre invalide: $registryResourceId" }
+    $roleContainerAppsContributor = Get-IfsRoleDefinitionId -RoleName 'Container Apps Contributor'
+
+    foreach ($release in $plan.Releases) {
+        $componentGroup = Get-IfsBicepResourceGroup -Release $release
+        $release | Add-Member -NotePropertyName ResourceGroupName -NotePropertyValue $componentGroup.Name -Force
+        $release | Add-Member -NotePropertyName ResourceGroupLocation -NotePropertyValue $componentGroup.Location -Force
+        $release | Add-Member -NotePropertyName ResourceGroupTags -NotePropertyValue $componentGroup.Tags -Force
+    }
+
+    foreach ($group in ($plan.Releases | Group-Object { '{0}|{1}' -f $_.SubscriptionId, $_.ResourceGroupName })) {
+        $release = $group.Group[0]
+        $subscription = [string]$release.SubscriptionId
+        $name = [string]$release.ResourceGroupName
+        $rgList = Invoke-IfsAzJson -Arguments @('group', 'list', '--subscription', $subscription)
+        $existing = @($rgList | Where-Object { [string]$_.name -eq $name } | Select-Object -First 1)
+        if ($existing.Count -eq 0) {
+            $arguments = @('group', 'create', '--name', $name, '--location', [string]$release.ResourceGroupLocation, '--subscription', $subscription)
+            $tagProperties = if ($null -eq $release.ResourceGroupTags) { @() } elseif ($release.ResourceGroupTags -is [Collections.IDictionary]) { @($release.ResourceGroupTags.GetEnumerator() | ForEach-Object { '{0}={1}' -f $_.Key, $_.Value }) } else { @($release.ResourceGroupTags.PSObject.Properties | ForEach-Object { '{0}={1}' -f $_.Name, $_.Value }) }
+            if (@($tagProperties).Count -gt 0) { $arguments += @('--tags') + $tagProperties }
+            [void](Invoke-IfsAz -Arguments $arguments -Write)
+            continue
+        }
+        $actualTags = Get-IfsObjectProperty -Object $existing[0] -Name 'tags'
+        $owner = Get-IfsTagValue -Tags $actualTags -Name 'managed-by'
+        $expectedOwner = Get-IfsTagValue -Tags $release.ResourceGroupTags -Name 'managed-by'
+        if (-not $expectedOwner -or $owner -ne $expectedOwner) {
+            throw "Le groupe de ressources '$name' existe sans la marque de propriete '$expectedOwner'; il ne sera pas utilise par le kit."
+        }
+        foreach ($tagName in @('ifs-project', 'ifs-component', 'ifs-environment')) {
+            $expectedValue = Get-IfsTagValue -Tags $release.ResourceGroupTags -Name $tagName
+            $actualValue = Get-IfsTagValue -Tags $actualTags -Name $tagName
+            if ($actualValue -and $expectedValue -and $actualValue -ne $expectedValue) {
+                throw "Le groupe de ressources '$name' porte une valeur '$tagName' qui ne correspond pas aux parametres Bicep."
+            }
+        }
     }
 
     foreach ($target in $plan.Targets) {
@@ -602,18 +719,17 @@ function Invoke-IfsAzureSetup {
             [void](Set-IfsRoleAssignment -SubscriptionId $subscription -Scope $storageScope -PrincipalId ([string]$deployIdentity.principalId) -RoleDefinitionId $roleStorage)
             $steps.Add([pscustomobject]@{ Name = 'roles Contributor, Deployment Stack Owner et stockage'; Status = 'attribues' })
 
-            $targetRoleIds = if ($target.Name -in @('dev', 'prd')) { @($roleKvSecretsUser, $roleLogsReader) } else { @() }
-            if ($registryResourceId -and $registrySubscription -eq $subscription -and $target.Name -in @('dev', 'prd')) { $targetRoleIds += $roleAcrPull }
-            if ($targetRoleIds.Count -gt 0) {
-                $condition = Get-IfsRbacCondition -RoleDefinitionIds $targetRoleIds
-                [void](Set-IfsRoleAssignment -SubscriptionId $subscription -Scope "/subscriptions/$subscription" -PrincipalId ([string]$deployIdentity.principalId) -RoleDefinitionId $roleRbacAdmin -Condition $condition)
+            $roleIds = @{
+                KeyVaultSecretsOfficer = $roleKvSecretsOfficer
+                KeyVaultSecretsUser = $roleKvSecretsUser
+                LogAnalyticsReader = $roleLogsReader
+                AcrPull = $roleAcrPull
+                AcrPush = $roleAcrPush
+                ContainerAppsContributor = $roleContainerAppsContributor
             }
-            if ($registryResourceId -and $registrySubscription -ne $subscription -and $target.Name -in @('dev', 'prd')) {
-                $condition = Get-IfsRbacCondition -RoleDefinitionIds @($roleAcrPull)
-                [void](Set-IfsRoleAssignment -SubscriptionId $registrySubscription -Scope $registryResourceId -PrincipalId ([string]$deployIdentity.principalId) -RoleDefinitionId $roleRbacAdmin -Condition $condition)
-            }
-            if ($target.Name -eq 'shared' -and $registryResourceId) {
-                [void](Set-IfsRoleAssignment -SubscriptionId $registrySubscription -Scope $registryResourceId -PrincipalId ([string]$appIdentity.principalId) -RoleDefinitionId $roleAcrPush)
+            foreach ($scopePlan in (Get-IfsRbacScopePlan -Target $target -RoleIds $roleIds)) {
+                $condition = Get-IfsRbacCondition -RoleDefinitionIds $scopePlan.RoleDefinitionIds
+                [void](Set-IfsRoleAssignment -SubscriptionId $scopePlan.SubscriptionId -Scope $scopePlan.Scope -PrincipalId ([string]$deployIdentity.principalId) -RoleDefinitionId $roleRbacAdmin -Condition $condition)
             }
             $steps.Add([pscustomobject]@{ Name = 'RBAC conditionne aux roles de la reference'; Status = 'configure' })
 
@@ -645,4 +761,4 @@ function Invoke-IfsAzureSetup {
     return $report
 }
 
-Export-ModuleMember -Function ConvertTo-IfsTechnicalName, Get-IfsStableGuid, Get-IfsRbacCondition, Assert-IfsRevisionNotOlder, Get-IfsStaleFederatedCredential, Assert-IfsOwnedResource, Invoke-IfsAz, Invoke-IfsAzJson, Get-IfsPilotPlan, Set-IfsRoleAssignment, Update-IfsResourceTag, Set-IfsFederatedCredential, Remove-IfsStaleFederatedCredential, Add-IfsSqlGroupMember, Invoke-IfsAzureSetup
+Export-ModuleMember -Function ConvertTo-IfsTechnicalName, Get-IfsStableGuid, Get-IfsRbacCondition, Get-IfsRbacScopePlan, Assert-IfsRevisionNotOlder, Get-IfsStaleFederatedCredential, Assert-IfsOwnedResource, Invoke-IfsAz, Invoke-IfsAzJson, Get-IfsPilotPlan, Get-IfsBicepResourceGroup, Set-IfsRoleAssignment, Update-IfsResourceTag, Set-IfsFederatedCredential, Remove-IfsStaleFederatedCredential, Add-IfsSqlGroupMember, Invoke-IfsAzureSetup
