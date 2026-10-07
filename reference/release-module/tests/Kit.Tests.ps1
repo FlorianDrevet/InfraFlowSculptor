@@ -132,7 +132,7 @@ Describe 'Kit installation P-05' {
         $existing = @(
             [pscustomobject]@{ name = 'ifs-ado-current' }
             [pscustomobject]@{ name = 'ifs-ado-old' }
-            [pscustomobject]@{ name = 'github-actions' }
+            [pscustomobject]@{ name = 'github-actions'; subject = 'repo:other/project:environment:production' }
         )
 
         InModuleScope IfsInstall -Parameters @{ ExistingCredentials = $existing } {
@@ -143,6 +143,40 @@ Describe 'Kit installation P-05' {
         $deletes.Count | Should -Be 1
         $deletes[0] | Should -Contain 'ifs-ado-old'
         $deletes[0] | Should -Not -Contain 'github-actions'
+    }
+
+    It 'ne remplace pas un FIC IFS deja conforme a la seconde reconciliation' {
+        $endpointId = '11111111-2222-3333-4444-555555555555'
+        $credentialName = 'ifs-ado-111111112222'
+        $issuer = 'https://login.microsoftonline.com/example-tenant/v2.0'
+        $subject = 'sc://example/shop/ifs-shop-dev'
+        $global:IFS_FEDERATED_CREDENTIALS = @(
+            [pscustomobject]@{ name = $credentialName; issuer = $issuer; subject = $subject }
+        )
+        $global:IFS_AZ_HANDLER = {
+            param($Arguments)
+            $global:LASTEXITCODE = 0
+            if (($Arguments -join ' ') -match 'identity federated-credential list') {
+                return ConvertTo-Json -InputObject $global:IFS_FEDERATED_CREDENTIALS -Depth 10 -Compress
+            }
+            return '{}'
+        }
+        $endpoint = [pscustomobject]@{
+            id = $endpointId
+            name = 'ifs-shop-dev'
+            authorization = [pscustomobject]@{ parameters = [pscustomobject]@{
+                workloadIdentityFederationIssuer = $issuer
+                workloadIdentityFederationSubject = $subject
+            } }
+        }
+
+        InModuleScope IfsInstall -Parameters @{ EndpointValue = $endpoint } {
+            $expectedNames = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+            Set-IfsFederatedCredential -SubscriptionId 'sub' -ResourceGroup 'rg' -IdentityName 'id-ifs-deploy-shop-dev' -Endpoint $EndpointValue -ExpectedNames $expectedNames | Should -Be 'laisse tel quel'
+            $expectedNames.Contains('ifs-ado-111111112222') | Should -BeTrue
+        }
+
+        @($global:IFS_AZ_CALLS | Where-Object { $_[0] -eq 'identity' -and $_[1] -eq 'federated-credential' -and $_[2] -in @('create', 'delete') }).Count | Should -Be 0
     }
 
     It 'refuse un kit plus ancien que la revision installee' {

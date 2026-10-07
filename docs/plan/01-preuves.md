@@ -308,7 +308,8 @@ d'installation, saisir le secret.
    commande exacte, stockage technique `stifsshop<cible>` avec `ifs-operations`, service connections
    fédérées via `az devops service-endpoint create`) ; marque `managed-by: infraflowsculptor` et version du
    kit (tag `ifs-kit-revision`) ; refus d'un kit plus ancien ([RG-INS-07](../specs/23-kit-installation.md)) ;
-   suppression des identifiants fédérés inattendus ([RG-INS-05](../specs/23-kit-installation.md)) ; rapport final
+   suppression des seuls identifiants fédérés IFS obsolètes (`ifs-ado-*`) et conservation des identifiants étrangers
+   ([RG-INS-05](../specs/23-kit-installation.md)) ; rapport final
    par cible ([RG-INS-02](../specs/23-kit-installation.md)) ; noms techniques assainis et raccourcis de façon
    déterministe ([RG-INS-03](../specs/23-kit-installation.md)).
 2. `.ifs/install/install.pipeline.yml` : étapes 1–6 bis, 8 et 9 de [23 § 3.1](../specs/23-kit-installation.md)
@@ -321,7 +322,8 @@ d'installation, saisir le secret.
 3. `.ifs/install/SETUP.md` : liste de contrôle de [23 § 4](../specs/23-kit-installation.md), commandes exactes,
    état de chaque étape (automatique / à faire).
 4. Tests Pester (`reference/release-module/tests/Kit.Tests.ps1`), `az` simulé : `-WhatIf` ne fait aucun appel
-   d'écriture ; seconde exécution n'écrit rien de nouveau ; identifiant fédéré inattendu supprimé ; kit plus
+   d'écriture ; seconde exécution n'écrit rien de nouveau ; seul un identifiant fédéré IFS obsolète est supprimé et
+   les identifiants étrangers sont conservés ; kit plus
    ancien refusé ; condition RBAC contient exactement les rôles attendus.
 
 ✅ **Vérification automatique.** Pester vert ; PSScriptAnalyzer propre ; `Test-ReferencePipelines.ps1` inclut
@@ -408,6 +410,11 @@ branche.
    fusion différent, attente d'approbation).
 4. `docs/plan/preuves/resultats.md` : tableau `Preuve | Date | Résultat (OK/KO) | Preuve recueillie |
    Remarques`, vide.
+5. Reprendre les dix constats mineurs de [R-02](revues/R-02-revue.md#constats-mineurs-à-intégrer-au-plan) comme
+   suivi P-07/P-08 : santé de la nouvelle révision, séparation stderr/stdout, écriture des secrets et ACL temporaires,
+   emplacement des modules Bicep, complétude et francisation de `SETUP.md`, codes projet `shopNN`, couverture
+   PSScriptAnalyzer, révocation SQL journalisée, politique de revue de PR sur la branche par défaut et stabilité de
+   l'empreinte What-If.
 
 ✅ **Vérification automatique.** `Publish-PilotReference.ps1 -WhatIf` sur un dossier temporaire : les fichiers
 attendus, aucun nom non remplacé quand `-ProjectCode shop42` (recherche de `-shop-` résiduels hors table).

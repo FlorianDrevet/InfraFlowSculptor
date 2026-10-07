@@ -23,7 +23,7 @@ couple environnement × abonnement surchargé par un composant, [DEC-69](03-deci
 |---|---|---|
 | 1. Groupe de ressources technique | `rg-ifs-<projet>-<cible>`. | Tous |
 | 2. Identités | Identité d'infrastructure `id-ifs-deploy-<projet>-<cible>` et identité applicative `id-ifs-app-<projet>-<cible>` ([DEC-88](03-decisions.md)). Vérification que l'abonnement appartient au tenant du projet. | Tous |
-| 3. Identifiants fédérés | Un par sujet autorisé, pour chaque identité : service connection d'infrastructure et service connection applicative (Azure DevOps) ; `repo:<propriétaire>/<dépôt>:environment:<projet>-<cible>` pour chaque dépôt qui déploie dans la cible (GitHub) ; sujet du jeton GitLab *(lot 3)*. Un identifiant qui ne correspond plus à aucun sujet attendu est **supprimé** (RG-INS-05). | Selon plateforme |
+| 3. Identifiants fédérés | Un par sujet autorisé, pour chaque identité : service connection d'infrastructure et service connection applicative (Azure DevOps) ; `repo:<propriétaire>/<dépôt>:environment:<projet>-<cible>` pour chaque dépôt qui déploie dans la cible (GitHub) ; sujet du jeton GitLab *(lot 3)*. Un identifiant géré par IFS qui ne correspond plus à un sujet attendu est supprimé (RG-INS-05) ; les identifiants étrangers sont conservés. | Selon plateforme |
 | 4. Droits | Identité d'infrastructure : `Contributor` et Azure Deployment Stack Owner (paramètres de refus des piles, [DEC-99](03-decisions.md)) sur l'abonnement ; `Role Based Access Control Administrator` **limité par condition**, en écriture et en suppression, aux rôles attribués ou retirés par la release ([RG-LIA-18](16-liaisons-identites-et-acces.md)) ; droits sur les portées externes (zones DNS, ressources existantes, registre d'un autre abonnement). Les droits de plan de données sur les ressources du projet (Key Vault Secrets Officer, App Configuration Data Owner) ne sont **pas** donnés par le kit : les ressources n'existent pas encore ; le déploiement les attribue ([DEC-86](03-decisions.md)). Identité applicative : aucun droit à l'abonnement ; ses droits sont attribués par le déploiement ([RG-APP-08](19-applications-build-et-deploiement.md)). | Tous |
 | 5. Groupes administrateurs SQL et PostgreSQL | Ajout de l'identité au groupe Entra administrateur de chaque serveur. Si l'opérateur n'en a pas le droit : étape « à faire » dans la liste de contrôle, avec la commande exacte. | Tous |
 | 6. Stockage technique | Compte de stockage `stifs<projet><cible>` dans le groupe technique : authentification par clé partagée désactivée, accès public anonyme désactivé, versioning et suppression réversible des blobs activés. Conteneur `ifs-operations` pour le journal d'opérations ([DEC-100](03-decisions.md)) ; conteneur `tfstate` ou `pulumi` pour l'état. L'identité de déploiement reçoit Storage Blob Data Contributor sur ces conteneurs. | Tous (journal) ; Terraform, Pulumi (état) |
@@ -100,8 +100,10 @@ marque de propriété (`managed-by: infraflowsculptor` dans la description quand
 Un objet de même nom sans cette marque n'est pas modifié : l'étape échoue en l'expliquant.
 
 **RG-INS-05 — Révoquer les accès, ne jamais supprimer de données.** Le kit révoque ce qui donne un accès
-et ne correspond plus au modèle : identifiants fédérés, attributions de rôle de ses identités, autorisations
-de pipelines, approbateurs (réalignés). Il ne supprime jamais un objet qui porte des données ou de l'état :
+et ne correspond plus au modèle : seuls les identifiants fédérés qu'il gère (noms réservés `ifs-ado-*`)
+dont le sujet n'est plus attendu, les attributions de rôle de ses identités et les autorisations de pipelines.
+Les identifiants fédérés étrangers sont conservés, même si leur sujet n'est pas attendu par IFS. Les approbateurs
+sont réalignés. Le kit ne supprime jamais un objet qui porte des données ou de l'état :
 groupes de variables, stockages d'état, identités et service connections orphelins (composant supprimé,
 environnement retiré, ancienne plateforme après un changement [DEC-48](03-decisions.md)) sont listés avec
 la commande pour les supprimer ; leurs fédérations sont déjà révoquées.

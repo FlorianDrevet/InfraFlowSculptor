@@ -1010,8 +1010,8 @@ Complète [DEC-46](#dec-46--cycle-de-vie-et-état-par-langage).
 **Constat.** `CREATE USER … FROM EXTERNAL PROVIDER` exécuté par une identité de service oblige l'identité du serveur SQL à lire l'annuaire Entra (Microsoft Graph), un prérequis lourd que la spec ne décrivait pas.
 
 **Décision.**
-- Azure SQL : le script crée l'utilisateur avec `CREATE USER [<nom>] WITH SID = <identifiant client converti>, TYPE = E`, forme documentée qui ne consulte pas l'annuaire. L'identifiant client de chaque identité est une sortie du déploiement.
-- PostgreSQL : `pgaadauth_create_principal_with_oid`, avec l'identifiant d'objet, pour la même raison.
+- Azure SQL : le script crée l'utilisateur avec `CREATE USER [<nom>] WITH SID = <Object ID du principal converti en SID>, TYPE = E`, forme documentée qui ne consulte pas l'annuaire. L'Object ID `principalId` de chaque identité est une sortie du déploiement.
+- PostgreSQL : `pgaadauth_create_principal_with_oid`, avec l'Object ID, pour la même raison.
 - Seul prérequis restant : l'identité de déploiement est membre du groupe administrateur Entra du serveur (étape du kit, constat `VAL-LIA-SQL-ADMIN` tant qu'elle n'est pas confirmée).
 - Retirer un accès aux données retire les rôles **et** supprime l'utilisateur créé par IFS ([DEC-85](#dec-85--retirer-un-accès-le-révoque-même-en-production)). Un utilisateur qu'IFS n'a pas créé n'est jamais touché.
 

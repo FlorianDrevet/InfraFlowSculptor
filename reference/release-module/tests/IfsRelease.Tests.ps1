@@ -235,24 +235,58 @@ Describe "Journal d'opérations" {
 
     It "réarme une opération Done pour une nouvelle release et conserve son identifiant stable" {
         Mock Save-IfsJournalBlob -ModuleName IfsRelease {}
+        Mock Invoke-IfsSecretWrite -ModuleName IfsRelease {}
         $context = [pscustomobject]@{
             Journal = [pscustomobject]@{ schema = "ifs-operation-journal/v1"; unit = "ifs-shop-orders-dev"; target = "dev"; operations = @() }
             Account = "stifsshopdev"; Container = "ifs-operations"; Blob = "ifs-shop-orders-dev.json"; LeaseId = "test"; RenewalFailureFile = $null
         }
-        $previous = Add-IfsOperation -Context $context -Revision 3 -Commit "abc123" -Kind "secret-write" -ObjectId "kv/token" -Details ([pscustomobject]@{ value = "old" })
+        $oldWrite = [pscustomobject]@{ vault = "kv"; secret = "token"; value = "old" }
+        $newWrite = [pscustomobject]@{ vault = "kv"; secret = "token"; value = "new" }
+        $previous = Add-IfsOperation -Context $context -Revision 3 -Commit "abc123" -Kind "secret-write" -ObjectId "kv/token" -Details ([pscustomobject]@{ write = $oldWrite; phase = "preDeploy" })
         Set-IfsOperationState -Context $context -OperationId $previous.id -State "Started" | Out-Null
         Set-IfsOperationState -Context $context -OperationId $previous.id -State "Done" | Out-Null
 
-        $current = Add-IfsOperation -Context $context -Revision 4 -Commit "def456" -Kind "secret-write" -ObjectId "kv/token" -Details ([pscustomobject]@{ value = "new" })
+        $current = Add-IfsOperation -Context $context -Revision 4 -Commit "def456" -Kind "secret-write" -ObjectId "kv/token" -Details ([pscustomobject]@{ write = $newWrite; phase = "preDeploy" })
 
         $current.id | Should -Be $previous.id
         $current.state | Should -Be "ToDo"
         $current.revision | Should -Be 4
         $current.commit | Should -Be "def456"
-        $current.details.value | Should -Be "new"
-        $sameRelease = Add-IfsOperation -Context $context -Revision 4 -Commit "def456" -Kind "secret-write" -ObjectId "kv/token" -Details ([pscustomobject]@{ value = "ignored" })
+        $current.details.write.value | Should -Be "new"
+        $sameRelease = Add-IfsOperation -Context $context -Revision 4 -Commit "def456" -Kind "secret-write" -ObjectId "kv/token" -Details ([pscustomobject]@{ write = [pscustomobject]@{ vault = "kv"; secret = "token"; value = "ignored" }; phase = "preDeploy" })
         $sameRelease.state | Should -Be "ToDo"
-        $sameRelease.details.value | Should -Be "new"
+        $sameRelease.details.write.value | Should -Be "new"
+
+        $releaseData = [pscustomobject]@{ secretWrites = @($newWrite); restartOnSecretChange = $false }
+        InModuleScope IfsRelease -Parameters @{ ContextValue = $context; ReleaseDataValue = $releaseData } {
+            Invoke-IfsPendingOperation -Context $ContextValue -ReleaseData $ReleaseDataValue -TemplateFile "main.bicep" -ParameterFile "main.dev.bicepparam" -DeploymentIdentityObjectId "identity" -SqlScript "data-access.sql" -Revision 4 -Commit "def456" -RunId "run-4" | Out-Null
+        }
+        $current.state | Should -Be "Done"
+        Should -Invoke Invoke-IfsSecretWrite -ModuleName IfsRelease -Times 1 -Exactly
+    }
+
+    It "reprend une opération Started après interruption et la termine" {
+        Mock Save-IfsJournalBlob -ModuleName IfsRelease {}
+        Mock Invoke-IfsSecretWrite -ModuleName IfsRelease {}
+        $secretWrite = [pscustomobject]@{ vault = "kv"; secret = "token"; value = "resumed" }
+        $operation = [pscustomobject]@{
+            id = "a" * 64; revision = 4; commit = "def456"; kind = "secret-write"; objectId = "kv/token"; state = "Started"
+            createdAt = [DateTime]::UtcNow.ToString("o"); updatedAt = [DateTime]::UtcNow.ToString("o"); note = $null
+            details = [pscustomobject]@{ write = $secretWrite; phase = "preDeploy" }
+        }
+        $context = [pscustomobject]@{
+            Journal = [pscustomobject]@{ schema = "ifs-operation-journal/v1"; unit = "ifs-shop-orders-dev"; target = "dev"; operations = @($operation) }
+            Account = "stifsshopdev"; Container = "ifs-operations"; Blob = "ifs-shop-orders-dev.json"; LeaseId = "test"; RenewalFailureFile = $null
+        }
+        $releaseData = [pscustomobject]@{ secretWrites = @($secretWrite); restartOnSecretChange = $false }
+
+        $result = InModuleScope IfsRelease -Parameters @{ ContextValue = $context; ReleaseDataValue = $releaseData } {
+            Invoke-IfsPendingOperation -Context $ContextValue -ReleaseData $ReleaseDataValue -TemplateFile "main.bicep" -ParameterFile "main.dev.bicepparam" -DeploymentIdentityObjectId "identity" -SqlScript "data-access.sql" -Revision 4 -Commit "def456" -RunId "run-resume"
+        }
+
+        $operation.state | Should -Be "Done"
+        Should -Invoke Invoke-IfsSecretWrite -ModuleName IfsRelease -Times 1 -Exactly
+        $result.revokedAccess | Should -BeNullOrEmpty
     }
 
     It "marque un objet absent comme terminé avec la note prévue" {

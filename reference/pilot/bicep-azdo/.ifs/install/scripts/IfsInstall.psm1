@@ -477,7 +477,7 @@ function Set-IfsFederatedCredential {
         [Parameter(Mandatory)] [string] $ResourceGroup,
         [Parameter(Mandatory)] [string] $IdentityName,
         [Parameter(Mandatory)] [object] $Endpoint,
-        [Parameter(Mandatory)] [Collections.Generic.HashSet[string]] $ExpectedNames
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [Collections.Generic.HashSet[string]] $ExpectedNames
     )
 
     if ($null -eq $Endpoint) { return 'a verifier apres la creation de la connexion' }
