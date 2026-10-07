@@ -35,3 +35,4 @@
 | 2026-10-07 09:50 | Luna | revue `R-02` demandée | R-02-demande.md |
 | 2026-10-07 10:21 | Claude | verrou `R-02` : corrections demandées | R-02-revue.md |
 | 2026-10-07 12:16 | Luna | revue `R-02` demandée | R-02-demande.md |
+| 2026-10-07 12:43 | Claude | verrou `R-02` : corrections demandées | R-02-revue.md |
