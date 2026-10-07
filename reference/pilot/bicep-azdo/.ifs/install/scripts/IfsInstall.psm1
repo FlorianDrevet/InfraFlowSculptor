@@ -294,6 +294,18 @@ function Get-IfsBicepResourceGroup {
     }
 }
 
+function Get-IfsRequiredTemplatePath {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)] [string] $Target,
+        [switch] $Application
+    )
+
+    if (-not $Application) { return '.ifs/templates/infra-release.yml' }
+    if ($Target -eq 'shared') { return '.ifs/templates/app-ci.yml' }
+    return '.ifs/templates/app-release.yml'
+}
+
 function Get-IfsRoleDefinitionId {
     [CmdletBinding()]
     param([Parameter(Mandatory)] [string] $RoleName)
@@ -761,4 +773,4 @@ function Invoke-IfsAzureSetup {
     return $report
 }
 
-Export-ModuleMember -Function ConvertTo-IfsTechnicalName, Get-IfsStableGuid, Get-IfsRbacCondition, Get-IfsRbacScopePlan, Assert-IfsRevisionNotOlder, Get-IfsStaleFederatedCredential, Assert-IfsOwnedResource, Invoke-IfsAz, Invoke-IfsAzJson, Get-IfsPilotPlan, Get-IfsBicepResourceGroup, Set-IfsRoleAssignment, Update-IfsResourceTag, Set-IfsFederatedCredential, Remove-IfsStaleFederatedCredential, Add-IfsSqlGroupMember, Invoke-IfsAzureSetup
+Export-ModuleMember -Function ConvertTo-IfsTechnicalName, Get-IfsStableGuid, Get-IfsRbacCondition, Get-IfsRbacScopePlan, Assert-IfsRevisionNotOlder, Get-IfsStaleFederatedCredential, Assert-IfsOwnedResource, Invoke-IfsAz, Invoke-IfsAzJson, Get-IfsPilotPlan, Get-IfsBicepResourceGroup, Get-IfsRequiredTemplatePath, Set-IfsRoleAssignment, Update-IfsResourceTag, Set-IfsFederatedCredential, Remove-IfsStaleFederatedCredential, Add-IfsSqlGroupMember, Invoke-IfsAzureSetup

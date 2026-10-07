@@ -7,6 +7,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+Import-Module (Join-Path $PSScriptRoot 'IfsInstall.psm1') -Force
 
 $script:ApiVersion = '7.1'
 $script:ChecksApiVersion = '7.1-preview.1'
@@ -523,7 +524,8 @@ foreach ($target in $model.Targets) {
         if ($endpoint.Count -eq 0) { throw "Service connection '$endpointName' introuvable en finalisation." }
         if ([string]$endpoint[0].description -notmatch [regex]::Escape($script:OwnerMarker)) { throw "Service connection '$endpointName' sans marque IFS." }
         $branchSettings = [ordered]@{ displayName = "$($script:OwnerMarker); ifs-kit-revision: $($model.Revision)"; allowedBranches = 'refs/heads/main'; verifyBranchProtection = $true; failOnUnknownProtectionStatus = $true }
-        $templatePath = if ($suffix) { '.ifs/templates/app-release.yml' } else { '.ifs/templates/infra-release.yml' }
+        $isApplicationEndpoint = -not [string]::IsNullOrWhiteSpace($suffix)
+        $templatePath = Get-IfsRequiredTemplatePath -Target $target.Name -Application:$isApplicationEndpoint
         $requiredSettings = [ordered]@{
             displayName = "$($script:OwnerMarker); ifs-kit-revision: $($model.Revision)"
             requiredTemplate = [ordered]@{ repositoryType = 'azuregit'; repositoryName = "$($script:Project)/$($script:RepositoryName)"; repositoryRef = $script:DefaultBranch; templatePath = $templatePath }
