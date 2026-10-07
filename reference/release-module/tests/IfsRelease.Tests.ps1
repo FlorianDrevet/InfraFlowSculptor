@@ -210,6 +210,28 @@ Describe "Journal d'opérations" {
         finally { Close-IfsOperationJournal -Context $context }
     }
 
+    It "réarme une opération Done pour une nouvelle release et conserve son identifiant stable" {
+        Mock Save-IfsJournalBlob -ModuleName IfsRelease {}
+        $context = [pscustomobject]@{
+            Journal = [pscustomobject]@{ schema = "ifs-operation-journal/v1"; unit = "ifs-shop-orders-dev"; target = "dev"; operations = @() }
+            Account = "stifsshopdev"; Container = "ifs-operations"; Blob = "ifs-shop-orders-dev.json"; LeaseId = "test"; RenewalFailureFile = $null
+        }
+        $previous = Add-IfsOperation -Context $context -Revision 3 -Commit "abc123" -Kind "secret-write" -ObjectId "kv/token" -Details ([pscustomobject]@{ value = "old" })
+        Set-IfsOperationState -Context $context -OperationId $previous.id -State "Started" | Out-Null
+        Set-IfsOperationState -Context $context -OperationId $previous.id -State "Done" | Out-Null
+
+        $current = Add-IfsOperation -Context $context -Revision 4 -Commit "def456" -Kind "secret-write" -ObjectId "kv/token" -Details ([pscustomobject]@{ value = "new" })
+
+        $current.id | Should -Be $previous.id
+        $current.state | Should -Be "ToDo"
+        $current.revision | Should -Be 4
+        $current.commit | Should -Be "def456"
+        $current.details.value | Should -Be "new"
+        $sameRelease = Add-IfsOperation -Context $context -Revision 4 -Commit "def456" -Kind "secret-write" -ObjectId "kv/token" -Details ([pscustomobject]@{ value = "ignored" })
+        $sameRelease.state | Should -Be "ToDo"
+        $sameRelease.details.value | Should -Be "new"
+    }
+
     It "marque un objet absent comme terminé avec la note prévue" {
         $journal = [pscustomobject]@{ schema = "ifs-operation-journal/v1"; unit = "ifs-shop-orders-dev"; target = "dev"; operations = @([pscustomobject]@{ id = "x"; state = "Started"; kind = "revoke"; objectId = "/role/gone"; revision = 3; commit = "abc"; createdAt = [DateTime]::UtcNow.ToString("o"); updatedAt = [DateTime]::UtcNow.ToString("o") }) }
         $context = [pscustomobject]@{ Journal = $journal; Account = "stifsshopdev"; Container = "ifs-operations"; Blob = "ifs-shop-orders-dev.json"; LeaseId = "test"; RenewalFailureFile = $null }

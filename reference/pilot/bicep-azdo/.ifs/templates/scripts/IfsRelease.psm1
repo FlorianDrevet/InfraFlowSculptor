@@ -630,7 +630,7 @@ function Add-IfsOperation {
     .SYNOPSIS
     Inscrit une opération stable au journal avant de lancer sa mutation.
     .DESCRIPTION
-    L'identifiant est le SHA-256 de l'unité, la cible, la nature et l'objet Azure. Une opération existante conserve sa révision d'origine.
+    L'identifiant est le SHA-256 de l'unité, la cible, la nature et l'objet Azure. Les opérations inachevées gardent leurs données de reprise; une opération terminée est réarmée pour une nouvelle révision ou un nouveau commit.
     #>
     [CmdletBinding()]
     param(
@@ -644,7 +644,20 @@ function Add-IfsOperation {
     $key = '{0}|{1}|{2}|{3}' -f $Context.Journal.unit, $Context.Journal.target, $Kind, $ObjectId
     $id = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($key))).ToLowerInvariant()
     $existing = @($Context.Journal.operations | Where-Object { $_.id -eq $id } | Select-Object -First 1)
-    if ($existing.Count) { return $existing[0] }
+    if ($existing.Count) {
+        $operation = $existing[0]
+        if ($operation.state -ne 'Done') { return $operation }
+        if ([int]$operation.revision -eq $Revision -and [string]$operation.commit -eq $Commit) { return $operation }
+
+        $operation.state = 'ToDo'
+        $operation.revision = $Revision
+        $operation.commit = $Commit
+        $operation.updatedAt = [DateTime]::UtcNow.ToString('o')
+        $operation.note = $null
+        $operation.details = $Details
+        Save-IfsJournalBlob $Context
+        return $operation
+    }
     $operation = [pscustomobject]@{
         id = $id
         revision = $Revision
