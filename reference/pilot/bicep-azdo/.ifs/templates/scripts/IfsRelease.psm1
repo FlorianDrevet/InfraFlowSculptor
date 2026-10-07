@@ -718,9 +718,9 @@ function Set-IfsOperationState {
         [Parameter(Mandatory)][ValidateSet('ToDo', 'Started', 'Done')][string] $State,
         [object] $ObjectExists
     )
-    $matches = @($Context.Journal.operations | Where-Object { $_.id -eq $OperationId } | Select-Object -First 1)
-    if (-not $matches.Count) { throw ('Opération absente du journal : {0}' -f $OperationId) }
-    $operation = $matches[0]
+    $matchingOperations = @($Context.Journal.operations | Where-Object { $_.id -eq $OperationId } | Select-Object -First 1)
+    if (-not $matchingOperations.Count) { throw ('Opération absente du journal : {0}' -f $OperationId) }
+    $operation = $matchingOperations[0]
     $allowed = @{ ToDo = @('ToDo', 'Started'); Started = @('Started', 'Done'); Done = @('Done') }
     if ($State -notin $allowed[$operation.state]) { throw ('Transition de journal interdite : {0} vers {1}.' -f $operation.state, $State) }
     if (-not $PSCmdlet.ShouldProcess($OperationId, ('Définir l''état à {0}' -f $State))) { return $operation }
