@@ -7,7 +7,7 @@
   "files": [
     {
       "path": ".ifs/install/SETUP.md",
-      "sha256": "ea93baa2332d6cab6e4cce90643aad5380c6b6bccc568736ef89b2f5a2873b18"
+      "sha256": "50e2657b65a2744bf33bff515663d08d9e28374288e8efa6258a87b58df12a36"
     },
     {
       "path": ".ifs/install/azure-setup.ps1",
@@ -23,7 +23,7 @@
     },
     {
       "path": ".ifs/install/scripts/IfsInstall.psm1",
-      "sha256": "b5e53d91ecbcec1cb1bc2b91f2377c0f8ac8172199a0cc8d60632370b66b0b2b"
+      "sha256": "66ec23d178543fbca56cbbdc07387e861dda2228e48bd470415493ac03dd158e"
     },
     {
       "path": ".ifs/install/scripts/Install-Azdo.ps1",

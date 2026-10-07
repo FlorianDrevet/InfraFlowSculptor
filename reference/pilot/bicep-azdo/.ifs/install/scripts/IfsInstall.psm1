@@ -294,6 +294,110 @@ function Get-IfsBicepResourceGroup {
     }
 }
 
+function ConvertTo-IfsTagArgument {
+    [CmdletBinding()]
+    param([AllowNull()] [object] $Tags)
+
+    if ($null -eq $Tags) { return @() }
+    if ($Tags -is [Collections.IDictionary]) {
+        return @($Tags.GetEnumerator() | ForEach-Object { '{0}={1}' -f $_.Key, [string]$_.Value })
+    }
+    return @($Tags.PSObject.Properties | ForEach-Object { '{0}={1}' -f $_.Name, [string]$_.Value })
+}
+
+function Assert-IfsComponentResourceGroupTag {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)] [string] $Name,
+        [Parameter(Mandatory)] [object] $ExpectedTags,
+        [AllowNull()] [object] $ActualTags
+    )
+
+    foreach ($tagName in @('managed-by', 'ifs-project', 'ifs-component', 'ifs-environment')) {
+        $expectedValue = Get-IfsTagValue -Tags $ExpectedTags -Name $tagName
+        if ([string]::IsNullOrWhiteSpace($expectedValue)) {
+            throw "Les parametres Bicep du groupe de ressources '$Name' doivent declarer le tag '$tagName'."
+        }
+        $actualValue = Get-IfsTagValue -Tags $ActualTags -Name $tagName
+        if ([string]::IsNullOrWhiteSpace($actualValue) -or $actualValue -cne $expectedValue) {
+            throw "Le groupe de ressources '$Name' doit porter le tag '$tagName' avec la valeur exacte '$expectedValue'; il ne sera pas utilise par le kit."
+        }
+    }
+}
+
+function Initialize-IfsComponentResourceGroup {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)] [object[]] $Releases,
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $RequiredScopes
+    )
+
+    $scopeSet = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($scope in $RequiredScopes) { [void]$scopeSet.Add($scope) }
+
+    $desiredGroups = @{}
+    foreach ($release in $Releases) {
+        $subscription = [string](Get-IfsObjectProperty -Object $release -Name 'SubscriptionId')
+        $name = [string](Get-IfsObjectProperty -Object $release -Name 'ResourceGroupName')
+        if ([string]::IsNullOrWhiteSpace($subscription) -or [string]::IsNullOrWhiteSpace($name)) {
+            throw "Le groupe de ressources du composant '$($release.Component)' n'a pas ete compile."
+        }
+        $scope = "/subscriptions/$subscription/resourceGroups/$name"
+        if (-not $scopeSet.Contains($scope)) { continue }
+
+        $location = [string](Get-IfsObjectProperty -Object $release -Name 'ResourceGroupLocation')
+        $tags = Get-IfsObjectProperty -Object $release -Name 'ResourceGroupTags'
+        if ([string]::IsNullOrWhiteSpace($location)) { throw "La region du groupe de ressources '$name' n'est pas definie dans les parametres Bicep." }
+        foreach ($tagName in @('managed-by', 'ifs-project', 'ifs-component', 'ifs-environment')) {
+            if ([string]::IsNullOrWhiteSpace((Get-IfsTagValue -Tags $tags -Name $tagName))) {
+                throw "Les parametres Bicep du groupe de ressources '$name' doivent declarer le tag '$tagName'."
+            }
+        }
+
+        $tagArguments = @(ConvertTo-IfsTagArgument -Tags $tags | Sort-Object)
+        $key = '{0}|{1}' -f $subscription, $name
+        if ($desiredGroups.ContainsKey($key)) {
+            $existingPlan = $desiredGroups[$key]
+            if (-not [string]::Equals($existingPlan.Location, $location, [StringComparison]::OrdinalIgnoreCase) -or (($existingPlan.TagArguments -join "`n") -cne ($tagArguments -join "`n"))) {
+                throw "Les releases declarent des parametres incompatibles pour le groupe de ressources '$name' dans l'abonnement '$subscription'."
+            }
+            continue
+        }
+        $desiredGroups[$key] = [pscustomobject]@{
+            SubscriptionId = $subscription
+            Name = $name
+            Location = $location
+            Tags = $tags
+            TagArguments = $tagArguments
+        }
+    }
+
+    if ($desiredGroups.Count -eq 0) { return }
+
+    $missingGroups = [Collections.Generic.List[object]]::new()
+    foreach ($subscription in @($desiredGroups.Values.SubscriptionId | Sort-Object -Unique)) {
+        $resourceGroups = @(Invoke-IfsAzJson -Arguments @('group', 'list', '--subscription', [string]$subscription))
+        foreach ($groupPlan in @($desiredGroups.Values | Where-Object { [string]$_.SubscriptionId -eq [string]$subscription })) {
+            $existing = @($resourceGroups | Where-Object { [string]$_.name -eq $groupPlan.Name } | Select-Object -First 1)
+            if ($existing.Count -eq 0) {
+                $missingGroups.Add($groupPlan)
+                continue
+            }
+
+            if (-not [string]::Equals([string]$existing[0].location, $groupPlan.Location, [StringComparison]::OrdinalIgnoreCase)) {
+                throw "Le groupe de ressources '$($groupPlan.Name)' existe dans la region '$($existing[0].location)' au lieu de '$($groupPlan.Location)'; il ne sera pas utilise par le kit."
+            }
+            Assert-IfsComponentResourceGroupTag -Name $groupPlan.Name -ExpectedTags $groupPlan.Tags -ActualTags (Get-IfsObjectProperty -Object $existing[0] -Name 'tags')
+        }
+    }
+
+    foreach ($groupPlan in $missingGroups) {
+        $arguments = @('group', 'create', '--name', $groupPlan.Name, '--location', $groupPlan.Location, '--subscription', $groupPlan.SubscriptionId)
+        if ($groupPlan.TagArguments.Count -gt 0) { $arguments += @('--tags') + $groupPlan.TagArguments }
+        [void](Invoke-IfsAz -Arguments $arguments -Write)
+    }
+}
+
 function Get-IfsRequiredTemplatePath {
     [CmdletBinding()]
     param(
@@ -661,33 +765,22 @@ function Invoke-IfsAzureSetup {
         $release | Add-Member -NotePropertyName ResourceGroupTags -NotePropertyValue $componentGroup.Tags -Force
     }
 
-    foreach ($group in ($plan.Releases | Group-Object { '{0}|{1}' -f $_.SubscriptionId, $_.ResourceGroupName })) {
-        $release = $group.Group[0]
-        $subscription = [string]$release.SubscriptionId
-        $name = [string]$release.ResourceGroupName
-        $rgList = Invoke-IfsAzJson -Arguments @('group', 'list', '--subscription', $subscription)
-        $existing = @($rgList | Where-Object { [string]$_.name -eq $name } | Select-Object -First 1)
-        if ($existing.Count -eq 0) {
-            $arguments = @('group', 'create', '--name', $name, '--location', [string]$release.ResourceGroupLocation, '--subscription', $subscription)
-            $tagProperties = if ($null -eq $release.ResourceGroupTags) { @() } elseif ($release.ResourceGroupTags -is [Collections.IDictionary]) { @($release.ResourceGroupTags.GetEnumerator() | ForEach-Object { '{0}={1}' -f $_.Key, $_.Value }) } else { @($release.ResourceGroupTags.PSObject.Properties | ForEach-Object { '{0}={1}' -f $_.Name, $_.Value }) }
-            if (@($tagProperties).Count -gt 0) { $arguments += @('--tags') + $tagProperties }
-            [void](Invoke-IfsAz -Arguments $arguments -Write)
-            continue
-        }
-        $actualTags = Get-IfsObjectProperty -Object $existing[0] -Name 'tags'
-        $owner = Get-IfsTagValue -Tags $actualTags -Name 'managed-by'
-        $expectedOwner = Get-IfsTagValue -Tags $release.ResourceGroupTags -Name 'managed-by'
-        if (-not $expectedOwner -or $owner -ne $expectedOwner) {
-            throw "Le groupe de ressources '$name' existe sans la marque de propriete '$expectedOwner'; il ne sera pas utilise par le kit."
-        }
-        foreach ($tagName in @('ifs-project', 'ifs-component', 'ifs-environment')) {
-            $expectedValue = Get-IfsTagValue -Tags $release.ResourceGroupTags -Name $tagName
-            $actualValue = Get-IfsTagValue -Tags $actualTags -Name $tagName
-            if ($actualValue -and $expectedValue -and $actualValue -ne $expectedValue) {
-                throw "Le groupe de ressources '$name' porte une valeur '$tagName' qui ne correspond pas aux parametres Bicep."
-            }
-        }
+    $roleIds = @{
+        KeyVaultSecretsOfficer = $roleKvSecretsOfficer
+        KeyVaultSecretsUser = $roleKvSecretsUser
+        LogAnalyticsReader = $roleLogsReader
+        AcrPull = $roleAcrPull
+        AcrPush = $roleAcrPush
+        ContainerAppsContributor = $roleContainerAppsContributor
     }
+    $rbacScopePlans = @{}
+    $requiredScopes = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($target in $plan.Targets) {
+        $targetScopePlans = @(Get-IfsRbacScopePlan -Target $target -RoleIds $roleIds)
+        $rbacScopePlans[[string]$target.Name] = $targetScopePlans
+        foreach ($scopePlan in $targetScopePlans) { [void]$requiredScopes.Add([string]$scopePlan.Scope) }
+    }
+    Initialize-IfsComponentResourceGroup -Releases $plan.Releases -RequiredScopes @($requiredScopes)
 
     foreach ($target in $plan.Targets) {
         $steps = [Collections.Generic.List[object]]::new()
@@ -734,15 +827,7 @@ function Invoke-IfsAzureSetup {
             [void](Set-IfsRoleAssignment -SubscriptionId $subscription -Scope $storageScope -PrincipalId ([string]$deployIdentity.principalId) -RoleDefinitionId $roleStorage)
             $steps.Add([pscustomobject]@{ Name = 'roles Contributor, Deployment Stack Owner et stockage'; Status = 'attribues' })
 
-            $roleIds = @{
-                KeyVaultSecretsOfficer = $roleKvSecretsOfficer
-                KeyVaultSecretsUser = $roleKvSecretsUser
-                LogAnalyticsReader = $roleLogsReader
-                AcrPull = $roleAcrPull
-                AcrPush = $roleAcrPush
-                ContainerAppsContributor = $roleContainerAppsContributor
-            }
-            foreach ($scopePlan in (Get-IfsRbacScopePlan -Target $target -RoleIds $roleIds)) {
+            foreach ($scopePlan in $rbacScopePlans[[string]$target.Name]) {
                 $condition = Get-IfsRbacCondition -RoleDefinitionIds $scopePlan.RoleDefinitionIds
                 [void](Set-IfsRoleAssignment -SubscriptionId $scopePlan.SubscriptionId -Scope $scopePlan.Scope -PrincipalId ([string]$deployIdentity.principalId) -RoleDefinitionId $roleRbacAdmin -Condition $condition)
             }

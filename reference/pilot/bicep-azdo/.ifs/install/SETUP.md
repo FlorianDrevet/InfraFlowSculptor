@@ -33,6 +33,8 @@ La première commande lit Azure et Azure DevOps, puis affiche les opérations pr
 
 Pour chaque cible, le script prépare le groupe rg-ifs-shop-<cible>, les identités id-ifs-deploy-shop-<cible> et id-ifs-app-shop-<cible>, le compte de stockage technique, le conteneur ifs-operations, les rôles et les connexions fédérées ifs-shop-<cible> et ifs-shop-<cible>-app.
 
+Avant d'attribuer les rôles délégués, il lit les paramètres Bicep et prépare seulement les groupes de composants utilisés comme portées RBAC. Chaque groupe est créé avec le nom, la région et les tags de `resourceGroups.main`. Un groupe déjà présent doit avoir la région et les tags `managed-by`, `ifs-project`, `ifs-component` et `ifs-environment` attendus ; sinon le script s'arrête avant de créer un groupe. Les autres groupes, dont celui de `data`, sont créés par Bicep. Les déclarations de `main.bicep` restent la source de l'état désiré.
+
 Les identités de déploiement reçoivent Contributor, Azure Deployment Stack Owner et un rôle RBAC Administrator avec une condition limitée aux rôles utilisés par le pilote. Les identités applicatives n'obtiennent aucun rôle à l'abonnement ; l'identité app de shared reçoit AcrPush uniquement sur le registre partagé. Le stockage désactive les clés partagées et l'accès anonyme, et active versioning et suppression réversible.
 
 Les objets existants sans marque managed-by: infraflowsculptor restent intacts et provoquent une erreur explicite. Un kit plus ancien que la révision déjà installée est refusé. Les seules suppressions portent sur les identifiants fédérés Azure DevOps ifs-ado-* obsolètes ; aucune ressource contenant des données n'est supprimée.

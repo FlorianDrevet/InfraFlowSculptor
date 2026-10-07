@@ -311,7 +311,11 @@ d'installation, saisir le secret.
    suppression des seuls identifiants fédérés IFS obsolètes (`ifs-ado-*`) et conservation des identifiants étrangers
    ([RG-INS-05](../specs/23-kit-installation.md)) ; rapport final
    par cible ([RG-INS-02](../specs/23-kit-installation.md)) ; noms techniques assainis et raccourcis de façon
-   déterministe ([RG-INS-03](../specs/23-kit-installation.md)).
+   déterministe ([RG-INS-03](../specs/23-kit-installation.md)). Les groupes des composants sont créés en amont
+   uniquement s'ils sont une portée d'attribution déléguée du plan RG-LIA-18 ; leur nom, région et tags viennent
+   de `resourceGroups.main`. Un groupe existant doit avoir la région attendue et les tags `managed-by`,
+   `ifs-project`, `ifs-component` et `ifs-environment` exacts. En cas d'écart, l'installation s'arrête avant toute
+   création de groupe ; le groupe `data`, sans rôle délégué, reste créé par Bicep.
 2. `.ifs/install/install.pipeline.yml` : étapes 1–6 bis, 8 et 9 de [23 § 3.1](../specs/23-kit-installation.md)
    par l'API REST Azure DevOps avec `$(System.AccessToken)` : environnements, approbations (groupe
    « Shop Release Approvers »), **contrôle de verrou exclusif** `lockBehavior: sequential`
@@ -321,10 +325,11 @@ d'installation, saisir le secret.
    de build sur `main` ; vérification de préparation par cible ([DEC-111](../specs/03-decisions.md)) ; rapport.
 3. `.ifs/install/SETUP.md` : liste de contrôle de [23 § 4](../specs/23-kit-installation.md), commandes exactes,
    état de chaque étape (automatique / à faire).
-4. Tests Pester (`reference/release-module/tests/Kit.Tests.ps1`), `az` simulé : `-WhatIf` ne fait aucun appel
-   d'écriture ; seconde exécution n'écrit rien de nouveau ; seul un identifiant fédéré IFS obsolète est supprimé et
-   les identifiants étrangers sont conservés ; kit plus
-   ancien refusé ; condition RBAC contient exactement les rôles attendus.
+4. Tests Pester (`reference/release-module/tests/Kit.Tests.ps1`), `az` simulé : création de groupes distincts avec
+   leur nom, région et tags exacts ; idempotence à la seconde exécution ; refus des groupes existants dont la région,
+   la marque `managed-by` ou les tags IFS sont absents ou incorrects, sans mutation ; `data` n'est pas précréé ;
+   `-WhatIf` ne fait aucun appel d'écriture ; seul un identifiant fédéré IFS obsolète est supprimé et les identifiants
+   étrangers sont conservés ; kit plus ancien refusé ; condition RBAC contient exactement les rôles attendus.
 
 ✅ **Vérification automatique.** Pester vert ; PSScriptAnalyzer propre ; `Test-ReferencePipelines.ps1` inclut
 `install.pipeline.yml`.

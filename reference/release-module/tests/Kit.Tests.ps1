@@ -14,15 +14,119 @@ BeforeAll {
 }
 
 Describe 'Kit installation P-05' {
+    BeforeAll {
+        function New-IfsResourceGroupFixture {
+            $root = Join-Path ([IO.Path]::GetTempPath()) ('ifs-resource-groups-' + [guid]::NewGuid().ToString('N'))
+            $definitions = @(
+                [pscustomobject]@{ Component = 'core'; Target = 'dev'; SubscriptionId = 'sub-dev'; Name = 'rg-shop-core-main-dev' }
+                [pscustomobject]@{ Component = 'orders'; Target = 'prd'; SubscriptionId = 'sub-prd'; Name = 'rg-shop-orders-main-prd' }
+                [pscustomobject]@{ Component = 'data'; Target = 'dev'; SubscriptionId = 'sub-dev'; Name = 'rg-shop-data-main-dev' }
+            )
+            $releases = [Collections.Generic.List[object]]::new()
+            foreach ($definition in $definitions) {
+                $infraPath = Join-Path (Join-Path $root $definition.Component) 'infra'
+                $null = New-Item -ItemType Directory -Path $infraPath -Force
+                $parameterPath = Join-Path $infraPath ('main.{0}.bicepparam' -f $definition.Target)
+                [IO.File]::WriteAllText($parameterPath, '// test fixture', [Text.UTF8Encoding]::new($false))
+                $tags = [ordered]@{
+                    costCenter = 'ecommerce'
+                    'ifs-project' = 'shop'
+                    'ifs-component' = $definition.Component
+                    'ifs-environment' = $definition.Target
+                    'managed-by' = 'infraflowsculptor'
+                }
+                $parameterValues = [pscustomobject]@{
+                    parameters = [pscustomobject]@{
+                        resourceGroups = [pscustomobject]@{
+                            value = [pscustomobject]@{
+                                main = [pscustomobject]@{
+                                    name = $definition.Name
+                                    location = 'francecentral'
+                                    tags = $tags
+                                }
+                            }
+                        }
+                    }
+                }
+                $global:IFS_BICEP_PARAMETERS[$parameterPath] = ConvertTo-Json -InputObject $parameterValues -Depth 20 -Compress
+                $definition | Add-Member -NotePropertyName Location -NotePropertyValue 'francecentral' -Force
+                $definition | Add-Member -NotePropertyName Tags -NotePropertyValue $tags -Force
+                $release = [pscustomobject]@{
+                    Component = $definition.Component
+                    Target = $definition.Target
+                    SubscriptionId = $definition.SubscriptionId
+                    Path = Join-Path $infraPath 'main.bicep'
+                }
+                $releases.Add($release)
+            }
+            return [pscustomobject]@{ Root = $root; Definitions = $definitions; Releases = $releases.ToArray() }
+        }
+
+        function Set-IfsResourceGroupAzHandler {
+            $global:IFS_AZ_HANDLER = {
+                param($Arguments)
+                $global:LASTEXITCODE = 0
+                if ($Arguments[0] -eq 'bicep' -and $Arguments[1] -eq 'build-params') {
+                    $fileIndex = [Array]::IndexOf($Arguments, '--file')
+                    $parameterPath = [string]$Arguments[$fileIndex + 1]
+                    $parameterJson = [string]$global:IFS_BICEP_PARAMETERS[$parameterPath]
+                    return (@{ parametersJson = $parameterJson; templateJson = '{}' } | ConvertTo-Json -Compress)
+                }
+                if ($Arguments[0] -eq 'group' -and $Arguments[1] -eq 'list') {
+                    $subscriptionIndex = [Array]::IndexOf($Arguments, '--subscription')
+                    $subscriptionId = [string]$Arguments[$subscriptionIndex + 1]
+                    $groups = @()
+                    if ($global:IFS_RESOURCE_GROUPS.ContainsKey($subscriptionId)) { $groups = @($global:IFS_RESOURCE_GROUPS[$subscriptionId]) }
+                    return ConvertTo-Json -InputObject $groups -Depth 20 -Compress
+                }
+                if ($Arguments[0] -eq 'group' -and $Arguments[1] -eq 'create') {
+                    $valueFor = {
+                        param([string] $Name)
+                        $index = [Array]::IndexOf($Arguments, $Name)
+                        if ($index -ge 0 -and $index + 1 -lt $Arguments.Count) { return [string]$Arguments[$index + 1] }
+                        return ''
+                    }
+                    $tags = [ordered]@{}
+                    $tagsIndex = [Array]::IndexOf($Arguments, '--tags')
+                    for ($index = $tagsIndex + 1; $index -lt $Arguments.Count; $index++) {
+                        $tagMatch = [regex]::Match([string]$Arguments[$index], '^(?<name>[^=]+)=(?<value>.*)$')
+                        if (-not $tagMatch.Success) { break }
+                        $tags[$tagMatch.Groups['name'].Value] = $tagMatch.Groups['value'].Value
+                    }
+                    $subscriptionId = & $valueFor '--subscription'
+                    $created = [pscustomobject]@{
+                        name = & $valueFor '--name'
+                        location = & $valueFor '--location'
+                        tags = $tags
+                    }
+                    $existing = @()
+                    if ($global:IFS_RESOURCE_GROUPS.ContainsKey($subscriptionId)) { $existing = @($global:IFS_RESOURCE_GROUPS[$subscriptionId]) }
+                    $global:IFS_RESOURCE_GROUPS[$subscriptionId] = @($existing) + $created
+                    return '{}'
+                }
+                return '{}'
+            }
+        }
+
+        function Get-IfsAzArgumentValue {
+            param([string[]] $Arguments, [string] $Name)
+            $index = [Array]::IndexOf($Arguments, $Name)
+            if ($index -ge 0 -and $index + 1 -lt $Arguments.Count) { return [string]$Arguments[$index + 1] }
+            return ''
+        }
+    }
+
     BeforeEach {
         $global:IFS_AZ_CALLS = [Collections.Generic.List[object]]::new()
         $global:IFS_AZ_HANDLER = $null
         $global:IFS_ROLE_ASSIGNMENTS = [Collections.Generic.List[object]]::new()
+        $global:IFS_BICEP_PARAMETERS = @{}
+        $global:IFS_RESOURCE_GROUPS = @{}
     }
 
     AfterAll {
         Remove-Item Function:\global:az -ErrorAction SilentlyContinue
-        Remove-Variable -Name IFS_AZ_CALLS, IFS_AZ_HANDLER, IFS_ROLE_ASSIGNMENTS -Scope Global -ErrorAction SilentlyContinue
+        Remove-Variable -Name IFS_AZ_CALLS, IFS_AZ_HANDLER, IFS_ROLE_ASSIGNMENTS, IFS_BICEP_PARAMETERS, IFS_RESOURCE_GROUPS -Scope Global -ErrorAction SilentlyContinue
     }
 
     It 'ne lance aucune commande az decriture avec WhatIf' {
@@ -218,6 +322,7 @@ Describe 'Kit installation P-05' {
                         ) }
                     ) }
                 }
+                [pscustomobject]@{ Component = 'data'; SubscriptionId = 'sub-dev'; ResourceGroupName = 'rg-data'; Release = [pscustomobject]@{ dependencies = @() } }
             )
         }
 
@@ -229,6 +334,136 @@ Describe 'Kit installation P-05' {
         @($scopes | Where-Object Scope -eq '/subscriptions/sub-dev/resourceGroups/rg-orders').RoleDefinitionIds | Should -Contain $roleIds.ContainerAppsContributor
         @($scopes | Where-Object Scope -eq '/subscriptions/sub-shared/resourceGroups/rg-platform').RoleDefinitionIds | Should -Contain $roleIds.AcrPull
         $scopes.Scope | Should -Not -Contain '/subscriptions/sub-dev'
+        $scopes.Scope | Should -Not -Contain '/subscriptions/sub-dev/resourceGroups/rg-data'
+    }
+
+    It 'cree seulement les groupes utilises comme portees RBAC avec le nom, la region et les tags Bicep' {
+        $fixture = New-IfsResourceGroupFixture
+        try {
+            Set-IfsResourceGroupAzHandler
+            foreach ($release in $fixture.Releases) {
+                $componentGroup = Get-IfsBicepResourceGroup -Release $release
+                $release | Add-Member -NotePropertyName ResourceGroupName -NotePropertyValue $componentGroup.Name -Force
+                $release | Add-Member -NotePropertyName ResourceGroupLocation -NotePropertyValue $componentGroup.Location -Force
+                $release | Add-Member -NotePropertyName ResourceGroupTags -NotePropertyValue $componentGroup.Tags -Force
+            }
+            $requiredScopes = @(
+                '/subscriptions/sub-dev/resourceGroups/rg-shop-core-main-dev'
+                '/subscriptions/sub-prd/resourceGroups/rg-shop-orders-main-prd'
+            )
+
+            InModuleScope IfsInstall -Parameters @{ ReleaseValues = $fixture.Releases; ScopeValues = $requiredScopes } {
+                Initialize-IfsComponentResourceGroup -Releases $ReleaseValues -RequiredScopes $ScopeValues
+            }
+
+            $creates = @($global:IFS_AZ_CALLS | Where-Object { $_[0] -eq 'group' -and $_[1] -eq 'create' })
+            $createdNames = @($creates | ForEach-Object { Get-IfsAzArgumentValue -Arguments $_ -Name '--name' } | Sort-Object)
+            ($createdNames -join ',') | Should -Be 'rg-shop-core-main-dev,rg-shop-orders-main-prd'
+            $createdNames | Should -Not -Contain 'rg-shop-data-main-dev'
+
+            foreach ($definition in @($fixture.Definitions | Where-Object Component -in @('core', 'orders'))) {
+                $create = @($creates | Where-Object { (Get-IfsAzArgumentValue -Arguments $_ -Name '--name') -eq $definition.Name })
+                $create.Count | Should -Be 1
+                Get-IfsAzArgumentValue -Arguments $create[0] -Name '--location' | Should -Be 'francecentral'
+                Get-IfsAzArgumentValue -Arguments $create[0] -Name '--subscription' | Should -Be $definition.SubscriptionId
+                $tagIndex = [Array]::IndexOf([string[]]$create[0], '--tags')
+                $actualTags = @($create[0][($tagIndex + 1)..($create[0].Count - 1)] | Sort-Object)
+                $expectedTags = @($definition.Tags.GetEnumerator() | ForEach-Object { '{0}={1}' -f $_.Key, $_.Value } | Sort-Object)
+                ($actualTags -join '|') | Should -Be ($expectedTags -join '|')
+            }
+        }
+        finally {
+            if (Test-Path -LiteralPath $fixture.Root) { Remove-Item -LiteralPath $fixture.Root -Recurse -Force }
+        }
+    }
+
+    It 'ne recree pas les groupes conformes a la seconde initialisation' {
+        $fixture = New-IfsResourceGroupFixture
+        try {
+            Set-IfsResourceGroupAzHandler
+            foreach ($release in $fixture.Releases) {
+                $componentGroup = Get-IfsBicepResourceGroup -Release $release
+                $release | Add-Member -NotePropertyName ResourceGroupName -NotePropertyValue $componentGroup.Name -Force
+                $release | Add-Member -NotePropertyName ResourceGroupLocation -NotePropertyValue $componentGroup.Location -Force
+                $release | Add-Member -NotePropertyName ResourceGroupTags -NotePropertyValue $componentGroup.Tags -Force
+            }
+            $requiredScopes = @(
+                '/subscriptions/sub-dev/resourceGroups/rg-shop-core-main-dev'
+                '/subscriptions/sub-prd/resourceGroups/rg-shop-orders-main-prd'
+            )
+            $parameters = @{ ReleaseValues = $fixture.Releases; ScopeValues = $requiredScopes }
+
+            InModuleScope IfsInstall -Parameters $parameters {
+                Initialize-IfsComponentResourceGroup -Releases $ReleaseValues -RequiredScopes $ScopeValues
+            }
+            $firstRunCreates = @($global:IFS_AZ_CALLS | Where-Object { $_[0] -eq 'group' -and $_[1] -eq 'create' }).Count
+            InModuleScope IfsInstall -Parameters $parameters {
+                Initialize-IfsComponentResourceGroup -Releases $ReleaseValues -RequiredScopes $ScopeValues
+            }
+            $secondRunCreates = @($global:IFS_AZ_CALLS | Where-Object { $_[0] -eq 'group' -and $_[1] -eq 'create' }).Count
+
+            $firstRunCreates | Should -Be 2
+            $secondRunCreates | Should -Be $firstRunCreates
+        }
+        finally {
+            if (Test-Path -LiteralPath $fixture.Root) { Remove-Item -LiteralPath $fixture.Root -Recurse -Force }
+        }
+    }
+
+    It 'refuse un groupe existant dont la region ou les tags de propriete et de contexte sont incorrects sans mutation' {
+        $tagCases = @(
+            @{ TagName = 'location'; Mode = 'wrong' }
+            @{ TagName = 'managed-by'; Mode = 'missing' }
+            @{ TagName = 'managed-by'; Mode = 'wrong' }
+            @{ TagName = 'ifs-project'; Mode = 'missing' }
+            @{ TagName = 'ifs-project'; Mode = 'wrong' }
+            @{ TagName = 'ifs-component'; Mode = 'missing' }
+            @{ TagName = 'ifs-component'; Mode = 'wrong' }
+            @{ TagName = 'ifs-environment'; Mode = 'missing' }
+            @{ TagName = 'ifs-environment'; Mode = 'wrong' }
+        )
+        foreach ($tagCase in $tagCases) {
+            $fixture = New-IfsResourceGroupFixture
+            try {
+                Set-IfsResourceGroupAzHandler
+                foreach ($release in $fixture.Releases) {
+                    $componentGroup = Get-IfsBicepResourceGroup -Release $release
+                    $release | Add-Member -NotePropertyName ResourceGroupName -NotePropertyValue $componentGroup.Name -Force
+                    $release | Add-Member -NotePropertyName ResourceGroupLocation -NotePropertyValue $componentGroup.Location -Force
+                    $release | Add-Member -NotePropertyName ResourceGroupTags -NotePropertyValue $componentGroup.Tags -Force
+                }
+                $tags = [ordered]@{
+                    'ifs-project' = 'shop'
+                    'ifs-component' = 'orders'
+                    'ifs-environment' = 'prd'
+                    'managed-by' = 'infraflowsculptor'
+                }
+                if ($tagCase.TagName -ne 'location') {
+                    if ($tagCase.Mode -eq 'missing') { $tags.Remove($tagCase.TagName) }
+                    else { $tags[$tagCase.TagName] = 'unexpected' }
+                }
+                $global:IFS_RESOURCE_GROUPS['sub-prd'] = @([pscustomobject]@{
+                    name = 'rg-shop-orders-main-prd'
+                    location = $(if ($tagCase.TagName -eq 'location') { 'northeurope' } else { 'francecentral' })
+                    tags = $tags
+                })
+                $requiredScopes = @(
+                    '/subscriptions/sub-dev/resourceGroups/rg-shop-core-main-dev'
+                    '/subscriptions/sub-prd/resourceGroups/rg-shop-orders-main-prd'
+                )
+
+                {
+                    InModuleScope IfsInstall -Parameters @{ ReleaseValues = $fixture.Releases; ScopeValues = $requiredScopes } {
+                        Initialize-IfsComponentResourceGroup -Releases $ReleaseValues -RequiredScopes $ScopeValues
+                    }
+                } | Should -Throw
+
+                @($global:IFS_AZ_CALLS | Where-Object { $_[0] -eq 'group' -and $_[1] -eq 'create' }).Count | Should -Be 0
+            }
+            finally {
+                if (Test-Path -LiteralPath $fixture.Root) { Remove-Item -LiteralPath $fixture.Root -Recurse -Force }
+            }
+        }
     }
 
     It "attribue Key Vault Secrets Officer à l'identité de déploiement dans core" {
@@ -321,7 +556,22 @@ Describe 'Kit installation P-05' {
                 $global:LASTEXITCODE = 0
                 $command = $Arguments -join ' '
                 if ($Arguments[0] -eq 'bicep' -and $Arguments[1] -eq 'build-params') {
-                    $parameterJson = '{"parameters":{"resourceGroups":{"value":{"main":{"name":"rg-test","location":"francecentral","tags":{"managed-by":"infraflowsculptor"}}}}}}'
+                    $parameterPath = [string]$Arguments[[Array]::IndexOf($Arguments, '--file') + 1]
+                    $component = Split-Path -Path (Split-Path -Parent (Split-Path -Parent $parameterPath)) -Leaf
+                    $parameterStem = [IO.Path]::GetFileNameWithoutExtension($parameterPath)
+                    $target = $parameterStem.Split('.')[1]
+                    $resourceGroup = [pscustomobject]@{
+                        name = "rg-shop-$component-main-$target"
+                        location = 'francecentral'
+                        tags = [ordered]@{
+                            costCenter = 'ecommerce'
+                            'ifs-project' = 'shop'
+                            'ifs-component' = $component
+                            'ifs-environment' = $target
+                            'managed-by' = 'infraflowsculptor'
+                        }
+                    }
+                    $parameterJson = ConvertTo-Json -InputObject ([pscustomobject]@{ parameters = [pscustomobject]@{ resourceGroups = [pscustomobject]@{ value = [pscustomobject]@{ main = $resourceGroup } } } }) -Depth 20 -Compress
                     return (@{ parametersJson = $parameterJson; templateJson = '{}' } | ConvertTo-Json -Compress)
                 }
                 if ($command -eq 'account show') { return '{"tenantId":"11111111-1111-1111-1111-111111111111"}' }
