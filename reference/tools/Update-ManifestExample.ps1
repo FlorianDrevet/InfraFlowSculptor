@@ -25,7 +25,7 @@ if ([string]::IsNullOrWhiteSpace([string]$manifest.project) -or [int]$manifest.r
 
 $files = [System.Collections.Generic.List[object]]::new()
 $relativePaths = [System.Collections.Generic.List[string]]::new()
-foreach ($file in Get-ChildItem -LiteralPath $outputRoot -File -Recurse) {
+foreach ($file in Get-ChildItem -LiteralPath $outputRoot -File -Recurse -Force) {
     $relativePath = [IO.Path]::GetRelativePath($outputRoot, $file.FullName).Replace('\', '/')
     $relativePaths.Add($relativePath)
 }

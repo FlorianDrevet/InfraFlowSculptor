@@ -23,7 +23,7 @@ $commentPrefixes = @{
     '.yaml' = '# Généré par InfraFlowSculptor'
 }
 $utf8Strict = [Text.UTF8Encoding]::new($false, $true)
-$files = @(Get-ChildItem -LiteralPath $pipelineRoot -File -Recurse | Sort-Object FullName)
+$files = @(Get-ChildItem -LiteralPath $pipelineRoot -File -Recurse -Force | Sort-Object FullName)
 if ($files.Count -eq 0) { throw "La sortie de référence est vide : $pipelineRoot" }
 
 $errors = [System.Collections.Generic.List[string]]::new()

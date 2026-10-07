@@ -110,7 +110,7 @@ function Test-LocalReference {
     if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) { throw "$Description introuvable : $Path" }
 }
 
-$yamlFiles = @(Get-ChildItem -LiteralPath $pipelineRoot -Filter '*.yml' -File -Recurse | Sort-Object FullName)
+$yamlFiles = @(Get-ChildItem -LiteralPath $pipelineRoot -Filter '*.yml' -File -Recurse -Force | Sort-Object FullName)
 if ($yamlFiles.Count -ne 24) { throw "24 fichiers YAML sont attendus après P-05 ; trouvé : $($yamlFiles.Count)." }
 $expectedFiles = @(
     '.ifs/templates/infra-pr.yml', '.ifs/templates/infra-ci.yml', '.ifs/templates/infra-release.yml', '.ifs/templates/infra-target-stages.yml',

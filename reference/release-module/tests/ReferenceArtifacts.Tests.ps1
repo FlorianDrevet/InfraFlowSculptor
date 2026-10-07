@@ -14,10 +14,13 @@ Describe "Outils de sortie de référence" {
         try {
             $null = New-Item -ItemType Directory -Path (Join-Path $outputRoot "z") -Force
             $null = New-Item -ItemType Directory -Path (Join-Path $outputRoot "a") -Force
+            $null = New-Item -ItemType Directory -Path (Join-Path $outputRoot ".ifs") -Force
             $firstContent = ConvertTo-Json -InputObject ([ordered]@{ a = 1 }) -Compress
             $lastContent = ConvertTo-Json -InputObject ([ordered]@{ b = 2 }) -Compress
+            $hiddenContent = ConvertTo-Json -InputObject ([ordered]@{ hidden = $true }) -Compress
             [IO.File]::WriteAllText((Join-Path $outputRoot "z/last.json"), $lastContent + "`n", $encoding)
             [IO.File]::WriteAllText((Join-Path $outputRoot "a/first.json"), $firstContent + "`n", $encoding)
+            [IO.File]::WriteAllText((Join-Path $outputRoot ".ifs/hidden.json"), $hiddenContent + "`n", $encoding)
             $null = New-Item -ItemType Directory -Path (Split-Path -Parent $manifestPath) -Force
             $manifestSeed = [ordered]@{
                 schema = "ifs-manifest/v1"
@@ -36,9 +39,10 @@ Describe "Outils de sortie de référence" {
             $manifest = [IO.File]::ReadAllText($manifestPath) | ConvertFrom-Json -AsHashtable
 
             [Convert]::ToHexString($secondRun) | Should -Be ([Convert]::ToHexString($firstRun))
-            (@($manifest.files | ForEach-Object { $_.path }) -join ",") | Should -Be "a/first.json,z/last.json"
-            $manifest.files[0].sha256 | Should -Be (Get-FileHash (Join-Path $outputRoot "a/first.json") -Algorithm SHA256).Hash.ToLowerInvariant()
-            $manifest.files[1].sha256 | Should -Be (Get-FileHash (Join-Path $outputRoot "z/last.json") -Algorithm SHA256).Hash.ToLowerInvariant()
+            (@($manifest.files | ForEach-Object { $_.path }) -join ",") | Should -Be ".ifs/hidden.json,a/first.json,z/last.json"
+            $manifest.files[0].sha256 | Should -Be (Get-FileHash (Join-Path $outputRoot ".ifs/hidden.json") -Algorithm SHA256).Hash.ToLowerInvariant()
+            $manifest.files[1].sha256 | Should -Be (Get-FileHash (Join-Path $outputRoot "a/first.json") -Algorithm SHA256).Hash.ToLowerInvariant()
+            $manifest.files[2].sha256 | Should -Be (Get-FileHash (Join-Path $outputRoot "z/last.json") -Algorithm SHA256).Hash.ToLowerInvariant()
             ($secondRun[0..2] -join ",") | Should -Not -Be "239,187,191"
             $secondRun[$secondRun.Length - 1] | Should -Be 10
         }
@@ -55,6 +59,22 @@ Describe "Outils de sortie de référence" {
             [byte[]]$badBytes = [byte[]]@(239, 187, 191) + $badBody + [byte[]]@(13)
             [IO.File]::WriteAllBytes((Join-Path $tempRoot "bad.ps1"), $badBytes)
             { & $script:determinismPath -PipelineRoot $tempRoot } | Should -Throw
+        }
+        finally {
+            if (Test-Path -LiteralPath $tempRoot) { Remove-Item -LiteralPath $tempRoot -Recurse -Force }
+        }
+    }
+
+    It "vérifie aussi les fichiers dans les répertoires cachés" {
+        $tempRoot = Join-Path ([IO.Path]::GetTempPath()) ("ifs-hidden-output-" + [guid]::NewGuid().ToString("N"))
+        $hiddenRoot = Join-Path $tempRoot ".ifs"
+        try {
+            $null = New-Item -ItemType Directory -Path $hiddenRoot -Force
+            [IO.File]::WriteAllText((Join-Path $hiddenRoot "missing-header.ps1"), "Write-Output `"ok`"`n", [Text.UTF8Encoding]::new($false))
+            $failure = $null
+            try { & $script:determinismPath -PipelineRoot $tempRoot }
+            catch { $failure = $_.Exception.Message }
+            $failure | Should -Match "en-tête généré absent"
         }
         finally {
             if (Test-Path -LiteralPath $tempRoot) { Remove-Item -LiteralPath $tempRoot -Recurse -Force }
