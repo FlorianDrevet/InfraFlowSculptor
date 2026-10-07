@@ -1,0 +1,492 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: src/backend/global.json
+
+      - name: Cache NuGet
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('src/backend/Directory.Packages.props', 'src/backend/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: dotnet restore src/backend/InfraFlowSculptor.slnx
+
+      - name: Build without warnings
+        run: dotnet build src/backend/InfraFlowSculptor.slnx --configuration Release --no-restore --warnaserror
+
+      - name: OpenAPI artifact is current
+        run: git diff --exit-code -- src/backend/InfraFlowSculptor.Api/openapi/v1.json
+
+      - name: Test backend projects and collect coverage
+        shell: bash
+        run: |
+          set -uo pipefail
+          results="$RUNNER_TEMP/backend-test-results"
+          failed=0
+          mkdir -p "$results"
+          for project in \
+            src/backend/tests/InfraFlowSculptor.Api.Tests/InfraFlowSculptor.Api.Tests.csproj \
+            src/backend/tests/InfraFlowSculptor.Application.Tests/InfraFlowSculptor.Application.Tests.csproj \
+            src/backend/tests/InfraFlowSculptor.Architecture.Tests/InfraFlowSculptor.Architecture.Tests.csproj \
+            src/backend/tests/InfraFlowSculptor.Domain.Tests/InfraFlowSculptor.Domain.Tests.csproj \
+            src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/InfraFlowSculptor.Infrastructure.Tests.csproj; do
+            name="${project##*/}"
+            name="${name%.csproj}"
+            if ! dotnet test "$project" --configuration Release --no-build --no-restore \
+              --collect:"XPlat Code Coverage" \
+              --logger "trx;LogFileName=$name.trx" \
+              --results-directory "$results"; then
+              failed=1
+            fi
+          done
+          exit "$failed"
+
+      - name: Publish backend test results and coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-test-results
+          path: ${{ runner.temp }}/backend-test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+  acceptance:
+    name: Acceptance tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: src/backend/global.json
+
+      - name: Cache NuGet
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('src/backend/Directory.Packages.props', 'src/backend/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: dotnet restore src/backend/InfraFlowSculptor.slnx
+
+      - name: Prepare acceptance test results
+        run: mkdir -p "$RUNNER_TEMP/acceptance-test-results"
+
+      - name: Run acceptance tests with Docker
+        run: >-
+          dotnet test
+          src/backend/tests/InfraFlowSculptor.Acceptance.Tests/InfraFlowSculptor.Acceptance.Tests.csproj
+          --configuration Release --no-restore
+          --logger "trx;LogFileName=InfraFlowSculptor.Acceptance.Tests.trx"
+          --results-directory "$RUNNER_TEMP/acceptance-test-results"
+
+      - name: Publish acceptance test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: acceptance-test-results
+          path: ${{ runner.temp }}/acceptance-test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/frontend/ifs-web
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: src/frontend/ifs-web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Prepare unit-test results
+        run: mkdir -p test-results
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:ci
+
+      - name: Publish unit-test JUnit results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-test-results
+          path: src/frontend/ifs-web/test-results/*.xml
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Production build
+        run: npm run build
+
+      - name: Generated API client is current
+        run: npm run api:check
+
+  supply-chain:
+    name: Supply chain
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: src/backend/global.json
+
+      - name: Cache NuGet
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('src/backend/Directory.Packages.props', 'src/backend/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore .NET dependencies
+        run: dotnet restore src/backend/InfraFlowSculptor.slnx
+
+      - name: Reject critical vulnerable .NET packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/dotnet-vulnerabilities.json"
+          dotnet package list --project src/backend/InfraFlowSculptor.slnx \
+            --include-transitive --vulnerable --format json --output-version 1 > "$report"
+          if ! jq -e '(if ((.problems // []) | type) == "array" then ((.problems // []) | length) == 0 else false end) and (([.. | objects | select(.severity? == "Critical")] | length) == 0)' "$report" >/dev/null; then
+            echo "::error::Critical vulnerable .NET packages were found, or the audit report could not be parsed."
+            jq '.' "$report"
+            exit 1
+          fi
+          echo "No critical vulnerable .NET packages."
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: src/frontend/ifs-web/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: src/frontend/ifs-web
+        run: npm ci --no-audit --no-fund
+
+      - name: Reject critical vulnerable npm packages
+        working-directory: src/frontend/ifs-web
+        run: |
+          npm audit --audit-level=critical
+          echo "No critical vulnerable npm packages."
+
+  artifact-sanitization:
+    name: CI artifact sanitization
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify CI artifact redaction helpers
+        run: python3 -m unittest discover --start-directory .github/scripts --pattern test_redact_ci_artifacts.py --verbose
+
+  e2e:
+    name: End-to-end tests
+    needs: artifact-sanitization
+    if: ${{ github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login != 'dependabot[bot]')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v7
+        id: checkout
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: src/backend/global.json
+
+      - name: Cache NuGet
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('src/backend/Directory.Packages.props', 'src/backend/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: src/frontend/ifs-web/package-lock.json
+
+      - name: Install Aspire CLI
+        run: npm install --global @microsoft/aspire-cli@13.5.3
+
+      - name: Verify Aspire CLI installation
+        run: aspire --version
+
+      - name: Install frontend dependencies
+        working-directory: src/frontend/ifs-web
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Playwright Chromium and system dependencies
+        working-directory: src/frontend/ifs-web
+        run: npx playwright install --with-deps chromium
+
+      - name: Start Aspire, wait for resources, and run Playwright
+        timeout-minutes: 50
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          DOTNET_ENVIRONMENT: Development
+          ASPIRE_CLI_START_TIMEOUT: "300"
+          AppHost__PersistentContainers: "false"
+          AppHost__EnableDevelopmentExtras: "false"
+          Parameters__postgres-password: ci-postgres-password
+          Parameters__keycloak-admin-password: ci-keycloak-password
+          Parameters__servicebus-sql-pwd: Ci-ServiceBus-Password-2026!
+          Parameters__redis-password: Ci-Redis-Password-2026!
+          IFS_E2E_PASSWORD: ${{ secrets.IFS_E2E_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo_root="$GITHUB_WORKSPACE"
+          artifact_dir="$repo_root/artifacts/apphost"
+          apphost="$repo_root/src/backend/InfraFlowSculptor.AppHost/InfraFlowSculptor.AppHost.csproj"
+          run_log="$RUNNER_TEMP/aspire-run.log"
+          resource_log="$RUNNER_TEMP/aspire-resources.log"
+          apphost_started=0
+          active_pid=""
+          cancelled=0
+          if [ -z "${IFS_E2E_PASSWORD:-}" ]; then
+            echo '::error::The IFS_E2E_PASSWORD repository secret is required.'
+            exit 1
+          fi
+          echo "::add-mask::$IFS_E2E_PASSWORD"
+          python3 "$repo_root/.github/scripts/set_e2e_realm_password.py"
+          mkdir -p "$artifact_dir"
+
+          # Aspire's Linux AppHost backchannel requires a private Unix socket directory.
+          mkdir -p "$HOME/.aspire/cli/bch"
+          chmod 700 "$HOME/.aspire/cli/bch"
+
+          redact_aspire_output() {
+            python3 "$repo_root/.github/scripts/redact_aspire_log.py" "$1"
+          }
+
+          run_interruptible() {
+            setsid --wait "$@" &
+            active_pid=$!
+            local exit_code=0
+            wait "$active_pid" || exit_code=$?
+            active_pid=""
+            return "$exit_code"
+          }
+
+          run_logged() {
+            local label="$1"
+            shift
+            local raw_log="$RUNNER_TEMP/${label}-raw.log"
+            local safe_log="$RUNNER_TEMP/${label}-redacted.log"
+            local exit_code=0
+            run_interruptible "$@" > "$raw_log" 2>&1 || exit_code=$?
+            if ! redact_aspire_output "$raw_log" > "$safe_log"; then
+              rm -f -- "$raw_log" "$safe_log"
+              printf 'Command output omitted because redaction could not verify it (exit code: %s).\n' "$exit_code" \
+                > "$artifact_dir/${label}-output-omitted.txt"
+              echo "::warning::Omitted $label output because it could not be safely redacted."
+              return "$exit_code"
+            fi
+            cat "$safe_log"
+            rm -f -- "$raw_log" "$safe_log"
+            return "$exit_code"
+          }
+
+          cancel_step() {
+            local exit_code="$1"
+            cancelled=1
+            trap '' INT TERM
+            if [ -n "$active_pid" ]; then
+              kill -TERM -- "-$active_pid" 2>/dev/null || kill -TERM "$active_pid" 2>/dev/null || true
+              sleep 5
+              kill -KILL -- "-$active_pid" 2>/dev/null || kill -KILL "$active_pid" 2>/dev/null || true
+            fi
+            if [ "$apphost_started" -eq 1 ]; then
+              timeout 30s aspire logs --apphost "$apphost" --non-interactive --nologo --format Table \
+                > "$resource_log" 2>&1 || true
+              redact_aspire_output "$resource_log" > "$artifact_dir/resources.log" || \
+                printf '%s\n' 'Aspire resource log redaction failed; raw output omitted.' > "$artifact_dir/resources.log"
+              if [ -f "$run_log" ]; then
+                redact_aspire_output "$run_log" > "$artifact_dir/aspire-run.log" || \
+                  printf '%s\n' 'Aspire run log redaction failed; raw output omitted.' > "$artifact_dir/aspire-run.log"
+              fi
+              copy_aspire_cli_logs
+              timeout 15s aspire stop --apphost "$apphost" --non-interactive --nologo >/dev/null 2>&1 || true
+            fi
+            exit "$exit_code"
+          }
+
+          copy_aspire_cli_logs() {
+            local cli_log_dir="$HOME/.aspire/logs"
+            local cli_log
+            [ -d "$cli_log_dir" ] || return 0
+            mkdir -p "$artifact_dir/cli-logs"
+            for cli_log in "$cli_log_dir"/cli_*.log; do
+              [ -f "$cli_log" ] || continue
+              [ "$(wc -c < "$cli_log")" -lt 5242880 ] || continue
+              if ! redact_aspire_output "$cli_log" > "$artifact_dir/cli-logs/${cli_log##*/}"; then
+                printf '%s\n' 'Aspire CLI log redaction failed; raw output omitted.' \
+                  > "$artifact_dir/cli-logs/${cli_log##*/}"
+              fi
+            done
+          }
+
+          cleanup() {
+            local exit_code=$?
+            trap - EXIT
+            set +e
+            if [ "$cancelled" -eq 1 ]; then
+              exit "$exit_code"
+            fi
+            if [ "$apphost_started" -eq 1 ]; then
+              run_interruptible timeout 15s aspire ps --non-interactive --nologo --format Json > "$RUNNER_TEMP/aspire-processes.log" 2>&1
+              redact_aspire_output "$RUNNER_TEMP/aspire-processes.log" > "$artifact_dir/aspire-processes.log" || \
+                printf '%s\n' 'Aspire process listing redaction failed; raw output omitted.' > "$artifact_dir/aspire-processes.log"
+              run_interruptible timeout 30s aspire logs --apphost "$apphost" --non-interactive --nologo --format Table > "$resource_log" 2>&1
+              redact_aspire_output "$resource_log" > "$artifact_dir/resources.log" || \
+                printf '%s\n' 'Aspire resource log redaction failed; raw output omitted.' > "$artifact_dir/resources.log"
+              run_interruptible timeout 30s aspire stop --apphost "$apphost" --non-interactive --nologo \
+                > "$RUNNER_TEMP/aspire-stop.log" 2>&1
+              redact_aspire_output "$RUNNER_TEMP/aspire-stop.log" > "$artifact_dir/aspire-stop.log" || \
+                printf '%s\n' 'Aspire stop output redaction failed; raw output omitted.' > "$artifact_dir/aspire-stop.log"
+            fi
+            if [ "$exit_code" -ne 0 ]; then
+              copy_aspire_cli_logs
+            fi
+            if [ -f "$run_log" ]; then
+              redact_aspire_output "$run_log" > "$artifact_dir/aspire-run.log" || \
+                printf '%s\n' 'Aspire run log redaction failed; raw output omitted.' > "$artifact_dir/aspire-run.log"
+            fi
+            exit "$exit_code"
+          }
+          trap cleanup EXIT
+          trap 'cancel_step 130' INT
+          trap 'cancel_step 143' TERM
+
+          run_status=0
+          apphost_started=1
+          run_interruptible timeout --signal=TERM --kill-after=20s 6m aspire run --detach --apphost "$apphost" --non-interactive --nologo >"$run_log" 2>&1 || run_status=$?
+          if ! redact_aspire_output "$run_log" > "$artifact_dir/aspire-run.log"; then
+            printf '%s\n' 'Aspire run log redaction failed; raw output omitted.' > "$artifact_dir/aspire-run.log"
+            echo '::error::Could not safely redact the Aspire run log.'
+            exit 1
+          fi
+          if [ "$run_status" -ne 0 ]; then
+            cat "$artifact_dir/aspire-run.log"
+            exit "$run_status"
+          fi
+
+          ps_status=0
+          timeout 15s aspire ps --non-interactive --nologo --format Json > "$RUNNER_TEMP/aspire-processes-after-start.log" 2>&1 || ps_status=$?
+          if ! redact_aspire_output "$RUNNER_TEMP/aspire-processes-after-start.log" > "$artifact_dir/aspire-processes-after-start.log"; then
+            printf '%s\n' 'Aspire process listing redaction failed; raw output omitted.' > "$artifact_dir/aspire-processes-after-start.log"
+            echo '::error::Could not safely redact the Aspire process listing.'
+            exit 1
+          fi
+          if [ "$ps_status" -ne 0 ]; then
+            echo '::warning::aspire ps failed; continuing with resource readiness checks.'
+          fi
+          run_logged aspire-wait-api timeout --signal=TERM --kill-after=5s 6m \
+            aspire wait api --timeout 300 --apphost "$apphost" --non-interactive
+          run_logged aspire-wait-web timeout --signal=TERM --kill-after=5s 6m \
+            aspire wait web --status up --timeout 300 --apphost "$apphost" --non-interactive
+          run_logged web-health curl --fail --silent --show-error --retry 24 --retry-delay 5 --retry-connrefused \
+            --retry-max-time 120 --max-time 5 --output /dev/null http://localhost:4200/
+          run_logged api-health curl --insecure --fail --silent --show-error --retry 24 --retry-delay 5 --retry-connrefused \
+            --retry-max-time 120 --max-time 5 --output /dev/null https://localhost:7246/health
+          pushd "$repo_root/src/frontend/ifs-web" >/dev/null
+          run_logged playwright-e2e timeout --signal=TERM --kill-after=10s 18m npm run e2e
+          popd >/dev/null
+
+      - name: Redact Playwright reports and traces
+        id: redact
+        if: ${{ always() && steps.checkout.outcome == 'success' }}
+        timeout-minutes: 4
+        env:
+          IFS_E2E_PASSWORD: ${{ secrets.IFS_E2E_PASSWORD }}
+          Parameters__postgres-password: ci-postgres-password
+          Parameters__keycloak-admin-password: ci-keycloak-password
+          Parameters__servicebus-sql-pwd: Ci-ServiceBus-Password-2026!
+          Parameters__redis-password: Ci-Redis-Password-2026!
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo_root="$GITHUB_WORKSPACE"
+          results_dir="$repo_root/src/frontend/ifs-web/test-results"
+          report_dir="$repo_root/src/frontend/ifs-web/playwright-report"
+          captures_dir="$repo_root/src/frontend/ifs-web/e2e/__captures__"
+          if [ ! -d "$results_dir" ] && [ ! -d "$report_dir" ] && [ ! -d "$captures_dir" ]; then
+            exit 0
+          fi
+          if [ -z "${IFS_E2E_PASSWORD:-}" ]; then
+            echo '::warning::The E2E secret is unavailable; omitting only unverified Playwright artifacts.'
+            rm -rf -- "$results_dir" "$report_dir" "$captures_dir"
+            exit 0
+          fi
+          echo "::add-mask::$IFS_E2E_PASSWORD"
+          if ! python3 "$repo_root/.github/scripts/redact_playwright_traces.py" \
+            "$results_dir" "$report_dir" "$captures_dir"; then
+            echo '::error::Playwright artifact redaction failed; removing unverified artifacts.'
+            rm -rf -- "$results_dir" "$report_dir" "$captures_dir"
+            exit 1
+          fi
+
+      - name: Publish sanitized AppHost logs
+        if: ${{ always() && steps.checkout.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-apphost-logs
+          path: artifacts/apphost
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Publish sanitized Playwright reports, traces, and captures
+        if: ${{ always() && steps.redact.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-playwright-artifacts
+          path: |
+            src/frontend/ifs-web/playwright-report
+            src/frontend/ifs-web/test-results
+            src/frontend/ifs-web/e2e/__captures__
+          if-no-files-found: warn
+          retention-days: 7

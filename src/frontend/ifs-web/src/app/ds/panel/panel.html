@@ -1,0 +1,22 @@
+<section class="st-panel">
+  @if (title() || subtitle()) {
+    <div class="st-panel-head">
+      <div class="st-panel-titles">
+        @if (title()) {
+          @if (level() === 2) {
+            <h2 class="st-panel-title">{{ title() }}</h2>
+          } @else {
+            <h3 class="st-panel-title">{{ title() }}</h3>
+          }
+        }
+        @if (subtitle()) {
+          <span class="st-panel-subtitle">{{ subtitle() }}</span>
+        }
+      </div>
+      <ng-content select="[actions]" />
+    </div>
+  }
+  <div class="st-panel-body" [class.st-panel-pad]="padded()">
+    <ng-content />
+  </div>
+</section>

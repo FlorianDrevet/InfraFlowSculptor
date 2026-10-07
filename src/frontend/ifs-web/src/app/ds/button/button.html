@@ -1,0 +1,66 @@
+<ng-template #content><ng-content /></ng-template>
+
+@if (href()) {
+  <a
+    #nativeControl
+    class="st-btn"
+    [class.st-btn-primary]="variant() === 'primary'"
+    [class.st-btn-secondary]="variant() === 'secondary'"
+    [class.st-btn-ghost]="variant() === 'ghost'"
+    [class.st-btn-danger]="variant() === 'danger'"
+    [class.st-btn-sm]="size() === 'sm'"
+    [class.st-btn-lg]="size() === 'lg'"
+    [class.st-btn-full-width]="fullWidth()"
+    [href]="href()"
+    [attr.aria-label]="accessibleLabel() || null"
+    [attr.aria-disabled]="disabled() ? 'true' : null"
+    [attr.tabindex]="disabled() ? -1 : null"
+  >
+    @if (icon() && iconPosition() === 'start') {
+      <app-ds-icon
+        [name]="icon()!"
+        [size]="size() === 'sm' ? 14 : 16"
+        [strokeWidth]="variant() === 'primary' ? 2 : 1.75"
+      />
+    }
+    <ng-container [ngTemplateOutlet]="content" />
+    @if (icon() && iconPosition() === 'end') {
+      <app-ds-icon
+        [name]="icon()!"
+        [size]="size() === 'sm' ? 14 : 16"
+        [strokeWidth]="variant() === 'primary' ? 2 : 1.75"
+      />
+    }
+  </a>
+} @else {
+  <button
+    #nativeControl
+    class="st-btn"
+    [class.st-btn-primary]="variant() === 'primary'"
+    [class.st-btn-secondary]="variant() === 'secondary'"
+    [class.st-btn-ghost]="variant() === 'ghost'"
+    [class.st-btn-danger]="variant() === 'danger'"
+    [class.st-btn-sm]="size() === 'sm'"
+    [class.st-btn-lg]="size() === 'lg'"
+    [class.st-btn-full-width]="fullWidth()"
+    [type]="type()"
+    [disabled]="disabled()"
+    [attr.aria-label]="accessibleLabel() || null"
+  >
+    @if (icon() && iconPosition() === 'start') {
+      <app-ds-icon
+        [name]="icon()!"
+        [size]="size() === 'sm' ? 14 : 16"
+        [strokeWidth]="variant() === 'primary' ? 2 : 1.75"
+      />
+    }
+    <ng-container [ngTemplateOutlet]="content" />
+    @if (icon() && iconPosition() === 'end') {
+      <app-ds-icon
+        [name]="icon()!"
+        [size]="size() === 'sm' ? 14 : 16"
+        [strokeWidth]="variant() === 'primary' ? 2 : 1.75"
+      />
+    }
+  </button>
+}

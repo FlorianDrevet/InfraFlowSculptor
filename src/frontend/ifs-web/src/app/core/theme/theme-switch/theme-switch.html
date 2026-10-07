@@ -1,0 +1,8 @@
+@if (theme.availableThemes.length > 1) {
+  <app-ds-segmented
+    [options]="options()"
+    [value]="theme.preference()"
+    (valueChange)="setPreference($event ?? '')"
+    [ariaLabel]="languageLabel()"
+  />
+}

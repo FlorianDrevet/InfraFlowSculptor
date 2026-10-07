@@ -1,0 +1,17 @@
+<div
+  class="st-banner"
+  [class.st-banner-ember]="tone() === 'ember'"
+  [class.st-banner-danger]="tone() === 'danger'"
+  [class.st-banner-success]="tone() === 'success'"
+  [class.st-banner-signal]="tone() === 'signal'"
+  [attr.role]="tone() === 'danger' ? 'alert' : 'status'"
+>
+  <app-ds-icon [name]="iconName()" [size]="16" [style.marginTop.px]="2" />
+  <div class="st-banner-body">
+    @if (title()) {
+      <span class="st-banner-title">{{ title() }}</span>
+    }
+    <span class="st-banner-text"><ng-content /></span>
+  </div>
+  <ng-content select="[action]" />
+</div>

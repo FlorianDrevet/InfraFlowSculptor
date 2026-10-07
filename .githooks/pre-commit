@@ -1,0 +1,2 @@
+#!/bin/sh
+python tools/plan/gate.py precommit || exit 1

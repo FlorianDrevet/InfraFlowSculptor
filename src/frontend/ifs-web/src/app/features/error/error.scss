@@ -1,0 +1,31 @@
+.error-page {
+  display: grid;
+  justify-items: start;
+  gap: var(--ifs-space-3);
+  max-width: 640px;
+  margin: var(--ifs-space-12) auto;
+  padding: var(--ifs-space-6);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+}
+
+.error-page__code {
+  margin: 0;
+  color: var(--ifs-danger-text);
+  font-family: var(--ifs-font-mono);
+}
+
+.error-page h1,
+.error-page p {
+  margin: 0;
+}
+
+.error-page__reference {
+  color: var(--ifs-text-2);
+}
+
+.error-page__reference code {
+  overflow-wrap: anywhere;
+  color: var(--ifs-text);
+}

@@ -1,0 +1,57 @@
+:host {
+  display: inline-flex;
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+
+.resource-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.resource-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.resource-icon--tile {
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-3);
+  font-family: var(--ifs-font-mono);
+  font-weight: 500;
+}
+
+.resource-icon--compute {
+  color: var(--ifs-cat-compute);
+}
+
+.resource-icon--data {
+  color: var(--ifs-cat-data);
+}
+
+.resource-icon--messaging {
+  color: var(--ifs-cat-messaging);
+}
+
+.resource-icon--security {
+  color: var(--ifs-cat-security);
+}
+
+.resource-icon--observability {
+  color: var(--ifs-cat-observability);
+}
+
+.resource-icon--network {
+  color: var(--ifs-cat-network);
+}
+
+.resource-icon--platform {
+  color: var(--ifs-cat-platform);
+}
+
+.resource-icon--ai {
+  color: var(--ifs-cat-ai);
+}

@@ -1,0 +1,15 @@
+<span class="st-toggle">
+  <button
+    class="st-toggle-track"
+    type="button"
+    role="switch"
+    [attr.aria-checked]="checked()"
+    [attr.aria-label]="ariaLabel() || label() || null"
+    (click)="toggle()"
+  >
+    <span class="st-toggle-thumb"></span>
+  </button>
+  @if (label()) {
+    <span>{{ label() }}</span>
+  }
+</span>

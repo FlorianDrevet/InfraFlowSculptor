@@ -1,0 +1,43 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+
+.shell {
+  display: flex;
+  min-height: 100dvh;
+  overflow-x: clip;
+}
+
+.shell__workspace {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.shell__content {
+  width: min(100%, var(--ifs-content-max));
+  min-width: 0;
+  flex: 1;
+  align-self: center;
+  padding: var(--ifs-space-8);
+}
+
+.shell__mobile-menu {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .shell__sidebar {
+    display: none;
+  }
+
+  .shell__mobile-menu {
+    display: block;
+  }
+
+  .shell__content {
+    padding: var(--ifs-space-4);
+  }
+}

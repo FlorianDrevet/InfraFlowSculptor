@@ -1,0 +1,73 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  color: var(--ifs-text);
+  background: var(--ifs-bg);
+  font-family: var(--ifs-font-sans);
+  font-size: var(--ifs-text-body);
+  font-weight: var(--ifs-font-weight-body);
+  line-height: var(--ifs-line-height-body);
+}
+
+body {
+  min-height: 100vh;
+}
+
+a {
+  color: var(--ifs-signal-text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ifs-signal);
+  outline-offset: 2px;
+}
+
+::selection {
+  color: var(--ifs-text);
+  background: var(--ifs-signal-soft);
+}
+
+code,
+kbd,
+.mono {
+  font-family: var(--ifs-font-mono);
+}
+
+h1 {
+  font-size: var(--ifs-text-page-title);
+  font-weight: var(--ifs-font-weight-page-title);
+  line-height: var(--ifs-line-height-page-title);
+  letter-spacing: var(--ifs-letter-spacing-page-title);
+}
+
+h2 {
+  font-size: var(--ifs-text-section-title);
+  font-weight: var(--ifs-font-weight-section-title);
+  line-height: var(--ifs-line-height-section-title);
+}
+
+* {
+  scrollbar-color: var(--ifs-surface-3) var(--ifs-bg);
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  inline-size: var(--ifs-space-2);
+  block-size: var(--ifs-space-2);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--ifs-bg);
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid var(--ifs-bg);
+  border-radius: var(--ifs-radius-pill);
+  background: var(--ifs-surface-3);
+}

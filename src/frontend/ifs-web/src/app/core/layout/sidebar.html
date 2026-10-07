@@ -1,0 +1,32 @@
+<aside class="sidebar" [class.sidebar--drawer]="drawer()">
+  <a class="sidebar__brand" routerLink="/" [attr.aria-label]="'shell.home' | transloco">
+    <app-brand [compact]="true" />
+  </a>
+
+  <nav class="sidebar__navigation" [attr.aria-label]="'shell.primaryNavigation' | transloco">
+    @for (entry of navigation.entries(); track entry.id) {
+      <a
+        class="sidebar__link"
+        [routerLink]="entry.path"
+        routerLinkActive="sidebar__link--active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        ariaCurrentWhenActive="page"
+      >
+        <app-ds-icon name="home" [size]="16" />
+        <span>{{ entry.labelKey | transloco }}</span>
+      </a>
+    }
+  </nav>
+
+  <footer class="sidebar__footer">
+    <app-theme-switch />
+    <app-language-switch />
+    <a class="sidebar__account" routerLink="/profile">
+      <span class="sidebar__avatar" aria-hidden="true">{{
+        accountName().slice(0, 1).toUpperCase()
+      }}</span>
+      <span class="sidebar__account-name">{{ accountName() }}</span>
+      <app-ds-icon name="chevron-down" [size]="14" />
+    </a>
+  </footer>
+</aside>

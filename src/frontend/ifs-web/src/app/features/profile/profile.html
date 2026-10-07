@@ -1,0 +1,12 @@
+<section class="profile">
+  <h1>{{ 'profile.title' | transloco }}</h1>
+  @if (authenticated().isAuthenticated) {
+    <p>
+      {{ 'profile.signedInAs' | transloco }}
+      <strong>{{ userData().userData?.name ?? userData().userData?.sub }}</strong>
+    </p>
+    <button type="button" (click)="logout()">{{ 'profile.signOut' | transloco }}</button>
+  } @else {
+    <p>{{ 'profile.notSignedIn' | transloco }}</p>
+  }
+</section>

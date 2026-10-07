@@ -1,0 +1,34 @@
+<svg
+  class="st-icon"
+  [attr.width]="size()"
+  [attr.height]="size()"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  [attr.stroke-width]="strokeWidth()"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  [attr.role]="label() ? 'img' : null"
+  [attr.aria-label]="label() || null"
+  [attr.aria-hidden]="label() ? null : 'true'"
+>
+  @for (part of paths(); track $index) {
+    @switch (part.kind) {
+      @case ('path') {
+        <path [attr.d]="part.d" />
+      }
+      @case ('circle') {
+        <circle [attr.cx]="part.cx" [attr.cy]="part.cy" [attr.r]="part.r" />
+      }
+      @case ('rect') {
+        <rect
+          [attr.x]="part.x"
+          [attr.y]="part.y"
+          [attr.width]="part.width"
+          [attr.height]="part.height"
+          [attr.rx]="part.rx"
+        />
+      }
+    }
+  }
+</svg>

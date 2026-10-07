@@ -1,0 +1,23 @@
+<div class="generated-name">
+  @if (env()) {
+    <span class="generated-name__env">{{ env() }}</span>
+  }
+  <span class="generated-name__value">{{ value() }}</span>
+  @if (available() === true) {
+    <app-ds-icon
+      class="generated-name__available"
+      name="check"
+      [size]="14"
+      [strokeWidth]="2"
+      label="Disponible"
+    />
+  } @else if (available() === false) {
+    <app-ds-icon
+      class="generated-name__unavailable"
+      name="x"
+      [size]="14"
+      [strokeWidth]="2"
+      label="Déjà pris"
+    />
+  }
+</div>

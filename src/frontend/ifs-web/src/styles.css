@@ -1,0 +1,26 @@
+@import 'tailwindcss';
+@import '@angular/cdk/overlay-prebuilt.css';
+@import './styles/theme.css';
+@import './styles/tokens.css';
+@import './styles/fonts.css';
+@import './styles/base.css';
+
+.ifs-dialog-backdrop {
+  background: var(--ifs-overlay-scrim);
+}
+
+.ifs-dialog-pane {
+  max-width: calc(100vw - 32px);
+}
+
+.ifs-dialog-drawer {
+  width: min(var(--ifs-sidebar-width), calc(100vw - 24px));
+  height: 100dvh;
+  max-width: calc(100vw - 24px) !important;
+  margin: 0;
+}
+
+.ifs-dialog-drawer .dialog-surface {
+  height: 100%;
+  border-radius: 0;
+}

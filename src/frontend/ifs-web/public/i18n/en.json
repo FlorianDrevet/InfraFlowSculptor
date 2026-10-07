@@ -1,0 +1,62 @@
+{
+  "home": {
+    "greeting": "Hello {{ displayName }}",
+    "loading": "Loading your profile…",
+    "error": "Your profile could not be loaded."
+  },
+  "auth": {
+    "signInFailed": "Sign-in failed",
+    "signInIncomplete": "Your sign-in could not be completed.",
+    "tryAgain": "Try again"
+  },
+  "profile": {
+    "title": "Profile",
+    "signedInAs": "Signed in as",
+    "signOut": "Sign out",
+    "notSignedIn": "Not signed in."
+  },
+  "login": {
+    "tagline": "Describe your Azure infrastructure once. Deploy it without rework.",
+    "description": "IFS produces infrastructure code, pipelines, and an installation kit in your repositories, with identities, roles, and secrets already wired up.",
+    "model": "Model",
+    "modelDetail": "Components, resources, links",
+    "generate": "Generate",
+    "generateDetail": "A validated revision",
+    "publish": "Publish",
+    "publishDetail": "One pull request per repository",
+    "deploy": "Deploy",
+    "deployDetail": "Your pipelines, your identities",
+    "badgeDescription": "Supported formats and platforms",
+    "title": "Sign in",
+    "providerDescription": "Use your Microsoft Entra ID work account or a personal Microsoft account.",
+    "continue": "Continue with Microsoft",
+    "noPasswordTitle": "No IFS password.",
+    "noPassword": "Microsoft manages your identity; your organization's multifactor authentication applies.",
+    "invitationTitle": "Have an invitation?",
+    "invitation": "Open the link from your email to join the right organization.",
+    "newUser": "New to IFS?",
+    "discoveryPlan": "The Discovery plan is free: model, validate, and download without connecting a repository.",
+    "hosting": "Hosted in the European Union",
+    "serviceStatus": "Service status",
+    "privacy": "Privacy"
+  },
+  "shell": {
+    "home": "InfraFlowSculptor home",
+    "primaryNavigation": "Primary navigation",
+    "breadcrumb": "Breadcrumb",
+    "openMenu": "Menu",
+    "closeMenu": "Close",
+    "chooseLanguage": "Language"
+  },
+  "error": {
+    "title": "An error occurred.",
+    "message": "The request could not be completed. Try again in a moment.",
+    "reference": "Reference",
+    "retry": "Try again"
+  },
+  "notFound": {
+    "title": "This page does not exist.",
+    "message": "Check the address or return to the home page.",
+    "home": "Back to home"
+  }
+}

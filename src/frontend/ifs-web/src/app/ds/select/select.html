@@ -1,0 +1,8 @@
+<select
+  class="native-select"
+  [attr.aria-label]="ariaLabel() || null"
+  [disabled]="disabled()"
+  [required]="required()"
+>
+  <ng-content />
+</select>

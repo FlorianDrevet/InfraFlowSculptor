@@ -284,7 +284,7 @@ nommant la dépendance ; annuler la modification.
      `.github/memory/08-runtime-and-orchestration.md` ;
    - `AddProject<Projects.InfraFlowSculptor_Api>(api)` avec `WithReference` + `WaitFor` sur la base, les
      blobs, Service Bus, Redis, MailPit, Keycloak ; variables `Auth__Authority =
-     http://localhost:8080/realms/ifs`, `Auth__Audience = ifs-api`, `Auth__Provider = Keycloak`,
+     https://localhost:8080/realms/ifs`, `Auth__Audience = ifs-api`, `Auth__Provider = Keycloak`,
      `Cors__AllowedOrigins__0 = http://localhost:4200`, `Ifs__Development__EnableGitea = true` ;
      `WithExternalHttpEndpoints()`.
 5. `AppHost/Realms/ifs-realm.json` : royaume `ifs`, clients `ifs-web`, `ifs-api`, `ifs-scalar`, mappers et les
@@ -311,8 +311,9 @@ nommant la dépendance ; annuler la modification.
    `dotnet user-secrets set "Gitea:Token" <jeton> --project src/backend/InfraFlowSculptor.AppHost`.
    Idempotent : une seconde exécution n'échoue pas et ne crée rien en double.
 8. `tests/InfraFlowSculptor.Acceptance.Tests` (nouveau, `Aspire.Hosting.Testing`) :
-   `AppHostStartupTests.Api_is_healthy_when_all_emulators_run` — démarre l'AppHost, attend `api` en état
-   « Running », `GET /health` → 200. Trait `Category=Acceptance`.
+   `AppHostStartupTests.ApiIsHealthyWhenAllEmulatorsRun` — démarre l'AppHost, attend que PostgreSQL, Storage,
+   Service Bus, Redis, MailPit et Keycloak soient sains, puis réessaie `GET /health` jusqu'à obtenir HTTP 200.
+   Trait `Category=Acceptance`.
 
 ✅ **Vérification automatique.**
 - `dotnet build` sans avertissement.
@@ -324,7 +325,7 @@ nommant la dépendance ; annuler la modification.
 2. Cliquer le lien de `pgweb` → la base `ifs` est vide.
 3. Cliquer `mailpit` → boîte vide.
 4. Cliquer `redis` → RedisInsight se connecte.
-5. Ouvrir `http://localhost:8080/realms/ifs/account` → se connecter `alice@contoso.example` /
+5. Ouvrir `https://localhost:8080/realms/ifs/account` → se connecter `alice@contoso.example` /
    `Ifs-Demo-2026!` → la page de compte Keycloak affiche Alice.
 6. `pwsh tools/dev/gitea-init.ps1` → « 3 dépôts prêts ». Ouvrir `http://localhost:3000` → l'organisation
    `contoso` et ses trois dépôts. Relancer le script → aucune erreur.
@@ -484,29 +485,37 @@ plusieurs réplicas.
    distribue à chaque `IDomainEventHandler<T>` enregistré, idempotence par `(événement, gestionnaire)` dans
    `processed_jobs` ([DT-37](../technique/01-decisions.md#dt-37--événements-de-domaine-par-loutbox)) ; test avec un gestionnaire de test.
 3. Worker : `OutboxRelayService` (BackgroundService) lit par lots les messages non envoyés (`FOR UPDATE SKIP
-   LOCKED`), les envoie sur la file avec `SessionId = organization_id` et `MessageId = id`, marque `sent_at` ;
-   réessai exponentiel, `attempts` incrémenté.
+   LOCKED`), réutilise un sender par file et borne les envois d'un lot à 15 s ; les envoie sur la file avec
+   `SessionId = organization_id` et `MessageId = id`, marque `sent_at` ; réessai exponentiel jusqu'à 10 tentatives,
+   puis marque l'échec définitif. L'idempotence du message repose sur `processed_jobs`, car les files n'activent
+   pas la détection de doublons Service Bus.
 4. Worker : `SessionJobProcessorService` — un `ServiceBusSessionProcessor` par file, `MaxConcurrentSessions = 8`,
    `MaxConcurrentCallsPerSession = 1`, `SessionIdleTimeout = 5 s` ; **rotation forcée** : après chaque message traité,
    le gestionnaire appelle `args.ReleaseSession()` — une session n'occupe jamais une place plus d'un travail, même
    si son organisation alimente sa file en continu (le délai d'inactivité seul ne suffit pas : il ne libère qu'une
    session vide) ; budget par organisation (`organization_budgets`, [DT-32](../technique/01-decisions.md#dt-32--files-et-équité))
    vérifié avant exécution : dépassé → message replanifié (`ScheduledEnqueueTime` + 30 s) et session libérée ; désérialise l'enveloppe, résout `IJobHandler<T>`, exécute dans une portée DI avec
-   `ICurrentOrganization` positionné, complète le message ; idempotence : table `processed_jobs (job_id pk,
-   processed_at)` vérifiée avant exécution (migration `S_08_Jobs`).
+   `ICurrentOrganization` positionné, complète le message ; idempotence : table `processed_jobs` avec clé primaire
+   `(job_id, handler_type)` et `processed_at`, vérifiée avant exécution (migration `S_08_Jobs`).
 5. Worker : `ScheduledJobRunner` + `IScheduledJob { string Name; TimeSpan Interval; Task RunAsync(...) }`,
-   bail `scheduled_job_leases` (prise atomique `UPDATE … WHERE expires_at < now()`). Première tâche planifiée :
-   `PurgeIdempotencyKeysJob` (toutes les heures, supprime les clés > 24 h).
+   bail `scheduled_job_leases` (prise atomique, renouvellement toutes les 20 s, durée d'une minute). Après succès,
+   prochaine exécution à l'intervalle prévu ; échec : reprise avec backoff exponentiel plafonné à 5 min ; arrêt du
+   Worker : libération du bail. Première tâche planifiée : `PurgeIdempotencyKeysJob` (toutes les heures, supprime
+   les clés > 24 h).
 6. Propagation de trace : `TraceParent` de l'activité courante écrit dans l'enveloppe, restauré dans le worker
    (`ActivitySource` `InfraFlowSculptor.Jobs`).
-7. Démonstration, **développement seulement** : `Api/Controllers/DevelopmentController.cs` mappé si
-   `Environment.IsDevelopment()` : `POST /v1/dev/ping-job` → met en file `PingJob` ; `PingJobHandler` (worker)
-   journalise « PingJob {JobId} traité pour {OrganizationId} ».
+7. Démonstration : `Api/Controllers/DevelopmentController.cs` mappé en `Development` et `Testing` (ce dernier
+   uniquement pour les recettes d'acceptation) : `POST /v1/dev/ping-job` → met en file `PingJob` ;
+   `PingJobHandler` (worker) journalise « PingJob {JobId} traité pour {OrganizationId} ». En `Testing`, une clé
+   de signature éphémère remplace Keycloak.
 8. AppHost : `AddProject<Projects.InfraFlowSculptor_Worker>(worker)` avec les mêmes références et `WaitFor`.
 9. Tests : `Application.Tests/Jobs/JobDispatcherTests` (l'outbox reçoit l'enveloppe) ;
-   `Infrastructure.Tests/Jobs/ScheduledJobLeaseTests` (deux exécuteurs concurrents → une seule exécution) ;
+   `Infrastructure.Tests/Jobs/ScheduledJobLeaseTests` (deux exécuteurs concurrents → une seule exécution ; le bail
+   renouvelé bloque une seconde exécution jusqu'à son échéance) ; `WorkerOutboxTests` (dispatcher, échec Service Bus,
+   backoff et seuil d'échec définitif) ;
    `Acceptance.Tests/JobsTests.Ping_job_is_processed_once` (via l'AppHost : appel de `/v1/dev/ping-job`, attente
-   de la ligne `processed_jobs`) ; `Acceptance.Tests/JobsTests.Sessions_are_served_fairly_under_saturation` : `MaxConcurrentSessions = 2` (option de
+   de la ligne `processed_jobs`) ; après la santé des dépendances, la fixture chauffe le worker avec un job traité ;
+   `Acceptance.Tests/JobsTests.Sessions_are_served_fairly_under_saturation` : `MaxConcurrentSessions = 2` (option de
    test), trois organisations A, B, C ; A et B **alimentées en continu** (un nouveau `PingJob` de 200 ms dès qu'un se
    termine) ; un travail de C arrive après 2 s → il doit **commencer en moins de 3 s** (borne = places × durée d'un
    travail × 3). Si ce test échoue malgré `ReleaseSession` (l'ordre de distribution des sessions par Service Bus n'est
@@ -553,7 +562,7 @@ appelle `/v1/me`.
    adapté pour écrire le même JSON.
 5. `core/auth/oidc.providers.ts` : remplacer les constantes par `StsConfigHttpLoader` qui lit
    `/config.json` (configuration de [technique 04 § 6](../technique/04-frontend.md#6-configuration-à-lexécution-et-authentification)).
-   Portée Keycloak : `openid profile email offline_access`.
+   Portée Keycloak : `openid profile email`. `offline_access` reste optionnel pour les clients qui doivent agir après la déconnexion de l'utilisateur; l'application navigateur utilise une session en ligne.
 6. Page d'accueil provisoire `features/home/` : « Bonjour {{ displayName }} » depuis `GET /v1/me` (client écrit
    à la main ici, remplacé par le client généré en S-14).
 7. Transloco ([DT-34](../technique/01-decisions.md#dt-34--langues--français-et-anglais-commutables)) : langue par défaut `fr`, disponibles `fr`, `en` ; textes de l'accueil dans

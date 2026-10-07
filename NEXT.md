@@ -9,14 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`S-01`](docs/plan/00-socle.md#s-01--prérequis-de-la-machine-et-garde-fous-du-plan) — Prérequis de la machine et garde-fous du plan |
-| **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | — |
-| **Étape suivante** | `S-02` — Squelette backend généré depuis le template CQRS |
+| **Étape courante** | [`P-01`](docs/plan/01-preuves.md#p-01--application-témoin) — Application témoin |
+| **Statut** | `BLOQUE` |
+| **Dernière étape terminée** | [`R-01`](docs/plan/00-socle.md#-r-01--revue-du-socle) — Revue du socle (approuvée) |
+| **Étape suivante** | `P-02` — Bicep du projet pilote, écrit à la main |
 | **Verrou** | aucun |
-| **Branche** | `impl/socle` (à créer depuis `origin/main` à S-01) |
-| **Dernière mise à jour** | 2026-10-03 — Claude (plan initial) |
-
+| **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
+| **Dernière mise à jour** | 2026-10-06 — Luna (question de conception P-01) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
 résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question ci-dessous).
 
@@ -37,11 +36,15 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 
 | Outil | Version attendue | Posé ? |
 |---|---|---|
-| SDK .NET | `10.0.203` | Oui (constaté le 2026-10-03) |
-| Node | `24.15.0` | Oui (constaté le 2026-10-03) |
-| Docker | — | Oui (`29.4.3`) |
-| CLI Aspire | `13.5.3` | Non |
-| PowerShell 7, Azure CLI, Bicep, gh | voir `tools/versions.json` (S-01) | À vérifier |
+| SDK .NET | `10.0.203` | Oui (`10.0.301`) |
+| Node | `24.15.0` | Oui (`24.19.0`) |
+| Docker | `27.0.0` | Oui (`29.5.3`, daemon répond) |
+| CLI Aspire | `13.5.3` | Oui (`13.6.0`) |
+| Python | `3.11` | Oui (`3.14.2`) |
+| PowerShell 7 | `7.5.0` | Oui (`7.6.6`) |
+| Azure CLI | `2.90.0` | Oui (`2.90.0`, vérifié par `pwsh tools/dev/check-prereqs.ps1` le 2026-10-06) |
+| Bicep CLI | `0.47.16` | Oui (`0.47.16`) |
+| Git / GitHub CLI | présence | Oui (`2.52.0` / `2.88.1`) |
 
 ## État hors dépôt 📌
 
@@ -51,13 +54,18 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 | Organisation / projet Azure DevOps de test | — | — |
 | Groupes Entra (`sg-shop-sql-admins`) et Azure DevOps (« Shop Release Approvers ») | — | — |
 | Inscriptions Entra d'IFS (`dev`) | — | — |
-| Protection de la branche `main` sur GitHub | — | — |
+| Protection de la branche `main` sur GitHub | À activer par vous dans *Settings → Branches* | 2026-10-06 |
+| Secret de dépôt GitHub Actions `IFS_E2E_PASSWORD` | Configuré (valeur masquée) | 2026-10-06 |
 
 ## Tests manuels en attente de vous
 
-Aucun. (Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
-[`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.)
+- S-02 — [ouvrir `src/backend/InfraFlowSculptor.slnx` dans Rider](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) : vérifier les cinq projets et l'absence de références à `Web.Template.CQRS`.
+- S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
+- S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
+- S-17 — sur un clone neuf, suivre [README — Démarrer](README.md#démarrer-windows) jusqu'à « Bonjour Alice Martin ». Les prérequis passent ; le démarrage du clone reste à vérifier quand les ports fixes 4200, 8080, 5257 et 3000 seront libres, car l'AppHost de travail reste actif.
+Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
+[`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.
 
 ## Questions pour Claude
 
-Aucune.
+- **P-01 — identité SQL du témoin (sécurité / P9)** : `docs/plan/01-preuves.md` demande `Authentication=Active Directory Default` et le qualifie d'identité système (ligne 47), puis exige `ManagedIdentityCredential()` sans identifiant client pour SQL tandis que les autres SDK utilisent `AZURE_CLIENT_ID` (lignes 50–51). `Active Directory Default` repose sur `DefaultAzureCredential`, dont l'identifiant managé par défaut vient de `AZURE_CLIENT_ID` ; SqlClient interdit aussi de combiner `AccessTokenCallback` avec `Authentication`. Sources : [Microsoft Learn — authentification SqlClient](https://learn.microsoft.com/en-us/sql/connect/ado-net/sql/azure-active-directory-authentication?view=sql-server-ver17) et [Microsoft Learn — ManagedIdentityClientId](https://learn.microsoft.com/dotnet/api/azure.identity.defaultazurecredentialoptions.managedidentityclientid?view=azure-dotnet). La revue de Claude Sonnet 5.5 recommande `Authentication=Active Directory Managed Identity` sans `User Id` comme option minimale ; l'autre option est un `AccessTokenCallback` avec `ManagedIdentityCredential(ManagedIdentityId.SystemAssigned)` et sans mot-clé `Authentication`. Claude doit choisir le contrat et mettre à jour P-01 ainsi que DT-33, puis remettre le statut à `A_FAIRE`.

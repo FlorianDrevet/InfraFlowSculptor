@@ -7,3 +7,19 @@
 | 2026-10-04 | Claude | DT-22 confirmée : Mediator remplace MediatR |
 | 2026-10-04 | Claude | DT-08 confirmée : toutes les décisions techniques sont tranchées |
 | 2026-10-04 | Claude | Revue du plan par Luna traitée (18 constats) : statut EN_ATTENTE_DE_RECETTE, jalons découpés refusés par gate.py |
+| 2026-10-05 | Luna | S-01 — prérequis machine, configurations du dépôt, tests du garde-fou et hook pre-commit |
+| 2026-10-05 | Luna | S-02 — squelette CQRS généré dans `src/backend/` et solution compilée |
+| 2026-10-05 | Luna | S-03 — backend .NET 10, ServiceDefaults, Mediator, API `/v1/version`, ProblemDetails et retrait de l'auth locale |
+| 2026-10-05 | Luna | S-04 — cinq projets de tests, tests Domain/API et règles d'architecture automatisées |
+| 2026-10-05 | Luna | S-05 — AppHost Aspire, émulateurs, résolution de clients Azure, tests d'acceptation et recette locale |
+| 2026-10-05 | Luna | S-06 — EF Core/PostgreSQL 17, isolation par organisation, concurrence, outbox, idempotence et migration initiale |
+| 2026-10-05 | Luna | S-07 — authentification OIDC Keycloak/Entra, utilisateur courant, résolution d'adresse vérifiée, `/v1/me` et OAuth2 PKCE dans Scalar; recette locale partielle, volume Keycloak conservé |
+| 2026-10-06 | Luna | S-08 — worker, outbox, sessions, fairness, leases et traces; conteneurs locaux persistants entre les lancements; corrections additives Keycloak conservant le volume; revue Sonnet traitée (renouvellement de bail, warmup worker, batch/retries d'outbox); recette Alice/Nina et import 26.6 validés; 57 tests et build 15 projets verts |
+| 2026-10-06 | Luna | S-09 — application Angular 22, configuration runtime et OIDC; rôle offline_access corrigé sur les comptes locaux persistants, bearer limité à l'API; textes d'authentification traduits, sortie config ignorée par Git; recette Bob/profil/rechargement; revue Sonnet; 57 tests .NET, 4 Python, 3 Angular et build 15 projets verts |
+| 2026-10-06 | Luna | S-10 — génération des tokens Strata et thèmes multiples depuis `tokens.json`, polices Fontsource locales, styles de base et galerie dev; 3 tests Angular + 3 générateur, lint, tokens:check et build verts. Comparaison visuelle partielle : Chrome bloque la référence `file://`, valeurs contrôlées depuis la source et la galerie. |
+| 2026-10-06 | Luna | S-13 — coquille Angular, connexion et erreurs API, métadonnées HTTP limitées à l'API pour éviter le préflight Keycloak, langue/thème, Playwright desktop/mobile; 34 tests Angular, 6 tests tokens/icônes et 6 scénarios E2E verts, lint/build réussis. |
+| 2026-10-06 | Luna | S-14 — OpenAPI généré au build, document runtime déterministe, client Angular ng-openapi-gen et contrôle de dérive; sorties client normalisées en LF/fin de ligne unique, exclues du formatage; revue Sonnet traitée; 58 tests .NET, 34 tests Angular, 6 tests outils et 6 scénarios E2E verts. |
+| 2026-10-06 | Luna | S-15 — workflow CI pour backend, acceptation Docker, frontend, audit des dépendances et E2E Aspire; OpenAPI/client Angular vérifiés contre les artefacts commis; rapports TRX/JUnit, couverture, Playwright et journaux publiés; badge CI ajouté. Le build AppHost en `Development` a révélé une validation DI incompatible avec l'hôte temporaire `GetDocument`, limitée à ce générateur; build Release et 14 tests API passent. |
+| 2026-10-06 | Luna | S-16 — observabilité et diagnostic du Service Bus local : télémétrie, traces et logs structurés, classification prudente de la fermeture `AcceptSession`, build et CI verts. |
+| 2026-10-06 | Luna | S-17 — mémoire alignée sur le code, graphe Graphify AST généré sans LLM et section « Démarrer » ajoutée au README. Prérequis et contrôles automatiques verts ; la recette clone neuf reste partielle tant que l'AppHost actif occupe les ports fixes. |
+| 2026-10-06 | Luna | S-15 — le job Playwright injecte le secret d'Actions dans le royaume Keycloak jetable pour activer les quatre scénarios authentifiés. |

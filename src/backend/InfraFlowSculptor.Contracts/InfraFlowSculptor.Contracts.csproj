@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <RootNamespace>InfraFlowSculptor.Contracts</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\InfraFlowSculptor.Domain\InfraFlowSculptor.Domain.csproj" />
+    </ItemGroup>
+</Project>

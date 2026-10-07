@@ -1,0 +1,40 @@
+:host {
+  display: block;
+  height: var(--ifs-topbar-height);
+}
+
+.topbar {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  gap: var(--ifs-space-3);
+  padding-inline: var(--ifs-space-6);
+  border-bottom: 1px solid var(--ifs-line);
+  background: var(--ifs-surface-1);
+}
+
+.topbar__breadcrumb {
+  min-width: 0;
+  flex: 1;
+  color: var(--ifs-text-2);
+  font-family: var(--ifs-font-mono);
+  font-size: var(--ifs-text-mono);
+  line-height: var(--ifs-line-height-mono);
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ifs-space-2);
+}
+
+.topbar__menu {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .topbar__menu {
+    display: flex;
+    align-items: center;
+  }
+}

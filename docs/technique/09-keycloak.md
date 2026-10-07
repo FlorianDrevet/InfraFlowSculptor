@@ -36,15 +36,57 @@ audience (`ifs-api`), mêmes noms de revendications.
   utilisateurs, clients, mappers. Il est **importé au démarrage** du conteneur.
 - **Données** : un volume Docker garde l'état de Keycloak entre deux `aspire run`. Si le royaume existe déjà, Keycloak
   ne réimporte **pas** le fichier (voir § 7, « Repartir de zéro »).
-- **Port** : `8080`, fixe (l'émetteur des jetons, `http://localhost:8080/realms/ifs`, en dépend).
+- **Port** : `8080`, fixe et exposé en HTTPS par Aspire (l'émetteur des jetons est
+`https://localhost:8080/realms/ifs`).
+
+Le royaume déclare ses scopes standards (`web-origins`, `acr`, `roles`, `basic`, `profile`, `email`) et les applique
+par défaut aux clients Keycloak intégrés. C'est nécessaire à l'Account Console : sans le scope `roles`, son jeton ne
+contient pas `resource_access.account.roles` et `/realms/ifs/account/` répond 403. Les clients IFS reçoivent aussi
+`ifs-claims` explicitement; ce scope n'est pas global, afin de ne pas ajouter les revendications propres à l'API aux
+jetons des clients d'administration Keycloak.
+
+Un import vierge Keycloak 26.6 confirme ces scopes par défaut et les revendications des comptes Alice et Nina.
+`offline_access` est un scope intégré de Keycloak : il n'est ni redéfini ni ajouté à `clientScopes` dans
+`ifs-realm.json`. Le client `ifs-web` le conserve comme scope **optionnel** pour les consommateurs qui ont réellement
+besoin d'un jeton utilisable après la déconnexion de l'utilisateur. L'application navigateur ne le demande pas par défaut
+et utilise les scopes `openid profile email` avec la session en ligne et son jeton de rafraîchissement normal.
+
+Depuis Keycloak 26.1, la documentation indique qu'une première authentification demandant `offline_access` crée une
+session hors ligne et supprime la session en ligne/SSO associée. Une SPA qui n'agit que pendant la présence de
+l'utilisateur n'a pas besoin de ce jeton longue durée; `openid profile email` suffit pour le flux Web local.
+Voir le [guide de mise à niveau Keycloak
+26.1](https://www.keycloak.org/docs/26.4.0/upgrading/#offline-access-removes-the-associated-online-session-if-the-offline_scope-is-requested-in-the-initial-exchange).
+
+Diagnostic local du 2026-10-06 : avec Keycloak 26.6.4 et le flux Authorization Code + PKCE de `ifs-web`, la demande
+initiale avec `offline_access` aboutit à un jeton signé, mais `/userinfo` répond 401 `invalid_token`; l'événement
+Keycloak ne donne pas de raison plus précise et seule la session hors ligne est présente. Le même parcours sans ce
+scope renvoie 200 et la connexion Angular réussit. Ce test A/B valide le scope sans `offline_access` comme
+contournement sûr pour la SPA; il ne prouve pas la cause interne exacte du refus. L'incident est proche de l'[issue
+Keycloak #39037](https://github.com/keycloak/keycloak/issues/39037), qui décrivait un refus similaire pendant un flux
+hybride, avant l'échange du code. Le parcours d'IFS utilise Authorization Code + PKCE, donc cette issue n'est pas
+présentée comme la même cause. Si l'application a un jour besoin d'agir après déconnexion, reproduire le cas et
+inspecter la validation de session côté Keycloak avant de remettre `offline_access` dans son scope par défaut.
+
+Pour un client qui doit agir hors ligne, lier le scope intégré comme optionnel et attribuer le rôle de royaume
+`offline_access` aux utilisateurs concernés. Les sept utilisateurs seed locaux gardent ce rôle pour cet usage explicite;
+il n'est pas requis pour l'application Web. `phone` et `address` ne font pas partie du jeu de scopes de ce royaume;
+ajouter les scopes nécessaires au JSON seulement si un client en a besoin.
+
+Le mapper `amr` utilise `jsonType.label: "String"` et `multivalued: "true"` : les valeurs stockées (`pwd`, `mfa`)
+sont des chaînes, et Keycloak émet la revendication `amr` comme un tableau de chaînes.
+
+Les utilisateurs de démonstration ont les rôles Keycloak intégrés `account/manage-account` et `account/view-profile` :
+ils peuvent ouvrir la console de compte. Modifier le JSON ne met pas à jour un royaume déjà créé. Pour réparer un
+royaume existant, modifier uniquement le client ou les rôles concernés dans la console d'administration ; cela conserve
+les utilisateurs et leurs mots de passe. Ne pas remplacer tout le royaume pour corriger une URI ou un rôle.
 
 ## 4. Se connecter
 
 | Pour… | Aller sur | Identifiants |
 |---|---|---|
 | Utiliser IFS | `http://localhost:4200` → bouton de connexion → page Keycloak | un utilisateur de démonstration, mot de passe `Ifs-Demo-2026!` |
-| Voir son compte | `http://localhost:8080/realms/ifs/account` | idem |
-| Administrer Keycloak | `http://localhost:8080/admin` (lien dans le tableau de bord Aspire) | `admin` / valeur du paramètre Aspire `keycloak-admin-password` (affichée dans le tableau de bord, ressource `keycloak`, onglet *Parameters*, ou `dotnet user-secrets list --project src/backend/InfraFlowSculptor.AppHost`) |
+| Voir son compte | `https://localhost:8080/realms/ifs/account` | idem |
+| Administrer Keycloak | `https://localhost:8080/admin` (lien dans le tableau de bord Aspire) | `admin` / valeur locale du paramètre Aspire `keycloak-admin-password`, conservée dans User Secrets |
 
 **Plusieurs utilisateurs à la fois** : une fenêtre de navigation privée (ou un profil de navigateur) par utilisateur.
 La session Keycloak est un cookie : dans la même fenêtre, on est une seule personne.
@@ -53,16 +95,18 @@ La session Keycloak est un cookie : dans la même fenêtre, on est une seule per
 
 ### Changer d'utilisateur
 Se déconnecter dans IFS (menu utilisateur), ou ouvrir une autre fenêtre privée. Si la page Keycloak vous reconnecte
-sans demander le mot de passe, c'est que la session Keycloak est encore ouverte : `http://localhost:8080/realms/ifs/account`
+sans demander le mot de passe, c'est que la session Keycloak est encore ouverte : `https://localhost:8080/realms/ifs/account`
 → *Sign out*, ou vider les cookies de `localhost:8080`.
 
 ### Ajouter un utilisateur
 1. Console d'administration → en haut à gauche, choisir le royaume **ifs** (pas `master`).
 2. *Users* → *Add user* : *Username* = l'adresse e-mail, *Email*, *First name*, *Last name*, *Email verified* = Oui.
 3. Onglet *Credentials* → *Set password* → `Ifs-Demo-2026!`, *Temporary* = Non.
-4. Onglet *Attributes* : `oid` = un GUID nouveau (PowerShell : `[guid]::NewGuid()`), `tid` = le GUID du tenant simulé
+4. Définir `oid` = un GUID nouveau (PowerShell : `[guid]::NewGuid()`), `tid` = le GUID du tenant simulé
    (Contoso `11111111-1111-1111-1111-111111111111`, Fabrikam `22222222-…`, comptes personnels
-   `9188040d-6c67-4c5b-b112-36a304b66dad`).
+   `9188040d-6c67-4c5b-b112-36a304b66dad`). Dans Keycloak 26, les attributs personnalisés peuvent être masqués par le
+   profil utilisateur par défaut : utilisez l'Admin REST API ou configurez ces champs dans *Realm settings* → *User
+   profile*. Vérifiez le résultat par les revendications du jeton, pas seulement dans l'onglet utilisateur.
 5. Pour le garder après une remise à zéro : l'ajouter aussi dans `ifs-realm.json` (même structure que les autres
    utilisateurs) et commiter — sinon il disparaîtra au prochain réimport.
 
@@ -92,30 +136,68 @@ que vous le voyiez ; remettre 5 minutes ensuite.
 - Utiliser ces comptes ou ce mot de passe ailleurs qu'en local : ils sont publics dans le dépôt.
 - Changer le port 8080 ou le nom du royaume : les jetons ne seraient plus acceptés par l'API ni par l'application.
 - Modifier le royaume **master** : c'est l'administration de Keycloak lui-même.
-- Exposer Keycloak sur le réseau : il tourne en mode développement (`start-dev`), sans TLS.
+- Exposer Keycloak sur le réseau : il tourne en mode développement (`start-dev`) ; Aspire fournit le HTTPS local, qui n'est pas une configuration de production.
 
 ## 7. Repartir de zéro
 
-Quand `ifs-realm.json` a changé (nouvel utilisateur commité, nouveau mapper) ou que la configuration est cassée :
-1. Arrêter `aspire run`.
-2. `docker volume ls | Select-String keycloak` puis `docker volume rm <nom du volume>`.
-3. Relancer `aspire run` : le royaume est réimporté depuis le fichier.
+Le fichier de royaume est importé au premier démarrage du volume. Pour mettre à jour un royaume existant, appliquez
+les changements ciblés dans l'Admin Console ou via l'Admin REST API : attachez les scopes manquants, corrigez le
+mapper concerné et ajoutez les rôles aux seuls comptes visés. Cela conserve les utilisateurs, mots de passe et
+autres données locales.
+
+La suppression du volume Keycloak est une remise à zéro complète : elle efface le royaume, ses utilisateurs, ses
+sessions et ses personnalisations. Ne le faites que pour un environnement jetable dont les données peuvent être
+perdues; un changement de `ifs-realm.json` seul ne justifie pas sa suppression.
 
 Pour **exporter** des modifications faites à la main dans la console vers le fichier : console → *Realm settings* →
 menu *Action* (en haut à droite) → *Partial export* (cocher *Include clients*) — les utilisateurs ne sont pas exportés
 par ce menu : les recopier à la main dans `users` du fichier.
 
-## 8. Dépannage
+## 8. Récupérer l'accès administrateur (`invalid_grant`)
+
+Le paramètre `keycloak-admin-password` n'est lu par Keycloak qu'à la **création** du volume (variables
+`KC_BOOTSTRAP_ADMIN_*`). Si le secret a changé depuis, ou si le volume vient d'une autre configuration, le volume
+persistant garde l'ancien mot de passe et la console répond `invalid_grant`. Le royaume et ses utilisateurs ne sont
+pas en cause : ne supprimez pas le volume. La procédure suivante ajoute un administrateur temporaire sans modifier
+les données existantes.
+
+1. Arrêter l'AppHost (`aspire stop`) : les conteneurs persistants restent démarrés.
+2. Arrêter (sans le supprimer) le conteneur Keycloak, car la base H2 du mode développement ne s'ouvre qu'une fois :
+   ```powershell
+   docker ps --filter "name=keycloak" --format "{{.Names}}  {{.Image}}"
+   docker stop <nom-du-conteneur-keycloak>
+   docker inspect --format '{{range .Mounts}}{{.Name}} -> {{.Destination}}{{println}}{{end}}' <nom-du-conteneur-keycloak>
+   ```
+   Repérer le volume monté sur `/opt/keycloak/data`.
+3. Créer l'administrateur dans un conteneur jetable, avec la même image et le même volume (saisie interactive du
+   mot de passe, rien n'est écrit sur disque) :
+   ```powershell
+   docker run --rm -it -v <volume>:/opt/keycloak/data <image> bootstrap-admin user --username recovery-admin
+   ```
+   Si le nom `recovery-admin` existe déjà, en choisir un autre. Si Keycloak a été lancé avec des options de base de
+   données particulières (variables `KC_DB*` du conteneur), les passer aussi avec `-e`.
+4. Redémarrer : `docker start <nom-du-conteneur-keycloak>`, puis `aspire start`.
+5. Console → royaume **master** → *Users* → `admin` → *Credentials* → *Reset password* avec la valeur du secret
+   `keycloak-admin-password`. Se connecter ensuite avec `admin`, puis supprimer `recovery-admin`.
+
+Le même compte sert à corriger un royaume importé avant une modification de `ifs-realm.json` (URI de redirection du
+client `ifs-scalar`, scopes par défaut, rôles `ifs-api`) : voir § 3 et § 7, en modifiant les seuls éléments concernés.
+
+## 9. Dépannage
 
 | Symptôme | Cause | Remède |
 |---|---|---|
-| `401` sur toutes les requêtes de l'API | Émetteur différent (port ou nom d'hôte changé) | Vérifier `Auth__Authority` = `http://localhost:8080/realms/ifs` dans le tableau de bord Aspire, ressource `api` |
+| `invalid_grant` à la connexion de l'administrateur | Le mot de passe du volume diffère du secret Aspire | § 8 |
+| Scalar : « Invalid redirect uri » ou jeton sans `roles` | Royaume persistant plus ancien que `ifs-realm.json` | Console → royaume `ifs` → *Clients* → `ifs-scalar` : *Valid redirect URIs* = `http://localhost:5257/scalar/*` et `https://localhost:7246/scalar/*`, onglet *Client scopes* : `roles`, `ifs-claims` ; pour un rôle, *Users* → *Role mapping* (filtre client `ifs-api`) |
+| `401` sur toutes les requêtes de l'API | Émetteur différent (port, schéma ou nom d'hôte changé) | Vérifier `Auth__Authority` = `https://localhost:8080/realms/ifs` dans le tableau de bord Aspire, ressource `api` |
+| Connexion refusée, journal Keycloak `KC-SERVICES0093 Invalid parameter value for scope` / `LOGIN_ERROR … Invalid scopes: openid profile email offline_access` | Un consommateur hors ligne demande `offline_access`, mais le scope intégré n'est pas lié à `ifs-web` | Pour l'application Web, vérifier que `/config.json` ne demande plus `offline_access`. Pour un autre consommateur, lier le scope intégré en **Optional** dans *Clients* → `ifs-web` → *Client scopes*. Ne pas créer de nouveau scope ni toucher aux utilisateurs ou au volume |
+| Journal Keycloak `Offline tokens not allowed for the user or client` | Un client demande explicitement `offline_access`, mais l'utilisateur ne porte pas le rôle de royaume requis | N'ajouter le rôle dans *Users* → *Role mapping* que pour un client qui a réellement besoin d'agir après déconnexion. Pour un royaume persistant, cette correction est additive et ne demande ni réimport ni suppression du volume |
 | « Invalid redirect uri » sur la page de connexion | L'application n'est pas sur `http://localhost:4200` | Lancer l'application par Aspire (port fixe), ou ajouter l'URL dans *Clients* → `ifs-web` → *Valid redirect URIs* |
 | Le nouvel utilisateur du fichier n'apparaît pas | Le royaume existait déjà : pas de réimport | § 7 |
 | `/v1/me` sans `tenantId` | Attribut `tid` absent ou mapper manquant | Vérifier les attributs de l'utilisateur et les mappers du client `ifs-api` |
 | La connexion boucle | Cookies d'une ancienne session | Vider les cookies de `localhost:4200` et `localhost:8080` |
 
-## 9. Pour aller plus loin
+## 10. Pour aller plus loin
 
 Documentation officielle : `https://www.keycloak.org/documentation` (Server Administration Guide : *Realms*, *Users*,
 *Clients*, *Protocol mappers*). Intégration Aspire : `https://aspire.dev/integrations/security/keycloak/`.

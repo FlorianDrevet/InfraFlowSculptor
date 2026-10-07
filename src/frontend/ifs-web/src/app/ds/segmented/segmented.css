@@ -1,0 +1,45 @@
+:host {
+  display: inline-flex;
+  max-width: 100%;
+}
+
+.st-seg {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--ifs-line);
+  border-radius: 8px;
+  background: var(--ifs-surface-sidebar);
+}
+
+.st-seg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--ifs-control-height-sm);
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--ifs-radius-md);
+  background: transparent;
+  color: var(--ifs-text-2);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.st-seg-btn[aria-pressed='true'] {
+  background: var(--ifs-surface-3);
+  color: var(--ifs-text);
+  font-weight: 500;
+}
+
+.st-seg-btn:focus-visible {
+  outline: 2px solid var(--ifs-signal);
+  outline-offset: 1px;
+}
+
+.st-seg-mono .st-seg-btn {
+  font-family: var(--ifs-font-mono);
+  font-size: 11px;
+}

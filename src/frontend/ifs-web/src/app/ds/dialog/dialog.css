@@ -1,0 +1,55 @@
+:host {
+  display: inline-block;
+}
+
+.dialog-trigger,
+.dialog-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ifs-control-height);
+  padding-inline: var(--ifs-space-3);
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-active);
+  color: var(--ifs-text);
+  font: inherit;
+  font-size: var(--ifs-text-body-dense);
+  cursor: pointer;
+}
+
+.dialog-trigger:focus-visible,
+.dialog-close:focus-visible {
+  outline: 2px solid var(--ifs-signal);
+  outline-offset: 2px;
+}
+
+.dialog-surface {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-xl);
+  background: var(--ifs-surface-1);
+  box-shadow: var(--ifs-shadow-overlay);
+  color: var(--ifs-text);
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ifs-space-3);
+  padding: var(--ifs-space-4);
+  border-block-end: 1px solid var(--ifs-line-subtle);
+}
+
+.dialog-header h2 {
+  margin: 0;
+  font-size: var(--ifs-text-dialog-title);
+  line-height: var(--ifs-line-height-dialog-title);
+}
+
+.dialog-content {
+  padding: var(--ifs-space-4);
+}

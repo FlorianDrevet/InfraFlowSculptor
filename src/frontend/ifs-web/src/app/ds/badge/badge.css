@@ -1,0 +1,56 @@
+:host {
+  display: inline-flex;
+}
+
+.st-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--ifs-radius-pill);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.st-badge-mono {
+  font-family: var(--ifs-font-mono);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.st-badge-dot::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: var(--ifs-radius-pill);
+  background: currentColor;
+}
+
+.st-badge-neutral {
+  background: var(--ifs-surface-active);
+  border: 1px solid var(--ifs-line-strong);
+  color: var(--ifs-text-2);
+}
+
+.st-badge-signal {
+  background: var(--ifs-signal-soft);
+  color: var(--ifs-signal-text);
+}
+
+.st-badge-ember {
+  background: var(--ifs-ember-soft);
+  color: var(--ifs-ember-text);
+}
+
+.st-badge-success {
+  background: var(--ifs-success-soft);
+  color: var(--ifs-success-text);
+}
+
+.st-badge-danger {
+  background: var(--ifs-danger-soft);
+  color: var(--ifs-danger-text);
+}

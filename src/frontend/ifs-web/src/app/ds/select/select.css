@@ -1,0 +1,30 @@
+:host {
+  display: inline-block;
+  min-width: 0;
+}
+
+.native-select {
+  box-sizing: border-box;
+  min-width: 160px;
+  max-width: 100%;
+  height: var(--ifs-control-height);
+  padding: 0 var(--ifs-space-3);
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-1);
+  color: var(--ifs-text);
+  font: inherit;
+  font-size: var(--ifs-text-body-dense);
+  cursor: pointer;
+}
+
+.native-select:focus-visible {
+  border-color: var(--ifs-signal);
+  outline: 2px solid color-mix(in srgb, var(--ifs-signal) 35%, transparent);
+  outline-offset: 1px;
+}
+
+.native-select:disabled {
+  color: var(--ifs-text-3);
+  cursor: not-allowed;
+}

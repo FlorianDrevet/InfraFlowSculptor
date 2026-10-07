@@ -1,0 +1,15 @@
+<button class="dialog-trigger" type="button" (click)="openDialog()">{{ triggerLabel() }}</button>
+
+<ng-template #dialogTemplate let-dialogRef="dialogRef">
+  <section class="dialog-surface">
+    <header class="dialog-header">
+      <h2 [id]="titleId">{{ title() }}</h2>
+      <button class="dialog-close" type="button" (click)="dialogRef.close()">
+        {{ closeLabel() }}
+      </button>
+    </header>
+    <div class="dialog-content">
+      <ng-content />
+    </div>
+  </section>
+</ng-template>

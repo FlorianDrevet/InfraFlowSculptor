@@ -1,0 +1,221 @@
+:host {
+  display: block;
+}
+
+.component-gallery {
+  scroll-margin-block-start: var(--ifs-space-4);
+}
+
+.component-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  gap: var(--ifs-space-3);
+}
+
+.component-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+}
+
+.component-card-wide {
+  grid-column: 1 / -1;
+}
+
+.component-card-heading {
+  padding: var(--ifs-space-3) var(--ifs-space-4);
+  border-bottom: 1px solid var(--ifs-line-subtle);
+}
+
+.component-card-heading h3,
+.component-card-heading p {
+  margin: 0;
+}
+
+.component-card-heading p {
+  margin-block-start: var(--ifs-space-1);
+  color: var(--ifs-text-2);
+  font-size: var(--ifs-text-caption);
+}
+
+.component-samples,
+.banner-samples,
+.panel-grid {
+  display: grid;
+  gap: var(--ifs-space-3);
+  padding: var(--ifs-space-4);
+}
+
+.sample-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ifs-space-2);
+}
+
+.sample-row-spaced {
+  justify-content: space-between;
+  gap: var(--ifs-space-4);
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+  gap: var(--ifs-space-3);
+  padding: var(--ifs-space-4);
+}
+
+.icon-sample {
+  display: flex;
+  align-items: center;
+  gap: var(--ifs-space-2);
+  min-width: 0;
+  color: var(--ifs-text-2);
+  font-size: var(--ifs-text-overline);
+}
+
+.icon-sample app-ds-icon {
+  color: var(--ifs-text);
+}
+
+.icon-sample code,
+.panel-content code {
+  font-family: var(--ifs-font-mono);
+}
+
+.field-grid,
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field-grid {
+  gap: var(--ifs-space-4);
+  padding: var(--ifs-space-4);
+}
+
+.banner-samples {
+  gap: 10px;
+}
+
+.panel-grid {
+  align-items: start;
+}
+
+.panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ifs-space-2);
+  font-size: var(--ifs-text-body-dense);
+}
+
+.tone-success {
+  color: var(--ifs-success-text);
+}
+
+.tone-ember {
+  color: var(--ifs-ember-text);
+}
+
+.panel-resource {
+  font-size: var(--ifs-text-body-dense);
+}
+
+.resource-icon-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--ifs-space-3);
+  padding: var(--ifs-space-4);
+}
+
+.resource-icon-sample {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--ifs-space-1) var(--ifs-space-2);
+  min-width: 0;
+  font-size: var(--ifs-text-caption);
+}
+
+.resource-icon-sample app-ds-resource-icon {
+  grid-row: span 2;
+}
+
+.resource-icon-sample span,
+.resource-icon-sample code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-icon-sample code,
+.resource-icon-sizes,
+.resource-icon-sizes > span {
+  color: var(--ifs-text-2);
+  font-family: var(--ifs-font-mono);
+  font-size: var(--ifs-text-overline);
+}
+
+.resource-row-gallery {
+  overflow: hidden;
+  margin: var(--ifs-space-4);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+}
+
+.generated-name-gallery,
+.golden-path-gallery {
+  display: grid;
+  gap: var(--ifs-space-2);
+  padding: var(--ifs-space-4);
+}
+
+.golden-path-gallery {
+  gap: var(--ifs-space-4);
+}
+
+.dialog-demo-content {
+  display: grid;
+  gap: var(--ifs-space-4);
+}
+
+.dialog-demo-content p {
+  margin: 0;
+  color: var(--ifs-text-2);
+}
+
+.dialog-demo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--ifs-space-2);
+}
+
+.select-demo-label {
+  display: grid;
+  gap: var(--ifs-space-2);
+  color: var(--ifs-text-2);
+  font-size: var(--ifs-text-caption);
+}
+
+@media (max-width: 48rem) {
+  .field-grid,
+  .panel-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .component-card-wide {
+    grid-column: auto;
+  }
+
+  .sample-row-spaced {
+    justify-content: flex-start;
+  }
+
+  .resource-icon-gallery {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 12.5rem), 1fr));
+  }
+}

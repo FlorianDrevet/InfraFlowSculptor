@@ -1,0 +1,7 @@
+<header class="topbar">
+  <div class="topbar__menu"><ng-content select="[topbar-menu]" /></div>
+  <nav class="topbar__breadcrumb" [attr.aria-label]="'shell.breadcrumb' | transloco">
+    <span aria-current="page">{{ 'shell.home' | transloco }}</span>
+  </nav>
+  <div class="topbar__actions"><ng-content select="[topbar-actions]" /></div>
+</header>

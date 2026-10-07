@@ -1,0 +1,64 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.st-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.st-field-label {
+  color: var(--ifs-text-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.st-field-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--ifs-control-height);
+  padding: 0 10px;
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-sidebar);
+  color: var(--ifs-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.st-field-input::placeholder {
+  color: var(--ifs-text-3);
+}
+
+.st-field-input:focus-visible {
+  outline: 2px solid var(--ifs-signal);
+  outline-offset: 2px;
+  border-color: var(--ifs-signal);
+}
+
+.st-field-input.st-mono {
+  font-family: var(--ifs-font-mono);
+  font-size: 12px;
+}
+
+.st-field-changed .st-field-input {
+  border-color: color-mix(in srgb, var(--ifs-ember) 45%, var(--ifs-line-strong));
+  background: color-mix(in srgb, var(--ifs-ember) 3%, var(--ifs-surface-sidebar));
+}
+
+.st-field-error .st-field-input {
+  border-color: var(--ifs-danger);
+}
+
+.st-field-hint {
+  color: var(--ifs-text-3);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.st-field-error .st-field-hint {
+  color: var(--ifs-danger-text);
+}

@@ -1,0 +1,22 @@
+<div class="shell">
+  <app-sidebar class="shell__sidebar" />
+
+  <div class="shell__workspace">
+    <app-topbar>
+      <app-ds-dialog
+        topbar-menu
+        class="shell__mobile-menu"
+        [title]="'shell.primaryNavigation' | transloco"
+        [triggerLabel]="'shell.openMenu' | transloco"
+        [closeLabel]="'shell.closeMenu' | transloco"
+        [drawer]="true"
+      >
+        <app-sidebar [drawer]="true" />
+      </app-ds-dialog>
+    </app-topbar>
+
+    <main class="shell__content" id="main-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

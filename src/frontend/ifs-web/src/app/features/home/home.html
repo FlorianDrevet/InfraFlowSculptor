@@ -1,0 +1,9 @@
+<section class="home">
+  @if (currentUser.isLoading()) {
+    <p role="status">{{ 'home.loading' | transloco }}</p>
+  } @else if (currentUser.value(); as user) {
+    <h1>{{ 'home.greeting' | transloco: { displayName: user.displayName } }}</h1>
+  } @else {
+    <p role="alert">{{ 'home.error' | transloco }}</p>
+  }
+</section>

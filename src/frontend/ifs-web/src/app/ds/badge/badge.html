@@ -1,0 +1,15 @@
+<span
+  class="st-badge"
+  [class.st-badge-neutral]="tone() === 'neutral'"
+  [class.st-badge-signal]="tone() === 'signal'"
+  [class.st-badge-ember]="tone() === 'ember'"
+  [class.st-badge-success]="tone() === 'success'"
+  [class.st-badge-danger]="tone() === 'danger'"
+  [class.st-badge-mono]="mono()"
+  [class.st-badge-dot]="dot()"
+>
+  @if (icon()) {
+    <app-ds-icon [name]="icon()!" [size]="12" [strokeWidth]="2" />
+  }
+  <ng-content />
+</span>
