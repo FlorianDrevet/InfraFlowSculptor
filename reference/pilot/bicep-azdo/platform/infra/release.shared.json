@@ -5,7 +5,7 @@
   "target": "shared",
   "unit": "ifs-shop-platform-shared",
   "subscriptionId": "<C>",
-  "location": "francecentral",
+  "location": "northeurope",
   "protected": true,
   "deploymentIdentityObjectId": null,
   "dependencies": [],

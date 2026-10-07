@@ -5,7 +5,7 @@
   "target": "dev",
   "unit": "ifs-shop-orders-dev",
   "subscriptionId": "<A>",
-  "location": "francecentral",
+  "location": "northeurope",
   "protected": false,
   "deploymentIdentityObjectId": null,
   "dependencies": [

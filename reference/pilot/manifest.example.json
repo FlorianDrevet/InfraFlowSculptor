@@ -135,11 +135,11 @@
     },
     {
       "path": "core/infra/main.dev.bicepparam",
-      "sha256": "bce9af8f612d7523add2e8ba095ce2037524629385dcede2bc4aa6578fa80b1a"
+      "sha256": "735c429971f8c498dac8b3104d98843fa594a0f54aa8fcc8caf8e57c9bac8bba"
     },
     {
       "path": "core/infra/main.prd.bicepparam",
-      "sha256": "5605296ebe875952f5ee64a60b7c28b0341694f6c85891f5d65cfcf42d65372a"
+      "sha256": "b79c6b54f8afef00c824b28d016c76386c69fb4350e756a4a1f4932dafdbb5d7"
     },
     {
       "path": "core/infra/pipelines/ci.yml",
@@ -155,11 +155,11 @@
     },
     {
       "path": "core/infra/release.dev.json",
-      "sha256": "75133b212a68f377efc7f1777b240bc4ec45c20eabd15b366a31e1be74b22a9d"
+      "sha256": "78e13009a173f761bca31d194f9d3b3d5a8e0532d865e62c38ebd2e995c292de"
     },
     {
       "path": "core/infra/release.prd.json",
-      "sha256": "9cdb2e90eb4bf25f76d2dbeef6b48d519ee1ebe0bb581157d5ea25d270b9e13d"
+      "sha256": "46b2544d75faf6f9a8562d4034e64ec23d1c9be065584dec19494dcdabf3fbb5"
     },
     {
       "path": "core/infra/types.bicep",
@@ -171,11 +171,11 @@
     },
     {
       "path": "data/infra/main.dev.bicepparam",
-      "sha256": "6d653564ac614bcf67e99381abd999a471002a593ce76bc519214c961a2fb9da"
+      "sha256": "b8a2fb604ddf72dfbf7cb6e7365064543b30fb17d57a53264c353f3f78f975f2"
     },
     {
       "path": "data/infra/main.prd.bicepparam",
-      "sha256": "17eb56b8546130b6b978fb17c719a7496cf7b4241634537bb098337f62913a1a"
+      "sha256": "dc47ce22cfde55abdb3a68e2d7ebc8ca6b89a782704308e85fe8373b91a0ad29"
     },
     {
       "path": "data/infra/pipelines/ci.yml",
@@ -191,11 +191,11 @@
     },
     {
       "path": "data/infra/release.dev.json",
-      "sha256": "69c58700c2f8f1c420afb9b34611576605936b3bc184110f5939d830de8a291e"
+      "sha256": "5c6e4267bd5200390a5f8603c53ea6b9deb11965256fc0ec15179b14f6a42c11"
     },
     {
       "path": "data/infra/release.prd.json",
-      "sha256": "5a4dcd54c362818796b54f92d34152bfea051333ca4a578a6309932fd85f530f"
+      "sha256": "afead6d6b2b894514e1cacfd4ee71f8861a5de713521e1cd6c9d9dc665de1c15"
     },
     {
       "path": "data/infra/server-diagnostics.bicep",
@@ -231,11 +231,11 @@
     },
     {
       "path": "orders/infra/main.dev.bicepparam",
-      "sha256": "b37be6c4c50e7bb66d34101c66f5ac880113a27c34355b755b1ea730c4141779"
+      "sha256": "2a7bb18e22404581b57fe48a290f844694526e6d3154f795e6f42c26313b083c"
     },
     {
       "path": "orders/infra/main.prd.bicepparam",
-      "sha256": "0d75425eab28f9b579a2bc7fa6f9cd5ce3bc86321acb8633eb2f51ae5e479d06"
+      "sha256": "e48a359d5412e929d741f34fb03ddadbd150001a9047ff13dd254aa351f298fc"
     },
     {
       "path": "orders/infra/pipelines/ci.yml",
@@ -255,11 +255,11 @@
     },
     {
       "path": "orders/infra/release.dev.json",
-      "sha256": "9fce781bfeacfe1d475f46d23852f9af88053fb54ff59f299c6d0311eff88943"
+      "sha256": "14293cd7b163c0ff4cd6d4da2e9127a34efa31db51885ad10a3fef39ca31172b"
     },
     {
       "path": "orders/infra/release.prd.json",
-      "sha256": "91568918160558f222a7f6482ac6014eef5ce517f294ce0f15713a7f90ebc218"
+      "sha256": "595e0b7f4402f4c21e5df66f50eb0a509d497bdc735de7692ac5288a406911bf"
     },
     {
       "path": "orders/infra/scripts/data-access-remove.sql",
@@ -283,7 +283,7 @@
     },
     {
       "path": "platform/infra/main.shared.bicepparam",
-      "sha256": "603ab7dd85cb8d2aa672e0ce0304659fa29170229f98ad7b641322b238dcf2b6"
+      "sha256": "331760569296412799cc8072347fb999b0212913e92d599714b49f155828fbad"
     },
     {
       "path": "platform/infra/pipelines/ci.yml",
@@ -303,7 +303,7 @@
     },
     {
       "path": "platform/infra/release.shared.json",
-      "sha256": "8a2e58a68220606b59feca300768ab8e27b52976eedc5c13d34d780a4c34bf20"
+      "sha256": "4634ec1b97e827ae3a2e96542762bf2a6edb2464b68544c7c247b0efacabbb31"
     },
     {
       "path": "platform/infra/types.bicep",

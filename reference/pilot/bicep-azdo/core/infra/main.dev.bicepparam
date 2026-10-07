@@ -4,13 +4,13 @@ using 'main.bicep'
 param target = {
   code: 'dev'
   subscriptionId: '<A>'
-  location: 'francecentral'
+  location: 'northeurope'
 }
 
 param resourceGroups = {
   main: {
     name: 'rg-shop-core-main-dev'
-    location: 'francecentral'
+    location: 'northeurope'
     tags: {
       costCenter: 'ecommerce'
       'ifs-project': 'shop'
@@ -24,7 +24,7 @@ param resourceGroups = {
 param logMain = {
   deploy: true
   name: 'log-shop-main-dev'
-  location: 'francecentral'
+  location: 'northeurope'
   dataRetentionDays: 30
   dailyQuotaGb: '-1'
   skuName: 'PerGB2018'
@@ -43,7 +43,7 @@ param logMain = {
 param appiMain = {
   deploy: true
   name: 'appi-shop-main-dev'
-  location: 'francecentral'
+  location: 'northeurope'
   applicationType: 'web'
   samplingPercentage: 100
   retentionInDays: 365
@@ -71,7 +71,7 @@ param appiMain = {
 param kvMain = {
   deploy: true
   name: 'kv-shop-main-dev'
-  location: 'francecentral'
+  location: 'northeurope'
   enablePurgeProtection: false
   enableRbacAuthorization: true
   enableSoftDelete: true

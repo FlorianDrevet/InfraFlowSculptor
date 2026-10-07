@@ -5,6 +5,21 @@ Describe "Outils de sortie de référence" {
         $script:determinismPath = Join-Path $script:repoRoot "reference/tools/Test-ReferenceDeterminism.ps1"
     }
 
+    It "utilise North Europe pour toutes les cibles du pilote" {
+        $pilotRoot = Join-Path $script:repoRoot "reference/pilot/bicep-azdo"
+        $targetFiles = @(
+            Get-ChildItem -LiteralPath $pilotRoot -Filter "*.bicepparam" -File -Recurse
+            Get-ChildItem -LiteralPath $pilotRoot -Filter "release.*.json" -File -Recurse
+        )
+
+        $targetFiles.Count | Should -BeGreaterThan 0
+        foreach ($targetFile in $targetFiles) {
+            $content = [IO.File]::ReadAllText($targetFile.FullName)
+            $content | Should -Not -Match "(?i)francecentral"
+            $content | Should -Match "(?i)northeurope"
+        }
+    }
+
     It "recalcule un manifeste stable avec les fichiers et leurs SHA-256 triés" {
         $tempRoot = Join-Path ([IO.Path]::GetTempPath()) ("ifs-manifest-" + [guid]::NewGuid().ToString("N"))
         $referenceRoot = Join-Path $tempRoot "reference"

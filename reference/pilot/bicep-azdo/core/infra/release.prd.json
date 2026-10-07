@@ -5,7 +5,7 @@
   "target": "prd",
   "unit": "ifs-shop-core-prd",
   "subscriptionId": "<B>",
-  "location": "francecentral",
+  "location": "northeurope",
   "protected": true,
   "deploymentIdentityObjectId": null,
   "dependencies": [],

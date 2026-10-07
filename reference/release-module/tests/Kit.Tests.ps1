@@ -41,7 +41,7 @@ Describe 'Kit installation P-05' {
                             value = [pscustomobject]@{
                                 main = [pscustomobject]@{
                                     name = $definition.Name
-                                    location = 'francecentral'
+                                    location = 'northeurope'
                                     tags = $tags
                                 }
                             }
@@ -49,7 +49,7 @@ Describe 'Kit installation P-05' {
                     }
                 }
                 $global:IFS_BICEP_PARAMETERS[$parameterPath] = ConvertTo-Json -InputObject $parameterValues -Depth 20 -Compress
-                $definition | Add-Member -NotePropertyName Location -NotePropertyValue 'francecentral' -Force
+                $definition | Add-Member -NotePropertyName Location -NotePropertyValue 'northeurope' -Force
                 $definition | Add-Member -NotePropertyName Tags -NotePropertyValue $tags -Force
                 $release = [pscustomobject]@{
                     Component = $definition.Component
@@ -364,7 +364,7 @@ Describe 'Kit installation P-05' {
             foreach ($definition in @($fixture.Definitions | Where-Object Component -in @('core', 'orders'))) {
                 $create = @($creates | Where-Object { (Get-IfsAzArgumentValue -Arguments $_ -Name '--name') -eq $definition.Name })
                 $create.Count | Should -Be 1
-                Get-IfsAzArgumentValue -Arguments $create[0] -Name '--location' | Should -Be 'francecentral'
+                Get-IfsAzArgumentValue -Arguments $create[0] -Name '--location' | Should -Be 'northeurope'
                 Get-IfsAzArgumentValue -Arguments $create[0] -Name '--subscription' | Should -Be $definition.SubscriptionId
                 $tagIndex = [Array]::IndexOf([string[]]$create[0], '--tags')
                 $actualTags = @($create[0][($tagIndex + 1)..($create[0].Count - 1)] | Sort-Object)
@@ -444,7 +444,7 @@ Describe 'Kit installation P-05' {
                 }
                 $global:IFS_RESOURCE_GROUPS['sub-prd'] = @([pscustomobject]@{
                     name = 'rg-shop-orders-main-prd'
-                    location = $(if ($tagCase.TagName -eq 'location') { 'northeurope' } else { 'francecentral' })
+                    location = $(if ($tagCase.TagName -eq 'location') { 'francecentral' } else { 'northeurope' })
                     tags = $tags
                 })
                 $requiredScopes = @(
@@ -562,7 +562,7 @@ Describe 'Kit installation P-05' {
                     $target = $parameterStem.Split('.')[1]
                     $resourceGroup = [pscustomobject]@{
                         name = "rg-shop-$component-main-$target"
-                        location = 'francecentral'
+                        location = 'northeurope'
                         tags = [ordered]@{
                             costCenter = 'ecommerce'
                             'ifs-project' = 'shop'
