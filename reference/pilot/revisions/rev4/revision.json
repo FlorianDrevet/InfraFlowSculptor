@@ -1,0 +1,6 @@
+{
+  "revision": 4,
+  "lineage": "revisioned",
+  "baseLineages": ["revisioned"],
+  "purpose": "P-07 criterion 10: remove id extra from the managed model"
+}

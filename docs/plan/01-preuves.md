@@ -186,7 +186,7 @@ unité de déploiement dans une cible, reprenable à tout moment, sans doublon.
    |---|---|---|
    | `Read-IfsReleaseData` | — | Lit et valide `release.<cible>.json` (schéma) |
    | `Read-IfsOperationJournal` | 1 (Aperçu) | **Lecture seule**, sans bail : un journal absent est un journal vide ; aucun appel d'écriture ([22 § 3.1](../specs/22-pipelines.md) : l'Aperçu ne modifie rien) |
-   | `Open-IfsOperationJournal` | 6 (Déploiement) | Crée le blob `ifs-operations/<unit>.json` du compte `stifs<projet><cible>` s'il n'existe pas, prend un bail exclusif de 60 s renouvelé toutes les 30 s par une tâche de fond jusqu'à `Close-IfsOperationJournal` (dans le `finally`) ; un bail tenu par un autre run → attente bornée (10 min) puis échec explicite |
+   | `Open-IfsOperationJournal` | 6 (Déploiement) | Crée le blob `ifs-operations/<unit>.json` du compte `stifs<projet><cible>` s'il n'existe pas, prend un bail exclusif de 60 s renouvelé toutes les 30 s par une tâche de fond jusqu'à `Close-IfsOperationJournal` (dans le `finally`) ; si le processus propriétaire meurt, le renouvelleur s'arrête et le bail expire au plus tard 60 s après son dernier renouvellement ; un bail tenu par un autre run → attente bornée (10 min) puis échec explicite |
    | `Get-IfsPendingOperation` | 1, 7 | Opérations `ToDo` ou `Started` d'une exécution précédente |
    | `Test-IfsDependency` | 2 | Chaque ressource de `dependencies` existe (`az resource show --ids`), sinon erreur « Déployez d'abord <composant> en <cible>. » |
    | `Test-IfsSecretVariable` | 3 | Chaque `secretWrites.variable` de source `pipeline` a une valeur dans l'environnement de l'étape (mappée par le YAML), sinon erreur listant les variables vides et le groupe `ifs-<projet>-<cible>` |
@@ -396,33 +396,40 @@ branche.
 🔧 **À faire.**
 1. `tools/proofs/Publish-PilotReference.ps1` : paramètres `-RepositoryPath` (clone local de votre dépôt Azure
    Repos `shop`), `-ProjectCode` (défaut `shop`), `-SubscriptionDev`, `-SubscriptionPrd`, `-SubscriptionShared`,
-   `-SqlAdminGroupObjectIdDev/Prd` ; copie `reference/pilot/bicep-azdo/**` et `samples/witness-app/**` (vers
-   `src/api/`), remplace les valeurs **par la table explicite** des noms de
+   `-SqlAdminGroupObjectIdDev/Prd` ; copie uniquement les fichiers suivis de `reference/pilot/bicep-azdo/**` et
+   `samples/witness-app/**` (vers `src/api/`), remplace les valeurs **par la table explicite** des noms de
    [reference-pilote § 2.1](reference-pilote.md#21-noms-azure) (pas de remplacement global de « shop »), recalcule
-   `.ifs/manifest.json`, et affiche le `git status` sans commiter.
-2. `tools/proofs/New-ProofRevision.ps1` : applique au clone les modifications **écrites à la main** qui simulent
-   les révisions 2 à 5 des critères 6–12 de [reference-pilote § 4](reference-pilote.md#4-critères-dacceptation-du-jalon-0)
-   (fichiers modifiés fournis dans `reference/pilot/revisions/rev<n>/`), pour que chaque preuve parte d'un
-   état exact.
+   `.ifs/manifest.json` avec empreintes par composant et filiation `baseline`, puis affiche le `git status` sans
+   commiter. Une publication réelle exige les deux répertoires source propres et un clone cible propre ; `-WhatIf`
+   reste utilisable sur un arbre source modifié et n'écrit que dans un répertoire temporaire.
+2. `tools/proofs/New-ProofRevision.ps1` : valide la révision et la filiation déclarées dans `revision.json`, vérifie
+   que les changements du clone sont couverts par les empreintes du manifeste, puis applique au clone les modifications
+   **écrites à la main** qui simulent les révisions 2 à 5 des critères 6–12 de
+   [reference-pilote § 4](reference-pilote.md#4-critères-dacceptation-du-jalon-0) (fichiers fournis dans
+   `reference/pilot/revisions/rev<n>/`), ainsi que les overlays indépendants `p2` et `p3-role` des critères 8 et 9a.
+   Le manifeste recalculé conserve une empreinte logique indépendante des fins de ligne Windows `autocrlf`.
 3. `docs/plan/recettes/01-preuves.md` : la recette complète, dans l'ordre P1, P9, P3, P8, P2, P4, P5, P7 ; pour
    chacune : état initial, actions (portail, Azure DevOps, commandes exactes), résultat attendu, preuve à
    recueillir (lien du run, extrait du rapport, capture) ; durée estimée ; nettoyage.
-3 bis. `tools/proofs/Save-AdoRecordings.ps1` : pour un run Azure DevOps donné (organisation, projet, identifiant), enregistre
-   les réponses JSON utilisées par le suivi (J0-30) — build, timeline, liste et contenu des artefacts `ifs-report`,
-   `ifs-preview`, `ifs-app-report`, approbations — **anonymisées** (organisation, projet, abonnements, identifiants
-   d'objets, adresses remplacés par des valeurs fixes documentées) dans `src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/AzureDevOps/Recordings/<scénario>/`.
+3 bis. `tools/proofs/Save-AdoRecordings.ps1` : pour un run Azure DevOps donné (organisation, projet, identifiant), conserve
+     les réponses JSON brutes avant leur anonymisation pour préserver les timestamps textuels, puis écrit de manière
+     transactionnelle les réponses build, timeline, liste et contenu textuel des artefacts `ifs-report`, `ifs-preview`,
+     `ifs-app-report`, et un instantané des approbations du projet dans
+     `src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/AzureDevOps/Recordings/<scénario>/`. Les pseudonymes
+     déterministes préservent les relations répétées et un scan final refuse les identifiants ou secrets résiduels.
+     Le schéma API des approbations ne fournit pas de RunId : l'instantané est contextualisé par le run demandé, mais
+     les approbations ne lui sont pas attribuées automatiquement.
    La recette demande de l'exécuter après chaque preuve (release réussie, partiellement appliquée, interrompue, commit de
    fusion différent, attente d'approbation).
 4. `docs/plan/preuves/resultats.md` : tableau `Preuve | Date | Résultat (OK/KO) | Preuve recueillie |
    Remarques`, vide.
-5. Reprendre les dix constats mineurs de [R-02](revues/R-02-revue.md#constats-mineurs-à-intégrer-au-plan) comme
-   suivi P-07/P-08 : santé de la nouvelle révision, séparation stderr/stdout, écriture des secrets et ACL temporaires,
-   emplacement des modules Bicep, complétude et francisation de `SETUP.md`, codes projet `shopNN`, couverture
-   PSScriptAnalyzer, révocation SQL journalisée, politique de revue de PR sur la branche par défaut et stabilité de
-   l'empreinte What-If.
+5. Reporter les constats mineurs de R-02 selon la revue approuvée : aucun nouveau constat mineur n'a été relevé
+   ([R-02](revues/R-02-revue.md#constats)); il n'y a donc aucun point mineur à reprendre dans P-07/P-08.
 
-✅ **Vérification automatique.** `Publish-PilotReference.ps1 -WhatIf` sur un dossier temporaire : les fichiers
-attendus, aucun nom non remplacé quand `-ProjectCode shop42` (recherche de `-shop-` résiduels hors table).
+✅ **Vérification automatique.** Analyse statique PowerShell, fixture d'anonymisation (timestamps, secrets, identifiants
+liés et relations `parentId`), `Publish-PilotReference.ps1 -WhatIf` avec contrôle que la cible reste inchangée, chaîne
+`p2 → rev3 → rev4 → rev5` sur des clones temporaires, rejet des filiations incorrectes et des fichiers parasites,
+et application d'overlay après un checkout forcé `core.autocrlf=true`.
 
 🧪 **Test manuel.** Lire `recettes/01-preuves.md` ; vérifier que chaque prérequis est à votre portée (droits
 Owner sur les abonnements, administrateur de projet Azure DevOps, groupe Entra créable).

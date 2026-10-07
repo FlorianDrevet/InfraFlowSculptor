@@ -1,0 +1,24 @@
+diff --git a/orders/infra/main.dev.bicepparam b/orders/infra/main.dev.bicepparam
+--- a/orders/infra/main.dev.bicepparam
++++ b/orders/infra/main.dev.bicepparam
+@@ -98,7 +98,7 @@ param caApi = {
+   cpu: '0.5'
+   memory: '1Gi'
+   minReplicas: 0
+-  maxReplicas: 2
++  maxReplicas: 3
+   ingressExternal: true
+   ingressTargetPort: 8080
+   ingressAllowInsecure: false
+diff --git a/orders/infra/main.prd.bicepparam b/orders/infra/main.prd.bicepparam
+--- a/orders/infra/main.prd.bicepparam
++++ b/orders/infra/main.prd.bicepparam
+@@ -98,7 +98,7 @@ param caApi = {
+   cpu: '1'
+   memory: '2Gi'
+   minReplicas: 1
+-  maxReplicas: 3
++  maxReplicas: 4
+   ingressExternal: true
+   ingressTargetPort: 8080
+   ingressAllowInsecure: false

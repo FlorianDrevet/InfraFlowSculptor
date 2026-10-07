@@ -1,0 +1,28 @@
+diff --git a/orders/infra/main.bicep b/orders/infra/main.bicep
+--- a/orders/infra/main.bicep
++++ b/orders/infra/main.bicep
+@@ -153,24 +153,6 @@ module keyVaultSecretsUser './key-vault-role-assignment.bicep' = if (caApi.deploy
+   }
+ }
+ 
+-module logAnalyticsReader './workspace-role-assignment.bicep' = if (caApi.deploy && apiIdentity.deploy) {
+-  name: 'logAnalyticsReader-${target.code}-${uniqueString(externalResources.coreWorkspace.name)}'
+-  scope: resourceGroup(
+-    externalResources.coreWorkspace.subscriptionId,
+-    externalResources.coreWorkspace.resourceGroupName
+-  )
+-  params: {
+-    workspaceName: externalResources.coreWorkspace.name
+-    assignmentName: guid(coreWorkspace.id, apiIdentityModule!.outputs.principalId, logAnalyticsReaderRoleId)
+-    principalId: apiIdentityModule!.outputs.principalId
+-    roleDefinitionId: subscriptionResourceId(
+-      externalResources.coreWorkspace.subscriptionId,
+-      'Microsoft.Authorization/roleDefinitions',
+-      logAnalyticsReaderRoleId
+-    )
+-  }
+-}
+-
+ module acrPull './registry-role-assignment.bicep' = if (caApi.deploy && apiIdentity.deploy) {
+   name: 'acrPull-${target.code}-${uniqueString(externalResources.platformRegistry.name)}'
+   scope: resourceGroup(

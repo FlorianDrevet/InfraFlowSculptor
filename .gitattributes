@@ -2,3 +2,4 @@
 *.ps1 text eol=lf
 *.png binary
 *.zip binary
+reference/pilot/revisions/**/*.patch whitespace=-blank-at-eol

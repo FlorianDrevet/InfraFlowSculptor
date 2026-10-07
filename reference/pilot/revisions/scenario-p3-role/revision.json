@@ -1,0 +1,6 @@
+{
+  "revision": 2,
+  "lineage": "p3-role",
+  "baseLineages": ["baseline"],
+  "purpose": "P-07 criterion 9a: narrow the orders workspace role during approval"
+}

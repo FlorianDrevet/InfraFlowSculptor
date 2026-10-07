@@ -295,7 +295,9 @@ function Open-IfsOperationJournal {
     Ouvre le journal sous un bail exclusif renouvelé pendant la release.
     .DESCRIPTION
     Crée le conteneur et le journal si nécessaire, puis attend au plus dix minutes un bail déjà détenu.
-    Fermez le contexte avec Close-IfsOperationJournal dans un bloc finally.
+    Fermez le contexte avec Close-IfsOperationJournal dans un bloc finally. Le processus de renouvellement
+    s'arrête aussi si le processus propriétaire se termine sans appeler Close ; le bail restant expire alors
+    au plus tard 60 secondes après son dernier renouvellement.
     #>
     [CmdletBinding()]
     param(
@@ -330,13 +332,17 @@ function Open-IfsOperationJournal {
         $context.Journal = Read-IfsJournalBlob -Coordinates $coordinates -LeaseId $leaseId
         $context.RenewalStopFile = Join-Path ([IO.Path]::GetTempPath()) ('ifs-lease-stop-{0}' -f [guid]::NewGuid().ToString('N'))
         $context.RenewalFailureFile = Join-Path ([IO.Path]::GetTempPath()) ('ifs-lease-failure-{0}.txt' -f [guid]::NewGuid().ToString('N'))
+        $ownerProcess = [System.Diagnostics.Process]::GetCurrentProcess()
+        try { $ownerProcessStartTimeUtcTicks = $ownerProcess.StartTime.ToUniversalTime().Ticks }
+        finally { $ownerProcess.Dispose() }
         $renewalScript = Join-Path $PSScriptRoot 'IfsLeaseRenewal.ps1'
         $pwshPath = (Get-Command pwsh -ErrorAction Stop).Source
         $processArguments = @(
             '-NoProfile', '-NonInteractive', '-File', ('"{0}"' -f $renewalScript),
             '-Account', $coordinates.Account, '-Container', $coordinates.Container, '-Blob', $coordinates.Blob,
             '-LeaseId', $leaseId, '-StopFile', ('"{0}"' -f $context.RenewalStopFile),
-            '-FailureFile', ('"{0}"' -f $context.RenewalFailureFile)
+            '-FailureFile', ('"{0}"' -f $context.RenewalFailureFile),
+            '-OwnerProcessId', $PID, '-OwnerProcessStartTimeUtcTicks', $ownerProcessStartTimeUtcTicks
         ) -join ' '
         $startParameters = @{ FilePath = $pwshPath; ArgumentList = $processArguments; PassThru = $true }
         if ($IsWindows) { $startParameters.WindowStyle = 'Hidden' }
