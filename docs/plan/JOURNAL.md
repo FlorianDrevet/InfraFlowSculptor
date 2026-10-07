@@ -33,3 +33,5 @@
 | 2026-10-07 00:51 | Luna | `P-05` terminée | commit `639f3c3` |
 | 2026-10-07 09:29 | Luna | `P-06` terminée | commit `5aba790` |
 | 2026-10-07 09:50 | Luna | revue `R-02` demandée | R-02-demande.md |
+| 2026-10-07 10:21 | Claude | verrou `R-02` : corrections demandées | R-02-revue.md |
+| 2026-10-07 12:16 | Luna | revue `R-02` demandée | R-02-demande.md |
