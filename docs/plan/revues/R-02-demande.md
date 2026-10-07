@@ -2,7 +2,7 @@
 
 - **Segment** : P-01 → P-06
 - **Branche / pull request** : `impl/preuves` → `impl/socle` ([PR #2](https://github.com/FlorianDrevet/InfraFlowSculptor/pull/2), empilée sur la PR #1 encore ouverte)
-- **Commits** : `origin/impl/socle..HEAD`, de `884b323` à `903f9ea`
+- **Commits de code et de sortie relus** : `origin/impl/socle..f782c1c`, de `884b323` à `f782c1c`
   - `884b323` — application témoin et contrôle de ses dépendances
   - `7e4fba3` — P-01 terminée
   - `aa9da86` — injection du secret E2E dans le royaume jetable
@@ -26,6 +26,8 @@
   - `a34621e` — respecter `WhatIf` pendant la finalisation
   - `903f9ea` — éviter la collision avec la variable automatique `$Matches`
   - `f782c1c` — aligner le manifeste, les en-têtes générés et le format Bicep
+  - `13df3cb` — actualiser la demande après les corrections
+  - `434505f` — enregistrer la demande R-02 au garde-fou du plan
 
 ## Vérifications exécutées
 
