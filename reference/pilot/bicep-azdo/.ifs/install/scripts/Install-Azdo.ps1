@@ -101,7 +101,7 @@ function Get-IfsPipelineDefinition {
     param([Parameter(Mandatory)] [object] $Model)
 
     $pipelineFiles = @(Get-ChildItem -LiteralPath $script:Root -Filter '*.yml' -File -Recurse | Where-Object {
-        $_.FullName -match '[\\/](infra|apps)[\\/].*[\\/]pipelines[\\/](pr|ci|release)\.yml$' -and $_.FullName -notmatch '[\\/](reference|\.git)[\\/]'
+        $_.FullName -match '[\\/]pipelines[\\/](pr|ci|release)\.yml$' -and $_.FullName -notmatch '[\\/](reference|\.git)[\\/]'
     })
     $definitions = foreach ($file in $pipelineFiles) {
         $relative = [IO.Path]::GetRelativePath($script:Root, $file.FullName).Replace('\', '/')
@@ -135,14 +135,14 @@ function Get-IfsPipelineDefinition {
             Targets = @($Model.Targets | Where-Object { @($_.Releases | ForEach-Object { $_.Data.component } | Sort-Object -Unique) -contains $component })
         }
     }
-    if ($definitions.Count -eq 0) { throw 'Aucun pipeline PR, CI ou Release pilote trouve.' }
+    if (@($definitions).Count -eq 0) { throw 'Aucun pipeline PR, CI ou Release pilote trouve.' }
     return @($definitions | Sort-Object Folder, Kind)
 }
 
 function Get-IfsCheckType {
     param([Parameter(Mandatory)] [string] $Pattern)
     $typesResponse = Invoke-IfsAdoApi -Path "pipelines/checks/types?api-version=$script:ChecksApiVersion"
-    $type = @(Get-IfsAdoValue $typesResponse | Where-Object { ([string]$_.name + ' ' + [string]$_.displayName) -match $Pattern } | Select-Object -First 1)
+    $type = @(Get-IfsAdoValue $typesResponse | Where-Object { ([string]$_.name -match $Pattern) -or ([string]$_.displayName -match $Pattern) } | Select-Object -First 1)
     if ($type.Count -eq 0) { throw "Azure DevOps n'expose pas le type de controle '$Pattern'." }
     return $type[0]
 }
@@ -286,7 +286,7 @@ function Set-IfsVariableGroup {
 
 function Set-IfsPipelinePermission {
     [CmdletBinding(SupportsShouldProcess = $true)]
-    param([Parameter(Mandatory)] [string] $ResourceType, [Parameter(Mandatory)] [string] $ResourceId, [Parameter(Mandatory)] [int[]] $AuthorizedPipelineIds, [Parameter(Mandatory)] [int[]] $ManagedPipelineIds)
+    param([Parameter(Mandatory)] [string] $ResourceType, [Parameter(Mandatory)] [string] $ResourceId, [Parameter(Mandatory)] [AllowEmptyCollection()] [int[]] $AuthorizedPipelineIds, [Parameter(Mandatory)] [int[]] $ManagedPipelineIds)
     $authorized = [Collections.Generic.HashSet[int]]::new()
     foreach ($id in $AuthorizedPipelineIds) { [void]$authorized.Add($id) }
     $body = [ordered]@{
@@ -308,6 +308,58 @@ function Get-IfsManagedPipelineId {
     $managed += @($CurrentDefinitions | Where-Object { $_.Id } | ForEach-Object { [int]$_.Id })
     if ($env:BUILD_DEFINITIONID -match '^\d+$') { $managed += [int]$env:BUILD_DEFINITIONID }
     return @($managed | Sort-Object -Unique)
+}
+
+function Set-IfsFinalEndpointPermissions {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)] [string] $ProjectCode,
+        [Parameter(Mandatory)] [object[]] $Targets,
+        [Parameter(Mandatory)] [object[]] $Definitions,
+        [Parameter(Mandatory)] [object[]] $Endpoints,
+        [Parameter(Mandatory)] [int[]] $ManagedPipelineIds
+    )
+
+    $failures = [Collections.Generic.List[string]]::new()
+    foreach ($target in $Targets) {
+        $infraName = "ifs-$ProjectCode-$($target.Name)"
+        $appName = "$infraName-app"
+        $infraIds = @($Definitions | Where-Object {
+            $_.Kind -eq 'RELEASE' -and -not $_.IsApp -and $_.Targets.Name -contains $target.Name -and
+            $null -ne $_.PSObject.Properties['Id'] -and [int]$_.Id -gt 0
+        } | ForEach-Object { [int]$_.Id })
+        $appIds = @($Definitions | Where-Object {
+            $_.Kind -eq 'RELEASE' -and $_.IsApp -and $_.Targets.Name -contains $target.Name -and
+            $null -ne $_.PSObject.Properties['Id'] -and [int]$_.Id -gt 0
+        } | ForEach-Object { [int]$_.Id })
+        if ($target.Name -eq 'shared') {
+            $appIds += @($Definitions | Where-Object {
+                $_.Kind -eq 'CI' -and $_.IsApp -and $_.FilePath -match 'orders[\\/]apps[\\/]api' -and
+                $null -ne $_.PSObject.Properties['Id'] -and [int]$_.Id -gt 0
+            } | ForEach-Object { [int]$_.Id })
+        }
+
+        foreach ($endpointPlan in @(
+            [pscustomobject]@{ Name = $infraName; AuthorizedPipelineIds = $infraIds }
+            [pscustomobject]@{ Name = $appName; AuthorizedPipelineIds = $appIds }
+        )) {
+            $endpoint = @($Endpoints | Where-Object { $_.name -eq $endpointPlan.Name } | Select-Object -First 1)
+            if ($endpoint.Count -eq 0) {
+                $failures.Add("Service connection '$($endpointPlan.Name)' introuvable pour retirer l'autorisation de l'installateur.")
+                continue
+            }
+            if ([string]$endpoint[0].description -notmatch [regex]::Escape($script:OwnerMarker)) {
+                $failures.Add("Service connection '$($endpointPlan.Name)' sans marque IFS; autorisation non modifiee.")
+                continue
+            }
+            try {
+                Set-IfsPipelinePermission -ResourceType 'endpoint' -ResourceId ([string]$endpoint[0].id) -AuthorizedPipelineIds $endpointPlan.AuthorizedPipelineIds -ManagedPipelineIds $ManagedPipelineIds
+            }
+            catch { $failures.Add("Service connection '$($endpointPlan.Name)' : $($_.Exception.Message)") }
+        }
+    }
+
+    if ($failures.Count -gt 0) { throw "Retrait des autorisations temporaires incomplet : $($failures -join '; ')" }
 }
 
 function Find-IfsIdentity {
@@ -431,15 +483,6 @@ $queue = $queue[0]
 $definitions = @(Get-IfsPipelineDefinition -Model $model)
 Initialize-IfsReport
 
-if ($Phase -eq 'Finalize') {
-    $existingDefinitions = Get-IfsAdoValue (Invoke-IfsAdoApi -Path "build/definitions?api-version=$script:ApiVersion")
-    foreach ($definition in $definitions) {
-        $existing = @($existingDefinitions | Where-Object { $_.name -eq $definition.Name -and $_.path -eq $definition.Folder } | Select-Object -First 1)
-        if ($existing.Count -eq 0) { throw "Pipeline '$($definition.Name)' absent apres la phase Prepare." }
-        $definition | Add-Member -NotePropertyName Id -NotePropertyValue ([int]$existing[0].id) -Force
-    }
-}
-
 if ($Phase -eq 'Prepare') {
     $environments = @{}
     foreach ($target in $model.Targets) { $environments[$target.Name] = Set-IfsEnvironment -Name "$($model.ProjectCode)-$($target.Name)" -Revision $model.Revision }
@@ -501,14 +544,28 @@ if ($Phase -eq 'Prepare') {
     exit 0
 }
 
+$finalizationError = $null
+$finalizationEndpointList = @()
+$finalizationManagedPipelineIds = @()
+try {
+    $existingDefinitions = Get-IfsAdoValue (Invoke-IfsAdoApi -Path "build/definitions?api-version=$script:ApiVersion")
+    foreach ($definition in $definitions) {
+        $existing = @($existingDefinitions | Where-Object { $_.name -eq $definition.Name -and $_.path -eq $definition.Folder } | Select-Object -First 1)
+        if ($existing.Count -eq 0) { throw "Pipeline '$($definition.Name)' absent apres la phase Prepare." }
+        $definition | Add-Member -NotePropertyName Id -NotePropertyValue ([int]$existing[0].id) -Force
+    }
+
+$endpointsResponse = Invoke-IfsAdoApi -Path 'serviceendpoint/endpoints?api-version=7.1-preview.4'
+$finalizationEndpointList = @(Get-IfsAdoValue $endpointsResponse)
+$finalizationManagedPipelineIds = @(Get-IfsManagedPipelineId -CurrentDefinitions $definitions -ProjectCode $model.ProjectCode)
+Set-IfsFinalEndpointPermissions -ProjectCode $model.ProjectCode -Targets $model.Targets -Definitions $definitions -Endpoints $finalizationEndpointList -ManagedPipelineIds $finalizationManagedPipelineIds
+
 $approver = Find-IfsIdentity -DisplayName 'Shop Release Approvers'
 $approvalType = Get-IfsCheckType -Pattern '^(Approval)$'
 $lockType = Get-IfsCheckType -Pattern 'Exclusive.?Lock'
 $branchType = Get-IfsCheckType -Pattern 'Branch.?Control'
 $templateType = Get-IfsCheckType -Pattern 'Required.?Template'
-$endpointsResponse = Invoke-IfsAdoApi -Path 'serviceendpoint/endpoints?api-version=7.1-preview.4'
-$endpointList = @(Get-IfsAdoValue $endpointsResponse)
-$allManagedIds = @(Get-IfsManagedPipelineId -CurrentDefinitions $definitions -ProjectCode $model.ProjectCode)
+$endpointList = $finalizationEndpointList
 
 foreach ($target in $model.Targets) {
     $environmentName = "$($model.ProjectCode)-$($target.Name)"
@@ -545,26 +602,13 @@ foreach ($definition in $definitions | Where-Object { $_.Kind -eq 'PR' }) {
 }
 
 foreach ($target in $model.Targets) {
-    $infraName = "ifs-$($model.ProjectCode)-$($target.Name)"
-    $appName = "$infraName-app"
     $infraDefinitionIds = @($definitions | Where-Object { $_.Kind -eq 'RELEASE' -and -not $_.IsApp -and $_.Targets.Name -contains $target.Name } | ForEach-Object { [int]$_.Id })
     $appDefinitionIds = @($definitions | Where-Object { $_.Kind -eq 'RELEASE' -and $_.IsApp -and $_.Targets.Name -contains $target.Name } | ForEach-Object { [int]$_.Id })
     if ($target.Name -eq 'shared') { $appDefinitionIds += @($definitions | Where-Object { $_.Kind -eq 'CI' -and $_.IsApp -and $_.FilePath -match 'orders[\\/]apps[\\/]api' } | ForEach-Object { [int]$_.Id }) }
-    $SetInfra = $infraDefinitionIds
-    $SetApp = $appDefinitionIds
-    if ($null -ne $env:BUILD_DEFINITIONID) {
-        $SetInfra = @($infraDefinitionIds | Where-Object { $_ -ne [int]$env:BUILD_DEFINITIONID })
-        $SetApp = @($appDefinitionIds | Where-Object { $_ -ne [int]$env:BUILD_DEFINITIONID })
-    }
-    foreach ($endpoint in @($endpointList | Where-Object { $_.name -in @($infraName, $appName) })) {
-        $authorized = if ($endpoint.name -eq $infraName) { $SetInfra } else { $SetApp }
-        Set-IfsPipelinePermission -ResourceType 'endpoint' -ResourceId ([string]$endpoint.id) -AuthorizedPipelineIds $authorized -ManagedPipelineIds $allManagedIds
-    }
     $environmentResponse = Invoke-IfsAdoApi -Path "distributedtask/environments?name=$([uri]::EscapeDataString("$($model.ProjectCode)-$($target.Name)"))&api-version=$script:ApiVersion"
     $environment = @(Get-IfsAdoValue $environmentResponse | Where-Object { $_.name -eq "$($model.ProjectCode)-$($target.Name)" } | Select-Object -First 1)[0]
     $authorized = @($infraDefinitionIds + $appDefinitionIds | Sort-Object -Unique)
-    Set-IfsPipelinePermission -ResourceType 'environment' -ResourceId ([string]$environment.id) -AuthorizedPipelineIds $authorized -ManagedPipelineIds $allManagedIds
-    Add-IfsReportEvent -Target $target.Name -Name 'autorisation temporaire installateur' -Status 'retiree' -Details 'Seuls les pipelines de livraison references sont autorises.'
+    Set-IfsPipelinePermission -ResourceType 'environment' -ResourceId ([string]$environment.id) -AuthorizedPipelineIds $authorized -ManagedPipelineIds $finalizationManagedPipelineIds
 }
 
 $script:Report.readiness = @($model.Targets | ForEach-Object {
@@ -579,4 +623,33 @@ $script:Report.readiness = @($model.Targets | ForEach-Object {
         secretVariables = 'noms presents; valeurs masquées par Azure DevOps; verification manuelle requise'
     }
 })
-Save-IfsReport
+}
+catch {
+    $finalizationError = $_
+    throw
+}
+finally {
+    $cleanupError = $null
+    try {
+        if (@($finalizationEndpointList).Count -eq 0) {
+            $endpointsResponse = Invoke-IfsAdoApi -Path 'serviceendpoint/endpoints?api-version=7.1-preview.4'
+            $finalizationEndpointList = @(Get-IfsAdoValue $endpointsResponse)
+        }
+        if (@($finalizationManagedPipelineIds).Count -eq 0) {
+            $finalizationManagedPipelineIds = @(Get-IfsManagedPipelineId -CurrentDefinitions $definitions -ProjectCode $model.ProjectCode)
+        }
+        Set-IfsFinalEndpointPermissions -ProjectCode $model.ProjectCode -Targets $model.Targets -Definitions $definitions -Endpoints $finalizationEndpointList -ManagedPipelineIds $finalizationManagedPipelineIds
+        foreach ($target in $model.Targets) {
+            Add-IfsReportEvent -Target $target.Name -Name 'autorisation temporaire installateur' -Status 'retiree' -Details 'Seuls les pipelines de livraison references sont autorises.'
+        }
+        Save-IfsReport
+    }
+    catch { $cleanupError = $_ }
+
+    if ($null -ne $cleanupError) {
+        if ($null -ne $finalizationError) {
+            throw "La finalisation a echoue : $($finalizationError.Exception.Message). Le retrait des autorisations temporaires a aussi echoue : $($cleanupError.Exception.Message)"
+        }
+        throw "Le retrait des autorisations temporaires a echoue : $($cleanupError.Exception.Message)"
+    }
+}
