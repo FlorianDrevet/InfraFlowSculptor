@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas |
-| **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`R-02`](docs/plan/01-preuves.md#-r-02--revue-de-la-sortie-de-référence-avant-azure) — Revue de la sortie de référence (avant Azure) (approuvée) |
-| **Étape suivante** | `P-08` — Exécution des preuves (accompagnement) |
+| **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
+| **Statut** | `EN_ATTENTE_DE_RECETTE` |
+| **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
+| **Étape suivante** | `R-03` — Revue des preuves |
 | **Verrou** | aucun |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
-| **Dernière mise à jour** | 2026-10-07 — Claude (revue R-02) |
+| **Dernière mise à jour** | 2026-10-07 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
 résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question ci-dessous).
 

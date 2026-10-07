@@ -38,3 +38,5 @@
 | 2026-10-07 12:43 | Claude | verrou `R-02` : corrections demandées | R-02-revue.md |
 | 2026-10-07 13:15 | Luna | revue `R-02` demandée | R-02-demande.md |
 | 2026-10-07 13:46 | Claude | verrou `R-02` levé | R-02-revue.md |
+| 2026-10-07 16:29 | Luna | `P-07` terminée | commit `1d6f1be` |
+| 2026-10-07 16:29 | Luna | `P-08` attend une recette de l'utilisateur |  |
