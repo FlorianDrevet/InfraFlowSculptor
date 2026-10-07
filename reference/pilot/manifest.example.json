@@ -15,7 +15,7 @@
     },
     {
       "path": ".ifs/install/install.pipeline.yml",
-      "sha256": "55823a9e309aa0bd88293a340963bda1ecc946ed4a49b109689dbaf73c665755"
+      "sha256": "24cdc9da14a3cda9d6805047b7122830d0b2689ebf533302d1f7b8e8576d1362"
     },
     {
       "path": ".ifs/install/readiness.bicep",

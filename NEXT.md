@@ -10,7 +10,7 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `EN_ATTENTE_DE_RECETTE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
 | **Verrou** | aucun |
@@ -50,7 +50,9 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 
 | Élément | État | Depuis |
 |---|---|---|
-| Abonnements Azure de test (preuves) | — | — |
+| Abonnements Azure de test (preuves) | — (une seule souscription, `northeurope`, [DT-42](docs/technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure)) | — |
+| Plafond de dépense et estimation actualisée des preuves ([verrou](docs/plan/recettes/01-preuves.md#0-verrou-de-coût-et-préflight-bloquants)) | Feu vert général reçu le 2026-10-07 ; 200 € évoqués comme exemple, plafond non confirmé ; estimation à revalider avant Azure | 2026-10-07 |
+| Ressources Azure créées pour les preuves ([inventaire](docs/plan/preuves/inventaires-azure.md)) | Aucune créée par Luna ; inventaire de référence à capturer avant la première création | 2026-10-07 |
 | Organisation / projet Azure DevOps de test | — | — |
 | Groupes Entra (`sg-shop-sql-admins`) et Azure DevOps (« Shop Release Approvers ») | — | — |
 | Inscriptions Entra d'IFS (`dev`) | — | — |

@@ -18,6 +18,25 @@ Describe "Outils de sortie de référence" {
             $content | Should -Not -Match "(?i)francecentral"
             $content | Should -Match "(?i)northeurope"
         }
+
+        $allPilotFiles = @(Get-ChildItem -LiteralPath $pilotRoot -File -Recurse -Force)
+        foreach ($pilotFile in $allPilotFiles) {
+            [IO.File]::ReadAllText($pilotFile.FullName) | Should -Not -Match "(?i)francecentral"
+        }
+
+        $installPipeline = [IO.File]::ReadAllText((Join-Path $pilotRoot ".ifs/install/install.pipeline.yml"))
+        $installPipeline | Should -Match "(?i)--location northeurope"
+        $installPipeline | Should -Not -Match "(?i)francecentral"
+    }
+
+    It "garde les overlays de preuve en North Europe" {
+        $revisionRoot = Join-Path $script:repoRoot "reference/pilot/revisions"
+        $patchFiles = @(Get-ChildItem -LiteralPath $revisionRoot -Filter "changes.patch" -File -Recurse)
+
+        $patchFiles.Count | Should -BeGreaterThan 0
+        foreach ($patchFile in $patchFiles) {
+            [IO.File]::ReadAllText($patchFile.FullName) | Should -Not -Match "(?i)francecentral"
+        }
     }
 
     It "recalcule un manifeste stable avec les fichiers et leurs SHA-256 triés" {

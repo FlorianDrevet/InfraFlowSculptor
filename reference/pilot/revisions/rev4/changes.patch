@@ -39,7 +39,7 @@ diff --git a/orders/infra/main.dev.bicepparam b/orders/infra/main.dev.bicepparam
 -param extraIdentity = {
 -  deploy: true
 -  name: 'id-shop-extra-dev'
--  location: 'francecentral'
+-  location: 'northeurope'
 -  tags: {
 -    costCenter: 'ecommerce'
 -    'ifs-project': 'shop'
@@ -62,7 +62,7 @@ diff --git a/orders/infra/main.prd.bicepparam b/orders/infra/main.prd.bicepparam
 -param extraIdentity = {
 -  deploy: true
 -  name: 'id-shop-extra-prd'
--  location: 'francecentral'
+-  location: 'northeurope'
 -  tags: {
 -    costCenter: 'ecommerce'
 -    'ifs-project': 'shop'

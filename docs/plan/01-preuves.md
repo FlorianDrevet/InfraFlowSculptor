@@ -446,30 +446,56 @@ Owner sur les abonnements, administrateur de projet Azure DevOps, groupe Entra c
 | **Dépend de** | P-07 |
 | **Commit** | `fix(reference): <correction>` (une par défaut constaté), puis `docs(preuves): résultats` |
 
-🎯 **Objectif.** Les preuves sont exécutées par vous ; Luna corrige les défauts **d'exécution** (faute de frappe,
-paramètre d'API, version de commande `az`) constatés pendant la recette.
+🎯 **Objectif.** Après le feu vert de l'utilisateur du 2026-10-07, Luna exécute les préflights, les preuves, les captures
+Azure DevOps et leur consignation. Luna corrige les défauts **d'exécution** ; une question de conception reste soumise à
+la revue Claude. Une intervention de l'utilisateur n'est demandée que si une étape exige son authentification ou une
+action impossible à réaliser avec les accès déjà ouverts.
 
 🔧 **À faire.**
-1. `python tools/plan/gate.py wait-recette P-08` (statut `EN_ATTENTE_DE_RECETTE`) puis arrêt. Conduite unique à chaque
-   nouvelle session :
-   - l'utilisateur ne transmet rien → `gate.py check` renvoie 3 : s'arrêter ;
-   - l'utilisateur transmet des résultats (KO, partiels ou « recette terminée ») → `gate.py resume P-08`, traiter ces
-     résultats (point 2), les consigner, enregistrer les réponses Azure DevOps fournies (point 3 bis de P-07) ; puis
-     `gate.py wait-recette P-08` s'il en reste, ou `gate.py done P-08` si l'utilisateur a déclaré la recette terminée.
-2. Pour chaque KO transmis (journal du run, message) : si la cause est une erreur de mise en œuvre de la sortie
+0. **Profil de coût des preuves** ([DT-42](../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure),
+   [reference-pilote § 1.6](reference-pilote.md#16-profil-de-coût-des-preuves)), **hors ligne et avant la recette** (à
+   faire quand l'utilisateur relance P-08 par `gate.py resume P-08` ; ne pas toucher au statut autrement) :
+   1. Remplacer `francecentral` par `northeurope` dans `reference/pilot/bicep-azdo/**`, y compris le `--location` des
+      What-If d'installation, dans les overlays de révision, dans les fixtures et tests qui l'affirment, puis recalculer
+      `reference/pilot/manifest.example.json`
+      (`reference/tools/Update-ManifestExample.ps1`). Commit `fix(reference): région northeurope des cibles du pilote`.
+   2. `tools/proofs/Publish-PilotReference.ps1` : appliquer, **à la publication seulement**, le profil du § 1.6 (SKU ACR,
+      SKU et paramètres SQL, zone du CAE, réplicas, rétention `appi`, plafond Log Analytics) ; `reference/pilot/` ne reçoit
+      que la région. Les propriétés SQL ajoutées passent par `types.bicep`/`main.bicep` **du clone** (module AVM
+      `sql/server:0.22.0` : `autoPauseDelay`, `minCapacity`, `zoneRedundant`, `useFreeLimit`, `freeLimitExhaustionBehavior`),
+      lues en option `-SqlFreeOffer` (faux par défaut, **prd seulement** ; dev reste serverless payant). Commit
+      `feat(preuves): profil de coût des preuves`.
+   3. Tests : `Publish-PilotReference.ps1 -WhatIf` affiche chaque substitution du profil ; Pester publie un clone temporaire,
+      applique `p2 → rev3 → rev4 → rev5`, `rev2` et `p3-role` sur un clone **profilé** ; le profil est idempotent et ne
+      laisse aucune écriture partielle si une valeur est inattendue ; `bicep build` du clone profilé sans avertissement ;
+      aucune occurrence de `francecentral`, `GP_Gen5_2`, `Standard` (ACR) dans le clone.
+1. Avant toute commande Azure, exiger dans `NEXT.md` un plafond chiffré confirmé, une estimation actualisée et
+   l'inventaire de référence. Le feu vert général ne remplace pas ce verrou. Une fois le verrou franchi, exécuter la
+   recette dans l'ordre P1, P9, P3, P8, P2, P4, P5, P7, avec un seul jeu Azure à la fois. Après chaque run, capturer les
+   réponses Azure DevOps (étape 3 bis de P-07) et consigner son résultat. `P-08` reste `EN_COURS` jusqu'au dernier
+   nettoyage ; ne pas demander à l'utilisateur de rejouer les preuves déjà exécutées par Luna.
+2. Pour chaque KO observé pendant la recette (journal du run, message) : si la cause est une erreur de mise en œuvre de la sortie
    de référence (le comportement attendu est clair dans la spec et le plan), corriger, ajouter le test Pester
    qui l'aurait détectée, commiter `fix(reference): …` ; si la cause est une question de conception, ne rien
    corriger : question pour Claude.
-3. Consigner chaque résultat transmis dans `docs/plan/preuves/resultats.md`.
+3. Consigner chaque résultat exécuté dans `docs/plan/preuves/resultats.md`.
+4. **Coût et propriété** : vérifier et consigner le coût au démarrage et à la fin de chaque session, avant et après chaque
+   déploiement ou run Azure significatif, puis après chaque nettoyage. Si le seuil confirmé est atteint,
+   arrêter les runs et supprimer uniquement les IDs créés par Luna consignés dans
+   [`inventaires-azure.md`](preuves/inventaires-azure.md) ; ne jamais supprimer une ressource préexistante.
 
 ✅ **Vérification automatique.** Après chaque correction : `Test-Reference*.ps1` et Pester verts.
 
-🧪 **Test manuel.** La recette [`recettes/01-preuves.md`](recettes/01-preuves.md), en entier.
+🧪 **Test de recette.** Luna déroule [`recettes/01-preuves.md`](recettes/01-preuves.md) en entier ; l'utilisateur intervient
+uniquement si une étape requiert son authentification ou une action réellement manuelle.
 
 🧠 **Mémoire.** `08-runtime-and-orchestration.md` : ce que les preuves ont appris (limites du what-if des piles,
 délais de propagation RBAC observés, temps de chaque release).
 
-📌 **Hors dépôt.** Ressources Azure créées par les preuves (à supprimer ou garder pour J0) : dans `NEXT.md`.
+📌 **Hors dépôt.** Plafond de dépense et estimation confirmés, ressources Azure créées par les preuves : dans `NEXT.md`.
+Ces ressources sont **supprimées après leur dernière preuve dépendante** ([DT-42](../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure),
+[recette § 10](recettes/01-preuves.md#10-supprimer-les-ressources-azure-et-consigner-les-résultats)), plus « gardées pour J0 » :
+le jalon 0 redéploie depuis des abonnements vides. Les preuves Azure DevOps et `resultats.md` restent jusqu'à R-03.
 
 ### 🔒 R-03 — Revue des preuves
 

@@ -7,8 +7,110 @@
 > **État au 2026-10-07 :** NEXT.md ne recense aucun abonnement de test, projet Azure DevOps ni groupe Entra.
 > Cette vérification de portée a donc échoué pour l'instant : les preuves ci-dessous ne sont pas exécutables tant
 > que ces prérequis ne sont pas créés. Aucune action Azure ou Azure DevOps n'a été lancée pendant P-07.
-> Le montant de dépense mentionné dans une ancienne ébauche n'est pas une estimation vérifiée ; définissez votre
-> budget de test avant P-08.
+> Le montant de dépense mentionné dans une ancienne ébauche n'est pas une estimation vérifiée.
+>
+> **Stratégie de coût ([DT-42](../../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure)) :** une seule
+> souscription, `northeurope` uniquement, profil minimal ([reference-pilote § 1.6](../reference-pilote.md#16-profil-de-coût-des-preuves)),
+> un jeu de ressources par projet (`shop42`, `shop43`, `shop44`) déployé **après la suppression du précédent**, et suppression
+> de chaque jeu dès sa dernière preuve dépendante ([§ 10](#10-supprimer-les-ressources-azure-et-consigner-les-résultats)).
+> Les assertions de P1, P9, P3, P8, P2, P4, P5 et P7 sont inchangées.
+
+## 0. Verrou de coût et préflight bloquants
+
+### 0.1 Verrou de dépense (aucune commande Azure avant)
+
+Ne lancez **aucune** commande Azure (ni création, ni déploiement, ni kit, ni préflight qui crée quoi que ce soit) tant que vous
+n'avez pas : (1) fixé un **plafond de dépense** en euros pour toute la recette ; (2) relu l'estimation du § 0.2
+**actualisée** (relire les tarifs publics du jour, `northeurope`, devise de votre contrat) ; (3) répondu « confirmé » à
+Claude et consigné dans [NEXT.md](../../../NEXT.md) (ligne « Plafond de dépense et estimation ») le plafond, la date et
+l'estimation. Sans cela : statut `BLOQUE`. Un **budget Azure est une alerte différée** (données de coût en retard de
+plusieurs heures), **pas un coupe-circuit** : créez-en un à 50 % / 80 % / 100 % du plafond pour être prévenu, mais ne
+comptez que sur la durée de vie courte des ressources. **Contrôle de coût et d'inventaire** : au démarrage et à la fin de
+chaque session, avant et après chaque déploiement ou run Azure significatif, puis après chaque nettoyage. Consigner l'heure
+UTC, le coût affiché et les IDs vérifiés dans [l'inventaire](../preuves/inventaires-azure.md). Vérifier dans
+*Cost Management → Cost analysis* le coût réel et la prévision disponible ; les données pouvant être retardées, ce contrôle
+n'est pas une surveillance continue ni une garantie de plafond. Pour l'inventaire, lister les ressources, piles, groupes et
+attributions de rôle de la souscription sans filtrer par nom ; comparer les IDs exacts au registre, en comparaison
+insensible à la casse. Une pause de plus de 24 h ne déclenche pas, à elle seule, la suppression du jeu : contrôler le réel
+et la prévision avant de reprendre, intégrer SQL, Log Analytics, stockage et ACR à l'estimation, et continuer uniquement si
+le plafond le permet. Si le seuil est atteint, suivre la procédure d'urgence de [l'inventaire Azure](../preuves/inventaires-azure.md).
+
+Si le coût réel ou l'estimation disponible atteint le seuil confirmé dans `NEXT.md`, arrêter les nouveaux runs et lancer
+le nettoyage d'urgence décrit dans [l'inventaire Azure](../preuves/inventaires-azure.md) : supprimer uniquement les IDs
+créés par Luna, même si toutes les captures ne sont pas encore terminées. Un nom ou un préfixe seul ne prouve pas la
+propriété ; ne jamais exécuter `deleteAll` si une pile ou un groupe contient un élément absent de l'inventaire.
+
+### 0.2 Estimation (ordre de grandeur, tarifs Retail API `northeurope` du 2026-10-07, **à revalider avant lancement**)
+
+Les tarifs unitaires proviennent de l'[API officielle Azure Retail Prices](https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices).
+Le calcul ci-dessous ne couvre pas le stockage, les sauvegardes, le trafic sortant, les taxes ni les services annexes
+(Key Vault, stockage technique, registre de journaux d'activité) ; il ne constitue donc pas le total de la recette.
+
+| Poste | Hypothèse | Profil minimal | Plan précédent (hypothèse de comparaison : les trois jeux sont conservés 10 jours chacun jusqu'à R-03 ; SQL prd `GP_Gen5_2` zone redondante, ACR `Standard`) |
+|---|---|---|---|
+| SQL, 2 bases × 3 projets | ≤ 4 h de calcul actif par base et par projet (installation, schéma, data-access de chaque release d'`orders`, contrôles, + 15 min de pause différée) | si une base `prd` gratuite par souscription est confirmée : `prd` ≈ 0 €, `dev` (12 base-heures) ≈ **2,8–5,6 €** ; sans offre : 24 base-heures ≈ **5,6–11,2 €** selon 0,5–1 vCore | prd : (0,2733 + 0,164) €/h × 24 h × 10 jours × 3 projets ≈ **315 €**, + dev serverless |
+| ACR | 1 par projet, ≤ 2 jours facturés | Basic 0,1466 €/jour ≈ **0,9 €** | Standard 0,5866 €/jour × 10 j × 3 ≈ **18 €** |
+| Container Apps | min 0 / max 1, quelques minutes actives | **≈ 0 € si le crédit gratuit mensuel est encore disponible** ; zéro réplica = zéro consommation de ressources | min 1 en prd : facturé en continu |
+| Log Analytics | Hypothèse : 1 Go/jour/espace, 2 espaces par projet, ≤ 1 jour par projet = 6 Go estimés ; le daily cap peut dépasser sa valeur | ≈ 2,4287 €/Go = **14,6 €** avant crédits gratuits | idem, sans plafond |
+| **Postes chiffrés** | Hypothèses ci-dessus ; hors services annexes | **≈ 18,3 à 26,8 €** selon l'offre SQL gratuite | **≈ 340 € et plus** |
+
+Le montant de 18,3–26,8 € est une estimation des seuls postes chiffrés, avec les hypothèses de durée indiquées ; les
+ressources annexes et le dépassement éventuel du plafond Log Analytics s'ajoutent. Le plafond de 1 Go/jour/espace est un
+garde-fou et peut dépasser sa valeur, il ne garantit pas une facture maximale. Un plafond de **50 € peut être proposé comme
+seuil d'alerte** (environ 1,9 × le haut des seuls postes chiffrés), pas comme coupe-circuit ; c'est à vous de le fixer. Si le préflight ne confirme pas l'offre gratuite, conserver le SQL payant et refaire l'estimation ; si ACR Basic est insuffisant, arrêter et demander une décision avant toute hausse de SKU. Dans les deux cas, ou si les durées dépassent les hypothèses, reconfirmer l'estimation avant de continuer. Les budgets Azure sont des alertes, pas un arrêt automatique des ressources.
+
+Sources techniques : [SQL serverless](https://learn.microsoft.com/en-us/azure/azure-sql/database/serverless-tier-overview?tabs=general-purpose&view=azuresql),
+[Container Apps facturation](https://learn.microsoft.com/en-us/azure/container-apps/billing),
+[ACR SKU](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus),
+[SQL zone redundancy](https://learn.microsoft.com/en-us/azure/reliability/reliability-sql-database),
+[plafond Log Analytics](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/daily-cap) et
+[budgets Azure](https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-acm-create-budgets).
+
+### 0.3 Préflight bloquant avant toute création
+
+Chaque ligne doit être cochée et consignée (capture ou sortie sans secret). Le **premier échec arrête la recette** :
+aucun repli West Europe, aucun changement de SKU, aucune création « pour voir ».
+
+| # | Contrôle | Commande ou lieu | Arrêt si |
+|---|---|---|---|
+| 1 | Région `northeurope` disponible pour la souscription | `az account list-locations --query "[?name=='northeurope']" -o table` | vide |
+| 2 | Fournisseurs enregistrés avec `North Europe` | `az provider show -n Microsoft.App --query "resourceTypes[?resourceType=='managedEnvironments'].locations"` ; idem `Microsoft.Sql`/`servers`, `Microsoft.ContainerRegistry`/`registries`, `Microsoft.OperationalInsights`/`workspaces`, `Microsoft.Insights`/`components`, `Microsoft.KeyVault`/`vaults`, `Microsoft.Storage`/`storageAccounts`, `Microsoft.ManagedIdentity`/`userAssignedIdentities` ; enregistrer les fournisseurs manquants | une région absente |
+| 3 | SQL serverless `GP_S_Gen5_1` disponible | `az sql db list-editions --location northeurope --edition GeneralPurpose --service-objective GP_S_Gen5_1 --available -o table` | non disponible |
+| 4 | Zone redondante désactivée dans le clone | `Select-String -Path <clone>/data/infra/main.*.bicepparam -Pattern 'zoneRedundant'` et `Select-String -Path <clone>/orders/infra/main.*.bicepparam -Pattern 'zoneRedundant'` : chaque valeur doit être explicitement `false` (SQL dans `data`, environnement Container Apps dans `orders`) | une valeur absente ou `true` |
+| 5 | Offre SQL gratuite | (a) `bicep build` du clone profilé accepte `useFreeLimit`/`freeLimitExhaustionBehavior` avec `sql/server:0.22.0` ; (b) après franchissement du verrou de dépense, exécuter un What-If ARM avec le profil par défaut **sans** `-SqlFreeOffer` pour vérifier que l'API accepte aussi `freeLimitExhaustionBehavior` quand `useFreeLimit` est faux ; si l'offre gratuite est envisagée, exécuter un second What-If avec `-SqlFreeOffer` ; (c) le portail (*Create SQL database*, souscription et région cibles) propose l'offre gratuite ; (d) `az resource list --subscription <id> --resource-type Microsoft.Sql/servers/databases --query "[].{id:id,useFreeLimit:properties.useFreeLimit,behavior:properties.freeLimitExhaustionBehavior}" -o table` ne montre aucune base existante avec `useFreeLimit = true` ; (e) le **décalage** « une base » (schéma AVM) / « dix bases » (documentation) est noté : ne pas supposer plus d'**une** base gratuite, la base `prd` la reçoit | (a), (b) ou (c) échoue : omettre `-SqlFreeOffer`, refaire l'estimation et reconfirmer le plafond au § 0.1 avant tout déploiement ; (d) échoue : même arrêt et estimation sans offre |
+| 6 | ACR Basic suffisant | taille de l'image témoin (`docker image ls`) ≪ 10 GiB ; un seul build/push par CI de P1, P8 ; limites Basic publiées (débit de lecture/écriture) relues dans la documentation du jour | limite dépassée : arrêt ; toute hausse de SKU exige une nouvelle décision et une estimation confirmée |
+| 7 | Plafond d'ingestion sans effet sur les assertions | le contrôle `logs` n'exécute que `print 1` ; vérifier au premier run P1 que `/health/dependencies` réussit | `logs` en erreur à cause du plafond |
+| 8 | Commande de passage `denyDelete` → `none` | `az stack sub create --help` (CLI 2.90.0) : le CLI met à jour une pile avec `create` ; il n'expose pas de commande `update` dédiée. Pour le nettoyage normal, répéter le dernier modèle, commit et paramètres déployés, puis comparer le What-If avant mise à jour. En urgence, ne pas mettre à jour la pile : utiliser seulement un opérateur déjà exclu du deny, sinon s'arrêter et signaler le verrou | le modèle exact ou les paramètres manquent, l'opérateur n'est pas exclu, ou le What-If annonce une modification de ressource |
+| 9 | Suppression `deleteAll` | `az stack sub delete --help` : option acceptée ; Microsoft précise que `deleteAll` supprime aussi les groupes de ressources gérés et tous leurs contenus. Relever les IDs des piles, groupes et ressources, puis vérifier que chacun est créé par Luna ; les éléments non gérés ou non consignés imposent une suppression individuelle par ID et le maintien du groupe | un seul ID du groupe ou de la pile manque à l'inventaire ou n'est pas créé par Luna |
+| 10 | Une seule souscription | les trois IDs `-SubscriptionDev/Prd/Shared` sont identiques ; vous êtes Owner (ou User Access Administrator) | autre cas |
+| 11 | Noms globaux et inventaire de référence | `shop42` libre pour `kv-`, `sql-`, `cr…` (`VAL-NOM-DISPONIBILITE`) ; capturer avant création les IDs préexistants dans toutes les portées, sans filtre sensible à la casse ; un coffre `prd` supprimé reste **réservé** (protection contre la purge, 90 j) | nom pris ou portées ambiguës : autre code |
+| 12 | Crédit mensuel Container Apps Consumption disponible | Cost Management → Cost analysis, vérifier l'usage de Container Apps de la souscription ; si le crédit gratuit est déjà consommé, recalculer l'estimation avec les secondes actives attendues | usage inconnu ou crédit épuisé |
+
+Si l'offre gratuite SQL atteint sa limite mensuelle, `AutoPause` rend la base inaccessible jusqu'au mois suivant : arrêter
+la recette et ne jamais basculer vers `BillOverUsage` sans nouvelle estimation et confirmation. Le schéma AVM du dépôt ne
+permettant qu'une base `useFreeLimit` par souscription, appliquer l'offre uniquement à `prd`; après suppression de cette
+base, attendre jusqu'à une heure avant d'essayer de libérer un nouvel emplacement pour le jeu suivant ([FAQ Microsoft SQL gratuite](https://learn.microsoft.com/en-us/azure/azure-sql/database/free-offer-faq?view=azuresql)).
+
+### 0.4 Réveil SQL et démarrage à froid
+
+Contrôles manuels, à appliquer chaque fois qu'une étape touche SQL ou l'API ; ils **ne remplacent aucune assertion**.
+
+- **Réveil SQL après pause** : attendre au moins 15 min sans requête, puis vérifier dans le portail Azure que la base a
+  bien l'état `Paused` avant de lancer l'essai ; une simple période d'inactivité ne prouve pas qu'Azure l'a mise en pause.
+  Si elle est encore en ligne, vérifier qu'aucune session ne la maintient active et ne compter l'essai qu'une fois l'état
+  `Paused` observé. Un premier échec de connexion transitoire est
+  attendu. Procédure bornée : relancer la **même** requête ou le même `/health/dependencies` jusqu'à **5 essais**,
+  espacés de **60 s**, soit **5 min au plus** ; la release d'`orders` réessaie déjà 10 min pour `data-access`
+  ([P-03](../01-preuves.md#p-03--module-de-release-powershell)). Capturer le nombre d'essais. Au-delà : échec de la
+  preuve, **pas** de relance en boucle ; consigner KO et ne rien corriger sans Luna. Le contrôle `sql` doit réussir au
+  final **avec les mêmes sous-contrôles** (écriture/lecture, `CREATE TABLE` refusé) ; une réussite partielle n'est pas OK.
+- **Démarrage à froid de `ca api`** : après inactivité, vérifier dans la vue des révisions/réplicas que le nombre de
+  réplicas actifs est zéro. S'il en reste un, attendre et vérifier de nouveau ; ne pas compter un redémarrage à chaud.
+  Premier `Invoke-RestMethod 'https://<fqdn>/health' -TimeoutSec 20` : jusqu'à
+  **6 essais**, espacés de **20 s** (≈ 2 min), puis `/health/dependencies` jusqu'à **3 essais** espacés de **30 s**. Le
+  contrôle de santé de la release applicative reste à 2xx sous 5 min (P-03). Au-delà : KO consigné.
+- Après chaque série de captures, **aucun** démarrage forcé à froid ou à chaud supplémentaire : on n'ajoute pas d'activité
+  facturée pour « confirmer ».
 
 ## 1. Préparer l'environnement
 
@@ -16,12 +118,12 @@
 
 | Élément | Valeur et droits requis |
 |---|---|
-| Abonnements Azure | Un abonnement ou trois abonnements de test ; renseigner les IDs dev, prd, shared. Droits Owner ou User Access Administrator pour l'installation des rôles. Pour P2, confirmer que le refus denyDelete est installé avant l'essai de suppression. |
+| Abonnements Azure | **Une seule souscription** de test (le même ID pour dev, prd, shared) ; région `northeurope` uniquement. Droits Owner ou User Access Administrator pour l'installation des rôles. Pour P2, confirmer que le refus denyDelete est installé avant l'essai de suppression. |
 | Tenant et groupes SQL | Tenant contenant les abonnements ; groupe sg-shopNN-sql-admins créé et ses IDs d'objet pour dev et prd. Un même ID peut être utilisé si le groupe est commun aux deux cibles. |
 | Azure DevOps | Organisation, projet, dépôt Azure Repos et droits d'administrateur du projet. Créer le groupe de sécurité ShopNN Release Approvers avec les membres autorisés. |
 | Poste | Azure CLI connecté au bon tenant, extension azure-devops, PowerShell 7, Git, accès aux abonnements et au projet. `Save-AdoRecordings.ps1` requiert PowerShell 7.5+ pour conserver les timestamps JSON à l'identique. Installer sqlcmd seulement si vous préférez l'utiliser plutôt que l'éditeur de requête du portail. |
 | Code projet | Choisir un identifiant libre, par exemple shop42, puis le garder constant pour ce jeu de ressources. Les noms de ressources et le projet Azure DevOps doivent suivre le code publié. |
-| Budget | Valider une limite de dépense et un plan de conservation/suppression des ressources de test. Aucun montant n'a été vérifié dans NEXT.md. |
+| Budget | Verrou du [§ 0.1](#01-verrou-de-dépense-aucune-commande-azure-avant) franchi (plafond et estimation confirmés dans NEXT.md) ; préflight [§ 0.3](#03-préflight-bloquant-avant-toute-création) entièrement coché. |
 
 L'état doit être confirmé par vous dans [NEXT.md](../../../NEXT.md) avant la première exécution. L'organisation Azure DevOps
 se passe au script de capture comme son slug (par exemple contoso), pas comme une URL complète.
@@ -49,6 +151,10 @@ reference/pilot/bicep-azdo/** et samples/witness-app/** doivent être propres et
 propre. Le script copie uniquement les fichiers suivis par Git, hors .git/, bin/, obj/, TestResults/ et .vs/ ; les
 fichiers non suivis sont ignorés. `-WhatIf` fonctionne sur un arbre source modifié et laisse le clone cible inchangé.
 Vérifier que bin/, obj/, .vs/, .git/ et TestResults/ ne sont pas présents sous src/api/.
+
+N'ajouter `-SqlFreeOffer` à la commande réelle qu'après réussite de toutes les vérifications du préflight 5 et recalcul
+de l'estimation. Sinon, laisser l'option absente : les bases restent en offre payante. Si l'offre échoue au What-If ou au
+portail, republier le profil sans `-SqlFreeOffer`, refaire l'estimation et reconfirmer le plafond avant tout déploiement.
 
 Pour le dépôt neuf, créer le commit initial et pousser main afin que le pipeline d'installation puisse le lire.
 Après l'installation du kit, faire passer les changements de preuve par des branches et pull requests vers main.
@@ -140,8 +246,10 @@ l'image est référencée par digest ; le contrôle SQL prouve l'écriture/lectu
 /health/dependencies sans secret. Capturer séparément chaque run (ex. p1-core, p1-data, p1-platform, p1-orders,
 p1-api-dev, p1-api-prd).
 
-**Nettoyage :** ne supprimer aucune ressource entre les preuves. Garder les sorties et les ressources jusqu'à la fin
-de R-03.
+Pour les étapes 3 et 6, appliquer les contrôles de [§ 0.4](#04-réveil-sql-et-démarrage-à-froid) (réveil SQL, démarrage à
+froid) : mêmes assertions, essais bornés.
+
+**Nettoyage :** aucune suppression avant la fin de P8 : `shop42` sert à P9, P3 et P8. Garder les captures Azure DevOps.
 
 ## 3. P9 — Journal d'accès aux données entre composants
 
@@ -242,7 +350,10 @@ l'approbation ; les empreintes approuvée et appliquée sont égales.
 
 **Preuves :** image.json avec D1/D2, rapport applicatif prd, aperçu et rapport d'infrastructure, /health.
 
-**Nettoyage :** aucun rollback d'image ; l'état en prd reste D2. Garder la modification témoin jusqu'à R-03.
+**Nettoyage :** aucun rollback d'image ; l'état en prd reste D2. Garder la modification témoin (git) jusqu'à R-03.
+**Dernière preuve de `shop42`** : une fois P8 capturée en entier (`p8-infra-pending`, `p8-app-prd`, `p8-infra-result`) et
+P1, P9, P3a, P3b, P8 consignées dans resultats.md, supprimer le jeu Azure `shop42` ([§ 10](#10-supprimer-les-ressources-azure-et-consigner-les-résultats),
+procédure T). Ne démarrer `shop43` qu'ensuite.
 
 ## 6. P2 — Révoquer l'accès à Log Analytics en prd
 
@@ -257,8 +368,9 @@ projet Azure DevOps, un dépôt et un clone local isolés (code shop43), puis cr
 étapes « Publier la référence » et « Installer le kit » avec le code shop43. Exécuter ensuite le baseline complet de
 P1 pour ce projet : core dev/prd, data dev/prd et schéma témoin SQL, platform shared, orders dev/prd, puis build,
 release et contrôles de santé de l'API. P2 exige que l'accès logs fonctionne avant la révocation et que denyDelete
-soit déjà vérifié. Réutiliser les abonnements ou groupes SQL seulement si les périmètres et les noms sont isolés ;
-prévoir le budget pour ce second jeu de ressources. Garder ce clone pour P4 et P5.
+soit déjà vérifié. La souscription est la même ; les noms `shop43` sont isolés. Ce second jeu n'est créé **qu'après la
+suppression de `shop42`** et après les préflights du [§ 0.3](#03-préflight-bloquant-avant-toute-création) (inchangés, à
+revérifier). Appliquer les contrôles de [§ 0.4](#04-réveil-sql-et-démarrage-à-froid) aux étapes 3 (`/health/dependencies`). Garder ce clone pour P4 et P5.
 
 1. Dans ce dépôt isolé, vérifier que `$shopRepo` vaut `C:/src/shop43`, puis appliquer l'overlay :
 
@@ -284,7 +396,8 @@ restent présents ; denyDelete bloque l'essai de suppression.
 **Preuves :** aperçu/rapport orders, journal de révocation, réponses /health/dependencies, vue de la pile et message
 Azure du refus. Capturer (p2-orders-prd-run-<id>).
 
-**Nettoyage :** ne pas supprimer la pile ou l'espace. Garder le code P2 et son clone pour P4/P5.
+**Nettoyage :** ne pas supprimer la pile ni l'espace avant la fin de P5 ; ne pas tenter la suppression de `log-shop43-main-prd`
+après l'essai refusé. Garder le code P2 et son clone pour P4/P5.
 
 ## 7. P4 — Une cible prd saute une révision
 
@@ -301,7 +414,8 @@ Azure du refus. Capturer (p2-orders-prd-run-<id>).
 2. Appliquer rev4, committer et fusionner. Déployer uniquement en dev. Pour prd, refuser l'approbation ou laisser le
    stage en attente ; ne pas appliquer cette révision en prd. Vérifier que id-shop43-extra-prd reste dans Azure et
    reste gérée par la pile prd. Capturer les runs dev et prd.
-3. Appliquer rev5, committer et fusionner. Déployer en dev puis prd. Relire ifs-report-prd : prd doit passer
+3. Appliquer rev5, committer et fusionner. L'overlay augmente `maxReplicas` de 1 à 2, après le profil de coût publié.
+   Déployer en dev puis prd. Relire ifs-report-prd : prd doit passer
    directement de la révision 3 à 5, détacher id-shop43-extra-prd de la pile sans supprimer l'identité Azure et
    l'inscrire dans detachedResources. Capturer les deux runs.
 
@@ -311,7 +425,10 @@ la supprimer.
 **Preuves :** commits/PR, trois aperçus, approbation/refus prd de rev4, rapports rev3/rev5 et présence de l'identité
 après détachement.
 
-**Nettoyage :** conserver l'identité détachée jusqu'à la revue R-03. Ne pas tenter de la supprimer.
+**Nettoyage (fin de P4) :** après avoir capturé la présence de `id-shop43-extra-prd` hors pile et son entrée dans
+`detachedResources`, et si P4 est consignée OK, exécuter la procédure T du [§ 10](#10-supprimer-les-ressources-azure-et-consigner-les-résultats)
+pour `orders`, `data`, `platform` **et** l'identité détachée de `shop43`. **Garder `core` (dev et prd) et le kit** : P5 relance la
+release core, dont le stage dev.
 
 ## 8. P5 — Reprise après secret absent
 
@@ -335,7 +452,9 @@ doublon.
 
 **Preuves :** timeline, ifs-report-prd de l'échec et de la reprise, état de la variable sans exposer la valeur.
 
-**Nettoyage :** la valeur secrète est restaurée ; confirmer la release core réussie.
+**Nettoyage :** la valeur secrète est restaurée ; confirmer la release core réussie. **Dernière preuve de `shop43`** : captures
+`p5-*` enregistrées et P2, P4, P5 consignées → supprimer `core` (dev, prd) puis le kit de `shop43` ([§ 10](#10-supprimer-les-ressources-azure-et-consigner-les-résultats)).
+Ne démarrer `shop44` qu'ensuite.
 
 ## 9. P7 — Interruption brutale et reprise du journal
 
@@ -379,18 +498,82 @@ d'arrêt n'est pas conservée après le run.
 avant/après, rapport de reprise, attribution absente dans Azure.
 
 **Nettoyage :** retirer la variable de test si elle a été enregistrée au niveau de la définition du pipeline.
-Garder les ressources jusqu'à R-03.
+Avant toute suppression, copier **hors Azure** le blob `ifs-shop44-orders-prd.json` (avant/après) et les captures du journal,
+car le compte `stifsshop44prd` est supprimé avec le kit. **Dernière preuve de `shop44`** : P7 consignée → supprimer le jeu
+entier ([§ 10](#10-supprimer-les-ressources-azure-et-consigner-les-résultats)). Aucune ressource Azure ne subsiste ensuite.
 
-## 10. Consigner les résultats et nettoyer après R-03
+## 10. Supprimer les ressources Azure et consigner les résultats
+
+Après chaque preuve, ajouter une ligne dans resultats.md (voir ci-dessous). Les ressources **Azure** sont ensuite supprimées
+par jeu, dès la dernière preuve qui en dépend ([DT-42](../../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure)) :
+`shop42` après P8 ; `shop43` : `orders`, `data`, `platform` et l'identité détachée après P4, puis `core` et le kit après P5 ;
+`shop44` après P7. Les preuves Azure DevOps (runs, captures `Recordings/`, `resultats.md`) restent **jusqu'à R-03**.
+
+### Procédure T — suppression d'un jeu (ou d'une partie)
+
+**Porte (tout doit être vrai, sinon ne rien supprimer)** : (1) une capture `Save-AdoRecordings.ps1` et une ligne dans
+resultats.md existent pour chaque scénario qui dépend des piles ou ressources précises à supprimer ; les scénarios encore
+à exécuter mais indépendants de ces ressources ne bloquent pas leur nettoyage ; (2) un **KO ou une preuve incomplète**
+suspend le nettoyage normal et vous décidez, avec le coût de maintien du § 0.2, de rejouer ou non ; en cas de seuil de coût
+atteint, appliquer la procédure d'urgence de l'inventaire ;
+(3) l'inventaire de référence avant création et les IDs exacts créés par Luna sont conservés hors Azure dans
+[inventaires-azure.md](../preuves/inventaires-azure.md) ; vous avez aussi noté les ressources détachées lues dans `ifs-report-prd`,
+et les Object IDs des identités `id-ifs-deploy-shopNN-*` et `id-ifs-app-shopNN-*` (rapport du kit) ;
+(4) les préflights 8 et 9 du [§ 0.3](#03-préflight-bloquant-avant-toute-création) sont cochés.
+
+Noms des piles (une par composant et cible, `unit` des `release.<cible>.json`) : `ifs-shopNN-core-dev|prd`,
+`ifs-shopNN-data-dev|prd`, `ifs-shopNN-orders-dev|prd`, `ifs-shopNN-platform-shared`. Vérifier avant :
+
+    az stack sub list --subscription <id> -o table
+
+1. **Identité détachée (P4 seulement)** : supprimer explicitement `id-shop43-extra-prd` seulement si son ID relevé dans
+   `detachedResources` est aussi inscrit comme créé par Luna dans l'inventaire : `az identity delete --ids <id>`.
+2. **Retirer `denyDelete`** des piles protégées (`prd`, `shared`) du périmètre, une par une, avant leur suppression.
+   Microsoft documente `az stack sub create` comme mécanisme de mise à jour ; il réévalue donc le modèle. Pour le nettoyage
+   normal, utiliser le commit, le modèle et les paramètres exacts de la dernière exécution, jamais le working tree courant.
+   Avant l'update, exécuter le What-If avec ce contenu et arrêter si une ressource autre que la protection de pile semble
+   changer. Contrôler ensuite `denySettings.mode = none`. En urgence de coût, ne pas effectuer cet update : suivre le point 4
+   de [la procédure d'urgence](../preuves/inventaires-azure.md) et utiliser seulement un principal déjà exclu du deny.
+3. **Supprimer les piles dans l'ordre inverse des dépendances**, une à la fois, en attendant la fin de chacune :
+   `orders` (dev, prd) → `data` (dev, prd) → `platform` (shared) → `core` (dev, prd) :
+
+   Pour une pile au scope abonnement, Microsoft précise que `deleteAll` supprime les ressources, les groupes de ressources
+   gérés et tout leur contenu. Avant chaque suppression, lister tous les IDs présents dans chaque groupe concerné, puis les
+   comparer à l'inventaire : chaque ressource et groupe doit être marqué créé par Luna et absent du relevé de référence. Si
+   un seul ID manque, est préexistant ou n'est pas clairement attribué, ne pas lancer `deleteAll` ; supprimer uniquement
+   les ressources individuelles explicitement inventoriées et laisser le groupe en place
+   ([documentation Microsoft](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deployment-stacks?tabs=azure-cli)).
+
+        az stack sub delete --name ifs-shopNN-<composant>-<cible> --action-on-unmanage deleteAll --subscription <id> --yes
+
+   `deleteAll` n'est utilisé qu'après la porte. Pour la fin de P4, s'arrêter après `platform` (`core` reste pour P5).
+4. **Vérifier** : relister tous les IDs de ressources et de groupes de la souscription, puis comparer au registre. Si un
+   groupe persiste, ne le supprimer que si son ID exact est enregistré comme créé par Luna et que chaque ressource qu'il
+   contient est également enregistrée comme créée par Luna ; sinon le conserver.
+5. **Kit (fin de jeu seulement)** : avant `azure-setup.ps1`, comparer les attributions de rôle au relevé de référence ; après
+   l'installation, enregistrer dans l'inventaire les IDs exacts des seules attributions créées par Luna. Supprimer uniquement
+   ces IDs, après relecture de `az role assignment list --all --subscription <id>` ; ne jamais retirer une attribution
+   simplement parce qu'elle vise une identité du kit. Pour chaque groupe `rg-ifs-shopNN-dev`, `rg-ifs-shopNN-prd`,
+   `rg-ifs-shopNN-shared`, vérifier d'abord son ID exact et tous les IDs de ressources qu'il contient. Supprimer le groupe
+   seulement si le groupe et chacune de ses ressources sont enregistrés comme créés par Luna ; sinon supprimer seulement
+   les IDs individuels autorisés et laisser le groupe. Les attributions préexistantes restent intactes, même si elles ciblent
+   un principal du kit.
+6. **Reste hors Azure** : connexions de service, groupes de variables et définitions Azure DevOps restent jusqu'à R-03 (coût nul) ;
+   l'inscription Entra n'est pas touchée. Noms **réservés** : coffre `prd` (protection contre la purge) et espaces Log Analytics
+   supprimés ne sont plus réutilisables sous leur nom : un nouveau jeu prend un nouveau code.
+7. **Contrôle final** : lister toutes les ressources, groupes, piles et attributions de rôle à la souscription, sans filtre
+   de nom ; comparer chaque ID exact à l'inventaire en comparaison insensible à la casse. Consigner la date dans NEXT.md
+   (« ressources supprimées ») et, au prochain jour, vérifier dans *Cost analysis* qu'aucune ligne ne court encore.
+
+### Consigner les résultats
 
 Après chaque preuve, ajouter une ligne dans resultats.md : P1, P9, P3a, P3b, P8, P2, P4, P5 ou P7, date, OK/KO,
 liens/captures anonymisés, remarque. Pour chaque KO, conserver le message et les artefacts ; ne pas corriger une
 question de conception sans la revue Claude.
 
-Ne pas arrêter les conteneurs Aspire locaux et ne pas supprimer de ressources Azure entre les preuves. Après R-03,
-décider si les ressources restent disponibles pour le jalon 0 ou si les seuls groupes et ressources de test peuvent
-être supprimés par une personne autorisée. Vérifier avant cette décision les ressources détachées, les piles
-denyDelete, le registre partagé et les journaux ; ne pas supprimer un élément encore référencé par un run ou une preuve.
+Ne pas arrêter les conteneurs Aspire locaux. Ne supprimer aucune ressource Azure **avant** la dernière preuve qui en dépend
+et la porte de la procédure T ; après, la suppression n'attend pas R-03. Le jalon 0 redéploie depuis des abonnements vides.
+À R-03 ne subsistent que les preuves Azure DevOps et resultats.md.
 
-Temps indicatifs hors files d'attente et délais de propagation. Le plan ne donne pas de durée maximale ni de budget
-Azure confirmé.
+Temps indicatifs hors files d'attente et délais de propagation. La recette n'a pas de durée maximale : le coût dépend de
+la durée de vie des ressources, bornée par le plafond du [§ 0.1](#01-verrou-de-dépense-aucune-commande-azure-avant).

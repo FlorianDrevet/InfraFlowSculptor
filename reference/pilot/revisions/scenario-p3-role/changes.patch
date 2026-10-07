@@ -33,3 +33,11 @@ diff --git a/orders/infra/main.bicep b/orders/infra/main.bicep
      )
    }
  }
+@@ -288,6 +288,6 @@
+   dependsOn: [
+     caeMainModule
+     keyVaultSecretsUser
+-    logAnalyticsReader
++    logAnalyticsDataReader
+     acrPull
+   ]

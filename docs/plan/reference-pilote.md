@@ -25,11 +25,13 @@
 
 | Cible | Code | Ordre | Abonnement | Région | Protégée | Approbateurs |
 |---|---|---|---|---|---|---|
-| Développement | `dev` | 1 | A | `francecentral` | Non | — |
-| Production | `prd` | 2 | B | `francecentral` | Oui | Groupe Azure DevOps « Shop Release Approvers » |
-| Cible propre de `platform` | `shared` | — | C | `francecentral` | Oui | « Shop Release Approvers » |
+| Développement | `dev` | 1 | A | `northeurope` | Non | — |
+| Production | `prd` | 2 | B | `northeurope` | Oui | Groupe Azure DevOps « Shop Release Approvers » |
+| Cible propre de `platform` | `shared` | — | C | `northeurope` | Oui | « Shop Release Approvers » |
 
-Pour les preuves, A, B et C peuvent être **le même abonnement** : les noms diffèrent par cible.
+Pour les preuves, A, B et C sont **le même abonnement** ([DT-42](../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure)) :
+les noms diffèrent par cible. Région : `northeurope` uniquement ; si région, SKU ou offre est indisponible, la recette
+s'arrête ([recette § 0](recettes/01-preuves.md#0-verrou-de-coût-et-préflight-bloquants)), sans repli.
 
 ### 1.3 Composants
 
@@ -88,6 +90,32 @@ Liaisons explicites supplémentaires de `ca api` :
 | Étapes | Cache des dépendances ; scan de l'image (Trivy, bloquant à `CRITICAL`) |
 | Contrôle de santé | `/health` |
 | Stratégie | Directe |
+
+### 1.6 Profil de coût des preuves
+
+> [DT-42](../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure). Valable **uniquement** pour les
+> exécutions de la [recette](recettes/01-preuves.md) (P1–P9) ; le modèle des § 1.3–1.4 reste celui que les émetteurs
+> du jalon 0 reproduisent. Le profil est appliqué à la publication dans le clone `shopNN`, dev **et** prd. Il ne change ni
+> noms, ni liaisons, ni rôles, ni secrets, ni la rétention Log Analytics.
+
+| Ressource | Modèle (§ 1.3) | Profil des preuves | Raison |
+|---|---|---|---|
+| `cr main` | `Standard` | `Basic` | Une image témoin et quelques tirages tiennent dans Basic ; si le préflight échoue, la recette s'arrête |
+| `sqldb orders` SKU | dev `GP_S_Gen5_1`, prd `GP_Gen5_2` | `GP_S_Gen5_1` partout | Pas de calcul facturé en pause ; l'assertion SQL de P1/P9 ne dépend pas du SKU |
+| `sqldb orders` capacité | — | `minCapacity` 0,5 ; au plus 1 vCore | Plancher du serverless |
+| `sqldb orders` pause | — | `autoPauseDelay` 15 min (minimum GP) | Réduit le temps de calcul facturé |
+| `sqldb orders` zone | AVM : `true` si omis | `zoneRedundant: false` **explicite** ; `databaseAvailabilityZone` reste `-1` | Surcharge de zone redondante inutile |
+| `sqldb orders` offre gratuite | — | **prd seulement** : `useFreeLimit: true`, `freeLimitExhaustionBehavior: 'AutoPause'` si préflight OK ; dev reste serverless payant | Respecte la limite d'une base `useFreeLimit` du schéma AVM local |
+| `cae main` | `zoneRedundant: true` | `false` | Aucune preuve ne teste la redondance de zone |
+| `ca api` réplicas | dev 0–2, prd 1–3 | **0–1** partout | Mise à zéro ; un seul réplica suffit aux preuves |
+| `appi main` rétention | 365 j | 90 j | Aucune preuve ne lit l'historique d'`appi` |
+| `log main` rétention | dev 30 j, prd 90 j | **inchangée** | P3b : 90 → 120 → 90 |
+| `log main` plafond quotidien | dev `-1` | `dailyQuotaGb` 1 (dev et prd) | Borne le coût d'ingestion (garde-fou, pas un budget) |
+| `cpu`/`memory` de `ca api` | dev 0,5/1Gi, prd 1/2Gi | inchangés | Hors périmètre de la décision |
+
+Conséquences à connaître : le premier appel après pause SQL ou après mise à zéro de `ca api` est lent ou échoue ;
+la recette fournit des contrôles manuels bornés ([§ 0.4](recettes/01-preuves.md#04-réveil-sql-et-démarrage-à-froid)).
+`useFreeLimit` n'est jamais appliqué avant confirmation par le préflight ([§ 0.3](recettes/01-preuves.md#03-préflight-bloquant-avant-toute-création)).
 
 ## 2. Résultats attendus du calcul
 

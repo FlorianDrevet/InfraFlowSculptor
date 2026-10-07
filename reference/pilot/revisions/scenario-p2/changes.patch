@@ -1,7 +1,11 @@
 diff --git a/orders/infra/main.bicep b/orders/infra/main.bicep
 --- a/orders/infra/main.bicep
 +++ b/orders/infra/main.bicep
-@@ -153,24 +153,6 @@ module keyVaultSecretsUser './key-vault-role-assignment.bicep' = if (caApi.deploy
+@@ -80,3 +80,2 @@
+ var keyVaultSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
+-var logAnalyticsReaderRoleId = '73c42c96-874c-492b-b04d-ab87d138a893'
+ var acrPullRoleId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+@@ -153,24 +152,6 @@ module keyVaultSecretsUser './key-vault-role-assignment.bicep' = if (caApi.deploy
    }
  }
  
@@ -26,3 +30,10 @@ diff --git a/orders/infra/main.bicep b/orders/infra/main.bicep
  module acrPull './registry-role-assignment.bicep' = if (caApi.deploy && apiIdentity.deploy) {
    name: 'acrPull-${target.code}-${uniqueString(externalResources.platformRegistry.name)}'
    scope: resourceGroup(
+@@ -288,6 +269,5 @@
+   dependsOn: [
+     caeMainModule
+     keyVaultSecretsUser
+-    logAnalyticsReader
+     acrPull
+   ]

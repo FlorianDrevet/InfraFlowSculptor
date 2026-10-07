@@ -6,7 +6,8 @@ param(
     [Parameter(Mandatory)][string] $SubscriptionPrd,
     [Parameter(Mandatory)][string] $SubscriptionShared,
     [Parameter(Mandatory)][string] $SqlAdminGroupObjectIdDev,
-    [Parameter(Mandatory)][string] $SqlAdminGroupObjectIdPrd
+    [Parameter(Mandatory)][string] $SqlAdminGroupObjectIdPrd,
+    [switch] $SqlFreeOffer
 )
 
 Set-StrictMode -Version Latest
@@ -72,6 +73,12 @@ function Write-ReferenceFile {
         $text = Invoke-ProofTextReplacement -Text $text -ReplacementTable $replacementTable
         $text = $text.Replace("`r`n", "`n").Replace("`r", "`n")
         [IO.File]::WriteAllText($targetFile, $text, [Text.UTF8Encoding]::new($false))
+    }
+
+    $costProfile = @(Set-ProofCostProfile -BicepRoot $OutputRoot -SqlFreeOffer:$SqlFreeOffer)
+    foreach ($setting in $costProfile) {
+        $changeState = if ($setting.Changed) { 'mis à jour' } else { 'déjà conforme' }
+        Write-Information -MessageData ("Profil de coût : {0} — {1} = {2} ({3})" -f $setting.Path, $setting.Setting, $setting.Value, $changeState) -InformationAction Continue
     }
 
     $manifest = [ordered]@{
@@ -175,8 +182,86 @@ if ($targetStatus.Count -gt 0) {
 
 if (-not $PSCmdlet.ShouldProcess($destinationRoot, 'Publier la reference pilote sans commit')) { return }
 
-Write-ReferenceFile -OutputRoot $destinationRoot
-$checkResult = Assert-ReferencePublication -OutputRoot $destinationRoot
+$expectedPaths = @($managedPaths) + @($samplePaths | ForEach-Object { "src/api/$_" }) + @('.ifs/manifest.json')
+$collisions = @(
+    foreach ($relativePath in $expectedPaths) {
+        $targetPath = Join-Path $destinationRoot ($relativePath.Replace('/', [IO.Path]::DirectorySeparatorChar))
+        if (Test-Path -LiteralPath $targetPath) { $relativePath }
+    }
+)
+if ($collisions.Count -gt 0) {
+    throw "Le clone contient deja des chemins que la publication doit creer : $($collisions -join ', ')"
+}
+
+$systemTempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+$stagingRoot = [IO.Path]::GetFullPath((Join-Path $systemTempRoot ("ifs-pilot-publish-" + [guid]::NewGuid().ToString('N'))))
+if (-not $stagingRoot.StartsWith($systemTempRoot, [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'Le dossier de publication sort du dossier temporaire du systeme.'
+}
+$createdFiles = [System.Collections.Generic.List[string]]::new()
+$createdDirectories = [System.Collections.Generic.List[string]]::new()
+try {
+    [void][IO.Directory]::CreateDirectory($stagingRoot)
+    Write-ReferenceFile -OutputRoot $stagingRoot
+    $null = Assert-ReferencePublication -OutputRoot $stagingRoot
+
+    $destinationRootPrefix = [IO.Path]::GetFullPath($destinationRoot).TrimEnd($trimChars) + [IO.Path]::DirectorySeparatorChar
+    foreach ($relativePath in $expectedPaths) {
+        $relativeOsPath = $relativePath.Replace('/', [IO.Path]::DirectorySeparatorChar)
+        $stagedFile = [IO.Path]::GetFullPath((Join-Path $stagingRoot $relativeOsPath))
+        $targetFile = [IO.Path]::GetFullPath((Join-Path $destinationRoot $relativeOsPath))
+        if (-not $targetFile.StartsWith($destinationRootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Chemin de publication hors du clone cible : $relativePath"
+        }
+        if (Test-Path -LiteralPath $targetFile) { throw "Le chemin cible est apparu pendant la publication : $relativePath" }
+        $targetDirectory = Split-Path -Parent $targetFile
+        $directory = $targetDirectory
+        while ($directory.StartsWith($destinationRootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            if (Test-Path -LiteralPath $directory -PathType Container) { break }
+            if (Test-Path -LiteralPath $directory -PathType Leaf) { break }
+            $createdDirectories.Add($directory)
+            $directory = Split-Path -Parent $directory
+        }
+        [void][IO.Directory]::CreateDirectory($targetDirectory)
+        $createdFiles.Add($targetFile)
+        [IO.File]::Copy($stagedFile, $targetFile, $false)
+    }
+
+    $checkResult = Assert-ReferencePublication -OutputRoot $destinationRoot
+}
+catch {
+    foreach ($createdFile in @($createdFiles.ToArray()) | Sort-Object -Descending) {
+        try {
+            if (Test-Path -LiteralPath $createdFile -PathType Leaf) {
+                Remove-Item -LiteralPath $createdFile -Force
+            }
+        }
+        catch { Write-Warning "Echec du rollback du fichier de publication : $createdFile" }
+    }
+    foreach ($createdDirectory in @($createdDirectories.ToArray() | Sort-Object { $_.Length } -Descending)) {
+        try {
+            if ((Test-Path -LiteralPath $createdDirectory -PathType Container) -and
+                [IO.Directory]::GetFileSystemEntries($createdDirectory).Length -eq 0) {
+                [IO.Directory]::Delete($createdDirectory)
+            }
+        }
+        catch { Write-Warning "Echec du rollback du dossier de publication : $createdDirectory" }
+    }
+    throw
+}
+finally {
+    if ($stagingRoot.StartsWith($systemTempRoot, [StringComparison]::OrdinalIgnoreCase) -and
+        (Split-Path -Leaf $stagingRoot).StartsWith('ifs-pilot-publish-', [StringComparison]::Ordinal) -and
+        (Test-Path -LiteralPath $stagingRoot -PathType Container)) {
+        $priorWhatIf = $WhatIfPreference
+        try {
+            $WhatIfPreference = $false
+            Remove-Item -LiteralPath $stagingRoot -Recurse -Force
+        }
+        finally { $WhatIfPreference = $priorWhatIf }
+    }
+}
+
 Write-Information -MessageData ("Reference publiee : {0} fichiers generes, {1} fichiers temoins." -f $checkResult.GeneratedFiles, $checkResult.WitnessFiles) -InformationAction Continue
 Write-Information -MessageData 'Etat Git du clone cible (aucun commit ne sera cree) :' -InformationAction Continue
 & git -C $destinationRoot status --short --branch

@@ -567,12 +567,251 @@ function ConvertTo-ProofRedactedText {
     return $safe
 }
 
+function Set-ProofCostProfileScalar {
+    param(
+        [Parameter(Mandatory)][string] $Text,
+        [Parameter(Mandatory)][string] $Path,
+        [Parameter(Mandatory)][string] $Pattern,
+        [Parameter(Mandatory)][string[]] $AllowedValues,
+        [Parameter(Mandatory)][string] $TargetValue,
+        [Parameter(Mandatory)][string] $Setting,
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]] $Report
+    )
+
+    $found = [regex]::Matches($Text, $Pattern)
+    if ($found.Count -ne 1) {
+        throw "Profil de coût : $Path doit contenir exactement une valeur pour $Setting."
+    }
+
+    $match = $found[0]
+    $valueGroup = $match.Groups['value']
+    $currentValue = $valueGroup.Value
+    $acceptedValues = @($AllowedValues) + @($TargetValue)
+    if ($currentValue -cnotin $acceptedValues) {
+        throw "Profil de coût : valeur '$currentValue' inattendue pour $Setting dans $Path."
+    }
+
+    $changed = $currentValue -cne $TargetValue
+    if ($changed) {
+        $Text = $Text.Remove($valueGroup.Index, $valueGroup.Length).Insert($valueGroup.Index, $TargetValue)
+    }
+
+    [void]$Report.Add([pscustomobject]@{
+        Path = $Path
+        Setting = $Setting
+        Value = $TargetValue
+        Changed = $changed
+    })
+    return $Text
+}
+
+function Ensure-ProofCostProfileFields {
+    param(
+        [Parameter(Mandatory)][string] $Text,
+        [Parameter(Mandatory)][string] $Path,
+        [Parameter(Mandatory)][string] $AnchorPattern,
+        [Parameter(Mandatory)][string[]] $PropertyNames,
+        [Parameter(Mandatory)][string] $BlockText,
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]] $ExpectedPatterns,
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]] $Report,
+        [Parameter(Mandatory)][string] $Setting
+    )
+
+    $counts = @(
+        foreach ($propertyName in $PropertyNames) {
+            [regex]::Matches($Text, '(?m)^[ \t]*' + [regex]::Escape($propertyName) + '[ \t]*:').Count
+        }
+    )
+    if (@($counts | Where-Object { $_ -eq 0 }).Count -eq $counts.Count) {
+        $anchors = [regex]::Matches($Text, $AnchorPattern)
+        if ($anchors.Count -ne 1) {
+            throw "Profil de coût : ancre introuvable ou ambigüe dans $Path."
+        }
+        $anchor = $anchors[0]
+        $Text = $Text.Insert($anchor.Index + $anchor.Length, "`n" + $BlockText.TrimEnd("`r", "`n"))
+        [void]$Report.Add([pscustomobject]@{
+            Path = $Path
+            Setting = $Setting
+            Value = 'présent'
+            Changed = $true
+        })
+        return $Text
+    }
+
+    if (@($counts | Where-Object { $_ -ne 1 }).Count -ne 0) {
+        throw "Profil de coût : propriétés partielles ou dupliquées dans $Path."
+    }
+    foreach ($expectedPattern in $ExpectedPatterns) {
+        if (-not [regex]::IsMatch($Text, $expectedPattern)) {
+            throw "Profil de coût : structure existante inattendue dans $Path."
+        }
+    }
+    [void]$Report.Add([pscustomobject]@{
+        Path = $Path
+        Setting = $Setting
+        Value = 'présent'
+        Changed = $false
+    })
+    return $Text
+}
+
+function Read-ProofCostProfileText {
+    param(
+        [Parameter(Mandatory)][string] $Path,
+        [Parameter(Mandatory)][string] $RelativePath,
+        [Parameter(Mandatory)][System.Text.UTF8Encoding] $Encoding,
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]] $Report
+    )
+
+    $bytes = [IO.File]::ReadAllBytes($Path)
+    $hasBom = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
+    $decodedText = $Encoding.GetString($bytes)
+    $rawText = if ($hasBom) { $decodedText.Substring(1) } else { $decodedText }
+    $text = $rawText.Replace("`r`n", "`n").Replace("`r", "`n")
+    [void]$Report.Add([pscustomobject]@{
+        Path = $RelativePath
+        Setting = 'format.utf8Lf'
+        Value = 'UTF-8 sans BOM, LF'
+        Changed = $hasBom -or $text -cne $rawText
+    })
+    return $text
+}
+
+function Set-ProofCostProfile {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string] $BicepRoot,
+        [switch] $SqlFreeOffer
+    )
+
+    $root = [IO.Path]::GetFullPath($BicepRoot)
+    if (-not (Test-Path -LiteralPath $root -PathType Container)) {
+        throw "Racine Bicep de publication introuvable : $root"
+    }
+
+    $report = [System.Collections.Generic.List[object]]::new()
+    $encoding = [Text.UTF8Encoding]::new($false, $true)
+    $writeEncoding = [Text.UTF8Encoding]::new($false)
+    $pendingWrites = [System.Collections.Generic.Dictionary[string, string]]::new([StringComparer]::Ordinal)
+
+    foreach ($relativePath in @('core/infra/main.dev.bicepparam', 'core/infra/main.prd.bicepparam')) {
+        $path = Join-Path $root ($relativePath.Replace('/', [IO.Path]::DirectorySeparatorChar))
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Fichier requis absent : $relativePath" }
+        $text = Read-ProofCostProfileText -Path $path -RelativePath $relativePath -Encoding $encoding -Report $report
+        $text = Set-ProofCostProfileScalar -Text $text -Path $relativePath -Pattern "(?m)^[ \t]*retentionInDays:[ \t]*(?<value>\d+)[ \t]*$" -AllowedValues @('365') -TargetValue '90' -Setting 'appiMain.retentionInDays' -Report $report
+        $text = Set-ProofCostProfileScalar -Text $text -Path $relativePath -Pattern "(?m)^[ \t]*dailyQuotaGb:[ \t]*'(?<value>[^']+)'[ \t]*$" -AllowedValues @('-1') -TargetValue '1' -Setting 'logMain.dailyQuotaGb' -Report $report
+        $pendingWrites[$relativePath] = $text
+    }
+
+    $relativePath = 'platform/infra/main.shared.bicepparam'
+    $path = Join-Path $root ($relativePath.Replace('/', [IO.Path]::DirectorySeparatorChar))
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Fichier requis absent : $relativePath" }
+    $text = Read-ProofCostProfileText -Path $path -RelativePath $relativePath -Encoding $encoding -Report $report
+    $text = Set-ProofCostProfileScalar -Text $text -Path $relativePath -Pattern "(?m)^[ \t]*acrSku:[ \t]*'(?<value>[^']+)'[ \t]*$" -AllowedValues @('Standard') -TargetValue 'Basic' -Setting 'acrMain.acrSku' -Report $report
+    $pendingWrites[$relativePath] = $text
+
+    foreach ($target in @('dev', 'prd')) {
+        $freeLimitValue = if ($SqlFreeOffer -and $target -eq 'prd') { 'true' } else { 'false' }
+        $relativePath = "data/infra/main.$target.bicepparam"
+        $path = Join-Path $root ($relativePath.Replace('/', [IO.Path]::DirectorySeparatorChar))
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Fichier requis absent : $relativePath" }
+        $text = Read-ProofCostProfileText -Path $path -RelativePath $relativePath -Encoding $encoding -Report $report
+        $text = Set-ProofCostProfileScalar -Text $text -Path $relativePath -Pattern "(?m)^[ \t]*databaseSkuName:[ \t]*'(?<value>[^']+)'[ \t]*$" -AllowedValues @('GP_Gen5_2') -TargetValue 'GP_S_Gen5_1' -Setting 'sqlOrders.databaseSkuName' -Report $report
+        $paramBlock = [string]::Join("`n", @(
+            '  autoPauseDelay: 15'
+            "  minCapacity: '0.5'"
+            '  zoneRedundant: false'
+            "  useFreeLimit: $freeLimitValue"
+            "  freeLimitExhaustionBehavior: 'AutoPause'"
+        ))
+        $text = Ensure-ProofCostProfileFields -Text $text -Path $relativePath -AnchorPattern "(?m)^[ \t]*databaseAvailabilityZone:[ \t]*-1[ \t]*$" -PropertyNames @('autoPauseDelay', 'minCapacity', 'zoneRedundant', 'useFreeLimit', 'freeLimitExhaustionBehavior') -BlockText $paramBlock -ExpectedPatterns @() -Report $report -Setting 'structure.sqlParameters'
+        $text = Set-ProofCostProfileScalar -Text $text -Path $relativePath -Pattern "(?m)^[ \t]*autoPauseDelay:[ \t]*(?<value>-?\d+)[ \t]*$" -AllowedValues @('15') -TargetValue '15' -Setting 'sqlOrders.autoPauseDelay' -Report $report
+        $text = Set-ProofCostProfileScalar -Text $text -Path $relativePath -Pattern "(?m)^[ \t]*minCapacity:[ \t]*'(?<value>[^']+)'[ \t]*$" -AllowedValues @('0.5') -TargetValue '0.5' -Setting 'sqlOrders.minCapacity' -Report $report
+        $text = Set-ProofCostProfileScalar -Text $text -Path $relativePath -Pattern "(?m)^[ \t]*zoneRedundant:[ \t]*(?<value>true|false)[ \t]*$" -AllowedValues @('true') -TargetValue 'false' -Setting 'sqlOrders.zoneRedundant' -Report $report
+        $text = Set-ProofCostProfileScalar -Text $text -Path $relativePath -Pattern "(?m)^[ \t]*useFreeLimit:[ \t]*(?<value>true|false)[ \t]*$" -AllowedValues @('true', 'false') -TargetValue $freeLimitValue -Setting 'sqlOrders.useFreeLimit' -Report $report
+        $text = Set-ProofCostProfileScalar -Text $text -Path $relativePath -Pattern "(?m)^[ \t]*freeLimitExhaustionBehavior:[ \t]*'(?<value>[^']+)'[ \t]*$" -AllowedValues @('AutoPause', 'BillOverUsage') -TargetValue 'AutoPause' -Setting 'sqlOrders.freeLimitExhaustionBehavior' -Report $report
+        $pendingWrites[$relativePath] = $text
+    }
+
+    $relativePath = 'data/infra/types.bicep'
+    $path = Join-Path $root ($relativePath.Replace('/', [IO.Path]::DirectorySeparatorChar))
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Fichier requis absent : $relativePath" }
+    $text = Read-ProofCostProfileText -Path $path -RelativePath $relativePath -Encoding $encoding -Report $report
+    $typeBlock = [string]::Join("`n", @(
+        "  @description('Délai en minutes avant la pause automatique de la base.')"
+        '  autoPauseDelay: int'
+        ''
+        "  @description('Capacité minimale SQL serverless sous forme de chaîne, par exemple 0.5.')"
+        '  minCapacity: string'
+        ''
+        "  @description('Désactive explicitement la redondance entre zones de la base.')"
+        '  zoneRedundant: bool'
+        ''
+        "  @description('Utilise les limites gratuites mensuelles SQL lorsque le préflight les confirme.')"
+        '  useFreeLimit: bool'
+        ''
+        "  @description('Arrêt automatique de la base quand la limite gratuite est consommée.')"
+        "  freeLimitExhaustionBehavior: 'AutoPause' | 'BillOverUsage'"
+    ))
+    $typeProperties = @('autoPauseDelay', 'minCapacity', 'zoneRedundant', 'useFreeLimit', 'freeLimitExhaustionBehavior')
+    $expectedTypePatterns = @(
+        '(?m)^\s*autoPauseDelay:\s*int\s*$'
+        '(?m)^\s*minCapacity:\s*string\s*$'
+        '(?m)^\s*zoneRedundant:\s*bool\s*$'
+        '(?m)^\s*useFreeLimit:\s*bool\s*$'
+        "(?m)^\s*freeLimitExhaustionBehavior:\s*'AutoPause'\s*\|\s*'BillOverUsage'\s*$"
+    )
+    $text = Ensure-ProofCostProfileFields -Text $text -Path $relativePath -AnchorPattern "(?m)^[ \t]*databaseAvailabilityZone:[ \t]*-1[ \t]*\|[ \t]*1[ \t]*\|[ \t]*2[ \t]*\|[ \t]*3[ \t]*$" -PropertyNames $typeProperties -BlockText $typeBlock -ExpectedPatterns $expectedTypePatterns -Report $report -Setting 'structure.sqlTypes'
+    $pendingWrites[$relativePath] = $text
+
+    $relativePath = 'data/infra/main.bicep'
+    $path = Join-Path $root ($relativePath.Replace('/', [IO.Path]::DirectorySeparatorChar))
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Fichier requis absent : $relativePath" }
+    $text = Read-ProofCostProfileText -Path $path -RelativePath $relativePath -Encoding $encoding -Report $report
+    $mappingBlock = [string]::Join("`n", @(
+        '        autoPauseDelay: sqlOrders.autoPauseDelay'
+        '        minCapacity: sqlOrders.minCapacity'
+        '        zoneRedundant: sqlOrders.zoneRedundant'
+        '        useFreeLimit: sqlOrders.useFreeLimit'
+        '        freeLimitExhaustionBehavior: sqlOrders.freeLimitExhaustionBehavior'
+    ))
+    $mappingProperties = @('autoPauseDelay', 'minCapacity', 'zoneRedundant', 'useFreeLimit', 'freeLimitExhaustionBehavior')
+    $expectedMappings = @(
+        '(?m)^\s*autoPauseDelay:\s*sqlOrders\.autoPauseDelay\s*$'
+        '(?m)^\s*minCapacity:\s*sqlOrders\.minCapacity\s*$'
+        '(?m)^\s*zoneRedundant:\s*sqlOrders\.zoneRedundant\s*$'
+        '(?m)^\s*useFreeLimit:\s*sqlOrders\.useFreeLimit\s*$'
+        '(?m)^\s*freeLimitExhaustionBehavior:\s*sqlOrders\.freeLimitExhaustionBehavior\s*$'
+    )
+    $text = Ensure-ProofCostProfileFields -Text $text -Path $relativePath -AnchorPattern '(?m)^[ \t]*availabilityZone:[ \t]*sqlOrders\.databaseAvailabilityZone[ \t]*$' -PropertyNames $mappingProperties -BlockText $mappingBlock -ExpectedPatterns $expectedMappings -Report $report -Setting 'structure.sqlMappings'
+    $pendingWrites[$relativePath] = $text
+
+    foreach ($target in @('dev', 'prd')) {
+        $relativePath = "orders/infra/main.$target.bicepparam"
+        $path = Join-Path $root ($relativePath.Replace('/', [IO.Path]::DirectorySeparatorChar))
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Fichier requis absent : $relativePath" }
+        $text = Read-ProofCostProfileText -Path $path -RelativePath $relativePath -Encoding $encoding -Report $report
+        $text = Set-ProofCostProfileScalar -Text $text -Path $relativePath -Pattern "(?m)^[ \t]*zoneRedundant:[ \t]*(?<value>true|false)[ \t]*$" -AllowedValues @('true') -TargetValue 'false' -Setting 'caeMain.zoneRedundant' -Report $report
+        $text = Set-ProofCostProfileScalar -Text $text -Path $relativePath -Pattern '(?m)^[ \t]*minReplicas:[ \t]*(?<value>\d+)[ \t]*$' -AllowedValues @('0', '1') -TargetValue '0' -Setting 'caApi.minReplicas' -Report $report
+        $text = Set-ProofCostProfileScalar -Text $text -Path $relativePath -Pattern '(?m)^[ \t]*maxReplicas:[ \t]*(?<value>\d+)[ \t]*$' -AllowedValues @('2', '3') -TargetValue '1' -Setting 'caApi.maxReplicas' -Report $report
+        $pendingWrites[$relativePath] = $text
+    }
+
+    foreach ($relativePath in $pendingWrites.Keys) {
+        $path = Join-Path $root ($relativePath.Replace('/', [IO.Path]::DirectorySeparatorChar))
+        [IO.File]::WriteAllText($path, $pendingWrites[$relativePath], $writeEncoding)
+    }
+
+    return @($report.ToArray())
+}
+
 Export-ModuleMember -Function @(
     'Assert-ProofProjectCode',
     'Assert-ProofGuid',
     'Assert-ProofSeparateRepository',
     'Get-ProofReplacementTable',
     'Invoke-ProofTextReplacement',
+    'Set-ProofCostProfile',
     'Get-ProofManagedFileList',
     'Write-ProofManifest',
     'Assert-ProofManifestWorkingTree',
