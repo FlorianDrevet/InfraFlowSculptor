@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`R-02`](docs/plan/01-preuves.md#-r-02--revue-de-la-sortie-de-référence-avant-azure) — Revue de la sortie de référence (avant Azure) |
-| **Statut** | `EN_ATTENTE_DE_REVUE` |
-| **Dernière étape terminée** | [`P-06`](docs/plan/01-preuves.md#p-06--readmeifsmd-manifeste-dexemple-et-contrôles-en-ci) — README.ifs.md, manifeste d'exemple et contrôles en CI (commit `5aba790`) |
-| **Étape suivante** | `P-07` — Outillage des preuves et recette pas à pas |
-| **Verrou** | 🔒 `R-02` — revue demandée le 2026-10-07, voir [R-02-demande.md](docs/plan/revues/R-02-demande.md) |
+| **Étape courante** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`R-02`](docs/plan/01-preuves.md#-r-02--revue-de-la-sortie-de-référence-avant-azure) — Revue de la sortie de référence (avant Azure) (approuvée) |
+| **Étape suivante** | `P-08` — Exécution des preuves (accompagnement) |
+| **Verrou** | aucun |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
-| **Dernière mise à jour** | 2026-10-07 — Luna |
+| **Dernière mise à jour** | 2026-10-07 — Claude (revue R-02) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
 résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question ci-dessous).
 

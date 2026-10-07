@@ -1,48 +1,117 @@
 # Revue R-02 — Sortie de référence du pilote
 
-Verdict : CORRECTIONS
+Verdict : APPROUVÉ
 
-- **Relu** : le contenu complet de `diff.patch` (dossier temporaire indiqué, 1927 lignes) comparé à `origin/main`, soit tout le segment `impl/preuves` corrigé après le verdict `CORRECTIONS` du 2026-10-07 — jusqu'au commit `f782c1c` (CI GitHub verte selon l'énoncé) et aux commits de journal `434505f`/`13df3cb`/`701bcde` visibles dans l'état git. Fichiers lus intégralement : `CLAUDE.md`, `.claude/skills/revue-verrou/SKILL.md`, `docs/plan/README.md`, `docs/plan/01-preuves.md` (P-01 à P-06, R-02, P-07), `docs/plan/revues/R-02-demande.md`, `docs/plan/revues/R-02-revue.md` (verdict précédent), `docs/plan/recettes/suivi.md`, `.github/test-debt.md`, `docs/specs/03-decisions.md` (DEC-85, 86, 90, 98, 99, 100, 102, 103, 111), `docs/specs/16-liaisons-identites-et-acces.md`, `docs/specs/18-reseau-et-exposition.md`, `docs/specs/21-generation-et-revisions.md` (§ 6.2), `docs/specs/23-kit-installation.md` ; puis tout le code et les tests touchés par le diff (`IfsInstall.psm1`, `Install-Azdo.ps1`, `IfsRelease.psm1`, `Invoke-IfsInfraDeploy.ps1`, `Invoke-IfsInfraPreview.ps1`, les quatre composants Bicep et leurs nouveaux modules de rôle, `IfsRelease.Tests.ps1`, `InstallAzdo.Tests.ps1`, `Kit.Tests.ps1`, `manifest.example.json`).
-- **Vérifications relancées** : **aucune par moi** — cette session ne dispose que d'outils de lecture (pas d'exécution de commande). Je me suis appuyé sur les résultats annoncés par Codex dans les instructions de ce tour (Pester 55/0/0 ; PSScriptAnalyzer 5 scripts 0 erreur/0 avertissement ; analyse syntaxique PowerShell réussie ; manifeste cohérent sur 76 fichiers ; déterminisme 76 fichiers ; 24 pipelines validés ; 4 composants Bicep 0 avertissement avec Bicep 0.47.16 ; `gate.py lint` 105 étapes/18 verrous) et sur la mention du run CI GitHub `37605803893` (8/8 verts) pour le commit `f782c1c`, **sans les avoir relancés ni interrogés moi-même**. Je ne peux donc pas certifier ces chiffres de première main ; je les recoupe uniquement avec la cohérence du code lu.
-- **Recette** : aucune recette Azure n'est prescrite à R-02 (rien n'est déployé). La lecture de `SETUP.md` (🧪 P-05) est déjà consignée `OK` dans `docs/plan/recettes/suivi.md` (entrée du 2026-10-07) ; `SETUP.md` n'étant pas modifié par ce diff, cette recette reste valable.
-- **Limites** : pas d'exécution d'outil dans cette session (ni `dotnet`, ni `pwsh`/Pester, ni `az`/Bicep, ni `gate.py`) — relecture strictement statique du code et des tests. Les identifiants de rôle intégrés Azure (`Key Vault Secrets Officer`, `Container Apps Contributor`, `AcrPush`) sont acceptés sur la base de ma connaissance du catalogue Azure, non vérifiés contre une source live. Je n'ai pas pu vérifier le recalcul réel des empreintes SHA-256 du manifeste. Ces points ne sont pas approuvés implicitement.
+- **Relu** : l'intégralité du segment `P-01` → `P-06`, commits `884b323..823a815` (31 commits, `origin/impl/socle`
+  → `823a815`, 142 fichiers, 43 815 insertions / 38 suppressions) — PR [#2](https://github.com/FlorianDrevet/InfraFlowSculptor/pull/2),
+  empilée sur `impl/socle` (PR #1, toujours ouverte). Relecture ciblée en détail du delta depuis le verdict `CORRECTIONS`
+  du tour précédent (`7e27458..f1021f5`, 6 fichiers, 387 insertions / 44 suppressions) : `docs/plan/01-preuves.md`,
+  `docs/specs/23-kit-installation.md`, `reference/pilot/bicep-azdo/.ifs/install/SETUP.md`,
+  `reference/pilot/bicep-azdo/.ifs/install/scripts/IfsInstall.psm1`, `reference/pilot/manifest.example.json`,
+  `reference/release-module/tests/Kit.Tests.ps1` — ligne par ligne, code puis tests. Confirmé que les deux commits
+  suivants (`701bcde`, `823a815`) ne touchent que `docs/plan/revues/R-02-demande.md`, `NEXT.md`, `docs/plan/JOURNAL.md`
+  et `docs/plan/recettes/suivi.md` (aucun code, aucun test). Confirmé qu'aucun autre fichier du segment n'a changé
+  depuis le tour précédent : les fichiers portant les correctifs déjà vérifiés résolus (`IfsRelease.psm1`,
+  `Install-Azdo.ps1`, les modules Bicep de rôle, `IfsRelease.Tests.ps1`, `InstallAzdo.Tests.ps1`) sont absents du diff
+  `7e27458..823a815`. Relus aussi : `docs/plan/revues/R-02-demande.md`, `docs/plan/revues/R-02-revue.md` (verdict
+  précédent), `docs/plan/revues/README.md` (modèle), `docs/plan/recettes/suivi.md`, `.github/test-debt.md`,
+  `AGENTS.md`, les quatre `main.<cible>.bicepparam` de `core`/`data`/`orders`/`platform` (noms de groupes de
+  ressources), et les quatre `main.bicep` (confirmation que chacun crée toujours son groupe de ressources via
+  `resource rg_main 'Microsoft.Resources/resourceGroups@2024-03-01'`).
+- **Vérifications relancées (par moi, ce tour)** :
+
+  | Commande | Résultat |
+  |---|---|
+  | `Invoke-Pester -Path ./reference/release-module/tests -CI` | 58 tests réussis, 0 échec, 0 ignoré (4 fichiers) |
+  | `Invoke-ScriptAnalyzer` sur les 5 scripts listés dans `ci.yml` (`azure-setup.ps1`, `IfsInstall.psm1`, `Install-Azdo.ps1`, `Test-ReferenceDeterminism.ps1`, `Update-ManifestExample.ps1`), règle `PSUseBOMForUnicodeEncodedFile` exclue comme en CI | 0 erreur, 0 avertissement |
+  | `./reference/tools/Update-ManifestExample.ps1 -Check` | OK : manifeste cohérent avec 76 fichiers gérés |
+  | `./reference/tools/Test-ReferenceDeterminism.ps1` | OK : 76 fichiers UTF-8 sans BOM, LF, saut final et en-tête requis |
+  | `./reference/tools/Test-ReferencePipelines.ps1` | OK : 24/24 fichiers Azure Pipelines valides contre le schéma épinglé |
+  | `./reference/tools/Test-ReferenceBicep.ps1` | OK : `core`, `data`, `orders`, `platform` compilent, lintent et formatent sans avertissement |
+  | `python tools/plan/gate.py lint` | ✔ 105 étapes dont 18 verrous, cohérent |
+  | `gh run view 37612167671` (commit `f1021f5`) | `success` — 7/7 jobs verts (Backend, Frontend, Acceptance, End-to-end, Release module, Supply chain, CI artifact sanitization) |
+  | `gh run view 37612968488` (commit `823a815`, HEAD) | `success` — 7/7 jobs verts (mêmes jobs) |
+
+  Toutes ces commandes, je les ai exécutées moi-même dans cette session (pas de résultat recopié d'une annonce) ; les
+  chiffres correspondent exactement à ceux de `R-02-demande.md`. Contrairement au tour précédent, je disposais cette
+  fois d'un accès shell : aucune limite de lecture seule à signaler.
+- **Recette** : aucune recette Azure n'est prescrite à R-02 (rien n'est déployé). `docs/plan/recettes/suivi.md`
+  consigne P-05 « OK, vérification locale et lecture de SETUP » daté du 2026-10-07, avec une phrase dédiée à la
+  nouvelle section de `SETUP.md` (« les exigences de portée et la responsabilité de Bicep sont explicites »), donc
+  bien relue après l'ajout de ces deux lignes par `f1021f5` — la recette n'est pas restée figée sur une version
+  antérieure du fichier.
+- **Limites** : comme au tour précédent, aucun abonnement Azure ni organisation Azure DevOps de test n'est configuré ;
+  la validation reste hors ligne (RBAC et pipelines simulés ou validés statiquement). Les identifiants de rôle intégrés
+  Azure utilisés par le code (`Key Vault Secrets Officer`, `Container Apps Contributor`, `AcrPush`, etc.) ne sont pas
+  revérifiés contre une source live ce tour — ils l'ont été au tour précédent et le diff ne les touche pas.
 
 ## Constats précédents — vérifiés résolus
 
-- **BLOQUANT-1 (opérations `Done` bloquantes)** — résolu. `Add-IfsOperation` (`IfsRelease.psm1`) conserve l'identifiant stable, renvoie l'opération inchangée si `ToDo`/`Started`, et si `Done` avec une révision/commit différents, la réarme en `ToDo` en conservant son `id`, met à jour révision/commit/détails et sauvegarde. Deux tests dédiés le couvrent (« réarme une opération Done... », « reprend une opération Started après interruption... »), y compris la non-duplication de mutation (`Should -Invoke … -Times 1 -Exactly`).
-- **MAJEUR-1 (Key Vault Secrets Officer absent)** — résolu. `core/infra/key-vault-role-assignment.bicep` + paramètre `deploymentPrincipalId` propagé par `IfsRelease.psm1` (`Invoke-IfsPreview`, `Invoke-IfsStackDeployment`, `Invoke-IfsInfraDeploy`) et par `Invoke-IfsInfraDeploy.ps1`/`Invoke-IfsInfraPreview.ps1` via la nouvelle `Get-IfsManagedIdentity`. Rôle attribué à la portée du coffre lui-même. Tests Pester et Bicep dédiés présents.
-- **MAJEUR-2 (droits applicatifs incomplets/mal ordonnés)** — résolu. `AcrPush` est désormais attribué par le déploiement `platform` (`registry-role-assignment.bicep`) et `Container Apps Contributor` par le déploiement `orders` (`container-app-role-assignment.bicep`), tous deux conditionnés à l'existence de la ressource cible et paramétrés par `appDeliveryPrincipalId`. Le kit ne les attribue plus par anticipation. Conforme à DEC-88.
-- **MAJEUR-3 (conflit de modèle requis CI/Release)** — résolu. `Get-IfsRequiredTemplatePath` distingue `app-ci.yml` (cible `shared`) et `app-release.yml` (autres cibles) ; test `associe chaque service connection au modèle exigé par son pipeline` vérifie la correspondance avec les pipelines réels.
-- **MAJEUR-4 (règle de pare-feu SQL manquante)** — résolu. `sqlOrdersFirewallRules` générée seulement si `publicNetworkAccess == 'Enabled'`, testée pour dev/prd et pour l'absence en exposition non publique. Conforme à RG-NET-01.
-- **MAJEUR-5 (autorisation installateur non retirée en cas d'échec)** — résolu. Le corps de finalisation de `Install-Azdo.ps1` est dans un `try/catch/finally` : `Set-IfsFinalEndpointPermission` est maintenant appelée en tout début de finalisation **et** rejouée dans le `finally` (avec re-récupération des endpoints/pipelines gérés si besoin), l'ID du pipeline d'installation étant systématiquement inclus dans `ManagedPipelineIds`. Deux tests simulent l'approbateur absent et l'échec d'un check, et vérifient le retrait de l'autorisation dans les deux cas.
-- **MAJEUR-6 (commande `role assignment update` invalide, ressources détachées mal lues)** — résolu. `Set-IfsRoleAssignment` construit désormais le document JSON complet et appelle `--role-assignment`. `Invoke-IfsStackDeployment` normalise `detachedResources` qu'ils soient `{id}` ou chaîne. Tests dédiés sur les deux points.
-- **MAJEUR-7 (couverture de test insuffisante)** — résolu : tests ajoutés pour les deux releases successives avec réarmement, la reprise après `Started`, le SID SQL par Object ID pour identité système et affectée, la normalisation des ressources détachées, la portée RBAC par groupe de ressources, les modules Bicep de rôle, le modèle requis par pipeline, la règle pare-feu, la finalisation Azure DevOps simulée et la mise à jour RBAC JSON. `.github/test-debt.md` documente ce qui reste hors de portée sans Azure SQL/organisation de test réelle (coupure en processus enfant, exécution réelle de `data-access.sql`/`data-access-remove.sql`, contrôles Azure DevOps réels) — cohérent avec P-07/P-08.
-- **Constat reclassé « SQL — terminologie »** — résolu. Le code utilisait déjà l'Object ID (`principalId`) comme SID ; `docs/specs/03-decisions.md` et `docs/specs/16-liaisons-identites-et-acces.md` sont corrigés (« Object ID du principal converti en SID »). Test dédié confirme que `clientId` n'est jamais utilisé pour le SID.
-- **Constat reclassé « Fédérations étrangères »** — résolu. `RG-INS-05` (spec 23) précise désormais que seuls les identifiants `ifs-ado-*` non attendus sont supprimés et que les identifiants étrangers sont conservés ; `Set-IfsFederatedCredential`/`Remove-IfsStaleFederatedCredential` et deux tests (conservation d'un FIC étranger, non-remplacement d'un FIC IFS déjà conforme) le vérifient.
-- **Constat reclassé « RBAC conditionné — portée étroite »** — résolu. `Get-IfsRbacScopePlan` agrège les rôles nécessaires **par groupe de ressources** (celui du composant et ceux de ses dépendances inter-composants/abonnements) au lieu d'une condition à la portée de l'abonnement ; test `limite la délégation RBAC aux groupes de ressources utilisés par chaque composant` vérifie qu'aucune portée d'abonnement nue n'apparaît.
-- **Les dix mineurs de la revue précédente** sont correctement repris dans `docs/plan/01-preuves.md`, étape `P-07`, point 5 (renvoi vers `R-02-revue.md#constats-mineurs-à-intégrer-au-plan`).
+- **BLOQUANT-1, MAJEUR-1 à MAJEUR-7**, et les trois constats reclassés (terminologie SID, fédérations étrangères,
+  portée RBAC) : confirmés résolus au tour précédent (voir l'historique de ce fichier) ; aucun des fichiers qui portent
+  ces correctifs n'a changé depuis (`IfsRelease.psm1`, `Install-Azdo.ps1`, les modules Bicep de rôle, les tests
+  associés) — rien à revérifier, rien n'a pu régresser sans diff.
+- **MAJEUR-8 / R-02-C1 (le kit pré-créait les groupes de ressources des composants sans spécification ni test
+  dédié)** — résolu. Vérifié précisément contre les six points demandés :
+  1. *Seules les portées retournées par `Get-IfsRbacScopePlan` sont préparées.* `Invoke-IfsAzureSetup`
+     (`IfsInstall.psm1:776-783`) calcule `$requiredScopes` en unissant, pour **chaque** cible, les `.Scope` renvoyés
+     par `Get-IfsRbacScopePlan`, puis appelle `Initialize-IfsComponentResourceGroup -Releases $plan.Releases
+     -RequiredScopes @($requiredScopes)` **avant** toute autre action. `Initialize-IfsComponentResourceGroup`
+     (`IfsInstall.psm1:328-399`) construit un `HashSet` à partir de ce paramètre et ignore (`continue`, ligne 346)
+     toute release dont la portée `/subscriptions/<sub>/resourceGroups/<name>` n'y figure pas. Confirmé en exécution
+     réelle : le log `WHATIF` de `Invoke-Pester` ne contient que les 5 créations attendues
+     (`rg-shop-core-main-{dev,prd}`, `rg-shop-orders-main-{dev,prd}`, `rg-shop-platform-main-shared`), jamais
+     `rg-shop-data-main-*`.
+  2. *Nom, région et tags viennent de `resourceGroups.main`.* `Get-IfsBicepResourceGroup` (`IfsInstall.psm1:267-295`)
+     lit `resourceGroups.main.{name,location,tags}` depuis `bicep build-params`, et `Invoke-IfsAzureSetup`
+     (`IfsInstall.psm1:761-766`) attache ces trois valeurs à chaque release (`Add-Member ResourceGroupName/
+     ResourceGroupLocation/ResourceGroupTags`) avant tout calcul de portée ou d'initialisation — aucune autre
+     source (pas de nom dérivé du composant, pas de valeur câblée).
+  3. *Tous les groupes existants sont validés avant la première création.* Dans `Initialize-IfsComponentResourceGroup`,
+     la boucle de lecture (`group list` par abonnement puis vérification région/tags via
+     `Assert-IfsComponentResourceGroupTag`, lignes 377-392) s'exécute **intégralement** — pour tous les groupes
+     désirés, toutes cibles confondues — avant la boucle de création (lignes 394-398) : un groupe non conforme lève
+     une erreur avant qu'un seul `group create` n'ait pu partir, quel que soit l'ordre d'itération.
+  4. *La seconde exécution est idempotente.* Test dédié « ne recrée pas les groupes conformes à la seconde
+     initialisation » (`Kit.Tests.ps1:380-411`) : deux appels successifs à `Initialize-IfsComponentResourceGroup`
+     sur le même état simulé, 2 créations au premier appel, 0 créations supplémentaires au second. Vérifié vert par
+     ma propre exécution de Pester.
+  5. *`data` reste créé par Bicep.* `Get-IfsRbacScopePlan` (`IfsInstall.psm1:79-100`) n'a pas de branche `'data'`
+     dans son `switch` : ce composant n'ajoute donc jamais sa propre portée. Test dédié « crée seulement les groupes
+     utilisés comme portées RBAC... » (`Kit.Tests.ps1:340-378`) l'assure explicitement
+     (`$createdNames | Should -Not -Contain 'rg-shop-data-main-dev'`), et les quatre `main.bicep` déclarent chacun
+     `resource rg_main 'Microsoft.Resources/resourceGroups@2024-03-01'` — y compris `data` — donc Bicep réconcilie
+     bien ce groupe au déploiement, comme documenté dans `docs/specs/23-kit-installation.md` § 2 (ligne « 1 bis »).
+  6. *Les tests `WhatIf` utilisent des noms différents.* Le test complet « ne fait aucune mutation Azure pendant le
+     WhatIf du kit complet » (`Kit.Tests.ps1:525-594`) dérive désormais le nom simulé de `resourceGroups.main` à
+     partir du composant et de la cible lus dans le chemin du fichier (`rg-shop-$component-main-$target`), au lieu
+     du `rg-test` unique partagé par tous les composants utilisé avant la correction ; les trois nouveaux tests
+     ciblés (`Kit.Tests.ps1:340-378`, `:380-411`, `:413-467`) utilisent chacun au moins deux groupes distincts
+     (`core`/`dev`, `orders`/`prd`, `data`/`dev`).
+
+  Documentation : `docs/specs/23-kit-installation.md` § 2 porte la nouvelle ligne « 1 bis. Groupes des composants
+  utilisés comme portées RBAC », `docs/plan/01-preuves.md` (P-05 🔧 point 1 et 🔧 point 4) et
+  `.ifs/install/SETUP.md` décrivent la même règle en langage client — plus de décision de conception non
+  documentée. Le troisième scénario de test (`Kit.Tests.ps1:413-467`) couvre les 9 combinaisons région/4 tags ×
+  {absent, incorrect} et vérifie `0` appel `group create` après le `Should -Throw`, pour chaque cas. `data` dans
+  `manifest.example.json` et les hachages régénérés sont cohérents (`Update-ManifestExample.ps1 -Check` vert).
 
 ## Constats
 
-### MAJEUR-8 — Le kit pré-crée et réconcilie les groupes de ressources des composants, sans spécification ni test dédié
-
-- Fichier(s) : `reference/pilot/bicep-azdo/.ifs/install/scripts/IfsInstall.psm1` (nouvelles `Get-IfsBicepResourceGroup` et la double boucle de `Invoke-IfsAzureSetup` lignes ~657-690) ; `docs/specs/23-kit-installation.md` § 2 ; `docs/plan/01-preuves.md` (P-05 🔧 1).
-- Problème / impact : pour pouvoir attribuer le rôle *Role Based Access Control Administrator* conditionné à la portée **du groupe de ressources de chaque composant** (correction demandée pour la portée RBAC), le kit doit désormais que ce groupe existe **avant** le premier déploiement Bicep du composant. Le correctif ajoute donc une étape entièrement nouvelle : pour **chaque** release (y compris `data`, qui n'a besoin d'aucun rôle RBAC), le kit lit `resourceGroups.main` via `bicep build-params`, crée le groupe de ressources s'il est absent (nom, localisation, tags), et si un groupe du même nom existe déjà, vérifie sa marque `managed-by` et ses tags `ifs-project`/`ifs-component`/`ifs-environment` en levant une erreur en cas d'écart. C'est un déplacement de responsabilité par rapport à [21 § 6.2](../specs/21-generation-et-revisions.md) (« `main.bicep` … crée les groupes de ressources ») et au tableau du kit en [23 § 2](../specs/23-kit-installation.md) (qui ne mentionne que `rg-ifs-<projet>-<cible>`, le groupe **technique** du kit, pas les groupes des composants du projet). Cette décision de conception n'est documentée nulle part (pas de `DT-nn`, pas de ligne ajoutée à la spec ou au plan), ce qui est contraire à la répartition des rôles (« Luna ne tranche rien » / CLAUDE.md). De plus, aucun test Pester dédié n'exerce ce nouveau code : le seul test qui le traverse (`ne fait aucune mutation Azure pendant le WhatIf du kit complet`) simule `bicep build-params` avec un **unique** groupe fictif `rg-test` identique pour tous les composants et toutes les cibles — il ne peut donc pas détecter une erreur dans le regroupement par `(SubscriptionId, ResourceGroupName)`, ni dans le contrôle de propriété/tags, ni dans la création réelle de plusieurs groupes distincts.
-- Correction attendue : documenter cette nouvelle étape dans `docs/specs/23-kit-installation.md` § 2 (nouvelle ligne, ex. « 1 bis. Groupes de ressources des composants », avec renvoi à `RG-LIA-18`/`DEC-86`) et dans `docs/plan/01-preuves.md` (P-05 🔧 point 1) ; ajouter des tests Pester dans `Kit.Tests.ps1` couvrant : (a) création d'un groupe de ressources absent avec le nom/la localisation/les tags exacts lus dans le `.bicepparam` du composant, pour au moins deux composants/cibles distincts (pas le même nom simulé pour tous) ; (b) une seconde exécution sur un groupe déjà conforme ne déclenche aucun appel `group create` ; (c) un groupe existant sans la marque `managed-by: infraflowsculptor`, ou avec une valeur de tag `ifs-project`/`ifs-component`/`ifs-environment` différente, lève l'erreur attendue sans aucune mutation.
-- Test attendu : les trois scénarios Pester ci-dessus, plus confirmation que le test `WhatIf` du kit complet simule des groupes distincts par composant (pas une valeur unique partagée).
-
-## Corrections demandées
-
-| ID | Correction | Fichier(s) | Test attendu |
-|---|---|---|---|
-| R-02-C1 | Documenter la pré-création/réconciliation des groupes de ressources des composants dans la spec 23 § 2 et dans P-05 🔧 du plan ; ajouter les tests Pester manquants (création multi-composants, idempotence, échec de propriété/tags) | `docs/specs/23-kit-installation.md`, `docs/plan/01-preuves.md`, `reference/release-module/tests/Kit.Tests.ps1` | Pester vert avec les trois nouveaux cas ; `gate.py lint` vert après modification du plan |
+Aucun constat bloquant, majeur ou mineur nouveau ce tour.
 
 ## Décisions prises pendant la revue
 
-Aucune : revue strictement en lecture seule pour ce tour (consigne explicite de la demande). Aucun fichier modifié, `gate.py` non invoqué.
+Aucune nouvelle `DT-nn` : la correction R-02-C1 était explicitement scopée par la revue précédente à une
+documentation en spec/plan (pas à une décision technique transverse), et c'est ce qui a été livré. Aucun statut de
+preuve de [04 § 7.2](../specs/04-perimetre-et-lots.md) à mettre à jour à ce verrou (ce sera R-03, sur les résultats
+réels des preuves P1–P9).
 
 ## Pour la suite
 
-- Luna applique `R-02-C1` sur la branche `impl/preuves` (même segment, même pull request), puis redemande la revue.
-- Tous les BLOQUANT/MAJEUR de la revue précédente (`Add-IfsOperation`, Key Vault Secrets Officer, droits applicatifs, modèle requis, pare-feu SQL, autorisation installateur, commande RBAC/`detachedResources`, couverture de test) ainsi que les trois constats reclassés (terminologie SID, fédérations étrangères, portée RBAC) sont confirmés résolus et n'ont pas besoin d'être retouchés.
-- Point de vigilance pour le prochain tour : si une vraie exécution d'outils (Pester/PSScriptAnalyzer/Bicep/`gate.py`) est possible, la relancer réellement avant d'approuver — cette revue n'a pu que lire le code.
+- Vous pouvez fusionner la PR #2 (`impl/preuves` → `impl/socle`) dès que la PR #1 (base) est elle-même fusionnée, ou
+  la laisser empilée en l'état : le plan prévoit que la pull request reste ouverte et que Luna continue sur la même
+  branche.
+- Luna reprend avec `P-07` — Outillage des preuves et recette pas à pas — sur `impl/preuves`.
+- Rien à reporter sur `P-07` : aucun mineur n'a été identifié ce tour, `gate.py lint` n'a donc pas eu besoin d'être
+  relancé après une modification du plan.
