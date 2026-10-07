@@ -1,3 +1,5 @@
+<!-- Généré par InfraFlowSculptor — projet shop. Ne pas modifier : la prochaine publication remplacera ce fichier. Personnalisation : voir README.ifs.md. -->
+
 # Installation du pilote shop
 
 Ce kit prépare trois cibles Azure : dev, prd et shared. Il utilise Azure CLI, Azure DevOps Pipelines et des connexions fédérées Microsoft Entra. Aucune clé client n'est créée.

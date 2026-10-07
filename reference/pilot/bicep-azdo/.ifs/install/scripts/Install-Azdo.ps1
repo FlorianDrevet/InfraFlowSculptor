@@ -1,4 +1,4 @@
-﻿# Généré par InfraFlowSculptor. Ce script configure Azure DevOps depuis System.AccessToken.
+# Généré par InfraFlowSculptor. Ce script configure Azure DevOps depuis System.AccessToken.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)] [ValidateSet('Prepare', 'Finalize')] [string] $Phase,

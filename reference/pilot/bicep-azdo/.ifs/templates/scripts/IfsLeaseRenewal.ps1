@@ -1,3 +1,4 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : la prochaine publication remplacera ce fichier. Personnalisation : voir README.ifs.md.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string] $Account,

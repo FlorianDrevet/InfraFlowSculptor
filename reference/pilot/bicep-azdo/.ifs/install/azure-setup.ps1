@@ -1,4 +1,4 @@
-﻿# Généré par InfraFlowSculptor. Ne pas modifier : la prochaine publication remplacera ce fichier.
+# Généré par InfraFlowSculptor. Ne pas modifier : la prochaine publication remplacera ce fichier.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)] [string] $AzureDevOpsOrganization,

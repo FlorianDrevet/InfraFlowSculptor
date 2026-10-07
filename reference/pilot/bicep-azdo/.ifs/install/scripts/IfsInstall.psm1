@@ -1,4 +1,5 @@
-﻿Set-StrictMode -Version Latest
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : la prochaine publication remplacera ce fichier. Personnalisation : voir README.ifs.md.
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $script:IfsManagedBy = 'infraflowsculptor'
