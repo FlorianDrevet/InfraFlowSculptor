@@ -31,7 +31,7 @@ steps:
       try {
         az account get-access-token --resource https://management.azure.com/ --output none
         if ($LASTEXITCODE -ne 0) { throw 'Obtention du jeton ARM impossible.' }
-        az deployment sub what-if --location francecentral --template-file .ifs/install/readiness.bicep --only-show-errors
+        az deployment sub what-if --location northeurope --template-file .ifs/install/readiness.bicep --only-show-errors
         if ($LASTEXITCODE -ne 0) { throw 'What-if de souscription refuse.' }
         Write-Host '##vso[task.setvariable variable=IFS_READINESS_DEV]Succeeded'
       }
@@ -71,7 +71,7 @@ steps:
       try {
         az account get-access-token --resource https://management.azure.com/ --output none
         if ($LASTEXITCODE -ne 0) { throw 'Obtention du jeton ARM impossible.' }
-        az deployment sub what-if --location francecentral --template-file .ifs/install/readiness.bicep --only-show-errors
+        az deployment sub what-if --location northeurope --template-file .ifs/install/readiness.bicep --only-show-errors
         if ($LASTEXITCODE -ne 0) { throw 'What-if de souscription refuse.' }
         Write-Host '##vso[task.setvariable variable=IFS_READINESS_PRD]Succeeded'
       }
@@ -111,7 +111,7 @@ steps:
       try {
         az account get-access-token --resource https://management.azure.com/ --output none
         if ($LASTEXITCODE -ne 0) { throw 'Obtention du jeton ARM impossible.' }
-        az deployment sub what-if --location francecentral --template-file .ifs/install/readiness.bicep --only-show-errors
+        az deployment sub what-if --location northeurope --template-file .ifs/install/readiness.bicep --only-show-errors
         if ($LASTEXITCODE -ne 0) { throw 'What-if de souscription refuse.' }
         Write-Host '##vso[task.setvariable variable=IFS_READINESS_SHARED]Succeeded'
       }
