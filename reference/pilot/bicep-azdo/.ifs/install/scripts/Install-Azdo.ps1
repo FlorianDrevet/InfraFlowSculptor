@@ -310,8 +310,8 @@ function Get-IfsManagedPipelineId {
     return @($managed | Sort-Object -Unique)
 }
 
-function Set-IfsFinalEndpointPermissions {
-    [CmdletBinding()]
+function Set-IfsFinalEndpointPermission {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory)] [string] $ProjectCode,
         [Parameter(Mandatory)] [object[]] $Targets,
@@ -353,7 +353,9 @@ function Set-IfsFinalEndpointPermissions {
                 continue
             }
             try {
-                Set-IfsPipelinePermission -ResourceType 'endpoint' -ResourceId ([string]$endpoint[0].id) -AuthorizedPipelineIds $endpointPlan.AuthorizedPipelineIds -ManagedPipelineIds $ManagedPipelineIds
+                if ($PSCmdlet.ShouldProcess($endpointPlan.Name, 'retirer les autorisations temporaires de pipeline')) {
+                    Set-IfsPipelinePermission -ResourceType 'endpoint' -ResourceId ([string]$endpoint[0].id) -AuthorizedPipelineIds $endpointPlan.AuthorizedPipelineIds -ManagedPipelineIds $ManagedPipelineIds
+                }
             }
             catch { $failures.Add("Service connection '$($endpointPlan.Name)' : $($_.Exception.Message)") }
         }
@@ -558,7 +560,7 @@ try {
 $endpointsResponse = Invoke-IfsAdoApi -Path 'serviceendpoint/endpoints?api-version=7.1-preview.4'
 $finalizationEndpointList = @(Get-IfsAdoValue $endpointsResponse)
 $finalizationManagedPipelineIds = @(Get-IfsManagedPipelineId -CurrentDefinitions $definitions -ProjectCode $model.ProjectCode)
-Set-IfsFinalEndpointPermissions -ProjectCode $model.ProjectCode -Targets $model.Targets -Definitions $definitions -Endpoints $finalizationEndpointList -ManagedPipelineIds $finalizationManagedPipelineIds
+Set-IfsFinalEndpointPermission -ProjectCode $model.ProjectCode -Targets $model.Targets -Definitions $definitions -Endpoints $finalizationEndpointList -ManagedPipelineIds $finalizationManagedPipelineIds
 
 $approver = Find-IfsIdentity -DisplayName 'Shop Release Approvers'
 $approvalType = Get-IfsCheckType -Pattern '^(Approval)$'
@@ -638,7 +640,7 @@ finally {
         if (@($finalizationManagedPipelineIds).Count -eq 0) {
             $finalizationManagedPipelineIds = @(Get-IfsManagedPipelineId -CurrentDefinitions $definitions -ProjectCode $model.ProjectCode)
         }
-        Set-IfsFinalEndpointPermissions -ProjectCode $model.ProjectCode -Targets $model.Targets -Definitions $definitions -Endpoints $finalizationEndpointList -ManagedPipelineIds $finalizationManagedPipelineIds
+        Set-IfsFinalEndpointPermission -ProjectCode $model.ProjectCode -Targets $model.Targets -Definitions $definitions -Endpoints $finalizationEndpointList -ManagedPipelineIds $finalizationManagedPipelineIds
         foreach ($target in $model.Targets) {
             Add-IfsReportEvent -Target $target.Name -Name 'autorisation temporaire installateur' -Status 'retiree' -Details 'Seuls les pipelines de livraison references sont autorises.'
         }
