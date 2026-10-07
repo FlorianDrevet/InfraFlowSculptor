@@ -1,4 +1,4 @@
-// Module ciblé pour attribuer un rôle à l’échelle d’un registre ACR.
+// Généré par InfraFlowSculptor — Module ciblé pour attribuer un rôle à l’échelle d’un registre ACR.
 targetScope = 'resourceGroup'
 
 @description('Nom du registre existant qui reçoit le rôle.')

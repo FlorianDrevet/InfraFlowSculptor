@@ -1,4 +1,4 @@
-// Module ciblé pour déployer une attribution à l’échelle d’un Key Vault.
+// Généré par InfraFlowSculptor — Module ciblé pour déployer une attribution à l’échelle d’un Key Vault.
 targetScope = 'resourceGroup'
 
 @description('Nom du Key Vault qui reçoit le rôle.')

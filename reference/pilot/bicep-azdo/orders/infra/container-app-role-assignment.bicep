@@ -1,4 +1,4 @@
-// Module ciblé pour attribuer un rôle à l’échelle d’une Container App.
+// Généré par InfraFlowSculptor — Module ciblé pour attribuer un rôle à l’échelle d’une Container App.
 targetScope = 'resourceGroup'
 
 @description('Nom de la Container App qui reçoit le rôle.')

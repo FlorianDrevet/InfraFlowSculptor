@@ -23,11 +23,11 @@
     },
     {
       "path": ".ifs/install/scripts/IfsInstall.psm1",
-      "sha256": "bb2f52ca0935dc45e63aa049b85a40e57c4c1510998b35cea7c204fdb9db6e46"
+      "sha256": "b5e53d91ecbcec1cb1bc2b91f2377c0f8ac8172199a0cc8d60632370b66b0b2b"
     },
     {
       "path": ".ifs/install/scripts/Install-Azdo.ps1",
-      "sha256": "08935881e32ccbd2d74968349bc8ebf490da01f609e43fa440e8227b9479e0fb"
+      "sha256": "71d06b0498452a673dd52ccfae596891e65a02de319b71ae376700fe8d36bc57"
     },
     {
       "path": ".ifs/pins.json",
@@ -95,7 +95,7 @@
     },
     {
       "path": ".ifs/templates/scripts/IfsRelease.psm1",
-      "sha256": "57ec777d93a57f23aaeda44ba3ce58e1baaecec1f011a2e5a6223c45559ccf57"
+      "sha256": "5c25c68a696a2ec217edac2a74b9f731898f29f6409d80561a07b84dc6b60aa4"
     },
     {
       "path": ".ifs/templates/scripts/Install-IfsTrivy.ps1",
@@ -107,11 +107,11 @@
     },
     {
       "path": ".ifs/templates/scripts/Invoke-IfsInfraDeploy.ps1",
-      "sha256": "8a7bce1b1fd9ed611223523e1c06cf59515ee9f47ded0a48d51491a47f86ccbb"
+      "sha256": "6e46f2d8cafcdf41bf8d308a62db701e11990b5a8b80d49a29955adb6a500123"
     },
     {
       "path": ".ifs/templates/scripts/Invoke-IfsInfraPreview.ps1",
-      "sha256": "04c860325084c71ef2a4924251debd06752a0984c30d20e243f1a9ba7e080b55"
+      "sha256": "456e549b46718fc8e14a74d9ce0b6826d68c9fda6d61c01421b0b5050573b2c4"
     },
     {
       "path": ".ifs/templates/scripts/Set-IfsRunName.ps1",
@@ -126,8 +126,12 @@
       "sha256": "fb0612591245a829947fa4d39dcf1287a958ef777a89bee3abd9058350679302"
     },
     {
+      "path": "core/infra/key-vault-role-assignment.bicep",
+      "sha256": "7a49a78230f3cb95ee9e8e707e9757780fc946c23dc0254a4d7fe5f74f01355d"
+    },
+    {
       "path": "core/infra/main.bicep",
-      "sha256": "02fae471040b8e54752701f357af6e9d9c12355b302285999c2051f3a4e3c60f"
+      "sha256": "3a7a363275c289f091f367a667f1c0ea1c38e0b3560ec6feb23b2af3cd5267a8"
     },
     {
       "path": "core/infra/main.dev.bicepparam",
@@ -163,7 +167,7 @@
     },
     {
       "path": "data/infra/main.bicep",
-      "sha256": "d18c5f36232538ed574f7cc386e1e33ad2d3a0699a05bf64056313b66d8f1a56"
+      "sha256": "b3019911ac33e5cab0e497fd398594c5eee90f0666761e05fa6304f4fe915832"
     },
     {
       "path": "data/infra/main.dev.bicepparam",
@@ -199,7 +203,7 @@
     },
     {
       "path": "data/infra/types.bicep",
-      "sha256": "8909ff62827177fee33cb06c8ab338dd9f7896beed4f6599ec133e4179ffae0a"
+      "sha256": "4d3f69f04b425f7fa0be1c9d828cb793bcfa5e888f8b4d5d3268cdc948f0c0a8"
     },
     {
       "path": "orders/apps/api/pipelines/ci.yml",
@@ -214,12 +218,16 @@
       "sha256": "29cfd4ca8f8d48ae13e64210537596b43fdf51bf8c01572407ac692a5fb59210"
     },
     {
+      "path": "orders/infra/container-app-role-assignment.bicep",
+      "sha256": "72186f4103bba5507c296bc721b9e54463571992b985042a4091540edcb04577"
+    },
+    {
       "path": "orders/infra/key-vault-role-assignment.bicep",
       "sha256": "38f4c09594c83b12a76629e3d216803f451e082d66fff74fe28f5c05dd1c8578"
     },
     {
       "path": "orders/infra/main.bicep",
-      "sha256": "b2041a6ecbc639bc263bd2f1cde5174a6fb61a4f3c1b08d45033ce27f0fdf9ad"
+      "sha256": "6489f16329286e49e393ed2a5f0e83dbca4e824380dd56936f16feade91bb9a6"
     },
     {
       "path": "orders/infra/main.dev.bicepparam",
@@ -271,7 +279,7 @@
     },
     {
       "path": "platform/infra/main.bicep",
-      "sha256": "6801a80504daac35993a29f013e504a8e80c5ad229563cba70efcda1c8142db2"
+      "sha256": "7ef812a47fc425e0a828581c63665ce4052ecceb78495bc8280b404f862f82e5"
     },
     {
       "path": "platform/infra/main.shared.bicepparam",
@@ -288,6 +296,10 @@
     {
       "path": "platform/infra/pipelines/release.yml",
       "sha256": "045a01022f6ac96720893e291c103941de175bd8ea7671e7cc84def8195e7af8"
+    },
+    {
+      "path": "platform/infra/registry-role-assignment.bicep",
+      "sha256": "6189b5c8a08097294ed02249418efd1ea36c218c273384eb5aa41b0519c981d5"
     },
     {
       "path": "platform/infra/release.shared.json",

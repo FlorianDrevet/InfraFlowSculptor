@@ -46,14 +46,16 @@ var sqlDatabaseDiagnosticSettings = [
 ]
 
 // La plage 0.0.0.0-0.0.0.0 est la règle spéciale Azure SQL qui autorise les services Azure.
-var sqlOrdersFirewallRules = sqlOrders.publicNetworkAccess == 'Enabled' ? [
-  {
-    name: 'AllowAzureServices'
-    startIpAddress: '0.0.0.0'
-    endIpAddress: '0.0.0.0'
-    enableTelemetry: false
-  }
-] : []
+var sqlOrdersFirewallRules = sqlOrders.publicNetworkAccess == 'Enabled'
+  ? [
+      {
+        name: 'AllowAzureServices'
+        startIpAddress: '0.0.0.0'
+        endIpAddress: '0.0.0.0'
+        enableTelemetry: false
+      }
+    ]
+  : []
 
 // Groupe de ressources principal : serveur SQL et base orders.
 module sqlOrdersModule 'br/public:avm/res/sql/server:0.22.0' = if (sqlOrders.deploy) {

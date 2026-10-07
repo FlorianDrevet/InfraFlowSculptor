@@ -279,8 +279,8 @@ Describe 'Kit installation P-05' {
         $dev = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/data/infra/main.dev.bicepparam') -Raw
         $prd = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/data/infra/main.prd.bicepparam') -Raw
 
-        $main | Should -Match "var sqlOrdersFirewallRules = sqlOrders.publicNetworkAccess == 'Enabled' \? \["
-        $main | Should -Match "(?s)name: 'AllowAzureServices'.*startIpAddress: '0\.0\.0\.0'.*endIpAddress: '0\.0\.0\.0'.*\] : \[\]"
+        $main | Should -Match "var sqlOrdersFirewallRules = sqlOrders\.publicNetworkAccess == 'Enabled'\s*\?\s*\["
+        $main | Should -Match "(?s)name: 'AllowAzureServices'.*startIpAddress: '0\.0\.0\.0'.*endIpAddress: '0\.0\.0\.0'.*\]\s*:\s*\[\]"
         $main | Should -Match 'firewallRules: sqlOrdersFirewallRules'
         $types | Should -Match "publicNetworkAccess: 'Enabled' \| 'Disabled'"
         $dev | Should -Match "publicNetworkAccess: 'Enabled'"
