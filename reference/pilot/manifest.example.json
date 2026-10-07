@@ -91,11 +91,11 @@
     },
     {
       "path": ".ifs/templates/scripts/IfsLeaseRenewal.ps1",
-      "sha256": "333c04b9aaec0a17c90c302335c0d28035eab470f633760fdb8c5d672f93d378"
+      "sha256": "c716b902482c77b913be7e784f4229cfbb878d04e4246a60e7cb614afca19f17"
     },
     {
       "path": ".ifs/templates/scripts/IfsRelease.psm1",
-      "sha256": "5c25c68a696a2ec217edac2a74b9f731898f29f6409d80561a07b84dc6b60aa4"
+      "sha256": "d2997e2903f107d147ba2ec6b1adc4324b7777c76a9bd978281947a6b5fca844"
     },
     {
       "path": ".ifs/templates/scripts/Install-IfsTrivy.ps1",
