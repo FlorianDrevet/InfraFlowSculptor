@@ -80,7 +80,7 @@ type sqlOrdersConfig = {
   @description('Identifiant objet du groupe Entra administrateur SQL pour cette cible.')
   administratorGroupObjectId: string
 
-  @description('Accès réseau public explicite du serveur SQL.')
+  @description('Accès réseau public du serveur SQL. Enabled crée la règle Azure Services 0.0.0.0 à 0.0.0.0 prévue par RG-NET-01.')
   publicNetworkAccess: 'Enabled' | 'Disabled'
 
   @description('Version TLS minimale du serveur SQL.')

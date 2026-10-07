@@ -191,6 +191,20 @@ Describe 'Kit installation P-05' {
         $ciPipeline | Should -Match 'registryServiceConnection: ifs-shop-shared-app'
     }
 
+    It 'active la règle SQL Azure Services seulement si le réseau public est activé' {
+        $main = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/data/infra/main.bicep') -Raw
+        $types = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/data/infra/types.bicep') -Raw
+        $dev = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/data/infra/main.dev.bicepparam') -Raw
+        $prd = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/data/infra/main.prd.bicepparam') -Raw
+
+        $main | Should -Match "var sqlOrdersFirewallRules = sqlOrders.publicNetworkAccess == 'Enabled' \? \["
+        $main | Should -Match "(?s)name: 'AllowAzureServices'.*startIpAddress: '0\.0\.0\.0'.*endIpAddress: '0\.0\.0\.0'.*\] : \[\]"
+        $main | Should -Match 'firewallRules: sqlOrdersFirewallRules'
+        $types | Should -Match "publicNetworkAccess: 'Enabled' \| 'Disabled'"
+        $dev | Should -Match "publicNetworkAccess: 'Enabled'"
+        $prd | Should -Match "publicNetworkAccess: 'Enabled'"
+    }
+
     It 'ne fait aucune mutation Azure pendant le WhatIf du kit complet' {
         $tempRoot = Join-Path ([IO.Path]::GetTempPath()) ('ifs-p05-whatif-' + [guid]::NewGuid().ToString('N'))
         try {
