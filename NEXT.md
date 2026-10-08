@@ -10,10 +10,10 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `EN_COURS` |
+| **Statut** | `BLOQUE` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
-| **Verrou** | aucun |
+| **Verrou** | Azure SQL `GP_S_Gen5_1` est bloqué par une restriction de provisionnement en North Europe |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
 | **Dernière mise à jour** | 2026-10-08 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
@@ -51,8 +51,8 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 | Élément | État | Depuis |
 |---|---|---|
 | Abonnements Azure de test (preuves) | — (une seule souscription, `northeurope`, [DT-42](docs/technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure)) | — |
-| Plafond de dépense et estimation actualisée des preuves ([verrou](docs/plan/recettes/01-preuves.md#0-verrou-de-coût-et-préflight-bloquants)) | Plafond d'alerte de 200 € sur la souscription confirmé le 2026-10-08 ; estimation Retail API rafraîchie le 2026-10-08 : postes chiffrés ≈ 18,3–26,8 € ; budget annuel 2026 à configurer après vérification de la devise et de l'existant | 2026-10-08 |
-| Ressources Azure créées pour les preuves ([inventaire](docs/plan/preuves/inventaires-azure.md)) | Aucune créée par Luna ; inventaire de référence à capturer avant la première création | 2026-10-07 |
+| Plafond de dépense et estimation actualisée des preuves ([verrou](docs/plan/recettes/01-preuves.md#0-verrou-de-coût-et-préflight-bloquants)) | Budget d'alerte préexistant à l'échelle de la souscription : 200 EUR/mois ; alertes à 80 % du réel et 100 % prévisionnel ; réel affiché : 0,4303 EUR au 2026-10-08. Estimation Retail API rafraîchie le 2026-10-08 : postes chiffrés ≈ 18,3–26,8 € (hors stockage, sauvegardes, trafic, taxes et services annexes). Aucun budget créé ou modifié par Luna | 2026-10-08 |
+| Ressources Azure créées pour les preuves ([inventaire](docs/plan/preuves/inventaires-azure.md)) | Aucune créée par Luna ; inventaire de référence capturé le 2026-10-08 (124 ressources, 16 groupes, 0 pile, 4 attributions de rôle). IDs exacts conservés hors dépôt dans `%LOCALAPPDATA%\InfraFlowSculptor\P08\baseline-20261008.json` | 2026-10-08 |
 | Organisation / projet Azure DevOps de test | — | — |
 | Groupes Entra (`sg-shop-sql-admins`) et Azure DevOps (« Shop Release Approvers ») | — | — |
 | Inscriptions Entra d'IFS (`dev`) | — | — |
@@ -70,4 +70,4 @@ Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 
 ## Questions pour Claude
 
-_Aucune question en attente._
+Le contrôle Azure du 2026-10-08 retourne pour SQL serverless `GP_S_Gen5_1` : « Provisioning is restricted in this region. Please choose a different region. » La recette impose l'arrêt au premier échec et interdit le changement de région ou de SKU sans décision. Aucune ressource n'a été déployée. Pour garder North Europe et le plan actuel, faut-il demander à Microsoft la levée de la restriction/capacité SQL ? À défaut, il faut autoriser une décision de conception pour adapter la preuve ou sa région avant de reprendre P-08.

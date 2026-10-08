@@ -4,12 +4,15 @@ Ce registre sépare les ressources préexistantes de celles créées par Luna. U
 à autoriser une suppression. Les suppressions ciblent uniquement des IDs exacts consignés comme créés par Luna et absents
 de l'inventaire de référence.
 
-## État au 2026-10-07
+## État au 2026-10-08
 
 - Souscription de preuve : ID fourni par l'utilisateur lors du préflight, non recopié dans le dépôt.
 - Région cible : `northeurope`.
 - Ressources créées par Luna : **aucune**.
-- Inventaire de référence avant création : **à capturer après confirmation du plafond et du préflight, avant toute écriture Azure**.
+- Inventaire de référence capturé après confirmation du plafond : 124 ressources, 16 groupes, aucune pile de souscription et 4 attributions de rôle.
+- Les IDs exacts sont conservés hors dépôt dans `%LOCALAPPDATA%\InfraFlowSculptor\P08\baseline-20261008.json` pour éviter de publier l'identifiant de souscription. Reprendre une capture avant la première écriture Azure si l'état a changé.
+- Budget préexistant à l'échelle de la souscription : 200 EUR/mois ; dépense réelle affichée ≈ 0,4303 EUR le 2026-10-08. Alertes existantes : réel à 80 %, prévision à 100 %. Aucun budget créé/modifié par Luna.
+- Préflight bloqué : le provisionnement SQL `GP_S_Gen5_1` est restreint en North Europe. Aucune ressource n'a été déployée.
 
 ## Inventaire de référence avant création
 
@@ -19,7 +22,7 @@ Un ID présent ici est préexistant et ne doit jamais être supprimé. Vérifier
 
 | Capture UTC | Jeu / portée | Type d'objet | ID exact | Groupe / portée parente | Notes |
 |---|---|---|---|---|---|
-| À capturer avant la première création | — | — | — | — | Aucun relevé exécuté |
+| 2026-10-08T06:31:45Z | Préflight P-08 initial | Ressources, groupes, piles, attributions de rôle | IDs exacts dans le snapshot local mentionné ci-dessus | Souscription de preuve | 124 ressources, 16 groupes, 0 pile, 4 attributions ; ne pas supprimer ces éléments |
 
 ## Ressources créées par Luna
 
@@ -47,7 +50,7 @@ la procédure d'urgence ci-dessous.
 
 | Date UTC | Étape / opération | Coût réel affiché | Prévision affichée | Plafond confirmé | IDs contrôlés | Décision / action |
 |---|---|---:|---:|---:|---|---|
-| Aucun contrôle exécuté | — | — | — | Non confirmé | Aucune ressource créée | — |
+| 2026-10-08 | Préflight P-08 initial | 0,4303 EUR | Non retournée par la commande budget | 200 EUR/mois | Snapshot local du 2026-10-08 | Aucun déploiement ; arrêt sur la restriction SQL en North Europe |
 
 ## Nettoyage d'urgence si le seuil de coût est atteint
 

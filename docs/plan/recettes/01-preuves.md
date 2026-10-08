@@ -4,10 +4,11 @@
 > P2, P4, P5, P7. Chaque preuve se termine par une capture du run Azure DevOps et une ligne dans
 > [resultats.md](../preuves/resultats.md).
 >
-> **État au 2026-10-07 :** NEXT.md ne recense aucun abonnement de test, projet Azure DevOps ni groupe Entra.
-> Cette vérification de portée a donc échoué pour l'instant : les preuves ci-dessous ne sont pas exécutables tant
-> que ces prérequis ne sont pas créés. Aucune action Azure ou Azure DevOps n'a été lancée pendant P-07.
-> Le montant de dépense mentionné dans une ancienne ébauche n'est pas une estimation vérifiée.
+> **État au 2026-10-08 :** la souscription fournie par l'utilisateur est active et North Europe est la seule région retenue.
+> Aucun projet Azure DevOps ni groupe Entra n'a encore été créé. Le budget mensuel préexistant de 200 EUR à l'échelle
+> de la souscription et sa dépense réelle affichée ont été vérifiés. Aucun budget n'a été créé ou modifié par Luna.
+> Le préflight SQL retourne une restriction de provisionnement pour `GP_S_Gen5_1` en North Europe ; P-08 est bloqué
+> à ce contrôle. Aucune ressource n'a été déployée.
 >
 > **Stratégie de coût ([DT-42](../../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure)) :** une seule
 > souscription, `northeurope` uniquement, profil minimal ([reference-pilote § 1.6](../reference-pilote.md#16-profil-de-coût-des-preuves)),
@@ -24,8 +25,9 @@ n'avez pas : (1) fixé un **plafond de dépense** en euros pour toute la recette
 **actualisée** (relire les tarifs publics du jour, `northeurope`, devise de votre contrat) ; (3) répondu « confirmé » à
 Claude et consigné dans [NEXT.md](../../../NEXT.md) (ligne « Plafond de dépense et estimation ») le plafond, la date et
 l'estimation. Sans cela : statut `BLOQUE`. Un **budget Azure est une alerte différée** (données de coût en retard de
-plusieurs heures), **pas un coupe-circuit** : créez-en un à 50 % / 80 % / 100 % du plafond pour être prévenu, mais ne
-comptez que sur la durée de vie courte des ressources. **Contrôle de coût et d'inventaire** : au démarrage et à la fin de
+plusieurs heures), **pas un coupe-circuit**. Le contrôle du 2026-10-08 a trouvé un budget mensuel préexistant de 200 EUR
+à l'échelle de la souscription, avec alerte à 80 % du coût réel et à 100 % prévisionnel. Ne pas créer de doublon ni
+modifier ce budget sans nouvelle demande. **Contrôle de coût et d'inventaire** : au démarrage et à la fin de
 chaque session, avant et après chaque déploiement ou run Azure significatif, puis après chaque nettoyage. Consigner l'heure
 UTC, le coût affiché et les IDs vérifiés dans [l'inventaire](../preuves/inventaires-azure.md). Vérifier dans
 *Cost Management → Cost analysis* le coût réel et la prévision disponible ; les données pouvant être retardées, ce contrôle
@@ -55,7 +57,7 @@ Le calcul ci-dessous ne couvre pas le stockage, les sauvegardes, le trafic sorta
 | **Postes chiffrés** | Hypothèses ci-dessus ; hors services annexes | **≈ 18,3 à 26,8 €** selon l'offre SQL gratuite | **≈ 340 € et plus** |
 
 Le montant de 18,3–26,8 € est une estimation des seuls postes chiffrés, avec les hypothèses de durée indiquées ; les
-ressources annexes, le stockage, les sauvegardes, le trafic sortant, les taxes et le dépassement éventuel du plafond Log Analytics s'ajoutent. Le plafond de 1 Go/jour/espace est un garde-fou et peut dépasser sa valeur, il ne garantit pas une facture maximale. Le plafond d'alerte de **200 € au niveau de la souscription** a été confirmé par l'utilisateur le 2026-10-08 ; le budget annuel 2026 sera configuré avec des alertes à 50 %, 80 % et 100 % (100 €, 160 €, 200 €), après vérification de la devise et des dépenses déjà engagées. Un budget Azure envoie des alertes, il n'arrête pas les ressources. Si le préflight ne confirme pas l'offre SQL gratuite, conserver le SQL payant et refaire l'estimation ; si ACR Basic est insuffisant, arrêter et demander une décision avant toute hausse de SKU. Si les durées dépassent les hypothèses, actualiser l'estimation avant de continuer.
+ressources annexes, le stockage, les sauvegardes, le trafic sortant, les taxes et le dépassement éventuel du plafond Log Analytics s'ajoutent. Le plafond de 1 Go/jour/espace est un garde-fou et peut dépasser sa valeur, il ne garantit pas une facture maximale. Le budget mensuel préexistant de **200 EUR au niveau de la souscription** a été vérifié le 2026-10-08 : alertes configurées à 80 % du coût réel et 100 % prévisionnel ; dépense réelle affichée ≈ 0,4303 EUR. Aucun budget supplémentaire n'a été créé, et aucune alerte n'arrête automatiquement les ressources. Le préflight Azure a bloqué sur SQL serverless `GP_S_Gen5_1`, dont le provisionnement est restreint en North Europe ; ne pas changer de région ou de SKU avant décision. Si l'offre SQL gratuite n'est pas acceptée par l'API, conserver le SQL payant et refaire l'estimation ; si ACR Basic est insuffisant, arrêter et demander une décision avant toute hausse de SKU. Si les durées dépassent les hypothèses, actualiser l'estimation avant de continuer.
 
 Sources techniques : [SQL serverless](https://learn.microsoft.com/en-us/azure/azure-sql/database/serverless-tier-overview?tabs=general-purpose&view=azuresql),
 [Container Apps facturation](https://learn.microsoft.com/en-us/azure/container-apps/billing),
@@ -88,6 +90,10 @@ Si l'offre gratuite SQL atteint sa limite mensuelle, `AutoPause` rend la base in
 la recette et ne jamais basculer vers `BillOverUsage` sans nouvelle estimation et confirmation. Le schéma AVM du dépôt ne
 permettant qu'une base `useFreeLimit` par souscription, appliquer l'offre uniquement à `prd`; après suppression de cette
 base, attendre jusqu'à une heure avant d'essayer de libérer un nouvel emplacement pour le jeu suivant ([FAQ Microsoft SQL gratuite](https://learn.microsoft.com/en-us/azure/azure-sql/database/free-offer-faq?view=azuresql)).
+
+**Résultat du préflight le 2026-10-08 :** la souscription et North Europe sont accessibles, mais `az sql db list-editions`
+retourne pour `GP_S_Gen5_1` une restriction de provisionnement dans cette région. Conformément au contrôle 3, la recette
+s'arrête ici : aucun changement de région/SKU et aucun déploiement tant qu'une décision n'a pas levé ce blocage.
 
 ### 0.4 Réveil SQL et démarrage à froid
 
