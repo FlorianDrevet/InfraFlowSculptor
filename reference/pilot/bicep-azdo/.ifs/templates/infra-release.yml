@@ -1,0 +1,25 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+parameters:
+- name: project
+  type: string
+- name: component
+  type: string
+- name: defaultBranch
+  type: string
+  default: main
+- name: secretWrites
+  type: object
+  default: []
+- name: targets
+  type: object
+  default: []
+
+stages:
+- ${{ each target in parameters.targets }}:
+  - template: .ifs/templates/infra-target-stages.yml
+    parameters:
+      project: ${{ parameters.project }}
+      component: ${{ parameters.component }}
+      defaultBranch: ${{ parameters.defaultBranch }}
+      secretWrites: ${{ parameters.secretWrites }}
+      target: ${{ target }}

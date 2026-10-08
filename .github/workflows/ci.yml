@@ -74,6 +74,63 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  release-module:
+    name: Release module and reference output
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pinned PowerShell modules
+        shell: pwsh
+        run: |
+          $pins = Get-Content reference/pilot/pins.json -Raw | ConvertFrom-Json
+          Install-Module -Name Pester -RequiredVersion 5.9.1 -Scope CurrentUser -Force -AllowClobber
+          Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Force -AllowClobber
+          Install-Module -Name powershell-yaml -RequiredVersion $pins.powerShellModules.'powershell-yaml' -Scope CurrentUser -Force -AllowClobber
+
+      - name: Install pinned Bicep CLI
+        shell: pwsh
+        run: |
+          $version = (Get-Content reference/pilot/pins.json -Raw | ConvertFrom-Json).bicepCliVersion
+          az bicep install --version $version
+          $output = az bicep version | Out-String
+          if ($LASTEXITCODE -ne 0 -or $output -notmatch "Bicep CLI version $([regex]::Escape($version))\b") {
+            throw "La version Bicep installée ne correspond pas à $version : $output"
+          }
+
+      - name: Test PowerShell release and reference tools
+        shell: pwsh
+        run: Invoke-Pester -Path ./reference/release-module/tests -CI
+
+      - name: Analyze PowerShell scripts
+        shell: pwsh
+        run: |
+          $paths = @(
+            'reference/pilot/bicep-azdo/.ifs/install/azure-setup.ps1',
+            'reference/pilot/bicep-azdo/.ifs/install/scripts/IfsInstall.psm1',
+            'reference/pilot/bicep-azdo/.ifs/install/scripts/Install-Azdo.ps1',
+            'reference/tools/Test-ReferenceDeterminism.ps1',
+            'reference/tools/Update-ManifestExample.ps1'
+          )
+          $issues = @(
+            foreach ($path in $paths) {
+              Invoke-ScriptAnalyzer -Path $path -Severity Error,Warning -ExcludeRule PSUseBOMForUnicodeEncodedFile
+            }
+          )
+          if ($issues.Count -gt 0) {
+            $issues | Format-Table -AutoSize | Out-String | Write-Host
+            throw "PSScriptAnalyzer a signalé $($issues.Count) erreur(s) ou avertissement(s)."
+          }
+
+      - name: Validate generated output and pinned dependencies
+        shell: pwsh
+        run: |
+          ./reference/tools/Update-ManifestExample.ps1 -Check
+          ./reference/tools/Test-ReferenceDeterminism.ps1
+          ./reference/tools/Test-ReferencePipelines.ps1
+          ./reference/tools/Test-ReferenceBicep.ps1
+
   acceptance:
     name: Acceptance tests
     runs-on: ubuntu-latest

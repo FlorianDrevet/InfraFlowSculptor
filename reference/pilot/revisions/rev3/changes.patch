@@ -1,0 +1,78 @@
+diff --git a/orders/infra/main.bicep b/orders/infra/main.bicep
+--- a/orders/infra/main.bicep
++++ b/orders/infra/main.bicep
+@@ -14,6 +14,7 @@ param target targetConfig
+ param resourceGroups resourceGroupsConfig
+ param externalResources externalResourcesConfig
+ param apiIdentity apiIdentityConfig
++param extraIdentity apiIdentityConfig
+ param caeMain caeMainConfig
+ param caApi caApiConfig
+ 
+@@ -95,6 +96,20 @@ module apiIdentityModule 'br/public:avm/res/managed-identity/user-assigned-iden
+   ]
+ }
+ 
++module extraIdentityModule 'br/public:avm/res/managed-identity/user-assigned-identity:0.6.0' = if (extraIdentity.deploy) {
++  name: 'extraIdentity-${target.code}-${uniqueString(extraIdentity.name)}'
++  scope: resourceGroup(target.subscriptionId, resourceGroups.main.name)
++  params: {
++    name: extraIdentity.name
++    location: extraIdentity.location
++    tags: extraIdentity.tags
++    enableTelemetry: false
++  }
++  dependsOn: [
++    rg_main
++  ]
++}
++
+ module caeMainModule 'br/public:avm/res/app/managed-environment:0.16.0' = if (caeMain.deploy) {
+   name: 'caeMain-${target.code}-${uniqueString(caeMain.name)}'
+   scope: resourceGroup(target.subscriptionId, resourceGroups.main.name)
+diff --git a/orders/infra/main.dev.bicepparam b/orders/infra/main.dev.bicepparam
+--- a/orders/infra/main.dev.bicepparam
++++ b/orders/infra/main.dev.bicepparam
+@@ -64,6 +64,19 @@ param apiIdentity = {
+   }
+ }
+ 
++param extraIdentity = {
++  deploy: true
++  name: 'id-shop-extra-dev'
++  location: 'northeurope'
++  tags: {
++    costCenter: 'ecommerce'
++    'ifs-project': 'shop'
++    'ifs-component': 'orders'
++    'ifs-environment': 'dev'
++    'managed-by': 'infraflowsculptor'
++  }
++}
++
+ param caeMain = {
+   deploy: true
+   name: 'cae-shop-main-dev'
+diff --git a/orders/infra/main.prd.bicepparam b/orders/infra/main.prd.bicepparam
+--- a/orders/infra/main.prd.bicepparam
++++ b/orders/infra/main.prd.bicepparam
+@@ -64,6 +64,19 @@ param apiIdentity = {
+   }
+ }
+ 
++param extraIdentity = {
++  deploy: true
++  name: 'id-shop-extra-prd'
++  location: 'northeurope'
++  tags: {
++    costCenter: 'ecommerce'
++    'ifs-project': 'shop'
++    'ifs-component': 'orders'
++    'ifs-environment': 'prd'
++    'managed-by': 'infraflowsculptor'
++  }
++}
++
+ param caeMain = {
+   deploy: true
+   name: 'cae-shop-main-prd'

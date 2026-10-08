@@ -50,6 +50,7 @@ l'utilisateur peut les inverser avant l'étape qui les applique ; le plan indiqu
 | [DT-39](#dt-39--journalisation-et-diagnostics-sont-des-dépendances-de-création) | Journalisation et diagnostics : dépendances de création (écart de spec) | Décidée |
 | [DT-40](#dt-40--ordre-des-comportements-du-médiateur) | Ordre des comportements du médiateur | Décidée |
 | [DT-41](#dt-41--build-en-mode-code-au-jalon-2) | Build en mode Code au jalon 2 (écart de spec) | Décidée |
+| [DT-42](#dt-42--coût-des-preuves-éphémères-azure) | Coût des preuves éphémères Azure (North Europe, profil minimal, suppression par projet) | ⚖️ Stratégie approuvée ; plafond chiffré à confirmer avant Azure |
 
 ---
 
@@ -121,6 +122,7 @@ Les versions vivent dans `src/backend/Directory.Packages.props`, `src/frontend/i
 | `Microsoft.Identity.Web` | `4.14.2` |
 | `Scalar.AspNetCore` | dernière `2.x` |
 | `Azure.Identity` | `1.21.0` |
+| `Microsoft.Data.SqlClient` (application témoin seulement, [DT-33](#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local)) | dernière `6.x` stable |
 | `Azure.Storage.Blobs` | `12.27.0` |
 | `Azure.Messaging.ServiceBus` | dernière `7.x` |
 | `Azure.Security.KeyVault.Secrets` | dernière `4.x` |
@@ -588,6 +590,17 @@ singleton (`IfsAzureCredential`) partagé par tous les clients.
 ([DEC-23](../specs/03-decisions.md)) et clé privée de l'application GitHub (jalon 1), stockés dans Key Vault et lus par
 identité managée.
 
+**Exception SQL de l'application témoin** (précision du 2026-10-06, Claude, question P-01 ; P9). La règle ci-dessus
+(`AZURE_CLIENT_ID`) vaut pour IFS et pour les clients Azure SDK du témoin (Log Analytics, App Configuration, Service
+Bus). Pour **SQL**, le témoin doit prouver l'identité **système** alors que la Container App porte aussi l'identité
+affectée `id api` : il utilise `Microsoft.Data.SqlClient` avec `Authentication=Active Directory Managed Identity` et
+**sans `User Id`** (sans `User Id`, SqlClient demande le jeton de l'identité système). Écartés : `Active Directory
+Default` (passe par `DefaultAzureCredential`, dont l'identité managée par défaut vient de `AZURE_CLIENT_ID` → mauvaise
+identité) et `AccessTokenCallback` avec `ManagedIdentityCredential(ManagedIdentityId.SystemAssigned)` (plus de code
+pour le même effet, et SqlClient interdit de le combiner avec `Authentication`). Cette exception ne s'applique pas à
+IFS (PostgreSQL passe par Npgsql, ligne du tableau ci-dessus). `Microsoft.Data.SqlClient` est épinglé en
+[DT-03](#dt-03--versions-épinglées), uniquement pour `samples/witness-app/`.
+
 **Vérifications** : `AzureConnectionResolverTests` (chaîne présente → mode chaîne ; absente + point de terminaison →
 identité managée ; chaîne vide = absente ; aucune → erreur explicite) ; test d'architecture (aucun `new
 BlobServiceClient(`, `new ServiceBusClient(`, `new SecretClient(`, `new EmailClient(` hors de
@@ -664,3 +677,40 @@ forme de l'objet. Les validateurs ne contrôlent que la forme de la requête ; i
 Décidée (2026-10-04), **écart de spec signalé**. [04 § 2.1](../specs/04-perimetre-et-lots.md) place « build conteneur et
 code » au jalon 1, mais les onze types du jalon 1 sont des conteneurs : les profils de build Code arrivent avec Web App et
 Function App (J2-01). Claude propose l'amendement de 04 § 2.1 avec celui de RG-CMP-05 ([DT-39](#dt-39--journalisation-et-diagnostics-sont-des-dépendances-de-création)) au verrou R-03.
+
+### DT-42 — Coût des preuves éphémères Azure
+
+⚖️ **Stratégie approuvée** par l'utilisateur le 2026-10-07 : North Europe, profil minimal, vérifications régulières des coûts et suppression limitée aux ressources créées par Luna. **Plafond chiffré et estimation actualisée à confirmer avant toute commande Azure.** Complète [DT-29](#dt-29--projet-pilote-de-référence) ; ne
+remplace aucune décision : [DT-27](#dt-27--hébergement-dans-azure-france-central) (hébergement d'IFS en France Central)
+reste vraie, elle ne concerne pas les cibles du projet pilote. Aucune preuve P1–P9, aucune assertion et aucun résultat
+attendu ne change ; seuls changent la région, les SKU, le moment de la suppression et le garde-fou de dépense.
+
+1. **Région unique `northeurope`** pour les trois cibles du pilote. Un préflight bloquant vérifie région, SKU et offre ;
+   en cas d'indisponibilité on **s'arrête** (aucun repli West Europe, aucun changement de région sans nouvelle `DT`).
+2. **Une seule souscription** (dev = prd = shared) et un code projet isolé par jeu (`shop42`, `shop43`, `shop44`). Aucune
+   preuve n'exige deux souscriptions ; les jeux sont déployés **l'un après l'autre**, jamais en parallèle.
+3. **Profil de coût des preuves** ([reference-pilote § 1.6](../plan/reference-pilote.md#16-profil-de-coût-des-preuves)) :
+   ACR `Basic` ; SQL serverless `GP_S_Gen5_1`, `minCapacity` 0,5, pause automatique, zone redondante **explicitement
+   désactivée** (le module AVM `sql/server:0.22.0` la met à `true` si elle est omise) ; Container Apps min 0 / max 1,
+   environnement non redondant ; Application Insights 90 j ; Log Analytics **inchangé** (dev 30 j, prd 90 j : P3b exige
+   90 → 120 → 90) avec un plafond d'ingestion quotidien.
+4. **Offre SQL gratuite** pour **prd seulement** (`useFreeLimit`, `freeLimitExhaustionBehavior = AutoPause`) seulement si le préflight confirme
+   l'éligibilité **et** la compatibilité du module. Le schéma AVM local la décrit « une base par souscription », la
+   documentation Microsoft « dix bases » : décalage **non tranché**, jamais promis. Sinon : serverless payant, estimation
+   recalculée et **nouvelle confirmation** ; jamais de poursuite silencieuse.
+5. **Application du profil** : la sortie `reference/pilot/` reste la vérité des émetteurs du jalon 0 (le catalogue du pilote
+   ne porte pas `autoPauseDelay`, `minCapacity`, `useFreeLimit`, `zoneRedundant` de base, plafond d'ingestion) ; seule la
+   région y change. Le profil est appliqué **à la publication** (`Publish-PilotReference.ps1`, comme la table des noms) et
+   la chaîne de révisions est rejouée sur un clone ainsi profilé. Implémentation par Luna en P-08 (point 0).
+6. **Suppression au plus tôt** : un jeu Azure est supprimé dès sa dernière preuve dépendante (shop42 après P8 ; shop43 :
+   `orders`, `data`, `platform` et l'identité détachée après P4, `core` et le kit après P5 ; shop44 après P7), à condition
+   que ses captures Azure DevOps soient enregistrées et ses résultats consignés. Les preuves Azure DevOps et
+   `resultats.md` restent jusqu'à R-03. Détail : [recette § 10](../plan/recettes/01-preuves.md#10-supprimer-les-ressources-azure-et-consigner-les-résultats).
+7. **Verrou de dépense** : aucune commande Azure tant que l'utilisateur n'a pas confirmé un **plafond** et l'**estimation
+   actualisée** ([recette § 0](../plan/recettes/01-preuves.md#0-verrou-de-coût-et-préflight-bloquants)). Un budget Azure est
+   une alerte retardée, pas un coupe-circuit : le plafond est tenu par la durée de vie courte des ressources et les
+   contrôles de fin de session, pas par Azure.
+8. **Non prouvé depuis le dépôt** (préflights bloquants, rien n'est supposé) : commande exacte de passage `denyDelete` →
+   `none` d'une pile existante ; liste exacte des IDs gérés par chaque pile au moment du nettoyage ; éligibilité à l'offre gratuite ; limites ACR Basic
+   face à l'image témoin ; plafond d'ingestion sans effet sur `/health/dependencies`.
+9. **Inventaire avant/après création** ([inventaires](../plan/preuves/inventaires-azure.md)) : capturer les ressources déjà présentes dans les portées ciblées, puis consigner chaque ID, groupe et pile créé par Luna. Au nettoyage, ne supprimer que ces IDs ; `deleteAll` n'est permis que si tous les éléments gérés par la pile sont dans cet inventaire.

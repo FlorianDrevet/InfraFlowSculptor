@@ -1,0 +1,43 @@
+diff --git a/orders/infra/main.bicep b/orders/infra/main.bicep
+--- a/orders/infra/main.bicep
++++ b/orders/infra/main.bicep
+@@ -78,5 +78,5 @@ var apiIdentityResourceId = resourceId(
+ )
+ var keyVaultSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
+-var logAnalyticsReaderRoleId = '73c42c96-874c-492b-b04d-ab87d138a893'
++var logAnalyticsDataReaderRoleId = '3b03c2da-16b3-4a49-8834-0f8130efdd3b'
+ var acrPullRoleId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+ 
+@@ -153,20 +153,20 @@ module keyVaultSecretsUser './key-vault-role-assignment.bicep' = if (caApi.deploy
+   }
+ }
+ 
+-module logAnalyticsReader './workspace-role-assignment.bicep' = if (caApi.deploy && apiIdentity.deploy) {
+-  name: 'logAnalyticsReader-${target.code}-${uniqueString(externalResources.coreWorkspace.name)}'
++module logAnalyticsDataReader './workspace-role-assignment.bicep' = if (caApi.deploy && apiIdentity.deploy) {
++  name: 'logAnalyticsDataReader-${target.code}-${uniqueString(externalResources.coreWorkspace.name)}'
+   scope: resourceGroup(
+     externalResources.coreWorkspace.subscriptionId,
+     externalResources.coreWorkspace.resourceGroupName
+   )
+   params: {
+     workspaceName: externalResources.coreWorkspace.name
+-    assignmentName: guid(coreWorkspace.id, apiIdentityModule!.outputs.principalId, logAnalyticsReaderRoleId)
++    assignmentName: guid(coreWorkspace.id, apiIdentityModule!.outputs.principalId, logAnalyticsDataReaderRoleId)
+     principalId: apiIdentityModule!.outputs.principalId
+     roleDefinitionId: subscriptionResourceId(
+       externalResources.coreWorkspace.subscriptionId,
+       'Microsoft.Authorization/roleDefinitions',
+-      logAnalyticsReaderRoleId
++      logAnalyticsDataReaderRoleId
+     )
+   }
+ }
+@@ -288,6 +288,6 @@
+   dependsOn: [
+     caeMainModule
+     keyVaultSecretsUser
+-    logAnalyticsReader
++    logAnalyticsDataReader
+     acrPull
+   ]

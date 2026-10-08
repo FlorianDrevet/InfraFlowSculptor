@@ -1,0 +1,313 @@
+{
+  "schema": "ifs-manifest/v1",
+  "project": "shop",
+  "revision": 1,
+  "generatedAtUtc": "2026-10-07T00:00:00Z",
+  "commit": "0000000000000000000000000000000000000000",
+  "files": [
+    {
+      "path": ".ifs/install/SETUP.md",
+      "sha256": "50e2657b65a2744bf33bff515663d08d9e28374288e8efa6258a87b58df12a36"
+    },
+    {
+      "path": ".ifs/install/azure-setup.ps1",
+      "sha256": "9d9923a5930dd139bf6635324ed4de89cc3dae0758af9ce8022ed6e537a653d7"
+    },
+    {
+      "path": ".ifs/install/install.pipeline.yml",
+      "sha256": "24cdc9da14a3cda9d6805047b7122830d0b2689ebf533302d1f7b8e8576d1362"
+    },
+    {
+      "path": ".ifs/install/readiness.bicep",
+      "sha256": "4970817734fb79d5a80b88572afaa16f062f09701d1da8704ebebbd16c5e28ce"
+    },
+    {
+      "path": ".ifs/install/scripts/IfsInstall.psm1",
+      "sha256": "66ec23d178543fbca56cbbdc07387e861dda2228e48bd470415493ac03dd158e"
+    },
+    {
+      "path": ".ifs/install/scripts/Install-Azdo.ps1",
+      "sha256": "71d06b0498452a673dd52ccfae596891e65a02de319b71ae376700fe8d36bc57"
+    },
+    {
+      "path": ".ifs/pins.json",
+      "sha256": "ed0e24a48ed8e278c415eeea4563c08c3d9349b01989d6cef1d82b42e5291f34"
+    },
+    {
+      "path": ".ifs/templates/app-ci.yml",
+      "sha256": "5ad4f0fc5123389c0535b8bb91af9fd512e52c5a06c39390fca02e286bf50777"
+    },
+    {
+      "path": ".ifs/templates/app-pr.yml",
+      "sha256": "7e49633a8afc085e56c4cbd9ca7598cddaa808c53bd8ef0d1f94f28fa8476616"
+    },
+    {
+      "path": ".ifs/templates/app-release.yml",
+      "sha256": "4feecb2663e9a0cd7af417329ae71a27d1b9d17d70169f0386373f93ff6b1fcd"
+    },
+    {
+      "path": ".ifs/templates/app-target-stage.yml",
+      "sha256": "4b307eb2a69eb5ca9eb28f18f24119b4815931083500962dfbd5992464e4c526"
+    },
+    {
+      "path": ".ifs/templates/infra-ci.yml",
+      "sha256": "7c21570f8d26d46720258303690cb9197fa26af965de85c4d0469dea3a72ad20"
+    },
+    {
+      "path": ".ifs/templates/infra-pr.yml",
+      "sha256": "54af46640e0347b4d1d2daf50628c027cf73cf16a787519b14fc2b8656dc83b3"
+    },
+    {
+      "path": ".ifs/templates/infra-release.yml",
+      "sha256": "b2d29ef45e51256279fe206b4f6dab6ead50ca2a73fc9762faef55037b6683d5"
+    },
+    {
+      "path": ".ifs/templates/infra-target-stages.yml",
+      "sha256": "f090fad8286c018c16c1b93ff99557864c1e513227cb2c530960f785be45007a"
+    },
+    {
+      "path": ".ifs/templates/schemas/ifs-app-report.schema.json",
+      "sha256": "a6eda43bc9b4c1161aa17901befc5d4590cc51bc3dc7f49fabcee4e912658a11"
+    },
+    {
+      "path": ".ifs/templates/schemas/ifs-preview.schema.json",
+      "sha256": "857907b2c8cdb2b4fd51c616365d5e4b872fe0acc168c8f985868aa599f1fc1c"
+    },
+    {
+      "path": ".ifs/templates/schemas/ifs-report.schema.json",
+      "sha256": "af7967a1567d0f13cf00fb90af6b89aa8a68526eb1581cd7c842b40b5734591b"
+    },
+    {
+      "path": ".ifs/templates/schemas/operation-journal.schema.json",
+      "sha256": "b070a77996ffad0328e82c9d0bebe95b5264eb821b584ef37439308a921de698"
+    },
+    {
+      "path": ".ifs/templates/schemas/release-data.schema.json",
+      "sha256": "26e0c7ed364c72263b010929e5c94f77066822c65c73be78a6e09306ea45616a"
+    },
+    {
+      "path": ".ifs/templates/scripts/Build-IfsImage.ps1",
+      "sha256": "d8b08c0429260cb65f0f6d1b18cbfb9a7e21f4984a37664c2a4d211725dc588f"
+    },
+    {
+      "path": ".ifs/templates/scripts/IfsLeaseRenewal.ps1",
+      "sha256": "c716b902482c77b913be7e784f4229cfbb878d04e4246a60e7cb614afca19f17"
+    },
+    {
+      "path": ".ifs/templates/scripts/IfsRelease.psm1",
+      "sha256": "d2997e2903f107d147ba2ec6b1adc4324b7777c76a9bd978281947a6b5fca844"
+    },
+    {
+      "path": ".ifs/templates/scripts/Install-IfsTrivy.ps1",
+      "sha256": "ad7914adee69b2512e747b7dd0d86e68203224c8028c0ed9f99cbd5aa9ef8f2e"
+    },
+    {
+      "path": ".ifs/templates/scripts/Invoke-IfsAppDeploy.ps1",
+      "sha256": "663a87c596ae3f473dcfe86c7e7f835fd251bbc2fbad6bce7ee391a45bbe53f6"
+    },
+    {
+      "path": ".ifs/templates/scripts/Invoke-IfsInfraDeploy.ps1",
+      "sha256": "6e46f2d8cafcdf41bf8d308a62db701e11990b5a8b80d49a29955adb6a500123"
+    },
+    {
+      "path": ".ifs/templates/scripts/Invoke-IfsInfraPreview.ps1",
+      "sha256": "456e549b46718fc8e14a74d9ce0b6826d68c9fda6d61c01421b0b5050573b2c4"
+    },
+    {
+      "path": ".ifs/templates/scripts/Set-IfsRunName.ps1",
+      "sha256": "1f3dd9cc403713e7cd048590a9460a958f32bf3cb0e053e7d9c3c46847962648"
+    },
+    {
+      "path": ".ifs/templates/scripts/Test-IfsBicep.ps1",
+      "sha256": "c1bfa733bab747a59e3302efa6440908c912d9146e300060973a6ee543071a62"
+    },
+    {
+      "path": "README.ifs.md",
+      "sha256": "fb0612591245a829947fa4d39dcf1287a958ef777a89bee3abd9058350679302"
+    },
+    {
+      "path": "core/infra/key-vault-role-assignment.bicep",
+      "sha256": "7a49a78230f3cb95ee9e8e707e9757780fc946c23dc0254a4d7fe5f74f01355d"
+    },
+    {
+      "path": "core/infra/main.bicep",
+      "sha256": "3a7a363275c289f091f367a667f1c0ea1c38e0b3560ec6feb23b2af3cd5267a8"
+    },
+    {
+      "path": "core/infra/main.dev.bicepparam",
+      "sha256": "735c429971f8c498dac8b3104d98843fa594a0f54aa8fcc8caf8e57c9bac8bba"
+    },
+    {
+      "path": "core/infra/main.prd.bicepparam",
+      "sha256": "b79c6b54f8afef00c824b28d016c76386c69fb4350e756a4a1f4932dafdbb5d7"
+    },
+    {
+      "path": "core/infra/pipelines/ci.yml",
+      "sha256": "3e03f9442c9cb38733da4d98f066d440535e5cf7eae3d4b911f6e2d6fc07d2d0"
+    },
+    {
+      "path": "core/infra/pipelines/pr.yml",
+      "sha256": "b438ba866a53c74db240e63933c3a846f9f3a8904c16ab34fb9955ed0b96c2e3"
+    },
+    {
+      "path": "core/infra/pipelines/release.yml",
+      "sha256": "73ce580456aae2ab9104612ba5a19426ddde26631dd90f3676e5de535366bbe5"
+    },
+    {
+      "path": "core/infra/release.dev.json",
+      "sha256": "78e13009a173f761bca31d194f9d3b3d5a8e0532d865e62c38ebd2e995c292de"
+    },
+    {
+      "path": "core/infra/release.prd.json",
+      "sha256": "46b2544d75faf6f9a8562d4034e64ec23d1c9be065584dec19494dcdabf3fbb5"
+    },
+    {
+      "path": "core/infra/types.bicep",
+      "sha256": "a0155c971180bcb819c0b073ae791f7e142190dd47578644e904f41823ba8428"
+    },
+    {
+      "path": "data/infra/main.bicep",
+      "sha256": "b3019911ac33e5cab0e497fd398594c5eee90f0666761e05fa6304f4fe915832"
+    },
+    {
+      "path": "data/infra/main.dev.bicepparam",
+      "sha256": "b8a2fb604ddf72dfbf7cb6e7365064543b30fb17d57a53264c353f3f78f975f2"
+    },
+    {
+      "path": "data/infra/main.prd.bicepparam",
+      "sha256": "dc47ce22cfde55abdb3a68e2d7ebc8ca6b89a782704308e85fe8373b91a0ad29"
+    },
+    {
+      "path": "data/infra/pipelines/ci.yml",
+      "sha256": "8e4f598e7c1569f5602764ef02b1bd3a4b69c3fc8e31bfb463628dae9709754a"
+    },
+    {
+      "path": "data/infra/pipelines/pr.yml",
+      "sha256": "5e689a1676b39ab3a81b27326b955a1a2a1f2f331840e2a58e3d1a62d2e07501"
+    },
+    {
+      "path": "data/infra/pipelines/release.yml",
+      "sha256": "5c933be77e889794e7066d55fd2139f78ebb93cd5dd0c6e8d79228ca275df1f1"
+    },
+    {
+      "path": "data/infra/release.dev.json",
+      "sha256": "5c6e4267bd5200390a5f8603c53ea6b9deb11965256fc0ec15179b14f6a42c11"
+    },
+    {
+      "path": "data/infra/release.prd.json",
+      "sha256": "afead6d6b2b894514e1cacfd4ee71f8861a5de713521e1cd6c9d9dc665de1c15"
+    },
+    {
+      "path": "data/infra/server-diagnostics.bicep",
+      "sha256": "c16c04c6894f5c17c9fae3cc58c53ef638ef2b64174dcdb20aa3af60e0e71e51"
+    },
+    {
+      "path": "data/infra/types.bicep",
+      "sha256": "4d3f69f04b425f7fa0be1c9d828cb793bcfa5e888f8b4d5d3268cdc948f0c0a8"
+    },
+    {
+      "path": "orders/apps/api/pipelines/ci.yml",
+      "sha256": "8566e204d5c62b7ef83735263b960063920c125c026bce002eb29bc7ade3ce1d"
+    },
+    {
+      "path": "orders/apps/api/pipelines/pr.yml",
+      "sha256": "0c395cdec514562113c35b747d2841dee2c802505cb8849cd0897e6633c2671d"
+    },
+    {
+      "path": "orders/apps/api/pipelines/release.yml",
+      "sha256": "29cfd4ca8f8d48ae13e64210537596b43fdf51bf8c01572407ac692a5fb59210"
+    },
+    {
+      "path": "orders/infra/container-app-role-assignment.bicep",
+      "sha256": "72186f4103bba5507c296bc721b9e54463571992b985042a4091540edcb04577"
+    },
+    {
+      "path": "orders/infra/key-vault-role-assignment.bicep",
+      "sha256": "38f4c09594c83b12a76629e3d216803f451e082d66fff74fe28f5c05dd1c8578"
+    },
+    {
+      "path": "orders/infra/main.bicep",
+      "sha256": "6489f16329286e49e393ed2a5f0e83dbca4e824380dd56936f16feade91bb9a6"
+    },
+    {
+      "path": "orders/infra/main.dev.bicepparam",
+      "sha256": "2a7bb18e22404581b57fe48a290f844694526e6d3154f795e6f42c26313b083c"
+    },
+    {
+      "path": "orders/infra/main.prd.bicepparam",
+      "sha256": "e48a359d5412e929d741f34fb03ddadbd150001a9047ff13dd254aa351f298fc"
+    },
+    {
+      "path": "orders/infra/pipelines/ci.yml",
+      "sha256": "a8a215fd91bd3662c8e0a23f905c4272e15aaec0321553698eb6a395927cd222"
+    },
+    {
+      "path": "orders/infra/pipelines/pr.yml",
+      "sha256": "715eaec6af24660cfd8070df8634bc677d916fda3bb16b06a9758ba910fc2a3a"
+    },
+    {
+      "path": "orders/infra/pipelines/release.yml",
+      "sha256": "fe8120e9dd3032c8e2800a169a766d4daf0db5fd88aef8e28549cee9906513c7"
+    },
+    {
+      "path": "orders/infra/registry-role-assignment.bicep",
+      "sha256": "d137fe3ce45c3dd10694e5517cb8e404ac073f37c1f65b19bf85686d3dc4e065"
+    },
+    {
+      "path": "orders/infra/release.dev.json",
+      "sha256": "14293cd7b163c0ff4cd6d4da2e9127a34efa31db51885ad10a3fef39ca31172b"
+    },
+    {
+      "path": "orders/infra/release.prd.json",
+      "sha256": "595e0b7f4402f4c21e5df66f50eb0a509d497bdc735de7692ac5288a406911bf"
+    },
+    {
+      "path": "orders/infra/scripts/data-access-remove.sql",
+      "sha256": "617e913f37783e977e1372d6ef46c1ca1e682170af7ee385771614f5d299fca4"
+    },
+    {
+      "path": "orders/infra/scripts/data-access.sql",
+      "sha256": "508c997efdec5149cd894270886898b543c5f0df81a5a336ca2045745f493382"
+    },
+    {
+      "path": "orders/infra/types.bicep",
+      "sha256": "7553436f6faf09ddc95f5576a340868876b90114c8267dc6bb3bc1197bec0900"
+    },
+    {
+      "path": "orders/infra/workspace-role-assignment.bicep",
+      "sha256": "13dfda29911883abc93047b7a01083bdade27d804ab6a4e51e3c5fae305d3509"
+    },
+    {
+      "path": "platform/infra/main.bicep",
+      "sha256": "7ef812a47fc425e0a828581c63665ce4052ecceb78495bc8280b404f862f82e5"
+    },
+    {
+      "path": "platform/infra/main.shared.bicepparam",
+      "sha256": "331760569296412799cc8072347fb999b0212913e92d599714b49f155828fbad"
+    },
+    {
+      "path": "platform/infra/pipelines/ci.yml",
+      "sha256": "9e06832f6576c8fa19c51fda5b6a4e7712a6596d71d950e7ed545b2d4fcf83eb"
+    },
+    {
+      "path": "platform/infra/pipelines/pr.yml",
+      "sha256": "4ca681d8db12f79d07ddfcf54e6e8cc115b5669e8b75e0108b5e5dbb749bb977"
+    },
+    {
+      "path": "platform/infra/pipelines/release.yml",
+      "sha256": "045a01022f6ac96720893e291c103941de175bd8ea7671e7cc84def8195e7af8"
+    },
+    {
+      "path": "platform/infra/registry-role-assignment.bicep",
+      "sha256": "6189b5c8a08097294ed02249418efd1ea36c218c273384eb5aa41b0519c981d5"
+    },
+    {
+      "path": "platform/infra/release.shared.json",
+      "sha256": "4634ec1b97e827ae3a2e96542762bf2a6edb2464b68544c7c247b0efacabbb31"
+    },
+    {
+      "path": "platform/infra/types.bicep",
+      "sha256": "f3214d0f14e26dbddedbdb62abcd74eeb8118a13535a12e9d50b1976d9a01a98"
+    }
+  ]
+}

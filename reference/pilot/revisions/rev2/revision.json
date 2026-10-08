@@ -1,0 +1,6 @@
+{
+  "revision": 2,
+  "lineage": "revisioned",
+  "baseLineages": ["baseline"],
+  "purpose": "P-07 criterion 6: production Log Analytics retention change"
+}

@@ -1,0 +1,35 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+parameters:
+- name: project
+  type: string
+- name: component
+  type: string
+
+stages:
+- stage: Build
+  displayName: Contrôles et artefact d’infrastructure
+  jobs:
+  - job: BuildInfra
+    displayName: Compiler et publier l’infrastructure
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+      fetchDepth: '1'
+    - pwsh: |
+        $ErrorActionPreference = 'Stop'
+        & "$env:IFS_REPOSITORY_ROOT/.ifs/templates/scripts/Set-IfsRunName.ps1" -ManifestPath $env:IFS_MANIFEST_PATH -Component $env:IFS_COMPONENT -Target 'CI'
+        & "$env:IFS_REPOSITORY_ROOT/.ifs/templates/scripts/Test-IfsBicep.ps1" -RepositoryRoot $env:IFS_REPOSITORY_ROOT -Component $env:IFS_COMPONENT
+        $destination = Join-Path $env:IFS_ARTIFACT_ROOT 'infra'
+        New-Item -ItemType Directory -Path $destination -Force | Out-Null
+        Copy-Item -LiteralPath (Join-Path $env:IFS_REPOSITORY_ROOT $env:IFS_COMPONENT) -Destination $destination -Recurse -Force
+        Copy-Item -LiteralPath (Join-Path $env:IFS_REPOSITORY_ROOT '.ifs') -Destination $destination -Recurse -Force
+      displayName: Valider Bicep et préparer l’artefact autonome
+      env:
+        IFS_REPOSITORY_ROOT: $(Build.SourcesDirectory)
+        IFS_MANIFEST_PATH: $(Build.SourcesDirectory)/.ifs/manifest.json
+        IFS_COMPONENT: ${{ parameters.component }}
+        IFS_ARTIFACT_ROOT: $(Build.ArtifactStagingDirectory)
+    - publish: $(Build.ArtifactStagingDirectory)/infra
+      artifact: infra
+      displayName: Publier l’artefact infra

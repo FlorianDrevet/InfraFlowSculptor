@@ -44,17 +44,27 @@ chaque accès que le modèle a câblé.
    |---|---|---|
    | `secret` | `Payments__ApiKey` | La variable est présente et non vide (Container Apps l'a résolue depuis Key Vault) |
    | `logs` | `LogAnalytics__WorkspaceId` | `LogsQueryClient.QueryWorkspaceAsync(id, "print 1", 5 min)` avec `DefaultAzureCredential` |
-   | `sql` | `Sql__Server`, `Sql__Database` | Connexion `Authentication=Active Directory Default` (identité **système**) ; insertion puis lecture d'une ligne dans `dbo.witness_checks` (table **préparée** par `sql/witness-schema.sql`, jamais créée par l'application) ; puis contrôle `sql-least-privilege` : un `CREATE TABLE dbo.witness_forbidden(...)` doit être **refusé** (le contrôle échoue s'il réussit) |
+   | `sql` | `Sql__Server`, `Sql__Database` | Connexion `Microsoft.Data.SqlClient` avec `Authentication=Active Directory Managed Identity` et **sans `User Id`** (identité **système**, [DT-33](../technique/01-decisions.md#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local)) ; insertion puis lecture d'une ligne dans `dbo.witness_checks` (table **préparée** par `sql/witness-schema.sql`, jamais créée par l'application) ; puis contrôle `sql-least-privilege` : un `CREATE TABLE dbo.witness_forbidden(...)` doit être **refusé** (le contrôle échoue s'il réussit) |
    | `appconfig` | `AZURE_APPCONFIG_ENDPOINT` | Lecture de la clé `orders:maxItemsPerOrder` (jalon 1) |
    | `servicebus` | `ServiceBus__Namespace` | Envoi d'un message sur `order-created` (jalon 1) |
    `DefaultAzureCredential` utilise `AZURE_CLIENT_ID` (identité affectée `id api`) **sauf** pour SQL, qui
-   force l'identité système (`ManagedIdentityCredential()` sans identifiant client) : c'est ce qu'exige P9.
+   utilise l'identité système : c'est ce qu'exige P9. Contrat SQL, sans choix laissé à l'implémentation :
+   - chaîne de connexion construite par `SqlConnectionStringBuilder` : `DataSource` = `Sql__Server`,
+     `InitialCatalog` = `Sql__Database`, `Authentication = SqlAuthenticationMethod.ActiveDirectoryManagedIdentity`
+     (`Active Directory Managed Identity`), `Encrypt = true`, **aucun** `User Id`, **aucun** mot de passe ;
+   - **interdits** pour SQL : `Authentication=Active Directory Default` (s'appuie sur `DefaultAzureCredential`, donc sur
+     `AZURE_CLIENT_ID` → identité `id api`, ce que P9 interdit), un `User Id` (désignerait une identité affectée),
+     `AccessTokenCallback` / `AccessToken` et toute lecture de `AZURE_CLIENT_ID` dans le code SQL ;
+   - paquet `Microsoft.Data.SqlClient` (pas `System.Data.SqlClient`), version épinglée selon
+     [DT-03](../technique/01-decisions.md#dt-03--versions-épinglées) dans le fichier de versions de `samples/witness-app/`.
 3 bis. `samples/witness-app/sql/witness-schema.sql` : script idempotent qui crée `dbo.witness_checks (id uniqueidentifier
    primary key, written_at datetime2, value nvarchar(100))`. Il est exécuté **une fois par cible** par un membre du
    groupe administrateur SQL (étape de la recette, comme le ferait la migration de schéma d'un client) : les droits de
    l'application restent exactement `db_datareader` + `db_datawriter` ([RG-LIA-20](../specs/16-liaisons-identites-et-acces.md)).
 4. Tests `samples/witness-app/tests/` (xUnit) : un contrôle sans configuration est `skipped` ; un contrôle en
-   erreur rend 503 et un message sans valeur secrète ; `/health` renvoie `IMAGE_TAG`.
+   erreur rend 503 et un message sans valeur secrète ; `/health` renvoie `IMAGE_TAG` ; la fabrique de chaîne SQL
+   produit `Authentication=Active Directory Managed Identity`, un `UserID` vide, et ne lit jamais `AZURE_CLIENT_ID`
+   (test avec la variable positionnée).
 
 ✅ **Vérification automatique.** `dotnet test samples/witness-app/tests` vert ; `docker build samples/witness-app`
 réussit.
@@ -176,7 +186,7 @@ unité de déploiement dans une cible, reprenable à tout moment, sans doublon.
    |---|---|---|
    | `Read-IfsReleaseData` | — | Lit et valide `release.<cible>.json` (schéma) |
    | `Read-IfsOperationJournal` | 1 (Aperçu) | **Lecture seule**, sans bail : un journal absent est un journal vide ; aucun appel d'écriture ([22 § 3.1](../specs/22-pipelines.md) : l'Aperçu ne modifie rien) |
-   | `Open-IfsOperationJournal` | 6 (Déploiement) | Crée le blob `ifs-operations/<unit>.json` du compte `stifs<projet><cible>` s'il n'existe pas, prend un bail exclusif de 60 s renouvelé toutes les 30 s par une tâche de fond jusqu'à `Close-IfsOperationJournal` (dans le `finally`) ; un bail tenu par un autre run → attente bornée (10 min) puis échec explicite |
+   | `Open-IfsOperationJournal` | 6 (Déploiement) | Crée le blob `ifs-operations/<unit>.json` du compte `stifs<projet><cible>` s'il n'existe pas, prend un bail exclusif de 60 s renouvelé toutes les 30 s par une tâche de fond jusqu'à `Close-IfsOperationJournal` (dans le `finally`) ; si le processus propriétaire meurt, le renouvelleur s'arrête et le bail expire au plus tard 60 s après son dernier renouvellement ; un bail tenu par un autre run → attente bornée (10 min) puis échec explicite |
    | `Get-IfsPendingOperation` | 1, 7 | Opérations `ToDo` ou `Started` d'une exécution précédente |
    | `Test-IfsDependency` | 2 | Chaque ressource de `dependencies` existe (`az resource show --ids`), sinon erreur « Déployez d'abord <composant> en <cible>. » |
    | `Test-IfsSecretVariable` | 3 | Chaque `secretWrites.variable` de source `pipeline` a une valeur dans l'environnement de l'étape (mappée par le YAML), sinon erreur listant les variables vides et le groupe `ifs-<projet>-<cible>` |
@@ -298,9 +308,14 @@ d'installation, saisir le secret.
    commande exacte, stockage technique `stifsshop<cible>` avec `ifs-operations`, service connections
    fédérées via `az devops service-endpoint create`) ; marque `managed-by: infraflowsculptor` et version du
    kit (tag `ifs-kit-revision`) ; refus d'un kit plus ancien ([RG-INS-07](../specs/23-kit-installation.md)) ;
-   suppression des identifiants fédérés inattendus ([RG-INS-05](../specs/23-kit-installation.md)) ; rapport final
+   suppression des seuls identifiants fédérés IFS obsolètes (`ifs-ado-*`) et conservation des identifiants étrangers
+   ([RG-INS-05](../specs/23-kit-installation.md)) ; rapport final
    par cible ([RG-INS-02](../specs/23-kit-installation.md)) ; noms techniques assainis et raccourcis de façon
-   déterministe ([RG-INS-03](../specs/23-kit-installation.md)).
+   déterministe ([RG-INS-03](../specs/23-kit-installation.md)). Les groupes des composants sont créés en amont
+   uniquement s'ils sont une portée d'attribution déléguée du plan RG-LIA-18 ; leur nom, région et tags viennent
+   de `resourceGroups.main`. Un groupe existant doit avoir la région attendue et les tags `managed-by`,
+   `ifs-project`, `ifs-component` et `ifs-environment` exacts. En cas d'écart, l'installation s'arrête avant toute
+   création de groupe ; le groupe `data`, sans rôle délégué, reste créé par Bicep.
 2. `.ifs/install/install.pipeline.yml` : étapes 1–6 bis, 8 et 9 de [23 § 3.1](../specs/23-kit-installation.md)
    par l'API REST Azure DevOps avec `$(System.AccessToken)` : environnements, approbations (groupe
    « Shop Release Approvers »), **contrôle de verrou exclusif** `lockBehavior: sequential`
@@ -310,9 +325,11 @@ d'installation, saisir le secret.
    de build sur `main` ; vérification de préparation par cible ([DEC-111](../specs/03-decisions.md)) ; rapport.
 3. `.ifs/install/SETUP.md` : liste de contrôle de [23 § 4](../specs/23-kit-installation.md), commandes exactes,
    état de chaque étape (automatique / à faire).
-4. Tests Pester (`reference/release-module/tests/Kit.Tests.ps1`), `az` simulé : `-WhatIf` ne fait aucun appel
-   d'écriture ; seconde exécution n'écrit rien de nouveau ; identifiant fédéré inattendu supprimé ; kit plus
-   ancien refusé ; condition RBAC contient exactement les rôles attendus.
+4. Tests Pester (`reference/release-module/tests/Kit.Tests.ps1`), `az` simulé : création de groupes distincts avec
+   leur nom, région et tags exacts ; idempotence à la seconde exécution ; refus des groupes existants dont la région,
+   la marque `managed-by` ou les tags IFS sont absents ou incorrects, sans mutation ; `data` n'est pas précréé ;
+   `-WhatIf` ne fait aucun appel d'écriture ; seul un identifiant fédéré IFS obsolète est supprimé et les identifiants
+   étrangers sont conservés ; kit plus ancien refusé ; condition RBAC contient exactement les rôles attendus.
 
 ✅ **Vérification automatique.** Pester vert ; PSScriptAnalyzer propre ; `Test-ReferencePipelines.ps1` inclut
 `install.pipeline.yml`.
@@ -379,28 +396,40 @@ branche.
 🔧 **À faire.**
 1. `tools/proofs/Publish-PilotReference.ps1` : paramètres `-RepositoryPath` (clone local de votre dépôt Azure
    Repos `shop`), `-ProjectCode` (défaut `shop`), `-SubscriptionDev`, `-SubscriptionPrd`, `-SubscriptionShared`,
-   `-SqlAdminGroupObjectIdDev/Prd` ; copie `reference/pilot/bicep-azdo/**` et `samples/witness-app/**` (vers
-   `src/api/`), remplace les valeurs **par la table explicite** des noms de
+   `-SqlAdminGroupObjectIdDev/Prd` ; copie uniquement les fichiers suivis de `reference/pilot/bicep-azdo/**` et
+   `samples/witness-app/**` (vers `src/api/`), remplace les valeurs **par la table explicite** des noms de
    [reference-pilote § 2.1](reference-pilote.md#21-noms-azure) (pas de remplacement global de « shop »), recalcule
-   `.ifs/manifest.json`, et affiche le `git status` sans commiter.
-2. `tools/proofs/New-ProofRevision.ps1` : applique au clone les modifications **écrites à la main** qui simulent
-   les révisions 2 à 5 des critères 6–12 de [reference-pilote § 4](reference-pilote.md#4-critères-dacceptation-du-jalon-0)
-   (fichiers modifiés fournis dans `reference/pilot/revisions/rev<n>/`), pour que chaque preuve parte d'un
-   état exact.
+   `.ifs/manifest.json` avec empreintes par composant et filiation `baseline`, puis affiche le `git status` sans
+   commiter. Une publication réelle exige les deux répertoires source propres et un clone cible propre ; `-WhatIf`
+   reste utilisable sur un arbre source modifié et n'écrit que dans un répertoire temporaire.
+2. `tools/proofs/New-ProofRevision.ps1` : valide la révision et la filiation déclarées dans `revision.json`, vérifie
+   que les changements du clone sont couverts par les empreintes du manifeste, puis applique au clone les modifications
+   **écrites à la main** qui simulent les révisions 2 à 5 des critères 6–12 de
+   [reference-pilote § 4](reference-pilote.md#4-critères-dacceptation-du-jalon-0) (fichiers fournis dans
+   `reference/pilot/revisions/rev<n>/`), ainsi que les overlays indépendants `p2` et `p3-role` des critères 8 et 9a.
+   Le manifeste recalculé conserve une empreinte logique indépendante des fins de ligne Windows `autocrlf`.
 3. `docs/plan/recettes/01-preuves.md` : la recette complète, dans l'ordre P1, P9, P3, P8, P2, P4, P5, P7 ; pour
    chacune : état initial, actions (portail, Azure DevOps, commandes exactes), résultat attendu, preuve à
    recueillir (lien du run, extrait du rapport, capture) ; durée estimée ; nettoyage.
-3 bis. `tools/proofs/Save-AdoRecordings.ps1` : pour un run Azure DevOps donné (organisation, projet, identifiant), enregistre
-   les réponses JSON utilisées par le suivi (J0-30) — build, timeline, liste et contenu des artefacts `ifs-report`,
-   `ifs-preview`, `ifs-app-report`, approbations — **anonymisées** (organisation, projet, abonnements, identifiants
-   d'objets, adresses remplacés par des valeurs fixes documentées) dans `src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/AzureDevOps/Recordings/<scénario>/`.
+3 bis. `tools/proofs/Save-AdoRecordings.ps1` : pour un run Azure DevOps donné (organisation, projet, identifiant), conserve
+     les réponses JSON brutes avant leur anonymisation pour préserver les timestamps textuels, puis écrit de manière
+     transactionnelle les réponses build, timeline, liste et contenu textuel des artefacts `ifs-report`, `ifs-preview`,
+     `ifs-app-report`, et un instantané des approbations du projet dans
+     `src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/AzureDevOps/Recordings/<scénario>/`. Les pseudonymes
+     déterministes préservent les relations répétées et un scan final refuse les identifiants ou secrets résiduels.
+     Le schéma API des approbations ne fournit pas de RunId : l'instantané est contextualisé par le run demandé, mais
+     les approbations ne lui sont pas attribuées automatiquement.
    La recette demande de l'exécuter après chaque preuve (release réussie, partiellement appliquée, interrompue, commit de
    fusion différent, attente d'approbation).
 4. `docs/plan/preuves/resultats.md` : tableau `Preuve | Date | Résultat (OK/KO) | Preuve recueillie |
    Remarques`, vide.
+5. Reporter les constats mineurs de R-02 selon la revue approuvée : aucun nouveau constat mineur n'a été relevé
+   ([R-02](revues/R-02-revue.md#constats)); il n'y a donc aucun point mineur à reprendre dans P-07/P-08.
 
-✅ **Vérification automatique.** `Publish-PilotReference.ps1 -WhatIf` sur un dossier temporaire : les fichiers
-attendus, aucun nom non remplacé quand `-ProjectCode shop42` (recherche de `-shop-` résiduels hors table).
+✅ **Vérification automatique.** Analyse statique PowerShell, fixture d'anonymisation (timestamps, secrets, identifiants
+liés et relations `parentId`), `Publish-PilotReference.ps1 -WhatIf` avec contrôle que la cible reste inchangée, chaîne
+`p2 → rev3 → rev4 → rev5` sur des clones temporaires, rejet des filiations incorrectes et des fichiers parasites,
+et application d'overlay après un checkout forcé `core.autocrlf=true`.
 
 🧪 **Test manuel.** Lire `recettes/01-preuves.md` ; vérifier que chaque prérequis est à votre portée (droits
 Owner sur les abonnements, administrateur de projet Azure DevOps, groupe Entra créable).
@@ -417,30 +446,56 @@ Owner sur les abonnements, administrateur de projet Azure DevOps, groupe Entra c
 | **Dépend de** | P-07 |
 | **Commit** | `fix(reference): <correction>` (une par défaut constaté), puis `docs(preuves): résultats` |
 
-🎯 **Objectif.** Les preuves sont exécutées par vous ; Luna corrige les défauts **d'exécution** (faute de frappe,
-paramètre d'API, version de commande `az`) constatés pendant la recette.
+🎯 **Objectif.** Après le feu vert de l'utilisateur du 2026-10-07, Luna exécute les préflights, les preuves, les captures
+Azure DevOps et leur consignation. Luna corrige les défauts **d'exécution** ; une question de conception reste soumise à
+la revue Claude. Une intervention de l'utilisateur n'est demandée que si une étape exige son authentification ou une
+action impossible à réaliser avec les accès déjà ouverts.
 
 🔧 **À faire.**
-1. `python tools/plan/gate.py wait-recette P-08` (statut `EN_ATTENTE_DE_RECETTE`) puis arrêt. Conduite unique à chaque
-   nouvelle session :
-   - l'utilisateur ne transmet rien → `gate.py check` renvoie 3 : s'arrêter ;
-   - l'utilisateur transmet des résultats (KO, partiels ou « recette terminée ») → `gate.py resume P-08`, traiter ces
-     résultats (point 2), les consigner, enregistrer les réponses Azure DevOps fournies (point 3 bis de P-07) ; puis
-     `gate.py wait-recette P-08` s'il en reste, ou `gate.py done P-08` si l'utilisateur a déclaré la recette terminée.
-2. Pour chaque KO transmis (journal du run, message) : si la cause est une erreur de mise en œuvre de la sortie
+0. **Profil de coût des preuves** ([DT-42](../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure),
+   [reference-pilote § 1.6](reference-pilote.md#16-profil-de-coût-des-preuves)), **hors ligne et avant la recette** (à
+   faire quand l'utilisateur relance P-08 par `gate.py resume P-08` ; ne pas toucher au statut autrement) :
+   1. Remplacer `francecentral` par `northeurope` dans `reference/pilot/bicep-azdo/**`, y compris le `--location` des
+      What-If d'installation, dans les overlays de révision, dans les fixtures et tests qui l'affirment, puis recalculer
+      `reference/pilot/manifest.example.json`
+      (`reference/tools/Update-ManifestExample.ps1`). Commit `fix(reference): région northeurope des cibles du pilote`.
+   2. `tools/proofs/Publish-PilotReference.ps1` : appliquer, **à la publication seulement**, le profil du § 1.6 (SKU ACR,
+      SKU et paramètres SQL, zone du CAE, réplicas, rétention `appi`, plafond Log Analytics) ; `reference/pilot/` ne reçoit
+      que la région. Les propriétés SQL ajoutées passent par `types.bicep`/`main.bicep` **du clone** (module AVM
+      `sql/server:0.22.0` : `autoPauseDelay`, `minCapacity`, `zoneRedundant`, `useFreeLimit`, `freeLimitExhaustionBehavior`),
+      lues en option `-SqlFreeOffer` (faux par défaut, **prd seulement** ; dev reste serverless payant). Commit
+      `feat(preuves): profil de coût des preuves`.
+   3. Tests : `Publish-PilotReference.ps1 -WhatIf` affiche chaque substitution du profil ; Pester publie un clone temporaire,
+      applique `p2 → rev3 → rev4 → rev5`, `rev2` et `p3-role` sur un clone **profilé** ; le profil est idempotent et ne
+      laisse aucune écriture partielle si une valeur est inattendue ; `bicep build` du clone profilé sans avertissement ;
+      aucune occurrence de `francecentral`, `GP_Gen5_2`, `Standard` (ACR) dans le clone.
+1. Avant toute commande Azure, exiger dans `NEXT.md` un plafond chiffré confirmé, une estimation actualisée et
+   l'inventaire de référence. Le feu vert général ne remplace pas ce verrou. Une fois le verrou franchi, exécuter la
+   recette dans l'ordre P1, P9, P3, P8, P2, P4, P5, P7, avec un seul jeu Azure à la fois. Après chaque run, capturer les
+   réponses Azure DevOps (étape 3 bis de P-07) et consigner son résultat. `P-08` reste `EN_COURS` jusqu'au dernier
+   nettoyage ; ne pas demander à l'utilisateur de rejouer les preuves déjà exécutées par Luna.
+2. Pour chaque KO observé pendant la recette (journal du run, message) : si la cause est une erreur de mise en œuvre de la sortie
    de référence (le comportement attendu est clair dans la spec et le plan), corriger, ajouter le test Pester
    qui l'aurait détectée, commiter `fix(reference): …` ; si la cause est une question de conception, ne rien
    corriger : question pour Claude.
-3. Consigner chaque résultat transmis dans `docs/plan/preuves/resultats.md`.
+3. Consigner chaque résultat exécuté dans `docs/plan/preuves/resultats.md`.
+4. **Coût et propriété** : vérifier et consigner le coût au démarrage et à la fin de chaque session, avant et après chaque
+   déploiement ou run Azure significatif, puis après chaque nettoyage. Si le seuil confirmé est atteint,
+   arrêter les runs et supprimer uniquement les IDs créés par Luna consignés dans
+   [`inventaires-azure.md`](preuves/inventaires-azure.md) ; ne jamais supprimer une ressource préexistante.
 
 ✅ **Vérification automatique.** Après chaque correction : `Test-Reference*.ps1` et Pester verts.
 
-🧪 **Test manuel.** La recette [`recettes/01-preuves.md`](recettes/01-preuves.md), en entier.
+🧪 **Test de recette.** Luna déroule [`recettes/01-preuves.md`](recettes/01-preuves.md) en entier ; l'utilisateur intervient
+uniquement si une étape requiert son authentification ou une action réellement manuelle.
 
 🧠 **Mémoire.** `08-runtime-and-orchestration.md` : ce que les preuves ont appris (limites du what-if des piles,
 délais de propagation RBAC observés, temps de chaque release).
 
-📌 **Hors dépôt.** Ressources Azure créées par les preuves (à supprimer ou garder pour J0) : dans `NEXT.md`.
+📌 **Hors dépôt.** Plafond de dépense et estimation confirmés, ressources Azure créées par les preuves : dans `NEXT.md`.
+Ces ressources sont **supprimées après leur dernière preuve dépendante** ([DT-42](../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure),
+[recette § 10](recettes/01-preuves.md#10-supprimer-les-ressources-azure-et-consigner-les-résultats)), plus « gardées pour J0 » :
+le jalon 0 redéploie depuis des abonnements vides. Les preuves Azure DevOps et `resultats.md` restent jusqu'à R-03.
 
 ### 🔒 R-03 — Revue des preuves
 

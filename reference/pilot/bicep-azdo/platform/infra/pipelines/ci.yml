@@ -1,0 +1,15 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+name: $(Date:yyyyMMdd).$(Rev:r)
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - platform/infra/**
+    - .ifs/**
+extends:
+  template: .ifs/templates/infra-ci.yml
+  parameters:
+    project: shop
+    component: platform

@@ -1,0 +1,27 @@
+{
+  "schema": "ifs-release/v1",
+  "project": "shop",
+  "component": "data",
+  "target": "dev",
+  "unit": "ifs-shop-data-dev",
+  "subscriptionId": "<A>",
+  "location": "northeurope",
+  "protected": false,
+  "deploymentIdentityObjectId": null,
+  "dependencies": [
+    {
+      "component": "core",
+      "resources": [
+        {
+          "id": "/subscriptions/<A>/resourceGroups/rg-shop-core-main-dev/providers/Microsoft.OperationalInsights/workspaces/log-shop-main-dev"
+        }
+      ]
+    }
+  ],
+  "secretWrites": [],
+  "secretReferences": [],
+  "appOwnedState": [],
+  "dataAccess": [],
+  "accessObjectTypes": ["Microsoft.Insights/diagnosticSettings"],
+  "restartOnSecretChange": []
+}

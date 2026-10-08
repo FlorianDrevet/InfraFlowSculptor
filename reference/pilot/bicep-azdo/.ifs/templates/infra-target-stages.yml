@@ -1,0 +1,109 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+parameters:
+- name: project
+  type: string
+- name: component
+  type: string
+- name: defaultBranch
+  type: string
+- name: target
+  type: object
+- name: secretWrites
+  type: object
+  default: []
+
+stages:
+- stage: Preview_${{ parameters.target.name }}
+  displayName: Aperçu ${{ parameters.target.name }}
+  dependsOn: ${{ parameters.target.dependsOn }}
+  variables:
+  - ${{ if gt(length(parameters.secretWrites), 0) }}:
+    - group: ifs-${{ parameters.project }}-${{ parameters.target.name }}
+  jobs:
+  - job: Preview_${{ parameters.target.name }}
+    displayName: Aperçu en lecture seule sans environnement protégé
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+      fetchDepth: '1'
+    - download: ci
+      artifact: infra
+    - pwsh: |
+        $ErrorActionPreference = 'Stop'
+        & "$(Pipeline.Workspace)/ci/infra/.ifs/templates/scripts/Set-IfsRunName.ps1" -ManifestPath "$(Pipeline.Workspace)/ci/infra/.ifs/manifest.json" -Component '${{ parameters.component }}' -Target '${{ parameters.target.name }}'
+      displayName: Nommer le run depuis le manifeste
+    - task: AzureCLI@2
+      displayName: Étapes 1 à 4 — reprendre, vérifier, puis calculer l’aperçu
+      inputs:
+        azureSubscription: ifs-${{ parameters.project }}-${{ parameters.target.name }}
+        scriptType: pscore
+        scriptLocation: scriptPath
+        scriptPath: $(Pipeline.Workspace)/ci/infra/.ifs/templates/scripts/Invoke-IfsInfraPreview.ps1
+        arguments: >
+          -ReleasePath "$(Pipeline.Workspace)/ci/infra/${{ parameters.component }}/infra/release.${{ parameters.target.name }}.json"
+          -TemplateFile "$(Pipeline.Workspace)/ci/infra/${{ parameters.component }}/infra/main.bicep"
+          -ParameterFile "$(Pipeline.Workspace)/ci/infra/${{ parameters.component }}/infra/main.${{ parameters.target.name }}.bicepparam"
+          -OutputDirectory "$(Pipeline.Workspace)/ifs-preview"
+      env:
+        ${{ each secretWrite in parameters.secretWrites }}:
+          ${{ secretWrite.name }}: ${{ secretWrite.value }}
+    - publish: $(Pipeline.Workspace)/ifs-preview
+      artifact: ifs-preview-${{ parameters.target.name }}
+      displayName: Publier l’aperçu à relire avant approbation
+
+- stage: Deploy_${{ parameters.target.name }}
+  displayName: Déploiement ${{ parameters.target.name }}
+  dependsOn: Preview_${{ parameters.target.name }}
+  lockBehavior: sequential
+  variables:
+  - ${{ if gt(length(parameters.secretWrites), 0) }}:
+    - group: ifs-${{ parameters.project }}-${{ parameters.target.name }}
+  jobs:
+  - deployment: Deploy_${{ parameters.target.name }}
+    displayName: Appliquer les mutations sous le verrou de cible
+    environment: ${{ parameters.project }}-${{ parameters.target.name }}
+    pool:
+      vmImage: ubuntu-latest
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+            fetchDepth: '0'
+            persistCredentials: 'true'
+          - download: ci
+            artifact: infra
+          - download: current
+            artifact: ifs-preview-${{ parameters.target.name }}
+          - pwsh: |
+              $ErrorActionPreference = 'Stop'
+              New-Item -ItemType Directory -Path "$(Pipeline.Workspace)/ifs-reports" -Force | Out-Null
+              & "$(Pipeline.Workspace)/ci/infra/.ifs/templates/scripts/Set-IfsRunName.ps1" -ManifestPath "$(Pipeline.Workspace)/ci/infra/.ifs/manifest.json" -Component '${{ parameters.component }}' -Target '${{ parameters.target.name }}'
+            displayName: Préparer le rapport et nommer la cible
+          - task: AzureCLI@2
+            displayName: Étapes 5 à 13 — relire sous verrou, journaliser et déployer
+            inputs:
+              azureSubscription: ifs-${{ parameters.project }}-${{ parameters.target.name }}
+              scriptType: pscore
+              scriptLocation: scriptPath
+              scriptPath: $(Pipeline.Workspace)/ci/infra/.ifs/templates/scripts/Invoke-IfsInfraDeploy.ps1
+              arguments: >
+                -ReleasePath "$(Pipeline.Workspace)/ci/infra/${{ parameters.component }}/infra/release.${{ parameters.target.name }}.json"
+                -ManifestPath "$(Pipeline.Workspace)/ci/infra/.ifs/manifest.json"
+                -PreviewPath "$(Pipeline.Workspace)/ifs-preview-${{ parameters.target.name }}/ifs-preview.json"
+                -TemplateFile "$(Pipeline.Workspace)/ci/infra/${{ parameters.component }}/infra/main.bicep"
+                -ParameterFile "$(Pipeline.Workspace)/ci/infra/${{ parameters.component }}/infra/main.${{ parameters.target.name }}.bicepparam"
+                -OutputPath "$(Pipeline.Workspace)/ifs-reports/ifs-report.json"
+                -DefaultBranch '${{ parameters.defaultBranch }}'
+                -ManifestPathInRepository '.ifs/manifest.json'
+                -RunId '$(Build.BuildId)'
+              addSpnToEnvironment: true
+            env:
+              ${{ each secretWrite in parameters.secretWrites }}:
+                ${{ secretWrite.name }}: ${{ secretWrite.value }}
+              IFS_BUILD_ID: $(Build.BuildId)
+          - publish: $(Pipeline.Workspace)/ifs-reports
+            artifact: ifs-report-${{ parameters.target.name }}
+            condition: always()
+            displayName: Publier le rapport de release même si le déploiement échoue

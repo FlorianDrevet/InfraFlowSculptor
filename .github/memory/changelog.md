@@ -22,4 +22,7 @@
 | 2026-10-06 | Luna | S-15 — workflow CI pour backend, acceptation Docker, frontend, audit des dépendances et E2E Aspire; OpenAPI/client Angular vérifiés contre les artefacts commis; rapports TRX/JUnit, couverture, Playwright et journaux publiés; badge CI ajouté. Le build AppHost en `Development` a révélé une validation DI incompatible avec l'hôte temporaire `GetDocument`, limitée à ce générateur; build Release et 14 tests API passent. |
 | 2026-10-06 | Luna | S-16 — observabilité et diagnostic du Service Bus local : télémétrie, traces et logs structurés, classification prudente de la fermeture `AcceptSession`, build et CI verts. |
 | 2026-10-06 | Luna | S-17 — mémoire alignée sur le code, graphe Graphify AST généré sans LLM et section « Démarrer » ajoutée au README. Prérequis et contrôles automatiques verts ; la recette clone neuf reste partielle tant que l'AppHost actif occupe les ports fixes. |
+| 2026-10-06 | Luna | P-01 — application témoin .NET 10, contrôles de dépendances à identité managée, schéma SQL, image non-root et tests. |
+| 2026-10-06 | Luna | S-08 — le fixture d'acceptation tolère les notifications API DCP périmées lorsque `/health` répond; budget Service Bus élargi pour le sidecar SQL à froid. |
 | 2026-10-06 | Luna | S-15 — le job Playwright injecte le secret d'Actions dans le royaume Keycloak jetable pour activer les quatre scénarios authentifiés. |
+| 2026-10-06 | Luna | Documentation — ajout d'un REX débutant Keycloak/Aspire, relié depuis l'index technique et la mémoire auth/build. |

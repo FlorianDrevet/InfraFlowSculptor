@@ -26,3 +26,17 @@
 | 2026-10-06 14:31 | Luna | `S-17` terminée | commit `4fbd85c` |
 | 2026-10-06 16:14 | Luna | revue `R-01` demandée | R-01-demande.md |
 | 2026-10-06 16:34 | Claude | verrou `R-01` levé | R-01-revue.md |
+| 2026-10-06 21:56 | Luna | `P-01` terminée | commit `884b323` |
+| 2026-10-06 22:34 | Luna | `P-02` terminée | commit `784d7c9` |
+| 2026-10-06 23:25 | Luna | `P-03` terminée | commit `02cf2b2` |
+| 2026-10-07 00:04 | Luna | `P-04` terminée | commit `784be86` |
+| 2026-10-07 00:51 | Luna | `P-05` terminée | commit `639f3c3` |
+| 2026-10-07 09:29 | Luna | `P-06` terminée | commit `5aba790` |
+| 2026-10-07 09:50 | Luna | revue `R-02` demandée | R-02-demande.md |
+| 2026-10-07 10:21 | Claude | verrou `R-02` : corrections demandées | R-02-revue.md |
+| 2026-10-07 12:16 | Luna | revue `R-02` demandée | R-02-demande.md |
+| 2026-10-07 12:43 | Claude | verrou `R-02` : corrections demandées | R-02-revue.md |
+| 2026-10-07 13:15 | Luna | revue `R-02` demandée | R-02-demande.md |
+| 2026-10-07 13:46 | Claude | verrou `R-02` levé | R-02-revue.md |
+| 2026-10-07 16:29 | Luna | `P-07` terminée | commit `1d6f1be` |
+| 2026-10-07 16:29 | Luna | `P-08` attend une recette de l'utilisateur |  |
