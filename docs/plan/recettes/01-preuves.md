@@ -40,9 +40,9 @@ le nettoyage d'urgence décrit dans [l'inventaire Azure](../preuves/inventaires-
 créés par Luna, même si toutes les captures ne sont pas encore terminées. Un nom ou un préfixe seul ne prouve pas la
 propriété ; ne jamais exécuter `deleteAll` si une pile ou un groupe contient un élément absent de l'inventaire.
 
-### 0.2 Estimation (ordre de grandeur, tarifs Retail API `northeurope` du 2026-10-07, **à revalider avant lancement**)
+### 0.2 Estimation (ordre de grandeur, tarifs Retail API `northeurope` vérifiés le 2026-10-08)
 
-Les tarifs unitaires proviennent de l'[API officielle Azure Retail Prices](https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices).
+Les tarifs unitaires proviennent de l'[API officielle Azure Retail Prices](https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices). Réponse EUR de référence : SQL General Purpose serverless Gen5 à 0,4683 €/vCore-heure, ACR Basic à 0,1466 €/jour, et ingestion Log Analytics à 2,4287 €/Go au-delà des 5 premiers Go gratuits par mois et par compte de facturation. L'estimation ne suppose pas que ce crédit Log Analytics reste disponible : l'usage préexistant du compte est inconnu. Les tarifs non USD de cette API restent des prix de référence ; vérifier la devise de facturation réelle avant de créer le budget.
 Le calcul ci-dessous ne couvre pas le stockage, les sauvegardes, le trafic sortant, les taxes ni les services annexes
 (Key Vault, stockage technique, registre de journaux d'activité) ; il ne constitue donc pas le total de la recette.
 
@@ -51,19 +51,17 @@ Le calcul ci-dessous ne couvre pas le stockage, les sauvegardes, le trafic sorta
 | SQL, 2 bases × 3 projets | ≤ 4 h de calcul actif par base et par projet (installation, schéma, data-access de chaque release d'`orders`, contrôles, + 15 min de pause différée) | si une base `prd` gratuite par souscription est confirmée : `prd` ≈ 0 €, `dev` (12 base-heures) ≈ **2,8–5,6 €** ; sans offre : 24 base-heures ≈ **5,6–11,2 €** selon 0,5–1 vCore | prd : (0,2733 + 0,164) €/h × 24 h × 10 jours × 3 projets ≈ **315 €**, + dev serverless |
 | ACR | 1 par projet, ≤ 2 jours facturés | Basic 0,1466 €/jour ≈ **0,9 €** | Standard 0,5866 €/jour × 10 j × 3 ≈ **18 €** |
 | Container Apps | min 0 / max 1, quelques minutes actives | **≈ 0 € si le crédit gratuit mensuel est encore disponible** ; zéro réplica = zéro consommation de ressources | min 1 en prd : facturé en continu |
-| Log Analytics | Hypothèse : 1 Go/jour/espace, 2 espaces par projet, ≤ 1 jour par projet = 6 Go estimés ; le daily cap peut dépasser sa valeur | ≈ 2,4287 €/Go = **14,6 €** avant crédits gratuits | idem, sans plafond |
+| Log Analytics | Hypothèse : 1 Go/jour/espace, 2 espaces par projet, ≤ 1 jour par projet = 6 Go estimés ; le daily cap peut dépasser sa valeur | ≈ 2,4287 €/Go = **14,6 €** si le crédit mensuel du compte est déjà consommé ; les 5 premiers Go peuvent être gratuits sinon | idem, sans plafond |
 | **Postes chiffrés** | Hypothèses ci-dessus ; hors services annexes | **≈ 18,3 à 26,8 €** selon l'offre SQL gratuite | **≈ 340 € et plus** |
 
 Le montant de 18,3–26,8 € est une estimation des seuls postes chiffrés, avec les hypothèses de durée indiquées ; les
-ressources annexes et le dépassement éventuel du plafond Log Analytics s'ajoutent. Le plafond de 1 Go/jour/espace est un
-garde-fou et peut dépasser sa valeur, il ne garantit pas une facture maximale. Un plafond de **50 € peut être proposé comme
-seuil d'alerte** (environ 1,9 × le haut des seuls postes chiffrés), pas comme coupe-circuit ; c'est à vous de le fixer. Si le préflight ne confirme pas l'offre gratuite, conserver le SQL payant et refaire l'estimation ; si ACR Basic est insuffisant, arrêter et demander une décision avant toute hausse de SKU. Dans les deux cas, ou si les durées dépassent les hypothèses, reconfirmer l'estimation avant de continuer. Les budgets Azure sont des alertes, pas un arrêt automatique des ressources.
+ressources annexes, le stockage, les sauvegardes, le trafic sortant, les taxes et le dépassement éventuel du plafond Log Analytics s'ajoutent. Le plafond de 1 Go/jour/espace est un garde-fou et peut dépasser sa valeur, il ne garantit pas une facture maximale. Le plafond d'alerte de **200 € au niveau de la souscription** a été confirmé par l'utilisateur le 2026-10-08 ; le budget annuel 2026 sera configuré avec des alertes à 50 %, 80 % et 100 % (100 €, 160 €, 200 €), après vérification de la devise et des dépenses déjà engagées. Un budget Azure envoie des alertes, il n'arrête pas les ressources. Si le préflight ne confirme pas l'offre SQL gratuite, conserver le SQL payant et refaire l'estimation ; si ACR Basic est insuffisant, arrêter et demander une décision avant toute hausse de SKU. Si les durées dépassent les hypothèses, actualiser l'estimation avant de continuer.
 
 Sources techniques : [SQL serverless](https://learn.microsoft.com/en-us/azure/azure-sql/database/serverless-tier-overview?tabs=general-purpose&view=azuresql),
 [Container Apps facturation](https://learn.microsoft.com/en-us/azure/container-apps/billing),
 [ACR SKU](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus),
 [SQL zone redundancy](https://learn.microsoft.com/en-us/azure/reliability/reliability-sql-database),
-[plafond Log Analytics](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/daily-cap) et
+[plafond Log Analytics](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/daily-cap), [tarification Azure Monitor](https://azure.microsoft.com/en-us/pricing/details/monitor/) et
 [budgets Azure](https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-acm-create-budgets).
 
 ### 0.3 Préflight bloquant avant toute création

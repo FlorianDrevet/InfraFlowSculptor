@@ -15,7 +15,7 @@
 | **Étape suivante** | `R-03` — Revue des preuves |
 | **Verrou** | aucun |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
-| **Dernière mise à jour** | 2026-10-07 — Luna |
+| **Dernière mise à jour** | 2026-10-08 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
 résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question ci-dessous).
 
@@ -51,7 +51,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 | Élément | État | Depuis |
 |---|---|---|
 | Abonnements Azure de test (preuves) | — (une seule souscription, `northeurope`, [DT-42](docs/technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure)) | — |
-| Plafond de dépense et estimation actualisée des preuves ([verrou](docs/plan/recettes/01-preuves.md#0-verrou-de-coût-et-préflight-bloquants)) | Feu vert général reçu le 2026-10-07 ; 200 € évoqués comme exemple, plafond non confirmé ; estimation à revalider avant Azure | 2026-10-07 |
+| Plafond de dépense et estimation actualisée des preuves ([verrou](docs/plan/recettes/01-preuves.md#0-verrou-de-coût-et-préflight-bloquants)) | Plafond d'alerte de 200 € sur la souscription confirmé le 2026-10-08 ; estimation Retail API rafraîchie le 2026-10-08 : postes chiffrés ≈ 18,3–26,8 € ; budget annuel 2026 à configurer après vérification de la devise et de l'existant | 2026-10-08 |
 | Ressources Azure créées pour les preuves ([inventaire](docs/plan/preuves/inventaires-azure.md)) | Aucune créée par Luna ; inventaire de référence à capturer avant la première création | 2026-10-07 |
 | Organisation / projet Azure DevOps de test | — | — |
 | Groupes Entra (`sg-shop-sql-admins`) et Azure DevOps (« Shop Release Approvers ») | — | — |
