@@ -5,7 +5,7 @@ diff --git a/core/infra/main.prd.bicepparam b/core/infra/main.prd.bicepparam
  param logMain = {
    deploy: true
    name: 'log-shop-main-prd'
-   location: 'northeurope'
+   location: 'francecentral'
 -  dataRetentionDays: 90
 +  dataRetentionDays: 120
    dailyQuotaGb: '1'

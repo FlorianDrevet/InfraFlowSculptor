@@ -10,10 +10,10 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `BLOQUE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
-| **Verrou** | Azure SQL `GP_S_Gen5_1` est bloqué par une restriction de provisionnement en North Europe |
+| **Verrou** | Aucun — disponibilité France Central vérifiée le 2026-10-15 ; exécution de la recette restante |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
 | **Dernière mise à jour** | 2026-10-08 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
@@ -51,7 +51,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 | Élément | État | Depuis |
 |---|---|---|
 | Abonnements Azure de test (preuves) | — (souscription CLI par défaut identique au snapshot du 2026-10-08 ; contrôles région, fournisseurs et SKU France Central passés le 2026-10-15 ; contrôle d'accès restant) | 2026-10-15 |
-| Plafond de dépense et estimation actualisée des preuves ([verrou](docs/plan/recettes/01-preuves.md#0-verrou-de-coût-et-préflight-bloquants)) | Budget de souscription préexistant : 200 EUR/mois ; coût réel au 2026-10-15 : 0,430301 EUR, prévision non retournée ; alertes 80 % réel / 100 % prévision actives. Six budgets de groupes de ressources à 200 EUR/mois aussi listés. Sous-total France Central des postes chiffrés : 6,75–30,17 EUR, hors coûts annexes et dépassement de crédits ; plafond et estimation à confirmer. Aucun budget créé ou modifié par Luna | 2026-10-15 |
+| Plafond de dépense et estimation actualisée des preuves ([verrou](docs/plan/recettes/01-preuves.md#0-verrou-de-coût-et-préflight-bloquants)) | Validation utilisateur du 2026-10-15 : plafond préexistant de 200 EUR/mois et sous-total France Central de 6,75–30,17 EUR pour les seuls postes chiffrés. Coût réel au 2026-10-15 : 0,430301 EUR, prévision non retournée ; alertes 80 % réel / 100 % prévision actives. Six budgets de groupes de ressources à 200 EUR/mois aussi listés. Coûts annexes et dépassements de crédits non inclus et à vérifier avant tout déploiement. Aucun budget créé ou modifié par Luna | 2026-10-15 |
 | Ressources Azure créées pour les preuves ([inventaire](docs/plan/preuves/inventaires-azure.md)) | Aucune créée par Luna ; inventaire de référence capturé le 2026-10-08 (124 ressources, 16 groupes, 0 pile, 4 attributions de rôle). IDs exacts conservés hors dépôt dans `%LOCALAPPDATA%\InfraFlowSculptor\P08\baseline-20261008.json` | 2026-10-08 |
 | Organisation / projet Azure DevOps de test | — | — |
 | Groupes Entra (`sg-shop-sql-admins`) et Azure DevOps (« Shop Release Approvers ») | — | — |
@@ -70,4 +70,4 @@ Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 
 ## Questions pour Claude
 
-Le préflight du 2026-10-08 a retourné une restriction de provisionnement pour SQL serverless `GP_S_Gen5_1` en North Europe ; aucune ressource n'a été déployée. Le 2026-10-15, l'utilisateur a fixé France Central (`francecentral`) comme région unique. Les contrôles en lecture seule de région, des huit fournisseurs/types et du SKU `GP_S_Gen5_1` réussissent dans la souscription par défaut, identique au snapshot local du 2026-10-08 ; l'image témoin locale fait 446 Mo. Le budget de souscription est toujours à 200 EUR/mois, coût réel retourné 0,430301 EUR, prévision absente et alertes actives ; six budgets de groupes de ressources à 200 EUR/mois sont aussi listés. Les tarifs Retail API donnent 6,75–30,17 EUR pour les seuls postes chiffrés ; coûts annexes et crédits gratuits restent à vérifier. Le plafond préexistant et cette estimation actualisée doivent être explicitement confirmés avant de reprendre P-08. Aucun déploiement Azure n'a eu lieu. Si un contrôle restant échoue, arrêter sans repli de région ni changement de SKU.
+Le préflight du 2026-10-08 a retourné une restriction de provisionnement pour SQL serverless `GP_S_Gen5_1` en North Europe ; aucune ressource n'a été déployée. Le 2026-10-15, l'utilisateur a fixé France Central (`francecentral`) comme région unique et confirmé le plafond préexistant de 200 EUR/mois ainsi que le sous-total de 6,75–30,17 EUR pour les postes chiffrés. Les contrôles en lecture seule de région, des huit fournisseurs/types et du SKU `GP_S_Gen5_1` réussissent dans la souscription par défaut, identique au snapshot local du 2026-10-08 ; l'image témoin locale fait 446 Mo. Le coût réel retourné était de 0,430301 EUR, la prévision absente et les alertes actives ; six budgets de groupes de ressources à 200 EUR/mois sont aussi listés. Les coûts annexes et crédits gratuits restent à vérifier avant tout déploiement. Aucun déploiement Azure n'a eu lieu. Si un contrôle restant échoue, arrêter sans repli de région ni changement de SKU.

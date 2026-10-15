@@ -5,7 +5,7 @@ Describe "Outils de sortie de référence" {
         $script:determinismPath = Join-Path $script:repoRoot "reference/tools/Test-ReferenceDeterminism.ps1"
     }
 
-    It "utilise North Europe pour toutes les cibles du pilote" {
+    It "utilise France Central pour toutes les cibles du pilote" {
         $pilotRoot = Join-Path $script:repoRoot "reference/pilot/bicep-azdo"
         $targetFiles = @(
             Get-ChildItem -LiteralPath $pilotRoot -Filter "*.bicepparam" -File -Recurse
@@ -15,27 +15,38 @@ Describe "Outils de sortie de référence" {
         $targetFiles.Count | Should -BeGreaterThan 0
         foreach ($targetFile in $targetFiles) {
             $content = [IO.File]::ReadAllText($targetFile.FullName)
-            $content | Should -Not -Match "(?i)francecentral"
-            $content | Should -Match "(?i)northeurope"
+            $content | Should -Not -Match "(?i)northeurope|westeurope"
+            if ($targetFile.Extension -eq '.json') {
+                ($content | ConvertFrom-Json).location | Should -Be 'francecentral'
+            }
+            else {
+                $locations = [regex]::Matches($content, "(?im)^\s*location:\s*'(?<region>[^']+)'\s*$")
+                $locations.Count | Should -BeGreaterThan 0
+                @($locations | Where-Object { $_.Groups['region'].Value -ne 'francecentral' }).Count | Should -Be 0
+            }
         }
 
         $allPilotFiles = @(Get-ChildItem -LiteralPath $pilotRoot -File -Recurse -Force)
         foreach ($pilotFile in $allPilotFiles) {
-            [IO.File]::ReadAllText($pilotFile.FullName) | Should -Not -Match "(?i)francecentral"
+            [IO.File]::ReadAllText($pilotFile.FullName) | Should -Not -Match "(?i)northeurope|westeurope"
         }
 
         $installPipeline = [IO.File]::ReadAllText((Join-Path $pilotRoot ".ifs/install/install.pipeline.yml"))
-        $installPipeline | Should -Match "(?i)--location northeurope"
-        $installPipeline | Should -Not -Match "(?i)francecentral"
+        $installLocations = [regex]::Matches($installPipeline, '(?i)--location\s+francecentral')
+        $installLocations.Count | Should -Be 3
     }
 
-    It "garde les overlays de preuve en North Europe" {
+    It "garde les overlays de preuve en France Central" {
         $revisionRoot = Join-Path $script:repoRoot "reference/pilot/revisions"
         $patchFiles = @(Get-ChildItem -LiteralPath $revisionRoot -Filter "changes.patch" -File -Recurse)
 
         $patchFiles.Count | Should -BeGreaterThan 0
         foreach ($patchFile in $patchFiles) {
-            [IO.File]::ReadAllText($patchFile.FullName) | Should -Not -Match "(?i)francecentral"
+            $content = [IO.File]::ReadAllText($patchFile.FullName)
+            $content | Should -Not -Match "(?i)northeurope|westeurope"
+            foreach ($locationLine in [regex]::Matches($content, "(?im)^[ +-]\s*location:\s*'(?<region>[^']+)'\s*$")) {
+                $locationLine.Groups['region'].Value | Should -Be 'francecentral'
+            }
         }
     }
 

@@ -4,13 +4,13 @@ using 'main.bicep'
 param target = {
   code: 'prd'
   subscriptionId: '<B>'
-  location: 'northeurope'
+  location: 'francecentral'
 }
 
 param resourceGroups = {
   main: {
     name: 'rg-shop-orders-main-prd'
-    location: 'northeurope'
+    location: 'francecentral'
     tags: {
       costCenter: 'ecommerce'
       'ifs-project': 'shop'
@@ -55,7 +55,7 @@ param externalResources = {
 param apiIdentity = {
   deploy: true
   name: 'id-shop-api-prd'
-  location: 'northeurope'
+  location: 'francecentral'
   tags: {
     costCenter: 'ecommerce'
     'ifs-project': 'shop'
@@ -68,7 +68,7 @@ param apiIdentity = {
 param caeMain = {
   deploy: true
   name: 'cae-shop-main-prd'
-  location: 'northeurope'
+  location: 'francecentral'
   internal: false
   zoneRedundant: true
   publicNetworkAccess: 'Enabled'
@@ -93,7 +93,7 @@ param caeMain = {
 param caApi = {
   deploy: true
   name: 'ca-shop-api-prd'
-  location: 'northeurope'
+  location: 'francecentral'
   image: ''
   cpu: '1'
   memory: '2Gi'

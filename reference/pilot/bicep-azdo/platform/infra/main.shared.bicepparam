@@ -4,13 +4,13 @@ using 'main.bicep'
 param target = {
   code: 'shared'
   subscriptionId: '<C>'
-  location: 'northeurope'
+  location: 'francecentral'
 }
 
 param resourceGroups = {
   main: {
     name: 'rg-shop-platform-main-shared'
-    location: 'northeurope'
+    location: 'francecentral'
     tags: {
       costCenter: 'ecommerce'
       'ifs-project': 'shop'
@@ -24,7 +24,7 @@ param resourceGroups = {
 param acrMain = {
   deploy: true
   name: 'crshopmainshared'
-  location: 'northeurope'
+  location: 'francecentral'
   acrSku: 'Standard'
   adminUserEnabled: false
   publicNetworkAccess: 'Enabled'

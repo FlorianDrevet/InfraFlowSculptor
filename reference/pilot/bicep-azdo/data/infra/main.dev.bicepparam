@@ -4,13 +4,13 @@ using 'main.bicep'
 param target = {
   code: 'dev'
   subscriptionId: '<A>'
-  location: 'northeurope'
+  location: 'francecentral'
 }
 
 param resourceGroups = {
   main: {
     name: 'rg-shop-data-main-dev'
-    location: 'northeurope'
+    location: 'francecentral'
     tags: {
       costCenter: 'ecommerce'
       'ifs-project': 'shop'
@@ -30,7 +30,7 @@ param coreWorkspace = {
 param sqlOrders = {
   deploy: true
   name: 'sql-shop-orders-dev'
-  location: 'northeurope'
+  location: 'francecentral'
   administratorGroupName: 'sg-shop-sql-admins'
   administratorGroupObjectId: '<SQL_ADMIN_GROUP_OBJECT_ID_DEV>'
   publicNetworkAccess: 'Enabled'

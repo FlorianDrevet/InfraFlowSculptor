@@ -3,6 +3,7 @@ Describe 'Profil de coût de publication P-08' {
         $script:repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
         $script:proofToolsPath = Join-Path $script:repoRoot 'tools/proofs/ProofTools.psm1'
         $script:pilotRoot = Join-Path $script:repoRoot 'reference/pilot/bicep-azdo'
+        $script:azExecutable = (Get-Command -Name az.cmd -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
         $script:profilePaths = @(
             'core/infra/main.dev.bicepparam'
             'core/infra/main.prd.bicepparam'
@@ -89,7 +90,8 @@ Describe 'Profil de coût de publication P-08' {
                     [IO.File]::ReadAllText($file.FullName)
                 }
             ) -join "`n"
-            $profileText | Should -Not -Match 'francecentral'
+            $profileText | Should -Match 'francecentral'
+            $profileText | Should -Not -Match '(?i)northeurope|westeurope'
             $profileText | Should -Not -Match "databaseSkuName: 'GP_Gen5_2'"
             $profileText | Should -Not -Match "acrSku: 'Standard'"
             $changes.Count | Should -BeGreaterThan 0
@@ -329,11 +331,69 @@ Describe 'Profil de coût de publication P-08' {
             $data | Should -Match 'useFreeLimit: false'
             $orders | Should -Match 'zoneRedundant: false'
             $orders | Should -Match "maxReplicas: $ExpectedMaxReplicas"
+
+            $regionalFiles = @(Get-ChildItem -LiteralPath $CloneRoot -File -Recurse -Force | Where-Object {
+                $_.Extension -eq '.bicepparam' -or $_.Name -match '^release\..+\.json$'
+            })
+            $regionalFiles.Count | Should -Be 14
+            foreach ($regionalFile in $regionalFiles) {
+                $content = [IO.File]::ReadAllText($regionalFile.FullName)
+                $content | Should -Not -Match '(?i)northeurope|westeurope'
+                if ($regionalFile.Name -match '^release\..+\.json$') {
+                    ($content | ConvertFrom-Json).location | Should -Be 'francecentral'
+                }
+                else {
+                    $locations = [regex]::Matches($content, "(?im)^\s*location:\s*'(?<region>[^']+)'\s*$")
+                    $locations.Count | Should -BeGreaterThan 0
+                    @($locations | Where-Object { $_.Groups['region'].Value -ne 'francecentral' }).Count | Should -Be 0
+                }
+            }
+
+            $installPipeline = [IO.File]::ReadAllText((Join-Path $CloneRoot '.ifs/install/install.pipeline.yml'))
+            [regex]::Matches($installPipeline, '(?i)--location\s+francecentral').Count | Should -Be 3
+            $profileFiles = @(Get-ChildItem -LiteralPath $CloneRoot -File -Recurse -Force | Where-Object { $_.Extension -in @('.bicep', '.bicepparam') })
+            $profileText = @($profileFiles | ForEach-Object { [IO.File]::ReadAllText($_.FullName) }) -join "`n"
+            $profileText | Should -Not -Match "databaseSkuName: 'GP_Gen5_2'"
+            $profileText | Should -Not -Match "acrSku: 'Standard'"
+        }
+
+        function Assert-PublishedCostProfileBicep {
+            param([Parameter(Mandatory)][string] $CloneRoot)
+
+            $components = @{
+                core = @('dev', 'prd')
+                data = @('dev', 'prd')
+                platform = @('shared')
+                orders = @('dev', 'prd')
+            }
+            foreach ($component in $components.Keys | Sort-Object) {
+                $infraRoot = Join-Path $CloneRoot "$component/infra"
+                Push-Location $infraRoot
+                try {
+                    $checks = @(
+                        @{ Arguments = @('bicep', 'build', '--file', 'main.bicep', '--stdout'); Description = "$component/main.bicep" }
+                        foreach ($target in $components[$component]) {
+                            @{ Arguments = @('bicep', 'build-params', '--file', "main.$target.bicepparam", '--stdout'); Description = "$component/main.$target.bicepparam" }
+                        }
+                    )
+                    foreach ($check in $checks) {
+                        $arguments = @($check.Arguments)
+                        $output = @(& $script:azExecutable @arguments 2>&1)
+                        $exitCode = $LASTEXITCODE
+                        $diagnostics = @($output | Where-Object { "$_" -notmatch '^WARNING: A new Bicep release is available:' })
+                        $text = $diagnostics -join [Environment]::NewLine
+                        if ($exitCode -ne 0) { throw "$($check.Description) a échoué (code $exitCode) :`n$text" }
+                        if ($text -match '(?im)(^|\s)warning\b|BCP\d{3}') { throw "$($check.Description) a produit un avertissement :`n$text" }
+                    }
+                }
+                finally { Pop-Location }
+            }
         }
 
         try {
             $p2Clone = New-PublishedCostProfileClone
             Assert-PublishedCostProfile -CloneRoot $p2Clone
+            Assert-PublishedCostProfileBicep -CloneRoot $p2Clone
             Apply-PublishedCostProfileRevision -CloneRoot $p2Clone -Revision 'p2'
             Assert-PublishedCostProfile -CloneRoot $p2Clone
             $p2Manifest = Get-Content -LiteralPath (Join-Path $p2Clone '.ifs/manifest.json') -Raw | ConvertFrom-Json
