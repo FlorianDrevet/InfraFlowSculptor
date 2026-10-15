@@ -34,6 +34,7 @@ Describe "Outils de sortie de référence" {
         $installPipeline = [IO.File]::ReadAllText((Join-Path $pilotRoot ".ifs/install/install.pipeline.yml"))
         $installLocations = [regex]::Matches($installPipeline, '(?i)--location\s+francecentral')
         $installLocations.Count | Should -Be 3
+        [regex]::Matches($installPipeline, '(?m)^\s+BUILD_BUILDID:\s+\$\(Build\.BuildId\)\s*$').Count | Should -Be 2
     }
 
     It "garde les overlays de preuve en France Central" {

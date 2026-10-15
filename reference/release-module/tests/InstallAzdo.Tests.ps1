@@ -79,7 +79,7 @@ Describe 'Finalisation du kit Azure DevOps' {
             }
             if ($path -match 'build/builds/1001') {
                 $global:IFS_ADO_CURRENT_BUILD_READS++
-                return [pscustomobject]@{ queue = [pscustomobject]@{ id = 41; name = 'Azure Pipelines' } }
+                return [ordered]@{ queue = [ordered]@{ id = 41; name = 'Azure Pipelines' } }
             }
             if ($path -match 'build/definitions') { return [pscustomobject]@{ value = $global:IFS_ADO_DEFINITIONS } }
             if ($path -match 'serviceendpoint/endpoints') { return [pscustomobject]@{ value = $global:IFS_ADO_ENDPOINTS } }

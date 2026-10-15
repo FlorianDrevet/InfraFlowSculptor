@@ -15,7 +15,7 @@
     },
     {
       "path": ".ifs/install/install.pipeline.yml",
-      "sha256": "55823a9e309aa0bd88293a340963bda1ecc946ed4a49b109689dbaf73c665755"
+      "sha256": "a4dc90ea7758c94a014166cc59151c5763535565bc7ce864a080ef5d47e2f0dd"
     },
     {
       "path": ".ifs/install/readiness.bicep",
@@ -27,7 +27,7 @@
     },
     {
       "path": ".ifs/install/scripts/Install-Azdo.ps1",
-      "sha256": "956e038b992aff5138b91ae2faa11421e0159474a20f8adce3df32d168d5141d"
+      "sha256": "92aec3e83c6c26f2fca13e0c14dcd13bb7e56b6f1b539972873e531aa9c795dc"
     },
     {
       "path": ".ifs/pins.json",

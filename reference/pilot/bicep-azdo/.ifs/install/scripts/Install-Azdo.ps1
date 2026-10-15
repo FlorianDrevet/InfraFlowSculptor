@@ -35,6 +35,15 @@ function Get-IfsAdoValue {
     return @($Response)
 }
 
+function Get-IfsAdoProperty {
+    param([AllowNull()] [object] $Object, [Parameter(Mandatory)] [string] $Name)
+    if ($null -eq $Object) { return $null }
+    if ($Object -is [Collections.IDictionary]) { return $Object[$Name] }
+    $property = $Object.PSObject.Properties[$Name]
+    if ($null -eq $property) { return $null }
+    return $property.Value
+}
+
 function Invoke-IfsAdoApi {
     [CmdletBinding()]
     param(
@@ -482,10 +491,12 @@ $queue = @($queues | Where-Object { $_.name -match 'Azure Pipelines|Hosted' } | 
 if ($queue.Count -eq 0) { $queue = @($queues | Select-Object -First 1) }
 if ($queue.Count -eq 0 -and $env:BUILD_BUILDID -match '^\d+$') {
     $currentBuild = Invoke-IfsAdoApi -Path "build/builds/$($env:BUILD_BUILDID)?api-version=$script:ApiVersion"
-    $currentQueue = if ($null -ne $currentBuild -and $currentBuild.PSObject.Properties['queue']) { $currentBuild.queue } else { $null }
-    if ($null -ne $currentQueue -and $currentQueue.PSObject.Properties['id'] -and [int]$currentQueue.id -gt 0) {
+    $currentQueue = Get-IfsAdoProperty -Object $currentBuild -Name 'queue'
+    $currentQueueId = Get-IfsAdoProperty -Object $currentQueue -Name 'id'
+    if ($null -ne $currentQueue -and $null -ne $currentQueueId -and [int]$currentQueueId -gt 0) {
         $queue = @($currentQueue)
-        Write-Information -MessageData ("File d'agents derivee du run courant : {0}." -f [string]$currentQueue.name) -InformationAction Continue
+        $currentQueueName = Get-IfsAdoProperty -Object $currentQueue -Name 'name'
+        Write-Information -MessageData ("File d'agents derivee du run courant : {0}." -f [string]$currentQueueName) -InformationAction Continue
     }
 }
 if ($queue.Count -eq 0) { throw 'Aucune file d''agents Azure DevOps disponible dans ce projet.' }
