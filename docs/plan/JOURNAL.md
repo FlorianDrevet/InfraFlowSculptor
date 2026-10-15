@@ -40,3 +40,4 @@
 | 2026-10-07 13:46 | Claude | verrou `R-02` levé | R-02-revue.md |
 | 2026-10-07 16:29 | Luna | `P-07` terminée | commit `1d6f1be` |
 | 2026-10-07 16:29 | Luna | `P-08` attend une recette de l'utilisateur |  |
+| 2026-10-15 11:45 | Luna | `P-08` attend une recette de l'utilisateur |  |

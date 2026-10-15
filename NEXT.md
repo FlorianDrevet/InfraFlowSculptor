@@ -10,12 +10,12 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `EN_COURS` |
+| **Statut** | `EN_ATTENTE_DE_RECETTE` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
 | **Verrou** | Aucun — disponibilité France Central vérifiée le 2026-10-15 ; exécution de la recette restante |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
-| **Dernière mise à jour** | 2026-10-08 — Luna |
+| **Dernière mise à jour** | 2026-10-15 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
 résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question ci-dessous).
 
@@ -65,6 +65,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 - S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
 - S-17 — sur un clone neuf, suivre [README — Démarrer](README.md#démarrer-windows) jusqu'à « Bonjour Alice Martin ». Les prérequis passent ; le démarrage du clone reste à vérifier quand les ports fixes 4200, 8080, 5257 et 3000 seront libres, car l'AppHost de travail reste actif.
+- P-08 — exécuter la [recette des preuves](docs/plan/recettes/01-preuves.md) en France Central, après le contrôle du coût complet et de l'inventaire décrit au § 0 ; consigner les résultats et captures après chaque run. Aucun déploiement n'a encore été effectué.
 Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.
 
