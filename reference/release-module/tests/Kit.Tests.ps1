@@ -554,8 +554,8 @@ Describe 'Kit installation P-05' {
 
         $ciTemplate | Should -Be '.ifs/templates/app-ci.yml'
         $releaseTemplate | Should -Be '.ifs/templates/app-release.yml'
-        $ciPipeline | Should -Match ("template:\s*" + [regex]::Escape($ciTemplate))
-        $releasePipeline | Should -Match ("template:\s*" + [regex]::Escape($releaseTemplate))
+        $ciPipeline | Should -Match ("template:\s*/" + [regex]::Escape($ciTemplate))
+        $releasePipeline | Should -Match ("template:\s*/" + [regex]::Escape($releaseTemplate))
         $ciPipeline | Should -Match 'registryServiceConnection: ifs-shop-shared-app'
     }
 
