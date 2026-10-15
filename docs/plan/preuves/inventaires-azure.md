@@ -23,6 +23,10 @@ de l'inventaire de référence.
 - Tarifs Retail API France Central relevés le 2026-10-15 : SQL serverless 0,5739 EUR/vCore-h ; ACR Basic 0,1466 EUR/jour ; ingestion Log Analytics 2,4287 EUR/Go au-delà des 5 Go gratuits ; rétention Log Analytics 0,1056 EUR/Go-mois ; stockage de données SQL General Purpose 0,1265 EUR/Go-mois. Le sous-total chiffré est 6,75–30,17 EUR ; voir la [recette § 0.2 bis](../recettes/01-preuves.md#02-bis-estimation-france-central-retail-api-relevée-le-2026-10-15). Les coûts annexes, l'usage des crédits et le coût actuel de la souscription restent inconnus ; l'estimation et le plafond de 200 EUR attendent confirmation.
 - Aucun déploiement, groupe, rôle ou autre changement Azure n'a eu lieu pendant ces contrôles.
 - Les 124 ressources, 16 groupes et 4 attributions du snapshot du 2026-10-08 restent l'inventaire de référence ; aucune ressource n'a été créée par Luna.
+- Inventaire exact avant toute écriture Resource Manager capturé le `2026-10-15T12:29:09Z` : 133 ressources, 16 groupes, 0 pile de souscription, 28 attributions de rôle et 7 budgets. Les IDs sont conservés hors dépôt dans `%LOCALAPPDATA%\InfraFlowSculptor\P08\baseline-20261015T1229Z.json` ; le snapshot du 2026-10-08 reste inchangé.
+- Les noms globaux `kv-shop42-main-dev/prd`, `sql-shop42-orders-dev/prd`, `crshop42mainshared` et `stifsshop42dev/prd/shared` sont disponibles. Le contrôle SQL a été fait par l’action officielle `Microsoft.Sql/checkNameAvailability`, car `az sql server check-name` n’existe pas dans l’Azure CLI installé.
+- Les vues de coût divergent au contrôle du 2026-10-15. L’API Usage donne 70,840618 EUR de coût réel du 1er au 14 octobre ; l’API Forecast donne 103,835293 EUR du 15 au 31, soit 174,675911 EUR projetés pour octobre. L’API Usage attribue notamment 40,901084 EUR à Azure Container Apps, 12,033698 EUR à SQL Database, 6,577436 EUR à Log Analytics et 4,559451 EUR à Container Registry. L’objet budget `budget-sandbox-monthly` indique toujours `currentSpend=0,430301 EUR`, mais retourne `forecastSpend=235,765571 EUR` pour un budget de 200 EUR/mois. Aucun des deux résultats ne permet de garantir le plafond. Avec le haut du sous-total pilote de 30,17 EUR, le calcul Usage/Forecast atteint environ 204,85 EUR et celui de l’objet budget 265,94 EUR, hors frais annexes encore non chiffrés. Décision opérationnelle : ne pas créer de ressource Azure et ne pas lancer de pipeline d’installation avant réconciliation et confirmation d’un plafond compatible.
+- Aucun groupe de ressources, rôle Azure, identité managée, registre, coffre, serveur SQL, espace Log Analytics ou pile n’a été créé par Luna. Les préparatifs Azure DevOps et Entra sont consignés dans `NEXT.md` et n’appartiennent pas à cet inventaire Resource Manager.
 
 ## Inventaire de référence avant création
 
@@ -33,6 +37,7 @@ Un ID présent ici est préexistant et ne doit jamais être supprimé. Vérifier
 | Capture UTC | Jeu / portée | Type d'objet | ID exact | Groupe / portée parente | Notes |
 |---|---|---|---|---|---|
 | 2026-10-08T06:31:45Z | Préflight P-08 initial | Ressources, groupes, piles, attributions de rôle | IDs exacts dans le snapshot local mentionné ci-dessus | Souscription de preuve | 124 ressources, 16 groupes, 0 pile, 4 attributions ; ne pas supprimer ces éléments |
+| 2026-10-15T12:29:09Z | P-08 avant toute écriture Azure | Ressources, groupes, piles, attributions de rôle, budgets | IDs exacts dans `baseline-20261015T1229Z.json` hors dépôt | Souscription de preuve | 133 ressources, 16 groupes, 0 pile, 28 attributions, 7 budgets ; inventaire exact préexistant |
 
 ## Ressources créées par Luna
 
@@ -62,6 +67,7 @@ la procédure d'urgence ci-dessous.
 |---|---|---:|---:|---:|---|---|
 | 2026-10-08 | Préflight P-08 initial | 0,4303 EUR | Non retournée par la commande budget | 200 EUR/mois | Snapshot local du 2026-10-08 | Aucun déploiement ; arrêt sur la restriction SQL en North Europe |
 | 2026-10-15T09:10Z | Préflight P-08 France Central, lecture seule | 0,430301 EUR | Non retournée | 200 EUR/mois préexistant, confirmation de l'estimation France Central en attente | Souscription CLI par défaut, identique au snapshot privé | Région, fournisseurs, SKU et budget consultés ; aucun changement Azure |
+| 2026-10-15 | P-08, coût et noms avant déploiement | 70,840618 EUR (API Usage) ; objet budget : 0,430301 EUR | 174,675911 EUR (API Forecast) ; objet budget : 235,765571 EUR | 200 EUR/mois | Snapshot exact du 2026-10-15T12:29:09Z ; aucun ID nouveau | Vues de coût incohérentes ; ajout du sous-total pilote haut de 30,17 EUR porte Usage/Forecast à 204,85 EUR et le calcul du budget à 265,94 EUR, hors frais annexes. Arrêt avant toute écriture Azure ; aucune ressource créée par Luna |
 
 ## Nettoyage d'urgence si le seuil de coût est atteint
 

@@ -41,3 +41,4 @@
 | 2026-10-07 16:29 | Luna | `P-07` terminée | commit `1d6f1be` |
 | 2026-10-07 16:29 | Luna | `P-08` attend une recette de l'utilisateur |  |
 | 2026-10-15 11:45 | Luna | `P-08` attend une recette de l'utilisateur |  |
+| 2026-10-15 14:08 | Luna | `P-08` reprise sur résultats de recette transmis par l'utilisateur |  |
