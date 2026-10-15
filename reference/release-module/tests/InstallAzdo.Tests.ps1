@@ -158,6 +158,18 @@ Describe 'Finalisation du kit Azure DevOps' {
         [regex]::Matches($pipeline, '(?m)^\s+BUILD_DEFINITIONID:\s+\$\(System\.DefinitionId\)\s*$').Count | Should -Be 2
     }
 
+    It 'lit les groupes de variables avec la portee du projet Azure DevOps' {
+        $installer = Get-Content -LiteralPath $script:installScript -Raw
+        [regex]::Matches($installer, 'Invoke-IfsAdoApi -Path "distributedtask/variablegroups\?groupName=').Count | Should -Be 2
+    }
+
+    It 'ignore une definition geree qui ne contient pas de description' {
+        $global:IFS_ADO_DEFINITIONS += [pscustomobject]@{ id = 203; name = 'shop · test · infra · CI'; path = '\shop\test' }
+
+        { & $script:installScript -Phase Finalize -RepositoryPath $script:tempRoot } | Should -Throw '*Shop Release Approvers*introuvable*'
+        $global:IFS_ADO_PATCHES.Count | Should -BeGreaterThan 0
+    }
+
     It 'utilise la file du run courant si le projet ne renvoie aucune file' {
         $global:IFS_ADO_FINALIZE_MODE = 'EmptyQueues'
 

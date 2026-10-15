@@ -171,8 +171,9 @@ function Set-IfsEnvironment {
         return $environment
     }
     $current = $environment[0]
-    if ([string]$current.description -notmatch [regex]::Escape($script:OwnerMarker)) { throw "L'environnement '$Name' existe sans marque de propriete IFS." }
-    $match = [regex]::Match([string]$current.description, 'ifs-kit-revision:\s*(\d+)')
+    $currentDescription = [string](Get-IfsAdoProperty -Object $current -Name 'description')
+    if ($currentDescription -notmatch [regex]::Escape($script:OwnerMarker)) { throw "L'environnement '$Name' existe sans marque de propriete IFS." }
+    $match = [regex]::Match($currentDescription, 'ifs-kit-revision:\s*(\d+)')
     if (-not $match.Success) { throw "Revision de kit invalide sur l'environnement '$Name'." }
     if ([int]$match.Groups[1].Value -gt $Revision) { throw "Le kit revision $Revision est plus ancien que l'environnement '$Name'." }
     if ([int]$match.Groups[1].Value -lt $Revision) {
@@ -212,8 +213,9 @@ function Set-IfsBuildDefinition {
         return $Definition
     }
     $current = Invoke-IfsAdoApi -Path "build/definitions/$($existing[0].id)?api-version=$script:ApiVersion"
-    if ([string]$current.description -notmatch [regex]::Escape($script:OwnerMarker)) { throw "La definition '$($Definition.Name)' existe sans marque IFS." }
-    $revision = [regex]::Match([string]$current.description, 'ifs-kit-revision:\s*(\d+)')
+    $currentDescription = [string](Get-IfsAdoProperty -Object $current -Name 'description')
+    if ($currentDescription -notmatch [regex]::Escape($script:OwnerMarker)) { throw "La definition '$($Definition.Name)' existe sans marque IFS." }
+    $revision = [regex]::Match($currentDescription, 'ifs-kit-revision:\s*(\d+)')
     if (-not $revision.Success) { throw "La definition '$($Definition.Name)' ne porte pas de revision de kit." }
     if ([int]$revision.Groups[1].Value -gt [int]($Definition.Description -replace '.*ifs-kit-revision:\s*', '')) {
         throw "Le kit est plus ancien que la definition '$($Definition.Name)'."
@@ -237,7 +239,7 @@ function Set-IfsBuildDefinition {
 function Set-IfsVariableGroup {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param([Parameter(Mandatory)] [string] $Name, [Parameter(Mandatory)] [string[]] $ExpectedVariables, [Parameter(Mandatory)] [int] $Revision)
-    $response = Invoke-IfsAdoApi -OrganizationScope -Path "distributedtask/variablegroups?groupName=$([uri]::EscapeDataString($Name))&api-version=$script:ApiVersion"
+    $response = Invoke-IfsAdoApi -Path "distributedtask/variablegroups?groupName=$([uri]::EscapeDataString($Name))&api-version=$script:ApiVersion"
     $groups = @(Get-IfsAdoValue $response | Where-Object { $_.name -eq $Name } | Select-Object -First 1)
     $description = "$($script:OwnerMarker); ifs-kit-revision: $Revision"
     if ($groups.Count -eq 0) {
@@ -258,8 +260,9 @@ function Set-IfsVariableGroup {
         return [pscustomobject]@{ Id = [int]$created.id; Name = $Name; Variables = $variables }
     }
     $current = $groups[0]
-    if ([string]$current.description -notmatch [regex]::Escape($script:OwnerMarker)) { throw "Le groupe '$Name' existe sans marque de propriete IFS." }
-    $revisionMatch = [regex]::Match([string]$current.description, 'ifs-kit-revision:\s*(\d+)')
+    $currentDescription = [string](Get-IfsAdoProperty -Object $current -Name 'description')
+    if ($currentDescription -notmatch [regex]::Escape($script:OwnerMarker)) { throw "Le groupe '$Name' existe sans marque de propriete IFS." }
+    $revisionMatch = [regex]::Match($currentDescription, 'ifs-kit-revision:\s*(\d+)')
     if (-not $revisionMatch.Success) { throw "Revision invalide sur le groupe '$Name'." }
     if ([int]$revisionMatch.Groups[1].Value -gt $Revision) { throw "Le kit est plus ancien que le groupe '$Name'." }
 
@@ -312,8 +315,10 @@ function Get-IfsManagedPipelineId {
     param([Parameter(Mandatory)] [object[]] $CurrentDefinitions, [Parameter(Mandatory)] [string] $ProjectCode)
     $response = Invoke-IfsAdoApi -Path "build/definitions?api-version=$script:ApiVersion"
     $managed = @(Get-IfsAdoValue $response | Where-Object {
-        ([string]$_.path).StartsWith("\$ProjectCode", [StringComparison]::OrdinalIgnoreCase) -and [string]$_.description -match [regex]::Escape($script:OwnerMarker)
-    } | ForEach-Object { [int]$_.id })
+        $definitionPath = [string](Get-IfsAdoProperty -Object $_ -Name 'path')
+        $description = [string](Get-IfsAdoProperty -Object $_ -Name 'description')
+        $definitionPath.StartsWith("\$ProjectCode", [StringComparison]::OrdinalIgnoreCase) -and $description -match [regex]::Escape($script:OwnerMarker)
+    } | ForEach-Object { [int](Get-IfsAdoProperty -Object $_ -Name 'id') })
     $managed += @($CurrentDefinitions | Where-Object {
         $null -ne $_.PSObject.Properties['Id'] -and [int]$_.Id -gt 0
     } | ForEach-Object { [int]$_.Id })
@@ -367,7 +372,7 @@ function Set-IfsFinalEndpointPermission {
                 $failures.Add("Service connection '$($endpointPlan.Name)' introuvable pour retirer l'autorisation de l'installateur.")
                 continue
             }
-            if ([string]$endpoint[0].description -notmatch [regex]::Escape($script:OwnerMarker)) {
+            if ([string](Get-IfsAdoProperty -Object $endpoint[0] -Name 'description') -notmatch [regex]::Escape($script:OwnerMarker)) {
                 $failures.Add("Service connection '$($endpointPlan.Name)' sans marque IFS; autorisation non modifiee.")
                 continue
             }
@@ -554,7 +559,7 @@ if ($Phase -eq 'Prepare') {
         $appEndpoint = @($endpointList | Where-Object { $_.name -eq $appEndpointName } | Select-Object -First 1)
         if ($infraEndpoint.Count -eq 0 -or $appEndpoint.Count -eq 0) { throw "Les service connections du target '$($target.Name)' sont absentes. Relancez azure-setup.ps1." }
         foreach ($endpoint in @($infraEndpoint[0], $appEndpoint[0])) {
-            if ([string]$endpoint.description -notmatch [regex]::Escape($script:OwnerMarker)) { throw "La service connection '$($endpoint.name)' n'est pas geree par IFS." }
+            if ([string](Get-IfsAdoProperty -Object $endpoint -Name 'description') -notmatch [regex]::Escape($script:OwnerMarker)) { throw "La service connection '$($endpoint.name)' n'est pas geree par IFS." }
         }
 
         $infraReleaseIds = @($managedDefinitions | Where-Object { $_.Kind -eq 'RELEASE' -and -not $_.IsApp -and $_.Targets.Name -contains $target.Name } | ForEach-Object { [int]$_.Id })
@@ -571,7 +576,7 @@ if ($Phase -eq 'Prepare') {
         $environmentId = [int]$environments[$target.Name].id
         Set-IfsPipelinePermission -ResourceType 'environment' -ResourceId ([string]$environmentId) -AuthorizedPipelineIds (@($infraReleaseIds + $appReleaseIds) | Sort-Object -Unique) -ManagedPipelineIds $allManagedIds
         if ($secretNamesByTarget[$target.Name].Count -gt 0) {
-            $groupsResponse = Invoke-IfsAdoApi -OrganizationScope -Path "distributedtask/variablegroups?groupName=$([uri]::EscapeDataString("ifs-$($model.ProjectCode)-$($target.Name)"))&api-version=$script:ApiVersion"
+            $groupsResponse = Invoke-IfsAdoApi -Path "distributedtask/variablegroups?groupName=$([uri]::EscapeDataString("ifs-$($model.ProjectCode)-$($target.Name)"))&api-version=$script:ApiVersion"
             $groupItem = @(Get-IfsAdoValue $groupsResponse | Where-Object { $_.name -eq "ifs-$($model.ProjectCode)-$($target.Name)" } | Select-Object -First 1)
             $writers = @($managedDefinitions | Where-Object { $_.Component -eq 'core' -and $_.Kind -eq 'RELEASE' -and -not $_.IsApp } | ForEach-Object { [int]$_.Id })
             Set-IfsPipelinePermission -ResourceType 'variablegroup' -ResourceId ([string]$groupItem[0].id) -AuthorizedPipelineIds $writers -ManagedPipelineIds $allManagedIds
@@ -624,7 +629,7 @@ foreach ($target in $model.Targets) {
         $endpointName = "ifs-$($model.ProjectCode)-$($target.Name)$suffix"
         $endpoint = @($endpointList | Where-Object { $_.name -eq $endpointName } | Select-Object -First 1)
         if ($endpoint.Count -eq 0) { throw "Service connection '$endpointName' introuvable en finalisation." }
-        if ([string]$endpoint[0].description -notmatch [regex]::Escape($script:OwnerMarker)) { throw "Service connection '$endpointName' sans marque IFS." }
+        if ([string](Get-IfsAdoProperty -Object $endpoint[0] -Name 'description') -notmatch [regex]::Escape($script:OwnerMarker)) { throw "Service connection '$endpointName' sans marque IFS." }
         $branchSettings = [ordered]@{ displayName = "$($script:OwnerMarker); ifs-kit-revision: $($model.Revision)"; allowedBranches = 'refs/heads/main'; verifyBranchProtection = $true; failOnUnknownProtectionStatus = $true }
         $isApplicationEndpoint = -not [string]::IsNullOrWhiteSpace($suffix)
         $templatePath = Get-IfsRequiredTemplatePath -Target $target.Name -Application:$isApplicationEndpoint
