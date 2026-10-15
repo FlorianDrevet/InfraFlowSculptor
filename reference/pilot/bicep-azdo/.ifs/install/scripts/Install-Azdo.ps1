@@ -465,13 +465,14 @@ function Set-IfsBranchPolicy {
         $_.type.id -eq '0609b952-1397-4640-95ec-e00a01b2c241' -and $_.settings.buildDefinitionId -eq $Definition.Id -and
         @($_.settings.scope | Where-Object { $_.repositoryId -eq $script:RepositoryId -and $_.refName -eq 'refs/heads/main' }).Count -gt 0
     })
-    $marker = "$($script:OwnerMarker); pipeline: $($Definition.Name)"
+    $displayName = "IFS: $($Definition.Name)"
     if ($policies.Count -gt 0) {
         $current = $policies[0]
-        if ([string]$current.settings.message -ne $marker) { throw "La politique de validation pour '$($Definition.Name)' existe sans marque IFS." }
-        $current.settings.filenamePatterns = $FilenamePatterns
-        $current.settings.message = $marker
-        $body = [ordered]@{ id = [int]$current.id; isEnabled = $true; isBlocking = $true; type = $current.type; settings = $current.settings; revision = [int]$current.revision }
+        $currentSettings = Get-IfsAdoProperty -Object $current -Name 'settings'
+        $currentDisplayName = [string](Get-IfsAdoProperty -Object $currentSettings -Name 'displayName')
+        if ($currentDisplayName -ne $displayName) { throw "La politique de validation pour '$($Definition.Name)' existe sans marque IFS." }
+        $currentSettings.filenamePatterns = $FilenamePatterns
+        $body = [ordered]@{ id = [int]$current.id; isEnabled = $true; isBlocking = $true; type = $current.type; settings = $currentSettings; revision = [int]$current.revision }
         if (-not $PSCmdlet.ShouldProcess($Definition.Name, 'mettre a jour la politique Build Validation')) { return }
         $null = Invoke-IfsAdoApi -Method PUT -Path "policy/configurations/$($current.id)?api-version=$script:ApiVersion" -Body $body
         Add-IfsReportEvent -Target $Definition.Component -Name 'Build Validation main' -Status 'mis a jour' -Details $Definition.Name
@@ -483,12 +484,11 @@ function Set-IfsBranchPolicy {
         type = [ordered]@{ id = '0609b952-1397-4640-95ec-e00a01b2c241' }
         settings = [ordered]@{
             buildDefinitionId = [int]$Definition.Id
-            displayName = "IFS: $($Definition.Name)"
+            displayName = $displayName
             manualQueueOnly = $false
             queueOnSourceUpdateOnly = $true
             validDuration = 0
             filenamePatterns = $FilenamePatterns
-            message = $marker
             scope = @([ordered]@{ repositoryId = $script:RepositoryId; refName = 'refs/heads/main'; matchKind = 'Exact' })
         }
     }
