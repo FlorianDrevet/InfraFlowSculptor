@@ -97,6 +97,17 @@ Describe 'Finalisation du kit Azure DevOps' {
             if ($path -match 'serviceendpoint/endpoints') { return [pscustomobject]@{ value = $global:IFS_ADO_ENDPOINTS } }
             if ($path -match 'identities\?') {
                 if ($global:IFS_ADO_FINALIZE_MODE -in @('MissingApprover', 'EmptyQueues', 'MissingBuildQueue')) { return [pscustomobject]@{ value = @() } }
+                if ($global:IFS_ADO_FINALIZE_MODE -eq 'ProjectScopedApprover') {
+                    return [pscustomobject]@{ value = @(
+                        [pscustomobject]@{
+                            id = 'approver-id'
+                            providerDisplayName = '[shop]\Shop Release Approvers'
+                            properties = [pscustomobject]@{
+                                Account = [pscustomobject]@{ '$type' = 'System.String'; '$value' = 'Shop Release Approvers' }
+                            }
+                        }
+                    ) }
+                }
                 if ($global:IFS_ADO_FINALIZE_MODE -eq 'MissingDisplayName') {
                     return [pscustomobject]@{ value = @(
                         [pscustomobject]@{ id = 'foreign-id'; providerDisplayName = 'Unrelated identity' }
@@ -189,6 +200,20 @@ Describe 'Finalisation du kit Azure DevOps' {
 
         { & $script:installScript -Phase Finalize -RepositoryPath $script:tempRoot } | Should -Throw '*simulated check failure*'
         $global:IFS_ADO_PATCHES.Count | Should -BeGreaterThan 0
+        $global:IFS_ADO_CHECK_POSTS.Count | Should -Be 1
+        $approval = [string]$global:IFS_ADO_CHECK_POSTS[0].Body | ConvertFrom-Json
+        $approval.settings.approvers[0].id | Should -Be 'approver-id'
+        $approval.settings.approvers[0].displayName | Should -Be 'Shop Release Approvers'
+    }
+
+    It 'reconnait le nom exact du groupe dans Account quand providerDisplayName est prefixe au projet' {
+        $global:IFS_ADO_FINALIZE_MODE = 'ProjectScopedApprover'
+        $releasePath = Join-Path $script:tempRoot 'core/infra/release.dev.json'
+        $release = Get-Content -LiteralPath $releasePath -Raw | ConvertFrom-Json -AsHashtable
+        $release['protected'] = $true
+        [IO.File]::WriteAllText($releasePath, (ConvertTo-Json $release -Depth 10), [Text.UTF8Encoding]::new($false))
+
+        { & $script:installScript -Phase Finalize -RepositoryPath $script:tempRoot } | Should -Throw '*simulated check failure*'
         $global:IFS_ADO_CHECK_POSTS.Count | Should -Be 1
         $approval = [string]$global:IFS_ADO_CHECK_POSTS[0].Body | ConvertFrom-Json
         $approval.settings.approvers[0].id | Should -Be 'approver-id'

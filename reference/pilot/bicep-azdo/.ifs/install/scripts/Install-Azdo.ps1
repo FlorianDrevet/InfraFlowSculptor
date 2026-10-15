@@ -398,7 +398,9 @@ function Find-IfsIdentity {
     $identityMatches = @(Get-IfsAdoValue $response | Where-Object {
         $identityProviderName = [string](Get-IfsAdoProperty -Object $_ -Name 'providerDisplayName')
         $identityDisplayName = [string](Get-IfsAdoProperty -Object $_ -Name 'displayName')
-        $identityProviderName -eq $DisplayName -or $identityDisplayName -eq $DisplayName
+        $identityProperties = Get-IfsAdoProperty -Object $_ -Name 'properties'
+        $identityAccount = Get-IfsAdoProperty -Object (Get-IfsAdoProperty -Object $identityProperties -Name 'Account') -Name '$value'
+        $identityProviderName -eq $DisplayName -or $identityDisplayName -eq $DisplayName -or [string]$identityAccount -eq $DisplayName
     } | Select-Object -First 1)
     if ($identityMatches.Count -eq 0) { throw "Groupe Azure DevOps '$DisplayName' introuvable. Creez-le ou corrigez son nom avant de relancer." }
     return $identityMatches[0]
@@ -617,6 +619,11 @@ Set-IfsFinalEndpointPermission -ProjectCode $model.ProjectCode -Targets $model.T
 $approver = Find-IfsIdentity -DisplayName 'Shop Release Approvers'
 $approverId = [string](Get-IfsAdoProperty -Object $approver -Name 'id')
 $approverDisplayName = [string](Get-IfsAdoProperty -Object $approver -Name 'displayName')
+if ([string]::IsNullOrWhiteSpace($approverDisplayName)) {
+    $approverProperties = Get-IfsAdoProperty -Object $approver -Name 'properties'
+    $approverAccount = Get-IfsAdoProperty -Object $approverProperties -Name 'Account'
+    $approverDisplayName = [string](Get-IfsAdoProperty -Object $approverAccount -Name '$value')
+}
 if ([string]::IsNullOrWhiteSpace($approverDisplayName)) {
     $approverDisplayName = [string](Get-IfsAdoProperty -Object $approver -Name 'providerDisplayName')
 }
