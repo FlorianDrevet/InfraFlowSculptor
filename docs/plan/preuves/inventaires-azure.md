@@ -7,12 +7,22 @@ de l'inventaire de référence.
 ## État au 2026-10-08
 
 - Souscription de preuve : ID fourni par l'utilisateur lors du préflight, non recopié dans le dépôt.
-- Région cible : `northeurope`.
+- Région cible de ce préflight initial : `northeurope`.
 - Ressources créées par Luna : **aucune**.
 - Inventaire de référence capturé après confirmation du plafond : 124 ressources, 16 groupes, aucune pile de souscription et 4 attributions de rôle.
 - Les IDs exacts sont conservés hors dépôt dans `%LOCALAPPDATA%\InfraFlowSculptor\P08\baseline-20261008.json` pour éviter de publier l'identifiant de souscription. Reprendre une capture avant la première écriture Azure si l'état a changé.
 - Budget préexistant à l'échelle de la souscription : 200 EUR/mois ; dépense réelle affichée ≈ 0,4303 EUR le 2026-10-08. Alertes existantes : réel à 80 %, prévision à 100 %. Aucun budget créé/modifié par Luna.
 - Préflight bloqué : le provisionnement SQL `GP_S_Gen5_1` est restreint en North Europe. Aucune ressource n'a été déployée.
+
+## Décision de région au 2026-10-15
+
+- Région cible des preuves : `francecentral`, selon la décision utilisateur consignée dans [DT-42](../../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure).
+- Préflight en lecture seule du 2026-10-15 : `francecentral` est listée ; les fournisseurs `Microsoft.App`, `Microsoft.Sql`, `Microsoft.ContainerRegistry`, `Microsoft.OperationalInsights`, `Microsoft.Insights`, `Microsoft.KeyVault`, `Microsoft.Storage` et `Microsoft.ManagedIdentity` sont enregistrés et annoncent France Central pour le type de ressource vérifié ; `GP_S_Gen5_1` retourne `Available=True`. Contrôles faits dans la souscription CLI par défaut, dont l'ID correspond au snapshot local de référence.
+- `ifs-witness:local` mesure 446 Mo (`docker image ls`), sous les 10 Go inclus dans ACR Basic.
+- Le budget préexistant `budget-sandbox-monthly` reste à 200 EUR/mois avec les alertes réelles à 80 % et prévisionnelles à 100 % actives. Au contrôle du 2026-10-15, le coût réel retourné était 0,430301 EUR et aucune prévision n'était retournée. La liste montre aussi six budgets de groupes de ressources à 200 EUR/mois chacun ; aucun budget n'a été créé ou modifié.
+- Tarifs Retail API France Central relevés le 2026-10-15 : SQL serverless 0,5739 EUR/vCore-h ; ACR Basic 0,1466 EUR/jour ; ingestion Log Analytics 2,4287 EUR/Go au-delà des 5 Go gratuits ; rétention Log Analytics 0,1056 EUR/Go-mois ; stockage de données SQL General Purpose 0,1265 EUR/Go-mois. Le sous-total chiffré est 6,75–30,17 EUR ; voir la [recette § 0.2 bis](../recettes/01-preuves.md#02-bis-estimation-france-central-retail-api-relevée-le-2026-10-15). Les coûts annexes, l'usage des crédits et le coût actuel de la souscription restent inconnus ; l'estimation et le plafond de 200 EUR attendent confirmation.
+- Aucun déploiement, groupe, rôle ou autre changement Azure n'a eu lieu pendant ces contrôles.
+- Les 124 ressources, 16 groupes et 4 attributions du snapshot du 2026-10-08 restent l'inventaire de référence ; aucune ressource n'a été créée par Luna.
 
 ## Inventaire de référence avant création
 
@@ -51,6 +61,7 @@ la procédure d'urgence ci-dessous.
 | Date UTC | Étape / opération | Coût réel affiché | Prévision affichée | Plafond confirmé | IDs contrôlés | Décision / action |
 |---|---|---:|---:|---:|---|---|
 | 2026-10-08 | Préflight P-08 initial | 0,4303 EUR | Non retournée par la commande budget | 200 EUR/mois | Snapshot local du 2026-10-08 | Aucun déploiement ; arrêt sur la restriction SQL en North Europe |
+| 2026-10-15T09:10Z | Préflight P-08 France Central, lecture seule | 0,430301 EUR | Non retournée | 200 EUR/mois préexistant, confirmation de l'estimation France Central en attente | Souscription CLI par défaut, identique au snapshot privé | Région, fournisseurs, SKU et budget consultés ; aucun changement Azure |
 
 ## Nettoyage d'urgence si le seuil de coût est atteint
 

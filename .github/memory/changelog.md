@@ -26,3 +26,4 @@
 | 2026-10-06 | Luna | S-08 — le fixture d'acceptation tolère les notifications API DCP périmées lorsque `/health` répond; budget Service Bus élargi pour le sidecar SQL à froid. |
 | 2026-10-06 | Luna | S-15 — le job Playwright injecte le secret d'Actions dans le royaume Keycloak jetable pour activer les quatre scénarios authentifiés. |
 | 2026-10-06 | Luna | Documentation — ajout d'un REX débutant Keycloak/Aspire, relié depuis l'index technique et la mémoire auth/build. |
+| 2026-10-15 | Luna | P-08 — région France Central décidée ; préflight de disponibilité 1–3 réussi en lecture seule, tarifs actualisés et budget consulté ; confirmation du plafond/estimation encore requise. |

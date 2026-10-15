@@ -25,13 +25,14 @@
 
 | Cible | Code | Ordre | Abonnement | Région | Protégée | Approbateurs |
 |---|---|---|---|---|---|---|
-| Développement | `dev` | 1 | A | `northeurope` | Non | — |
-| Production | `prd` | 2 | B | `northeurope` | Oui | Groupe Azure DevOps « Shop Release Approvers » |
-| Cible propre de `platform` | `shared` | — | C | `northeurope` | Oui | « Shop Release Approvers » |
+| Développement | `dev` | 1 | A | `francecentral` | Non | — |
+| Production | `prd` | 2 | B | `francecentral` | Oui | Groupe Azure DevOps « Shop Release Approvers » |
+| Cible propre de `platform` | `shared` | — | C | `francecentral` | Oui | « Shop Release Approvers » |
 
 Pour les preuves, A, B et C sont **le même abonnement** ([DT-42](../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure)) :
-les noms diffèrent par cible. Région : `northeurope` uniquement ; si région, SKU ou offre est indisponible, la recette
-s'arrête ([recette § 0](recettes/01-preuves.md#0-verrou-de-coût-et-préflight-bloquants)), sans repli.
+les noms diffèrent par cible. Région unique : `francecentral` pour les ressources Azure régionales ; si l'accès de la
+souscription, un fournisseur, le SKU ou l'offre est indisponible, la recette s'arrête
+([recette § 0](recettes/01-preuves.md#0-verrou-de-coût-et-préflight-bloquants)), sans repli vers une autre région.
 
 ### 1.3 Composants
 

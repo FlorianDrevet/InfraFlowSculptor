@@ -455,10 +455,11 @@ action impossible à réaliser avec les accès déjà ouverts.
 0. **Profil de coût des preuves** ([DT-42](../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure),
    [reference-pilote § 1.6](reference-pilote.md#16-profil-de-coût-des-preuves)), **hors ligne et avant la recette** (à
    faire quand l'utilisateur relance P-08 par `gate.py resume P-08` ; ne pas toucher au statut autrement) :
-   1. Remplacer `francecentral` par `northeurope` dans `reference/pilot/bicep-azdo/**`, y compris le `--location` des
-      What-If d'installation, dans les overlays de révision, dans les fixtures et tests qui l'affirment, puis recalculer
-      `reference/pilot/manifest.example.json`
-      (`reference/tools/Update-ManifestExample.ps1`). Commit `fix(reference): région northeurope des cibles du pilote`.
+   1. Aligner sur `francecentral` tous les champs de région des ressources Azure dans `reference/pilot/bicep-azdo/**`,
+      y compris le `--location` des What-If d'installation, les paramètres Bicep, les fichiers de release, les overlays
+      de révision, les fixtures et les tests qui les affirment. Les objets Azure DevOps et Entra sans région restent
+      inchangés. Recalculer ensuite `reference/pilot/manifest.example.json`
+      (`reference/tools/Update-ManifestExample.ps1`). Commit `fix(reference): région francecentral des cibles du pilote`.
    2. `tools/proofs/Publish-PilotReference.ps1` : appliquer, **à la publication seulement**, le profil du § 1.6 (SKU ACR,
       SKU et paramètres SQL, zone du CAE, réplicas, rétention `appi`, plafond Log Analytics) ; `reference/pilot/` ne reçoit
       que la région. Les propriétés SQL ajoutées passent par `types.bicep`/`main.bicep` **du clone** (module AVM
@@ -468,7 +469,8 @@ action impossible à réaliser avec les accès déjà ouverts.
    3. Tests : `Publish-PilotReference.ps1 -WhatIf` affiche chaque substitution du profil ; Pester publie un clone temporaire,
       applique `p2 → rev3 → rev4 → rev5`, `rev2` et `p3-role` sur un clone **profilé** ; le profil est idempotent et ne
       laisse aucune écriture partielle si une valeur est inattendue ; `bicep build` du clone profilé sans avertissement ;
-      aucune occurrence de `francecentral`, `GP_Gen5_2`, `Standard` (ACR) dans le clone.
+      tous les emplacements Azure du clone valent `francecentral` et aucun emplacement ne vaut `northeurope` ;
+      `GP_Gen5_2` et `Standard` (ACR) sont absents du clone.
 1. Avant toute commande Azure, exiger dans `NEXT.md` un plafond chiffré confirmé, une estimation actualisée et
    l'inventaire de référence. Le feu vert général ne remplace pas ce verrou. Une fois le verrou franchi, exécuter la
    recette dans l'ordre P1, P9, P3, P8, P2, P4, P5, P7, avec un seul jeu Azure à la fois. Après chaque run, capturer les

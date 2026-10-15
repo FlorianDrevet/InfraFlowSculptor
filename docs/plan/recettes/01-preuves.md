@@ -4,14 +4,22 @@
 > P2, P4, P5, P7. Chaque preuve se termine par une capture du run Azure DevOps et une ligne dans
 > [resultats.md](../preuves/resultats.md).
 >
-> **État au 2026-10-08 :** la souscription fournie par l'utilisateur est active et North Europe est la seule région retenue.
-> Aucun projet Azure DevOps ni groupe Entra n'a encore été créé. Le budget mensuel préexistant de 200 EUR à l'échelle
-> de la souscription et sa dépense réelle affichée ont été vérifiés. Aucun budget n'a été créé ou modifié par Luna.
-> Le préflight SQL retourne une restriction de provisionnement pour `GP_S_Gen5_1` en North Europe ; P-08 est bloqué
-> à ce contrôle. Aucune ressource n'a été déployée.
+> **État historique au 2026-10-08 :** le premier préflight a été exécuté en North Europe et a retourné une restriction de
+> provisionnement SQL pour `GP_S_Gen5_1`. Aucun projet Azure DevOps, groupe Entra ou ressource Azure n'a été créé par Luna.
+> Le budget mensuel préexistant de 200 EUR et la dépense réelle affichée ont été vérifiés ; Luna n'a créé ni modifié de
+> budget.
+>
+> **Décision utilisateur du 2026-10-15 :** utiliser France Central (`francecentral`) pour toutes les ressources Azure
+> régionales des preuves, car West Europe est indisponible. Cette région remplace North Europe dans DT-42. Le 2026-10-15,
+> les contrôles de disponibilité 1 à 3 du § 0.3 ont réussi en lecture seule sur la souscription par défaut, qui correspond
+> au snapshot du 2026-10-08. Le budget de souscription préexistant reste à 200 EUR/mois ; le 2026-10-15, le coût réel
+> affiché était 0,4303 EUR et la prévision n'était pas retournée. Le recalcul Retail API donne un sous-total de 6,75 à
+> 30,17 EUR pour les postes chiffrés, mais les coûts annexes et l'usage des crédits gratuits restent à vérifier ; le
+> plafond et cette estimation doivent être explicitement confirmés avant de reprendre P-08. Aucune ressource n'a été
+> déployée.
 >
 > **Stratégie de coût ([DT-42](../../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure)) :** une seule
-> souscription, `northeurope` uniquement, profil minimal ([reference-pilote § 1.6](../reference-pilote.md#16-profil-de-coût-des-preuves)),
+> souscription, `francecentral` pour toutes les ressources Azure régionales, profil minimal ([reference-pilote § 1.6](../reference-pilote.md#16-profil-de-coût-des-preuves)),
 > un jeu de ressources par projet (`shop42`, `shop43`, `shop44`) déployé **après la suppression du précédent**, et suppression
 > de chaque jeu dès sa dernière preuve dépendante ([§ 10](#10-supprimer-les-ressources-azure-et-consigner-les-résultats)).
 > Les assertions de P1, P9, P3, P8, P2, P4, P5 et P7 sont inchangées.
@@ -22,9 +30,11 @@
 
 Ne lancez **aucune** commande Azure (ni création, ni déploiement, ni kit, ni préflight qui crée quoi que ce soit) tant que vous
 n'avez pas : (1) fixé un **plafond de dépense** en euros pour toute la recette ; (2) relu l'estimation du § 0.2
-**actualisée** (relire les tarifs publics du jour, `northeurope`, devise de votre contrat) ; (3) répondu « confirmé » à
-Claude et consigné dans [NEXT.md](../../../NEXT.md) (ligne « Plafond de dépense et estimation ») le plafond, la date et
-l'estimation. Sans cela : statut `BLOQUE`. Un **budget Azure est une alerte différée** (données de coût en retard de
+**actualisée** (relire les tarifs publics du jour pour `francecentral`, dans la devise de votre contrat) ; (3) répondu
+« confirmé » à Claude et consigné dans [NEXT.md](../../../NEXT.md) (ligne « Plafond de dépense et estimation ») le plafond,
+la date et l'estimation. L'estimation North Europe du 2026-10-08 est historique et ne peut pas confirmer le coût France
+Central. Sans plafond et estimation France Central confirmés : statut `BLOQUE`. Un **budget Azure est une alerte différée**
+(données de coût en retard de
 plusieurs heures), **pas un coupe-circuit**. Le contrôle du 2026-10-08 a trouvé un budget mensuel préexistant de 200 EUR
 à l'échelle de la souscription, avec alerte à 80 % du coût réel et à 100 % prévisionnel. Ne pas créer de doublon ni
 modifier ce budget sans nouvelle demande. **Contrôle de coût et d'inventaire** : au démarrage et à la fin de
@@ -42,9 +52,9 @@ le nettoyage d'urgence décrit dans [l'inventaire Azure](../preuves/inventaires-
 créés par Luna, même si toutes les captures ne sont pas encore terminées. Un nom ou un préfixe seul ne prouve pas la
 propriété ; ne jamais exécuter `deleteAll` si une pile ou un groupe contient un élément absent de l'inventaire.
 
-### 0.2 Estimation (ordre de grandeur, tarifs Retail API `northeurope` vérifiés le 2026-10-08)
+### 0.2 Estimation historique (tarifs Retail API `northeurope` vérifiés le 2026-10-08)
 
-Les tarifs unitaires proviennent de l'[API officielle Azure Retail Prices](https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices). Réponse EUR de référence : SQL General Purpose serverless Gen5 à 0,4683 €/vCore-heure, ACR Basic à 0,1466 €/jour, et ingestion Log Analytics à 2,4287 €/Go au-delà des 5 premiers Go gratuits par mois et par compte de facturation. L'estimation ne suppose pas que ce crédit Log Analytics reste disponible : l'usage préexistant du compte est inconnu. Les tarifs non USD de cette API restent des prix de référence ; vérifier la devise de facturation réelle avant de créer le budget.
+Les tarifs unitaires ci-dessous proviennent de l'[API officielle Azure Retail Prices](https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices) et concernent **North Europe uniquement**, au 2026-10-08. Ils sont conservés comme historique et ne sont pas valables pour la décision France Central. Avant toute commande Azure, relire les tarifs de chaque service en `francecentral`, recalculer l'estimation complète et faire confirmer le plafond selon le § 0.1. Référence historique EUR : SQL General Purpose serverless Gen5 à 0,4683 €/vCore-heure, ACR Basic à 0,1466 €/jour, et ingestion Log Analytics à 2,4287 €/Go au-delà des 5 premiers Go gratuits par mois et par compte de facturation. L'estimation ne suppose pas que ce crédit Log Analytics reste disponible : l'usage préexistant du compte est inconnu. Les tarifs non USD de cette API restent des prix de référence ; vérifier la devise de facturation réelle avant de créer le budget.
 Le calcul ci-dessous ne couvre pas le stockage, les sauvegardes, le trafic sortant, les taxes ni les services annexes
 (Key Vault, stockage technique, registre de journaux d'activité) ; il ne constitue donc pas le total de la recette.
 
@@ -56,26 +66,44 @@ Le calcul ci-dessous ne couvre pas le stockage, les sauvegardes, le trafic sorta
 | Log Analytics | Hypothèse : 1 Go/jour/espace, 2 espaces par projet, ≤ 1 jour par projet = 6 Go estimés ; le daily cap peut dépasser sa valeur | ≈ 2,4287 €/Go = **14,6 €** si le crédit mensuel du compte est déjà consommé ; les 5 premiers Go peuvent être gratuits sinon | idem, sans plafond |
 | **Postes chiffrés** | Hypothèses ci-dessus ; hors services annexes | **≈ 18,3 à 26,8 €** selon l'offre SQL gratuite | **≈ 340 € et plus** |
 
-Le montant de 18,3–26,8 € est une estimation des seuls postes chiffrés, avec les hypothèses de durée indiquées ; les
-ressources annexes, le stockage, les sauvegardes, le trafic sortant, les taxes et le dépassement éventuel du plafond Log Analytics s'ajoutent. Le plafond de 1 Go/jour/espace est un garde-fou et peut dépasser sa valeur, il ne garantit pas une facture maximale. Le budget mensuel préexistant de **200 EUR au niveau de la souscription** a été vérifié le 2026-10-08 : alertes configurées à 80 % du coût réel et 100 % prévisionnel ; dépense réelle affichée ≈ 0,4303 EUR. Aucun budget supplémentaire n'a été créé, et aucune alerte n'arrête automatiquement les ressources. Le préflight Azure a bloqué sur SQL serverless `GP_S_Gen5_1`, dont le provisionnement est restreint en North Europe ; ne pas changer de région ou de SKU avant décision. Si l'offre SQL gratuite n'est pas acceptée par l'API, conserver le SQL payant et refaire l'estimation ; si ACR Basic est insuffisant, arrêter et demander une décision avant toute hausse de SKU. Si les durées dépassent les hypothèses, actualiser l'estimation avant de continuer.
+Le montant de 18,3–26,8 € est une estimation historique des seuls postes chiffrés en North Europe ; ne pas l'utiliser
+comme plafond ou estimation France Central. L'estimation France Central devra couvrir les mêmes hypothèses de durée ; les
+ressources annexes, le stockage, les sauvegardes, le trafic sortant, les taxes et le dépassement éventuel du plafond Log Analytics s'ajoutent. Le plafond de 1 Go/jour/espace est un garde-fou et peut dépasser sa valeur, il ne garantit pas une facture maximale. Le budget mensuel préexistant de **200 EUR au niveau de la souscription** a été vérifié le 2026-10-08 : alertes configurées à 80 % du coût réel et 100 % prévisionnel ; dépense réelle affichée ≈ 0,4303 EUR. Aucun budget supplémentaire n'a été créé, et aucune alerte n'arrête automatiquement les ressources. Le préflight initial a bloqué sur SQL serverless `GP_S_Gen5_1` en North Europe ; la décision du 2026-10-15 fixe maintenant France Central sans changement de SKU. Si l'offre SQL gratuite n'est pas acceptée par l'API, conserver le SQL payant et refaire l'estimation ; si ACR Basic est insuffisant, arrêter et demander une décision avant toute hausse de SKU. Si les durées dépassent les hypothèses, actualiser l'estimation avant de continuer.
 
-Sources techniques : [SQL serverless](https://learn.microsoft.com/en-us/azure/azure-sql/database/serverless-tier-overview?tabs=general-purpose&view=azuresql),
+Sources techniques : [disponibilité régionale d'Azure SQL](https://learn.microsoft.com/en-us/azure/azure-sql/database/region-availability?view=azuresql), [SQL serverless](https://learn.microsoft.com/en-us/azure/azure-sql/database/serverless-tier-overview?tabs=general-purpose&view=azuresql),
 [Container Apps facturation](https://learn.microsoft.com/en-us/azure/container-apps/billing),
 [ACR SKU](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus),
 [SQL zone redundancy](https://learn.microsoft.com/en-us/azure/reliability/reliability-sql-database),
 [plafond Log Analytics](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/daily-cap), [tarification Azure Monitor](https://azure.microsoft.com/en-us/pricing/details/monitor/) et
 [budgets Azure](https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-acm-create-budgets).
 
+### 0.2 bis Estimation France Central (Retail API relevée le 2026-10-15)
+
+Tarifs publics EUR lus dans l'[API officielle Azure Retail Prices](https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices), filtre `armRegionName=francecentral`. Ce sont des prix catalogue, pas le prix contractuel ni le coût réel de la souscription.
+
+| Poste | Hypothèse et calcul | Estimation |
+|---|---|---:|
+| SQL serverless `GP_S_Gen5_1`, sans offre gratuite | 6 bases × 4 h = 24 base-heures ; 0,5 à 1 vCore × 0,5739 EUR/vCore-h | 6,89–13,77 EUR |
+| SQL, si l'offre gratuite prd est confirmée et disponible pour les trois jeux séquentiels | 12 base-heures prd gratuites ; 12 base-heures dev × 0,5 à 1 vCore × 0,5739 EUR/vCore-h | 3,44–6,89 EUR |
+| ACR Basic | 3 registres × 2 jours × 0,1466 EUR/jour | 0,88 EUR |
+| Ingestion Log Analytics | 6 Go × 2,4287 EUR/Go au-delà des 5 Go mensuels gratuits ; le crédit restant est inconnu | 2,43–14,57 EUR |
+| Rétention Log Analytics supplémentaire | 0,1056 EUR/Go-mois au-delà de la rétention incluse ; borne haute 3 espaces prd × 1 Go × 89/30 jours (120 j) | 0–0,94 EUR |
+| Stockage d'image ACR | 10 Go inclus en Basic ; `ifs-witness:local` fait 446 Mo ; au-delà, 0,0880 EUR/Go-mois | 0 EUR selon la taille locale observée |
+| Stockage des données SQL | 0,1265 EUR/Go-mois ; quantité de stockage facturée non déterminée par le manifeste | À mesurer / inclure après profilage |
+| Container Apps | Les premiers 180 000 vCPU-s, 360 000 Gio-s et 2 millions de requêtes sont gratuits par souscription et par mois ; usage existant non vérifié | Overage non chiffré |
+
+Le **sous-total des postes chiffrés** est de **6,75 à 30,17 EUR** : minimum avec l'offre SQL gratuite, le crédit Log Analytics disponible et sans rétention supplémentaire ; maximum sans offre SQL gratuite, sans crédit Log Analytics restant, au maximum de calcul prévu et avec la rétention à 120 jours. Il ne s'agit pas encore du total de la recette : stockage SQL/sauvegardes, Key Vault, compte de stockage technique, trafic sortant, taxes et dépassement éventuel des crédits Container Apps restent à quantifier. Le plafond préexistant de 200 EUR/mois n'est pas un coupe-circuit et l'estimation doit être confirmée par l'utilisateur.
+
 ### 0.3 Préflight bloquant avant toute création
 
 Chaque ligne doit être cochée et consignée (capture ou sortie sans secret). Le **premier échec arrête la recette** :
-aucun repli West Europe, aucun changement de SKU, aucune création « pour voir ».
+aucun repli vers une autre région, aucun changement de SKU, aucune création « pour voir ».
 
 | # | Contrôle | Commande ou lieu | Arrêt si |
 |---|---|---|---|
-| 1 | Région `northeurope` disponible pour la souscription | `az account list-locations --query "[?name=='northeurope']" -o table` | vide |
-| 2 | Fournisseurs enregistrés avec `North Europe` | `az provider show -n Microsoft.App --query "resourceTypes[?resourceType=='managedEnvironments'].locations"` ; idem `Microsoft.Sql`/`servers`, `Microsoft.ContainerRegistry`/`registries`, `Microsoft.OperationalInsights`/`workspaces`, `Microsoft.Insights`/`components`, `Microsoft.KeyVault`/`vaults`, `Microsoft.Storage`/`storageAccounts`, `Microsoft.ManagedIdentity`/`userAssignedIdentities` ; enregistrer les fournisseurs manquants | une région absente |
-| 3 | SQL serverless `GP_S_Gen5_1` disponible | `az sql db list-editions --location northeurope --edition GeneralPurpose --service-objective GP_S_Gen5_1 --available -o table` | non disponible |
+| 1 | Région `francecentral` accessible pour la souscription | `az account list-locations --query "[?name=='francecentral']" -o table` | absente ou non autorisée |
+| 2 | Fournisseurs enregistrés avec `France Central` | `az provider show -n Microsoft.App --query "resourceTypes[?resourceType=='managedEnvironments'].locations"` ; idem `Microsoft.Sql`/`servers`, `Microsoft.ContainerRegistry`/`registries`, `Microsoft.OperationalInsights`/`workspaces`, `Microsoft.Insights`/`components`, `Microsoft.KeyVault`/`vaults`, `Microsoft.Storage`/`storageAccounts`, `Microsoft.ManagedIdentity`/`userAssignedIdentities` ; enregistrer les fournisseurs manquants | une région absente |
+| 3 | SQL serverless `GP_S_Gen5_1` disponible | `az sql db list-editions --location francecentral --edition GeneralPurpose --service-objective GP_S_Gen5_1 --available -o table` | non disponible ou provisionnement restreint |
 | 4 | Zone redondante désactivée dans le clone | `Select-String -Path <clone>/data/infra/main.*.bicepparam -Pattern 'zoneRedundant'` et `Select-String -Path <clone>/orders/infra/main.*.bicepparam -Pattern 'zoneRedundant'` : chaque valeur doit être explicitement `false` (SQL dans `data`, environnement Container Apps dans `orders`) | une valeur absente ou `true` |
 | 5 | Offre SQL gratuite | (a) `bicep build` du clone profilé accepte `useFreeLimit`/`freeLimitExhaustionBehavior` avec `sql/server:0.22.0` ; (b) après franchissement du verrou de dépense, exécuter un What-If ARM avec le profil par défaut **sans** `-SqlFreeOffer` pour vérifier que l'API accepte aussi `freeLimitExhaustionBehavior` quand `useFreeLimit` est faux ; si l'offre gratuite est envisagée, exécuter un second What-If avec `-SqlFreeOffer` ; (c) le portail (*Create SQL database*, souscription et région cibles) propose l'offre gratuite ; (d) `az resource list --subscription <id> --resource-type Microsoft.Sql/servers/databases --query "[].{id:id,useFreeLimit:properties.useFreeLimit,behavior:properties.freeLimitExhaustionBehavior}" -o table` ne montre aucune base existante avec `useFreeLimit = true` ; (e) le **décalage** « une base » (schéma AVM) / « dix bases » (documentation) est noté : ne pas supposer plus d'**une** base gratuite, la base `prd` la reçoit | (a), (b) ou (c) échoue : omettre `-SqlFreeOffer`, refaire l'estimation et reconfirmer le plafond au § 0.1 avant tout déploiement ; (d) échoue : même arrêt et estimation sans offre |
 | 6 | ACR Basic suffisant | taille de l'image témoin (`docker image ls`) ≪ 10 GiB ; un seul build/push par CI de P1, P8 ; limites Basic publiées (débit de lecture/écriture) relues dans la documentation du jour | limite dépassée : arrêt ; toute hausse de SKU exige une nouvelle décision et une estimation confirmée |
@@ -91,9 +119,21 @@ la recette et ne jamais basculer vers `BillOverUsage` sans nouvelle estimation e
 permettant qu'une base `useFreeLimit` par souscription, appliquer l'offre uniquement à `prd`; après suppression de cette
 base, attendre jusqu'à une heure avant d'essayer de libérer un nouvel emplacement pour le jeu suivant ([FAQ Microsoft SQL gratuite](https://learn.microsoft.com/en-us/azure/azure-sql/database/free-offer-faq?view=azuresql)).
 
-**Résultat du préflight le 2026-10-08 :** la souscription et North Europe sont accessibles, mais `az sql db list-editions`
-retourne pour `GP_S_Gen5_1` une restriction de provisionnement dans cette région. Conformément au contrôle 3, la recette
-s'arrête ici : aucun changement de région/SKU et aucun déploiement tant qu'une décision n'a pas levé ce blocage.
+**Résultat historique du préflight le 2026-10-08 :** la souscription et North Europe étaient accessibles, mais
+`az sql db list-editions` retournait pour `GP_S_Gen5_1` une restriction de provisionnement dans cette région.
+
+**Préflight France Central du 2026-10-15 (lecture seule) :** les contrôles 1 à 3 réussissent sur la souscription CLI par
+défaut, dont l'identifiant correspond au snapshot local du 2026-10-08 : `francecentral` est listée ; les huit fournisseurs
+et types (`Microsoft.App/managedEnvironments`, `Microsoft.Sql/servers`, `Microsoft.ContainerRegistry/registries`,
+`Microsoft.OperationalInsights/workspaces`, `Microsoft.Insights/components`, `Microsoft.KeyVault/vaults`,
+`Microsoft.Storage/storageAccounts`, `Microsoft.ManagedIdentity/userAssignedIdentities`) sont enregistrés et annoncent
+France Central ; `GP_S_Gen5_1` est `Available=True`. Le CLI expose 11 souscriptions activées, mais la souscription par
+défaut correspond au snapshot de référence. Le témoin local `ifs-witness:local` fait 446 Mo, sous les 10 Go inclus de
+Basic. Le budget `budget-sandbox-monthly` de souscription est toujours à 200 EUR/mois, alertes actives à 80 % du réel et
+100 % prévisionnel ; le coût réel retourné est 0,430301 EUR et aucune prévision n'est retournée. La liste contient aussi
+six budgets au niveau de groupes de ressources, chacun à 200 EUR/mois ; aucun budget n'a été modifié. Le contrôle d'accès
+`Owner`/`User Access Administrator`, l'offre gratuite et les autres contrôles du § 0.3 restent à vérifier. Aucun groupe,
+rôle, pile ou autre ressource Azure n'a été créé.
 
 ### 0.4 Réveil SQL et démarrage à froid
 
@@ -122,7 +162,7 @@ Contrôles manuels, à appliquer chaque fois qu'une étape touche SQL ou l'API ;
 
 | Élément | Valeur et droits requis |
 |---|---|
-| Abonnements Azure | **Une seule souscription** de test (le même ID pour dev, prd, shared) ; région `northeurope` uniquement. Droits Owner ou User Access Administrator pour l'installation des rôles. Pour P2, confirmer que le refus denyDelete est installé avant l'essai de suppression. |
+| Abonnements Azure | **Une seule souscription** de test (le même ID pour dev, prd, shared) ; `francecentral` pour toutes les ressources régionales et l'emplacement des groupes de ressources. Droits Owner ou User Access Administrator pour l'installation des rôles. Pour P2, confirmer que le refus denyDelete est installé avant l'essai de suppression. |
 | Tenant et groupes SQL | Tenant contenant les abonnements ; groupe sg-shopNN-sql-admins créé et ses IDs d'objet pour dev et prd. Un même ID peut être utilisé si le groupe est commun aux deux cibles. |
 | Azure DevOps | Organisation, projet, dépôt Azure Repos et droits d'administrateur du projet. Créer le groupe de sécurité ShopNN Release Approvers avec les membres autorisés. |
 | Poste | Azure CLI connecté au bon tenant, extension azure-devops, PowerShell 7, Git, accès aux abonnements et au projet. `Save-AdoRecordings.ps1` requiert PowerShell 7.5+ pour conserver les timestamps JSON à l'identique. Installer sqlcmd seulement si vous préférez l'utiliser plutôt que l'éditeur de requête du portail. |

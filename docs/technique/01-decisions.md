@@ -50,7 +50,7 @@ l'utilisateur peut les inverser avant l'étape qui les applique ; le plan indiqu
 | [DT-39](#dt-39--journalisation-et-diagnostics-sont-des-dépendances-de-création) | Journalisation et diagnostics : dépendances de création (écart de spec) | Décidée |
 | [DT-40](#dt-40--ordre-des-comportements-du-médiateur) | Ordre des comportements du médiateur | Décidée |
 | [DT-41](#dt-41--build-en-mode-code-au-jalon-2) | Build en mode Code au jalon 2 (écart de spec) | Décidée |
-| [DT-42](#dt-42--coût-des-preuves-éphémères-azure) | Coût des preuves éphémères Azure (North Europe, profil minimal, suppression par projet) | ⚖️ Stratégie approuvée ; plafond chiffré à confirmer avant Azure |
+| [DT-42](#dt-42--coût-des-preuves-éphémères-azure) | Coût des preuves éphémères Azure (France Central, profil minimal, suppression par projet) | ⚖️ Stratégie approuvée ; estimation France Central à confirmer avant Azure |
 
 ---
 
@@ -680,13 +680,19 @@ Function App (J2-01). Claude propose l'amendement de 04 § 2.1 avec celui de RG-
 
 ### DT-42 — Coût des preuves éphémères Azure
 
-⚖️ **Stratégie approuvée** par l'utilisateur le 2026-10-07 : North Europe, profil minimal, vérifications régulières des coûts et suppression limitée aux ressources créées par Luna. **Plafond chiffré et estimation actualisée à confirmer avant toute commande Azure.** Complète [DT-29](#dt-29--projet-pilote-de-référence) ; ne
-remplace aucune décision : [DT-27](#dt-27--hébergement-dans-azure-france-central) (hébergement d'IFS en France Central)
-reste vraie, elle ne concerne pas les cibles du projet pilote. Aucune preuve P1–P9, aucune assertion et aucun résultat
-attendu ne change ; seuls changent la région, les SKU, le moment de la suppression et le garde-fou de dépense.
+⚖️ **Stratégie approuvée** initialement par l'utilisateur le 2026-10-07 : North Europe, profil minimal, vérifications
+régulières des coûts et suppression limitée aux ressources créées par Luna. Après le blocage du préflight SQL en North
+Europe, l'utilisateur a demandé le 2026-10-15 de déployer toutes les ressources Azure régionales des preuves en France
+Central (`francecentral`), West Europe étant indisponible. Cette consigne remplace North Europe comme région unique du
+pilote. L'estimation tarifaire North Europe est historique : **actualiser l'estimation France Central et faire confirmer
+le plafond avant toute commande Azure**. Complète [DT-29](#dt-29--projet-pilote-de-référence) et s'aligne sur
+[DT-27](#dt-27--hébergement-dans-azure-france-central). Aucune preuve P1–P9, assertion ou résultat attendu ne change ;
+la région change et l'estimation doit être recalculée pour celle-ci.
 
-1. **Région unique `northeurope`** pour les trois cibles du pilote. Un préflight bloquant vérifie région, SKU et offre ;
-   en cas d'indisponibilité on **s'arrête** (aucun repli West Europe, aucun changement de région sans nouvelle `DT`).
+1. **Région unique `francecentral`** pour les trois cibles du pilote et toutes les ressources Azure régionales, y compris
+   les groupes de ressources et les emplacements de déploiement. Les objets Azure DevOps et Entra sans propriété de région
+   restent inchangés. Un préflight bloquant vérifie l'accès de la souscription, les emplacements des fournisseurs, le SKU
+   et l'offre SQL ; si un contrôle échoue, on **s'arrête** sans repli vers une autre région ni changement de SKU.
 2. **Une seule souscription** (dev = prd = shared) et un code projet isolé par jeu (`shop42`, `shop43`, `shop44`). Aucune
    preuve n'exige deux souscriptions ; les jeux sont déployés **l'un après l'autre**, jamais en parallèle.
 3. **Profil de coût des preuves** ([reference-pilote § 1.6](../plan/reference-pilote.md#16-profil-de-coût-des-preuves)) :
@@ -699,9 +705,9 @@ attendu ne change ; seuls changent la région, les SKU, le moment de la suppress
    documentation Microsoft « dix bases » : décalage **non tranché**, jamais promis. Sinon : serverless payant, estimation
    recalculée et **nouvelle confirmation** ; jamais de poursuite silencieuse.
 5. **Application du profil** : la sortie `reference/pilot/` reste la vérité des émetteurs du jalon 0 (le catalogue du pilote
-   ne porte pas `autoPauseDelay`, `minCapacity`, `useFreeLimit`, `zoneRedundant` de base, plafond d'ingestion) ; seule la
-   région y change. Le profil est appliqué **à la publication** (`Publish-PilotReference.ps1`, comme la table des noms) et
-   la chaîne de révisions est rejouée sur un clone ainsi profilé. Implémentation par Luna en P-08 (point 0).
+   ne porte pas `autoPauseDelay`, `minCapacity`, `useFreeLimit`, `zoneRedundant` de base, plafond d'ingestion) ; elle est
+   alignée sur `francecentral` en P-08. Le profil de coût est appliqué **à la publication** (`Publish-PilotReference.ps1`,
+   comme la table des noms) et la chaîne de révisions est rejouée sur un clone ainsi profilé.
 6. **Suppression au plus tôt** : un jeu Azure est supprimé dès sa dernière preuve dépendante (shop42 après P8 ; shop43 :
    `orders`, `data`, `platform` et l'identité détachée après P4, `core` et le kit après P5 ; shop44 après P7), à condition
    que ses captures Azure DevOps soient enregistrées et ses résultats consignés. Les preuves Azure DevOps et
@@ -710,7 +716,10 @@ attendu ne change ; seuls changent la région, les SKU, le moment de la suppress
    actualisée** ([recette § 0](../plan/recettes/01-preuves.md#0-verrou-de-coût-et-préflight-bloquants)). Un budget Azure est
    une alerte retardée, pas un coupe-circuit : le plafond est tenu par la durée de vie courte des ressources et les
    contrôles de fin de session, pas par Azure.
-8. **Non prouvé depuis le dépôt** (préflights bloquants, rien n'est supposé) : commande exacte de passage `denyDelete` →
-   `none` d'une pile existante ; liste exacte des IDs gérés par chaque pile au moment du nettoyage ; éligibilité à l'offre gratuite ; limites ACR Basic
+8. **Non prouvé depuis le dépôt** (préflights bloquants, rien n'est supposé) : accès de la souscription à `francecentral` et
+   emplacements autorisés des fournisseurs ; disponibilité effective du SKU SQL serverless `GP_S_Gen5_1` pour cette
+   souscription (la [disponibilité régionale SQL](https://learn.microsoft.com/en-us/azure/azure-sql/database/region-availability?view=azuresql)
+   publiée ne remplace pas ce contrôle) ; commande exacte de passage `denyDelete` → `none` d'une pile existante ; liste
+   exacte des IDs gérés par chaque pile au moment du nettoyage ; éligibilité à l'offre gratuite ; limites ACR Basic
    face à l'image témoin ; plafond d'ingestion sans effet sur `/health/dependencies`.
 9. **Inventaire avant/après création** ([inventaires](../plan/preuves/inventaires-azure.md)) : capturer les ressources déjà présentes dans les portées ciblées, puis consigner chaque ID, groupe et pile créé par Luna. Au nettoyage, ne supprimer que ces IDs ; `deleteAll` n'est permis que si tous les éléments gérés par la pile sont dans cet inventaire.
