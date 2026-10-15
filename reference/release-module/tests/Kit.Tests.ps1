@@ -552,10 +552,10 @@ Describe 'Kit installation P-05' {
         $ciPipeline = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/orders/apps/api/pipelines/ci.yml') -Raw
         $releasePipeline = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/orders/apps/api/pipelines/release.yml') -Raw
 
-        $ciTemplate | Should -Be '.ifs/templates/app-ci.yml'
-        $releaseTemplate | Should -Be '.ifs/templates/app-release.yml'
-        $ciPipeline | Should -Match ("template:\s*/" + [regex]::Escape($ciTemplate))
-        $releasePipeline | Should -Match ("template:\s*/" + [regex]::Escape($releaseTemplate))
+        $ciTemplate | Should -Be '/.ifs/templates/app-ci.yml'
+        $releaseTemplate | Should -Be '/.ifs/templates/app-release.yml'
+        $ciPipeline | Should -Match ("template:\s*" + [regex]::Escape($ciTemplate))
+        $releasePipeline | Should -Match ("template:\s*" + [regex]::Escape($releaseTemplate))
         $ciPipeline | Should -Match 'registryServiceConnection: ifs-shop-shared-app'
     }
 

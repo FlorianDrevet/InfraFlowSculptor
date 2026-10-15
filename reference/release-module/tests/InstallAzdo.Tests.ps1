@@ -290,7 +290,7 @@ Describe 'Finalisation du kit Azure DevOps' {
         $checkTypes[2].settings.extendsChecks[0].repositoryType | Should -Be 'git'
         $checkTypes[2].settings.extendsChecks[0].repositoryName | Should -Be 'shop/InfraFlowSculptor'
         $checkTypes[2].settings.extendsChecks[0].repositoryRef | Should -Be 'refs/heads/main'
-        $checkTypes[2].settings.extendsChecks[0].templatePath | Should -Be '.ifs/templates/infra-release.yml'
+        $checkTypes[2].settings.extendsChecks[0].templatePath | Should -Be '/.ifs/templates/infra-release.yml'
     }
 
     It 'finalise le rapport quand les variables de disponibilite Azure sont absentes' {

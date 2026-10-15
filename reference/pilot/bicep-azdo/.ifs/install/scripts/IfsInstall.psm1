@@ -405,9 +405,9 @@ function Get-IfsRequiredTemplatePath {
         [switch] $Application
     )
 
-    if (-not $Application) { return '.ifs/templates/infra-release.yml' }
-    if ($Target -eq 'shared') { return '.ifs/templates/app-ci.yml' }
-    return '.ifs/templates/app-release.yml'
+    if (-not $Application) { return '/.ifs/templates/infra-release.yml' }
+    if ($Target -eq 'shared') { return '/.ifs/templates/app-ci.yml' }
+    return '/.ifs/templates/app-release.yml'
 }
 
 function Get-IfsRoleDefinitionId {
