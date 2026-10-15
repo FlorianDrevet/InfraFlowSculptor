@@ -79,6 +79,20 @@ Describe "Read-IfsReleaseData" {
 }
 
 Describe "Aperçu et empreinte" {
+    It "efface le code natif non nul d'une commande Az attendue après l'avoir capturé" {
+        $global:IFS_AZ_HANDLER = {
+            param($Arguments)
+            $global:LASTEXITCODE = 3
+            return "ERROR: ResourceNotFound: deployment stack does not exist"
+        }
+        $module = Get-Module IfsRelease
+
+        $result = & $module { Invoke-IfsAz -Arguments @("stack", "sub", "show") -AllowFailure }
+
+        $result.ExitCode | Should -Be 3
+        $global:LASTEXITCODE | Should -Be 0
+    }
+
     It "reste en lecture seule, même si le journal est absent" {
         $preview = Invoke-IfsPreview -ReleaseData $script:orderData -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -OutputDirectory $script:tempRoot
         $preview.schema | Should -Be "ifs-preview/v1"
@@ -95,6 +109,27 @@ Describe "Aperçu et empreinte" {
         { Invoke-IfsPreview -ReleaseData $script:orderData -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -OutputDirectory $script:tempRoot } |
             Should -Throw "*objet JSON What-If*"
         Test-Path -LiteralPath (Join-Path $script:tempRoot "ifs-preview.json") | Should -BeFalse
+    }
+
+    It "identifie la commande What-If et le jeton initial d'une réponse invalide" {
+        $global:IFS_WHATIF = 'invalid response'
+
+        { Invoke-IfsPreview -ReleaseData $script:orderData -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -OutputDirectory $script:tempRoot } |
+            Should -Throw "*az deployment sub what-if*invalid*"
+        Test-Path -LiteralPath (Join-Path $script:tempRoot "ifs-preview.json") | Should -BeFalse
+    }
+
+    It "identifie l'identité gérée si Azure CLI renvoie une sortie invalide" {
+        $global:IFS_AZ_HANDLER = {
+            param($Arguments)
+            $global:LASTEXITCODE = 0
+            if (($Arguments -join " ") -match "identity show") { return "invalid identity response" }
+            return "{}"
+        }
+        $release = [pscustomobject]@{ project = "shop42"; target = "dev"; subscriptionId = "test" }
+
+        { Get-IfsManagedIdentity -ReleaseData $release -Kind deploy } |
+            Should -Throw "*az identity show pour id-ifs-deploy-shop42-dev*invalid*"
     }
 
     It "inclut l'Object ID applicatif dans l'aperçu orders" {
@@ -427,6 +462,31 @@ Describe "Secrets et dépendances" {
 }
 
 Describe "Rapports de release" {
+    It "accepte un script SQL vide pour le déploiement d'une unité sans accès SQL" {
+        $manifestPath = Join-Path $script:tempRoot "manifest-empty-sql.json"
+        $approvedPath = Join-Path $script:tempRoot "approved-empty-sql.json"
+        $reportPath = Join-Path $script:tempRoot "report-empty-sql.json"
+        Set-Content -LiteralPath $manifestPath -Value '{"revision":4,"commit":"rev4","units":{"core":{"fingerprint":"approved"}}}'
+        Set-Content -LiteralPath $approvedPath -Value '{"fingerprint":"approved","created":[],"dataWrites":[],"revokedAccess":[]}'
+
+        Mock Test-IfsNewerManifest -ModuleName IfsRelease { return $false }
+        Mock Invoke-IfsPreview -ModuleName IfsRelease {
+            return [pscustomobject]@{ fingerprint = "approved"; created = @(); dataWrites = @(); revokedAccess = @() }
+        }
+        Mock Open-IfsOperationJournal -ModuleName IfsRelease {
+            return [pscustomobject]@{ Journal = [pscustomobject]@{ unit = "ifs-shop-core-dev"; target = "dev"; operations = @() } }
+        }
+        Mock Read-IfsAppOwnedState -ModuleName IfsRelease { return @() }
+        Mock Get-IfsPendingOperation -ModuleName IfsRelease { return @() }
+        Mock Add-IfsOperation -ModuleName IfsRelease { }
+        Mock Close-IfsOperationJournal -ModuleName IfsRelease { }
+        Mock Write-IfsReleaseReport -ModuleName IfsRelease { }
+
+        {
+            Invoke-IfsInfraDeploy -ReleasePath $script:coreRelease -ManifestPath $manifestPath -PreviewPath $approvedPath -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -SqlScript "" -OutputPath $reportPath -DefaultBranch "main" -ManifestPathInRepository ".ifs/manifest.json" -DeploymentIdentityObjectId "00000000-0000-0000-0000-000000000001"
+        } | Should -Not -Throw
+    }
+
     It "écrit et valide un rapport même avant la première mutation" {
         $manifestPath = Join-Path $script:tempRoot "manifest.json"
         $reportPath = Join-Path $script:tempRoot "ifs-report.json"

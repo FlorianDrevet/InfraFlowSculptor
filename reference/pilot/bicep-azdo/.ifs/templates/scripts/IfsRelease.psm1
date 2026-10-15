@@ -7,8 +7,15 @@ $script:IfsSchemaDirectory = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..
 function Invoke-IfsAz {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string[]] $Arguments, [switch] $AllowFailure)
-    $nativeOutput = @(& az @Arguments 2>&1)
-    $exitCode = $LASTEXITCODE
+    $exitCode = 0
+    try {
+        $nativeOutput = @(& az @Arguments 2>&1)
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        # AzureCLI@2 propagates the last native exit code even when this call handled it.
+        $global:LASTEXITCODE = 0
+    }
     $text = ($nativeOutput | ForEach-Object { [string] $_ }) -join [Environment]::NewLine
     if ($exitCode -ne 0 -and -not $AllowFailure) {
         throw ('Azure CLI a échoué (code {0}) pour az {1}. {2}' -f $exitCode, ($Arguments -join ' '), $text)
@@ -17,10 +24,15 @@ function Invoke-IfsAz {
 }
 
 function ConvertFrom-IfsJson {
-    param([AllowEmptyString()][string] $Json)
+    param([AllowEmptyString()][string] $Json, [string] $Context = 'Azure CLI')
     if ([string]::IsNullOrWhiteSpace($Json)) { return $null }
+    $trimmedJson = $Json.TrimStart()
+    $rootToken = [regex]::Match($trimmedJson, '^[A-Za-z][A-Za-z0-9_-]*').Value
+    if ([string]::IsNullOrWhiteSpace($rootToken)) { $rootToken = [string]$trimmedJson[0] }
     try { return ConvertFrom-Json -InputObject $Json -Depth 100 -ErrorAction Stop }
-    catch { throw ('La réponse Azure CLI n''est pas un JSON valide : {0}' -f $_.Exception.Message) }
+    catch {
+        throw ('La réponse de {0} n''est pas un JSON valide (jeton initial « {1} », {2} caractères) : {3}' -f $Context, $rootToken, $Json.Length, $_.Exception.Message)
+    }
 }
 
 function Get-IfsManagedIdentity {
@@ -36,7 +48,7 @@ function Get-IfsManagedIdentity {
         'identity', 'show', '--name', $identityName, '--resource-group', $resourceGroup,
         '--subscription', $ReleaseData.subscriptionId, '--query', '{clientId:clientId,principalId:principalId}', '--output', 'json'
     )
-    $identity = ConvertFrom-IfsJson $result.Text
+    $identity = ConvertFrom-IfsJson -Json $result.Text -Context ('az identity show pour {0}' -f $identityName)
     if ([string]$identity.clientId -notmatch '^[0-9a-fA-F-]{36}$' -or [string]$identity.principalId -notmatch '^[0-9a-fA-F-]{36}$') {
         throw "L'identite geree '$identityName' ne retourne pas des identifiants client et principal valides."
     }
@@ -550,13 +562,13 @@ function Invoke-IfsPreview {
         '--location', $ReleaseData.location, '--template-file', $TemplateFile, '--no-pretty-print',
         '--parameters'
     ) + $parameters + @('--result-format', 'FullResourcePayloads', '--output', 'json'))
-    $whatIf = ConvertFrom-IfsJson $whatIfResult.Text
+    $whatIf = ConvertFrom-IfsJson -Json $whatIfResult.Text -Context ('az deployment sub what-if pour {0}' -f $ReleaseData.unit)
     if ($null -eq $whatIf -or $null -eq (Get-IfsValue $whatIf 'changes' $null)) {
         throw 'Azure CLI n''a pas renvoyé un objet JSON What-If valide avec la propriété changes.'
     }
     $changes = @(Get-IfsWhatIfChange $whatIf)
     $stackResult = Invoke-IfsAz -Arguments @('stack', 'sub', 'show', '--name', $ReleaseData.unit, '--subscription', $ReleaseData.subscriptionId, '--output', 'json') -AllowFailure
-    if ($stackResult.ExitCode -eq 0) { $stack = ConvertFrom-IfsJson $stackResult.Text }
+    if ($stackResult.ExitCode -eq 0) { $stack = ConvertFrom-IfsJson -Json $stackResult.Text -Context ('az stack sub show pour {0}' -f $ReleaseData.unit) }
     elseif (Test-IfsNotFoundError $stackResult.Text) { $stack = [pscustomobject]@{ resources = @() } }
     else { throw ('Lecture de la pile impossible : {0}' -f $stackResult.Text) }
 
@@ -751,7 +763,7 @@ function Invoke-IfsPendingOperation {
         [Parameter(Mandatory)][string] $ParameterFile,
         [Parameter(Mandatory)][string] $DeploymentIdentityObjectId,
         [string] $ApplicationIdentityObjectId,
-        [Parameter(Mandatory)][string] $SqlScript,
+        [Parameter(Mandatory)][AllowEmptyString()][string] $SqlScript,
         [Parameter(Mandatory)][int] $Revision,
         [Parameter(Mandatory)][string] $Commit,
         [Parameter(Mandatory)][string] $RunId
@@ -1158,7 +1170,7 @@ function Invoke-IfsInfraDeploy {
         [Parameter(Mandatory)][string] $PreviewPath,
         [Parameter(Mandatory)][string] $TemplateFile,
         [Parameter(Mandatory)][string] $ParameterFile,
-        [Parameter(Mandatory)][string] $SqlScript,
+        [Parameter(Mandatory)][AllowEmptyString()][string] $SqlScript,
         [Parameter(Mandatory)][string] $OutputPath,
         [Parameter(Mandatory)][string] $DefaultBranch,
         [Parameter(Mandatory)][string] $ManifestPathInRepository,
