@@ -47,6 +47,7 @@ Describe 'Finalisation du kit Azure DevOps' {
         $global:IFS_ADO_CURRENT_BUILD_READS = 0
         $global:IFS_ADO_TIMELINE_READS = 0
         $global:IFS_ADO_PATCHES = [Collections.Generic.List[object]]::new()
+        $global:IFS_ADO_CHECK_POSTS = [Collections.Generic.List[object]]::new()
         $global:IFS_ADO_DEFINITIONS = @(
             [pscustomobject]@{
                 id = 201
@@ -73,7 +74,10 @@ Describe 'Finalisation du kit Azure DevOps' {
                 $global:IFS_ADO_PATCHES.Add([pscustomobject]@{ Uri = [string]$Uri; Body = $Body })
                 return [pscustomobject]@{}
             }
-            if ($Method -eq 'POST' -and $path -match 'pipelines/checks/configurations') { throw 'simulated check failure' }
+            if ($Method -eq 'POST' -and $path -match 'pipelines/checks/configurations') {
+                $global:IFS_ADO_CHECK_POSTS.Add([pscustomobject]@{ Uri = [string]$Uri; Body = $Body })
+                throw 'simulated check failure'
+            }
             if ($path -match 'git/repositories/') { return [pscustomobject]@{ defaultBranch = 'refs/heads/main' } }
             if ($path -match 'distributedtask/queues') {
                 if ($global:IFS_ADO_FINALIZE_MODE -in @('EmptyQueues', 'MissingBuildQueue')) { return [pscustomobject]@{ value = @() } }
@@ -93,6 +97,12 @@ Describe 'Finalisation du kit Azure DevOps' {
             if ($path -match 'serviceendpoint/endpoints') { return [pscustomobject]@{ value = $global:IFS_ADO_ENDPOINTS } }
             if ($path -match 'identities\?') {
                 if ($global:IFS_ADO_FINALIZE_MODE -in @('MissingApprover', 'EmptyQueues', 'MissingBuildQueue')) { return [pscustomobject]@{ value = @() } }
+                if ($global:IFS_ADO_FINALIZE_MODE -eq 'MissingDisplayName') {
+                    return [pscustomobject]@{ value = @(
+                        [pscustomobject]@{ id = 'foreign-id'; providerDisplayName = 'Unrelated identity' }
+                        [pscustomobject]@{ id = 'approver-id'; providerDisplayName = 'Shop Release Approvers' }
+                    ) }
+                }
                 return [pscustomobject]@{ value = @([pscustomobject]@{ id = 'approver-id'; providerDisplayName = 'Shop Release Approvers'; displayName = 'Shop Release Approvers' }) }
             }
             if ($path -match 'pipelines/checks/types') {
@@ -112,7 +122,7 @@ Describe 'Finalisation du kit Azure DevOps' {
     AfterEach {
         foreach ($name in $script:environmentNames) { [Environment]::SetEnvironmentVariable($name, $script:environmentBackup[$name], 'Process') }
         if (Test-Path -LiteralPath $script:tempRoot) { Remove-Item -LiteralPath $script:tempRoot -Recurse -Force }
-        Remove-Variable -Name IFS_ADO_FINALIZE_MODE, IFS_ADO_CURRENT_BUILD_READS, IFS_ADO_TIMELINE_READS, IFS_ADO_PATCHES, IFS_ADO_DEFINITIONS, IFS_ADO_ENDPOINTS -Scope Global -ErrorAction SilentlyContinue
+        Remove-Variable -Name IFS_ADO_FINALIZE_MODE, IFS_ADO_CURRENT_BUILD_READS, IFS_ADO_TIMELINE_READS, IFS_ADO_PATCHES, IFS_ADO_CHECK_POSTS, IFS_ADO_DEFINITIONS, IFS_ADO_ENDPOINTS -Scope Global -ErrorAction SilentlyContinue
     }
 
     It "retire l'autorisation temporaire si le groupe approbateur est absent" {
@@ -168,6 +178,21 @@ Describe 'Finalisation du kit Azure DevOps' {
 
         { & $script:installScript -Phase Finalize -RepositoryPath $script:tempRoot } | Should -Throw '*Shop Release Approvers*introuvable*'
         $global:IFS_ADO_PATCHES.Count | Should -BeGreaterThan 0
+    }
+
+    It 'ignore une identite sans displayName et retrouve le groupe approbateur' {
+        $global:IFS_ADO_FINALIZE_MODE = 'MissingDisplayName'
+        $releasePath = Join-Path $script:tempRoot 'core/infra/release.dev.json'
+        $release = Get-Content -LiteralPath $releasePath -Raw | ConvertFrom-Json -AsHashtable
+        $release['protected'] = $true
+        [IO.File]::WriteAllText($releasePath, (ConvertTo-Json $release -Depth 10), [Text.UTF8Encoding]::new($false))
+
+        { & $script:installScript -Phase Finalize -RepositoryPath $script:tempRoot } | Should -Throw '*simulated check failure*'
+        $global:IFS_ADO_PATCHES.Count | Should -BeGreaterThan 0
+        $global:IFS_ADO_CHECK_POSTS.Count | Should -Be 1
+        $approval = [string]$global:IFS_ADO_CHECK_POSTS[0].Body | ConvertFrom-Json
+        $approval.settings.approvers[0].id | Should -Be 'approver-id'
+        $approval.settings.approvers[0].displayName | Should -Be 'Shop Release Approvers'
     }
 
     It 'utilise la file du run courant si le projet ne renvoie aucune file' {

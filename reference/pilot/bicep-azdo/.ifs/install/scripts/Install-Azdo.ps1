@@ -395,7 +395,11 @@ function Find-IfsIdentity {
     $headers = @{ Authorization = "Bearer $script:Token"; Accept = 'application/json' }
     try { $response = Invoke-RestMethod -Method GET -Uri $uri -Headers $headers -ErrorAction Stop }
     catch { throw "Recherche du groupe approbateur '$DisplayName' impossible : $($_.Exception.Message)" }
-    $identityMatches = @(Get-IfsAdoValue $response | Where-Object { $_.providerDisplayName -eq $DisplayName -or $_.displayName -eq $DisplayName } | Select-Object -First 1)
+    $identityMatches = @(Get-IfsAdoValue $response | Where-Object {
+        $identityProviderName = [string](Get-IfsAdoProperty -Object $_ -Name 'providerDisplayName')
+        $identityDisplayName = [string](Get-IfsAdoProperty -Object $_ -Name 'displayName')
+        $identityProviderName -eq $DisplayName -or $identityDisplayName -eq $DisplayName
+    } | Select-Object -First 1)
     if ($identityMatches.Count -eq 0) { throw "Groupe Azure DevOps '$DisplayName' introuvable. Creez-le ou corrigez son nom avant de relancer." }
     return $identityMatches[0]
 }
@@ -611,6 +615,14 @@ $finalizationManagedPipelineIds = @(Get-IfsManagedPipelineId -CurrentDefinitions
 Set-IfsFinalEndpointPermission -ProjectCode $model.ProjectCode -Targets $model.Targets -Definitions $definitions -Endpoints $finalizationEndpointList -ManagedPipelineIds $finalizationManagedPipelineIds
 
 $approver = Find-IfsIdentity -DisplayName 'Shop Release Approvers'
+$approverId = [string](Get-IfsAdoProperty -Object $approver -Name 'id')
+$approverDisplayName = [string](Get-IfsAdoProperty -Object $approver -Name 'displayName')
+if ([string]::IsNullOrWhiteSpace($approverDisplayName)) {
+    $approverDisplayName = [string](Get-IfsAdoProperty -Object $approver -Name 'providerDisplayName')
+}
+if ([string]::IsNullOrWhiteSpace($approverId) -or [string]::IsNullOrWhiteSpace($approverDisplayName)) {
+    throw 'Le groupe approbateur Azure DevOps ne fournit pas son identifiant ou son nom affichable.'
+}
 $approvalType = Get-IfsCheckType -Pattern '^(Approval)$'
 $lockType = Get-IfsCheckType -Pattern 'Exclusive.?Lock'
 $branchType = Get-IfsCheckType -Pattern 'Branch.?Control'
@@ -621,7 +633,7 @@ foreach ($target in $model.Targets) {
     $environmentName = "$($model.ProjectCode)-$($target.Name)"
     $environmentResponse = Invoke-IfsAdoApi -Path "distributedtask/environments?name=$([uri]::EscapeDataString($environmentName))&api-version=$script:ApiVersion"
     $environment = @(Get-IfsAdoValue $environmentResponse | Where-Object { $_.name -eq $environmentName } | Select-Object -First 1)[0]
-    $approvalSettings = [ordered]@{ approvers = @([ordered]@{ id = [string]$approver.id; displayName = [string]$approver.displayName }); executionOrder = 'anyOrder'; minRequiredApprovers = 1; instructions = "$($script:OwnerMarker); ifs-kit-revision: $($model.Revision)"; blockedApprovers = @() }
+    $approvalSettings = [ordered]@{ approvers = @([ordered]@{ id = $approverId; displayName = $approverDisplayName }); executionOrder = 'anyOrder'; minRequiredApprovers = 1; instructions = "$($script:OwnerMarker); ifs-kit-revision: $($model.Revision)"; blockedApprovers = @() }
     if ($target.Protected) { $null = Set-IfsCheck -Type $approvalType -ResourceType 'environment' -ResourceId ([string]$environment.id) -ResourceName $environmentName -Settings $approvalSettings }
     $null = Set-IfsCheck -Type $lockType -ResourceType 'environment' -ResourceId ([string]$environment.id) -ResourceName $environmentName -Settings @{} -ImmutableExisting
 
