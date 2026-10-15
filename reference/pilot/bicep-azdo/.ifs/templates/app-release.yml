@@ -12,7 +12,7 @@ parameters:
 
 stages:
 - ${{ each target in parameters.targets }}:
-  - template: .ifs/templates/app-target-stage.yml
+  - template: /.ifs/templates/app-target-stage.yml
     parameters:
       project: ${{ parameters.project }}
       component: ${{ parameters.component }}

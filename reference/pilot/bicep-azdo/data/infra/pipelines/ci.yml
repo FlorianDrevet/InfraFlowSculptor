@@ -9,7 +9,7 @@ trigger:
     - data/infra/**
     - .ifs/**
 extends:
-  template: .ifs/templates/infra-ci.yml
+  template: /.ifs/templates/infra-ci.yml
   parameters:
     project: shop
     component: data

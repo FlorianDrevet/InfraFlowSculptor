@@ -11,7 +11,7 @@ trigger:
     - .ifs/templates/**
     - .ifs/pins.json
 extends:
-  template: .ifs/templates/app-ci.yml
+  template: /.ifs/templates/app-ci.yml
   parameters:
     project: shop
     component: orders

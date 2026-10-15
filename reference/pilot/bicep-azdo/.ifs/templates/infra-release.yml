@@ -16,7 +16,7 @@ parameters:
 
 stages:
 - ${{ each target in parameters.targets }}:
-  - template: .ifs/templates/infra-target-stages.yml
+  - template: /.ifs/templates/infra-target-stages.yml
     parameters:
       project: ${{ parameters.project }}
       component: ${{ parameters.component }}

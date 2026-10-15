@@ -10,6 +10,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'ProofTools.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'AdoRecordingsTransport.psm1') -Force
 if (-not (Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')) {
     throw 'Save-AdoRecordings.ps1 nécessite PowerShell 7.5 ou plus récent.'
 }
@@ -19,15 +20,23 @@ $token = if (-not [string]::IsNullOrWhiteSpace($env:AZURE_DEVOPS_EXT_PAT)) {
 } elseif (-not [string]::IsNullOrWhiteSpace($env:ADO_RECORDINGS_PAT)) {
     $env:ADO_RECORDINGS_PAT
 } else {
-    $secureToken = Read-Host -Prompt 'PAT Azure DevOps avec le droit Build (Read)' -AsSecureString
-    $tokenPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureToken)
-    try { [Runtime.InteropServices.Marshal]::PtrToStringBSTR($tokenPointer) }
-    finally {
-        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($tokenPointer)
-        $secureToken.Dispose()
+    $null
+}
+$transportMode = 'Pat'
+if ([string]::IsNullOrWhiteSpace($token)) {
+    if ($null -ne (Get-Command az -ErrorAction SilentlyContinue)) {
+        $transportMode = 'AzureCli'
+    } else {
+        $secureToken = Read-Host -Prompt 'PAT Azure DevOps avec le droit Build (Read)' -AsSecureString
+        $tokenPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureToken)
+        try { $token = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($tokenPointer) }
+        finally {
+            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($tokenPointer)
+            $secureToken.Dispose()
+        }
     }
 }
-if ([string]::IsNullOrWhiteSpace($token)) { throw 'Le PAT Azure DevOps est vide.' }
+if ($transportMode -eq 'Pat' -and [string]::IsNullOrWhiteSpace($token)) { throw 'Le PAT Azure DevOps est vide.' }
 
 $repositoryRoot = [IO.Path]::GetFullPath($RepositoryPath)
 $gitRoot = (& git -C $repositoryRoot rev-parse --show-toplevel 2>$null | Out-String).Trim()
@@ -57,13 +66,27 @@ try {
 $organizationSegment = [Uri]::EscapeDataString($Organization)
 $projectSegment = [Uri]::EscapeDataString($Project)
 $baseUri = "https://dev.azure.com/$organizationSegment/$projectSegment/_apis"
-$authorization = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$token"))
-$headers = @{ Authorization = "Basic $authorization"; Accept = 'application/json' }
+$headers = @{}
+if ($transportMode -eq 'Pat') {
+    $authorization = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$token"))
+    $headers = @{ Authorization = "Basic $authorization"; Accept = 'application/json' }
+}
 $apiVersion = '7.1'
 $redactionContext = @{ Organization = $Organization; Project = $Project }
 
 function Invoke-AdoJsonGet {
-    param([Parameter(Mandatory)][string] $Uri, [Parameter(Mandatory)][string] $Kind)
+    param(
+        [Parameter(Mandatory)][string] $Uri,
+        [Parameter(Mandatory)][string] $Kind,
+        [Parameter(Mandatory)][string] $Area,
+        [Parameter(Mandatory)][string] $Resource,
+        [Parameter(Mandatory)][System.Collections.IDictionary] $RouteParameters,
+        [Parameter(Mandatory)][System.Collections.IDictionary] $QueryParameters
+    )
+    if ($transportMode -eq 'AzureCli') {
+        return Invoke-AdoRecordingsCliJsonGet -Organization $Organization -Area $Area -Resource $Resource `
+            -RouteParameters $RouteParameters -QueryParameters $QueryParameters -Kind $Kind
+    }
     try {
         $response = Invoke-WebRequest -Uri $Uri -Method Get -Headers $headers -ErrorAction Stop
         $rawJson = [string]$response.Content
@@ -105,7 +128,7 @@ function Save-SanitizedJson {
 function Get-SafeArtifactPath {
     param([Parameter(Mandatory)][string] $ArtifactName, [Parameter(Mandatory)][string] $RelativePath)
 
-    if ($ArtifactName -notmatch '^(ifs-report|ifs-preview|ifs-app-report)(-[A-Za-z0-9._-]+)?$') {
+    if (-not (Test-AdoRecordingsArtifactName -Name $ArtifactName)) {
         throw 'Le nom de l''artefact ne correspond pas au format attendu.'
     }
     $name = ConvertTo-ProofRedactedText -Text $RelativePath -Organization $Organization -Project $Project -Context $redactionContext
@@ -153,11 +176,18 @@ $buildUri = "$baseUri/build/builds/$RunId`?api-version=$apiVersion"
 $timelineUri = "$baseUri/build/builds/$RunId/timeline?api-version=$apiVersion"
 $artifactListUri = "$baseUri/build/builds/$RunId/artifacts?api-version=$apiVersion"
 $approvalUri = "$baseUri/pipelines/approvals?%24expand=steps&state=all&top=1000&api-version=$apiVersion"
+$buildRouteParameters = [ordered]@{ project = $Project; buildId = [string]$RunId }
+$approvalRouteParameters = [ordered]@{ project = $Project }
+$approvalQueryParameters = [ordered]@{ '$expand' = 'steps'; state = 'all'; top = '1000' }
 
-$build = Invoke-AdoJsonGet -Uri $buildUri -Kind 'build'
-$timeline = Invoke-AdoJsonGet -Uri $timelineUri -Kind 'timeline'
-$artifactList = Invoke-AdoJsonGet -Uri $artifactListUri -Kind 'liste des artefacts'
-$approvalList = Invoke-AdoJsonGet -Uri $approvalUri -Kind 'approbations'
+$build = Invoke-AdoJsonGet -Uri $buildUri -Kind 'build' -Area 'build' -Resource 'builds' `
+    -RouteParameters $buildRouteParameters -QueryParameters ([ordered]@{})
+$timeline = Invoke-AdoJsonGet -Uri $timelineUri -Kind 'timeline' -Area 'build' -Resource 'timeline' `
+    -RouteParameters $buildRouteParameters -QueryParameters ([ordered]@{})
+$artifactList = Invoke-AdoJsonGet -Uri $artifactListUri -Kind 'liste des artefacts' -Area 'build' -Resource 'artifacts' `
+    -RouteParameters $buildRouteParameters -QueryParameters ([ordered]@{})
+$approvalList = Invoke-AdoJsonGet -Uri $approvalUri -Kind 'approbations' -Area 'approval' -Resource 'approvals' `
+    -RouteParameters $approvalRouteParameters -QueryParameters $approvalQueryParameters
 
 Save-SanitizedJson -RawJson $build.RawJson -Path (Join-Path $outputRoot 'build.json')
 Save-SanitizedJson -RawJson $timeline.RawJson -Path (Join-Path $outputRoot 'timeline.json')
@@ -188,7 +218,7 @@ Save-SanitizedJson -RawJson (ConvertTo-Json -InputObject $approvalCapture -Depth
 
 $artifactValues = @(Get-AdoPropertyValue -Data $artifactList.Data -Name 'value')
 $wantedArtifacts = @($artifactValues | Where-Object {
-    [string](Get-AdoPropertyValue -Data $_ -Name 'name') -match '^(ifs-report|ifs-preview|ifs-app-report)(-[A-Za-z0-9._-]+)?$'
+    Test-AdoRecordingsArtifactName -Name ([string](Get-AdoPropertyValue -Data $_ -Name 'name'))
 })
 $tempRoot = Join-Path ([IO.Path]::GetTempPath()) ("ifs-ado-recordings-" + [guid]::NewGuid().ToString('N'))
 $absoluteTempRoot = [IO.Path]::GetFullPath($tempRoot)
@@ -202,48 +232,72 @@ try {
     foreach ($artifact in $wantedArtifacts) {
         $artifactName = [string]$artifact.name
         $artifactNameForDisk = ConvertTo-ProofRedactedText -Text $artifactName -Organization $Organization -Project $Project -Context $redactionContext
-        $zipPath = Join-Path $absoluteTempRoot (([guid]::NewGuid().ToString('N')) + '.zip')
-        $escapedName = [Uri]::EscapeDataString($artifactName)
-        $downloadUri = "$baseUri/build/builds/$RunId/artifacts?artifactName=$escapedName&api-version=$apiVersion"
-        try {
-            Invoke-WebRequest -Uri $downloadUri -Method Get -Headers (@{ Authorization = "Basic $authorization"; Accept = 'application/zip' }) -OutFile $zipPath -ErrorAction Stop | Out-Null
-        }
-        catch {
-            throw "Telechargement de l'artefact '$artifactNameForDisk' impossible ; aucun contenu brut n'a ete conserve."
-        }
-
-        $zipBytes = [IO.File]::ReadAllBytes($zipPath)
-        if ($zipBytes.Length -lt 4 -or $zipBytes[0] -ne 0x50 -or $zipBytes[1] -ne 0x4B) {
-            throw "La reponse de l'artefact '$artifactNameForDisk' n'est pas une archive ZIP."
-        }
-
-        $archive = [IO.Compression.ZipFile]::OpenRead($zipPath)
-        $extractionRoot = Join-Path $absoluteTempRoot ("extract-" + [guid]::NewGuid().ToString('N'))
-        [void][IO.Directory]::CreateDirectory($extractionRoot)
-        try {
-            foreach ($entry in $archive.Entries) {
-                if ([string]::IsNullOrWhiteSpace($entry.Name)) { continue }
-                $entryPath = $entry.FullName.Replace('\', '/')
-                $targetPath = Get-SafeArtifactPath -ArtifactName $artifactNameForDisk -RelativePath $entryPath
-                $sourceFileName = [guid]::NewGuid().ToString('N') + [IO.Path]::GetExtension($entry.Name)
-                $sourceFilePath = Join-Path $extractionRoot $sourceFileName
-                $extractionPrefix = Get-ProofDirectoryPrefix -Path $extractionRoot
-                if (-not [IO.Path]::GetFullPath($sourceFilePath).StartsWith($extractionPrefix, $pathComparison)) {
-                    throw 'Un chemin temporaire d''artefact sort du dossier de capture.'
+        if ($transportMode -eq 'AzureCli') {
+            $downloadRoot = Join-Path $absoluteTempRoot ("download-" + [guid]::NewGuid().ToString('N'))
+            [void][IO.Directory]::CreateDirectory($downloadRoot)
+            try {
+                Invoke-AdoRecordingsArtifactDownload -Organization $Organization -Project $Project -RunId $RunId `
+                    -ArtifactName $artifactName -Path $downloadRoot
+                $downloadedItems = @(Get-ChildItem -LiteralPath $downloadRoot -Recurse -Force)
+                if (@($downloadedItems | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }).Count -gt 0) {
+                    throw "Un artefact contient un lien symbolique inattendu : $artifactNameForDisk"
                 }
-                $sourceStream = $entry.Open()
-                $targetStream = [IO.File]::Create($sourceFilePath)
-                try { $sourceStream.CopyTo($targetStream) }
-                finally { $targetStream.Dispose(); $sourceStream.Dispose() }
-                Save-SanitizedArtifactFile -SourcePath $sourceFilePath -TargetPath $targetPath
+                foreach ($downloadedFile in @($downloadedItems | Where-Object { -not $_.PSIsContainer })) {
+                    $relativePath = [IO.Path]::GetRelativePath($downloadRoot, $downloadedFile.FullName).Replace('\', '/')
+                    $targetPath = Get-SafeArtifactPath -ArtifactName $artifactNameForDisk -RelativePath $relativePath
+                    Save-SanitizedArtifactFile -SourcePath $downloadedFile.FullName -TargetPath $targetPath
+                }
+            }
+            finally {
+                if (Test-Path -LiteralPath $downloadRoot -PathType Container) {
+                    Remove-Item -LiteralPath $downloadRoot -Recurse -Force
+                }
             }
         }
-        finally {
-            $archive.Dispose()
-            $extractionFullPath = [IO.Path]::GetFullPath($extractionRoot)
-            if ($extractionFullPath.StartsWith((Get-ProofDirectoryPrefix -Path $absoluteTempRoot), $pathComparison) -and
-                (Test-Path -LiteralPath $extractionFullPath -PathType Container)) {
-                Remove-Item -LiteralPath $extractionRoot -Recurse -Force
+        else {
+            $zipPath = Join-Path $absoluteTempRoot (([guid]::NewGuid().ToString('N')) + '.zip')
+            $escapedName = [Uri]::EscapeDataString($artifactName)
+            $downloadUri = "$baseUri/build/builds/$RunId/artifacts?artifactName=$escapedName&api-version=$apiVersion"
+            try {
+                Invoke-WebRequest -Uri $downloadUri -Method Get -Headers (@{ Authorization = "Basic $authorization"; Accept = 'application/zip' }) -OutFile $zipPath -ErrorAction Stop | Out-Null
+            }
+            catch {
+                throw "Telechargement de l'artefact '$artifactNameForDisk' impossible ; aucun contenu brut n'a ete conserve."
+            }
+
+            $zipBytes = [IO.File]::ReadAllBytes($zipPath)
+            if ($zipBytes.Length -lt 4 -or $zipBytes[0] -ne 0x50 -or $zipBytes[1] -ne 0x4B) {
+                throw "La reponse de l'artefact '$artifactNameForDisk' n'est pas une archive ZIP."
+            }
+
+            $archive = [IO.Compression.ZipFile]::OpenRead($zipPath)
+            $extractionRoot = Join-Path $absoluteTempRoot ("extract-" + [guid]::NewGuid().ToString('N'))
+            [void][IO.Directory]::CreateDirectory($extractionRoot)
+            try {
+                foreach ($entry in $archive.Entries) {
+                    if ([string]::IsNullOrWhiteSpace($entry.Name)) { continue }
+                    $entryPath = $entry.FullName.Replace('\', '/')
+                    $targetPath = Get-SafeArtifactPath -ArtifactName $artifactNameForDisk -RelativePath $entryPath
+                    $sourceFileName = [guid]::NewGuid().ToString('N') + [IO.Path]::GetExtension($entry.Name)
+                    $sourceFilePath = Join-Path $extractionRoot $sourceFileName
+                    $extractionPrefix = Get-ProofDirectoryPrefix -Path $extractionRoot
+                    if (-not [IO.Path]::GetFullPath($sourceFilePath).StartsWith($extractionPrefix, $pathComparison)) {
+                        throw 'Un chemin temporaire d''artefact sort du dossier de capture.'
+                    }
+                    $sourceStream = $entry.Open()
+                    $targetStream = [IO.File]::Create($sourceFilePath)
+                    try { $sourceStream.CopyTo($targetStream) }
+                    finally { $targetStream.Dispose(); $sourceStream.Dispose() }
+                    Save-SanitizedArtifactFile -SourcePath $sourceFilePath -TargetPath $targetPath
+                }
+            }
+            finally {
+                $archive.Dispose()
+                $extractionFullPath = [IO.Path]::GetFullPath($extractionRoot)
+                if ($extractionFullPath.StartsWith((Get-ProofDirectoryPrefix -Path $absoluteTempRoot), $pathComparison) -and
+                    (Test-Path -LiteralPath $extractionFullPath -PathType Container)) {
+                    Remove-Item -LiteralPath $extractionRoot -Recurse -Force
+                }
             }
         }
     }

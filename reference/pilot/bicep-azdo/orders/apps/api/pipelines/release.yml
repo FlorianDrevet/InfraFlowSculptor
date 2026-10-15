@@ -10,7 +10,7 @@ resources:
         include:
         - main
 extends:
-  template: .ifs/templates/app-release.yml
+  template: /.ifs/templates/app-release.yml
   parameters:
     project: shop
     component: orders

@@ -10,7 +10,7 @@ resources:
         include:
         - main
 extends:
-  template: .ifs/templates/infra-release.yml
+  template: /.ifs/templates/infra-release.yml
   parameters:
     project: shop
     component: platform
