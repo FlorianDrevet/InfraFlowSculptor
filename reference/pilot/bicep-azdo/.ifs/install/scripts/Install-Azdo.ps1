@@ -150,10 +150,15 @@ function Get-IfsPipelineDefinition {
 
 function Get-IfsCheckType {
     param([Parameter(Mandatory)] [string] $Pattern)
-    $typesResponse = Invoke-IfsAdoApi -Path "pipelines/checks/types?api-version=$script:ChecksApiVersion"
-    $type = @(Get-IfsAdoValue $typesResponse | Where-Object { ([string]$_.name -match $Pattern) -or ([string]$_.displayName -match $Pattern) } | Select-Object -First 1)
-    if ($type.Count -eq 0) { throw "Azure DevOps n'expose pas le type de controle '$Pattern'." }
-    return $type[0]
+    $definitions = @(
+        [pscustomobject]@{ Pattern = '^(Approval)$'; Id = '8c6f20a7-a545-4486-9777-f762fafe0d4d'; Name = 'Approval' }
+        [pscustomobject]@{ Pattern = 'Exclusive.?Lock'; Id = '2ef31ad6-baa0-403a-8b45-2cbc9b4e5563'; Name = 'Exclusive Lock' }
+        [pscustomobject]@{ Pattern = 'Branch.?Control'; Id = 'fe1de3ee-a436-41b4-bb20-f6eb4cb879a7'; Name = 'Branch Control' }
+        [pscustomobject]@{ Pattern = 'Required.?Template'; Id = '4020e66e-b0f3-47e1-bc88-48f3cc59b5f3'; Name = 'Required Template' }
+    )
+    $type = @($definitions | Where-Object { $_.Pattern -eq $Pattern } | Select-Object -First 1)
+    if ($type.Count -eq 0) { throw "Le type de controle Azure DevOps '$Pattern' n'est pas pris en charge par le kit." }
+    return [pscustomobject]@{ id = $type[0].Id; name = $type[0].Name }
 }
 
 function Set-IfsEnvironment {
@@ -437,13 +442,13 @@ function Set-IfsCheck {
             }
             throw "Le controle '$($Type.name)' sur '$ResourceName' existe sans marque IFS et differe du modele."
         }
-        $body = [ordered]@{ id = [int]$current.id; resource = $current.resource; type = $Type; settings = $Settings; timeout = $Timeout; isDisabled = $false }
+        $body = [ordered]@{ id = [int]$current.id; resource = $current.resource; type = [ordered]@{ id = [string]$Type.id }; settings = $Settings; timeout = $Timeout; isDisabled = $false }
         if (-not $PSCmdlet.ShouldProcess($ResourceName, "actualiser le controle Azure DevOps '$($Type.name)'")) { return $current }
         $updated = Invoke-IfsAdoApi -Method PATCH -Path "pipelines/checks/configurations/$($current.id)?api-version=$script:ChecksApiVersion" -Body $body
         Add-IfsReportEvent -Target $ResourceName -Name "controle $($Type.name)" -Status 'mis a jour' -Details 'Reglages IFS realignes.'
         return $updated
     }
-    $body = [ordered]@{ resource = [ordered]@{ type = $ResourceType; id = [string]$ResourceId; name = $ResourceName }; type = [ordered]@{ id = $Type.id; name = $Type.name }; settings = $Settings; timeout = $Timeout }
+    $body = [ordered]@{ resource = [ordered]@{ type = $ResourceType; id = [string]$ResourceId; name = $ResourceName }; type = [ordered]@{ id = [string]$Type.id }; settings = $Settings; timeout = $Timeout }
     if (-not $PSCmdlet.ShouldProcess($ResourceName, "creer le controle Azure DevOps '$($Type.name)'")) { return $null }
     $created = Invoke-IfsAdoApi -Method POST -Path "pipelines/checks/configurations?api-version=$script:ChecksApiVersion" -Body $body
     Add-IfsReportEvent -Target $ResourceName -Name "controle $($Type.name)" -Status 'cree' -Details 'Controle ajoute.'
@@ -649,12 +654,16 @@ foreach ($target in $model.Targets) {
         $endpoint = @($endpointList | Where-Object { $_.name -eq $endpointName } | Select-Object -First 1)
         if ($endpoint.Count -eq 0) { throw "Service connection '$endpointName' introuvable en finalisation." }
         if ([string](Get-IfsAdoProperty -Object $endpoint[0] -Name 'description') -notmatch [regex]::Escape($script:OwnerMarker)) { throw "Service connection '$endpointName' sans marque IFS." }
-        $branchSettings = [ordered]@{ displayName = "$($script:OwnerMarker); ifs-kit-revision: $($model.Revision)"; allowedBranches = 'refs/heads/main'; verifyBranchProtection = $true; failOnUnknownProtectionStatus = $true }
+        $branchSettings = [ordered]@{
+            displayName = "$($script:OwnerMarker); ifs-kit-revision: $($model.Revision)"
+            definitionRef = [ordered]@{ id = '86b05a0c-73e6-4f7d-b3cf-e38f3b39a75b'; name = 'evaluatebranchProtection'; version = '0.0.1' }
+            inputs = [ordered]@{ allowedBranches = 'refs/heads/main'; ensureProtectionOfBranch = 'true'; allowUnknownStatusBranch = 'false' }
+        }
         $isApplicationEndpoint = -not [string]::IsNullOrWhiteSpace($suffix)
         $templatePath = Get-IfsRequiredTemplatePath -Target $target.Name -Application:$isApplicationEndpoint
         $requiredSettings = [ordered]@{
             displayName = "$($script:OwnerMarker); ifs-kit-revision: $($model.Revision)"
-            requiredTemplate = [ordered]@{ repositoryType = 'azuregit'; repositoryName = "$($script:Project)/$($script:RepositoryName)"; repositoryRef = $script:DefaultBranch; templatePath = $templatePath }
+            extendsChecks = @([ordered]@{ repositoryType = 'git'; repositoryName = "$($script:Project)/$($script:RepositoryName)"; repositoryRef = $script:DefaultBranch; templatePath = $templatePath })
         }
         $null = Set-IfsCheck -Type $branchType -ResourceType 'endpoint' -ResourceId ([string]$endpoint[0].id) -ResourceName $endpointName -Settings $branchSettings
         $null = Set-IfsCheck -Type $templateType -ResourceType 'endpoint' -ResourceId ([string]$endpoint[0].id) -ResourceName $endpointName -Settings $requiredSettings

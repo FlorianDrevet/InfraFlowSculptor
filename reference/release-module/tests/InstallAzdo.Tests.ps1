@@ -48,6 +48,8 @@ Describe 'Finalisation du kit Azure DevOps' {
         $global:IFS_ADO_TIMELINE_READS = 0
         $global:IFS_ADO_PATCHES = [Collections.Generic.List[object]]::new()
         $global:IFS_ADO_CHECK_POSTS = [Collections.Generic.List[object]]::new()
+        $global:IFS_ADO_TYPE_API_CALLS = [Collections.Generic.List[string]]::new()
+        $global:IFS_ADO_THROW_CHECK_POST_AT = 1
         $global:IFS_ADO_DEFINITIONS = @(
             [pscustomobject]@{
                 id = 201
@@ -76,7 +78,8 @@ Describe 'Finalisation du kit Azure DevOps' {
             }
             if ($Method -eq 'POST' -and $path -match 'pipelines/checks/configurations') {
                 $global:IFS_ADO_CHECK_POSTS.Add([pscustomobject]@{ Uri = [string]$Uri; Body = $Body })
-                throw 'simulated check failure'
+                if ($global:IFS_ADO_CHECK_POSTS.Count -eq $global:IFS_ADO_THROW_CHECK_POST_AT) { throw 'simulated check failure' }
+                return [pscustomobject]@{ id = 500 + $global:IFS_ADO_CHECK_POSTS.Count }
             }
             if ($path -match 'git/repositories/') { return [pscustomobject]@{ defaultBranch = 'refs/heads/main' } }
             if ($path -match 'distributedtask/queues') {
@@ -117,12 +120,8 @@ Describe 'Finalisation du kit Azure DevOps' {
                 return [pscustomobject]@{ value = @([pscustomobject]@{ id = 'approver-id'; providerDisplayName = 'Shop Release Approvers'; displayName = 'Shop Release Approvers' }) }
             }
             if ($path -match 'pipelines/checks/types') {
-                return [pscustomobject]@{ value = @(
-                    [pscustomobject]@{ id = 'approval'; name = 'Approval'; displayName = 'Approval' }
-                    [pscustomobject]@{ id = 'lock'; name = 'Exclusive Lock'; displayName = 'Exclusive Lock' }
-                    [pscustomobject]@{ id = 'branch'; name = 'Branch Control'; displayName = 'Branch Control' }
-                    [pscustomobject]@{ id = 'template'; name = 'Required Template'; displayName = 'Required Template' }
-                ) }
+                $global:IFS_ADO_TYPE_API_CALLS.Add($path)
+                throw 'unsupported check-types API called'
             }
             if ($path -match 'distributedtask/environments\?') { return [pscustomobject]@{ value = @([pscustomobject]@{ id = 401; name = 'shop-dev'; description = 'managed-by: infraflowsculptor' }) } }
             if ($path -match 'pipelines/checks/configurations') { return [pscustomobject]@{ value = @() } }
@@ -133,7 +132,7 @@ Describe 'Finalisation du kit Azure DevOps' {
     AfterEach {
         foreach ($name in $script:environmentNames) { [Environment]::SetEnvironmentVariable($name, $script:environmentBackup[$name], 'Process') }
         if (Test-Path -LiteralPath $script:tempRoot) { Remove-Item -LiteralPath $script:tempRoot -Recurse -Force }
-        Remove-Variable -Name IFS_ADO_FINALIZE_MODE, IFS_ADO_CURRENT_BUILD_READS, IFS_ADO_TIMELINE_READS, IFS_ADO_PATCHES, IFS_ADO_CHECK_POSTS, IFS_ADO_DEFINITIONS, IFS_ADO_ENDPOINTS -Scope Global -ErrorAction SilentlyContinue
+        Remove-Variable -Name IFS_ADO_FINALIZE_MODE, IFS_ADO_CURRENT_BUILD_READS, IFS_ADO_TIMELINE_READS, IFS_ADO_PATCHES, IFS_ADO_CHECK_POSTS, IFS_ADO_TYPE_API_CALLS, IFS_ADO_THROW_CHECK_POST_AT, IFS_ADO_DEFINITIONS, IFS_ADO_ENDPOINTS -Scope Global -ErrorAction SilentlyContinue
     }
 
     It "retire l'autorisation temporaire si le groupe approbateur est absent" {
@@ -202,6 +201,7 @@ Describe 'Finalisation du kit Azure DevOps' {
         $global:IFS_ADO_PATCHES.Count | Should -BeGreaterThan 0
         $global:IFS_ADO_CHECK_POSTS.Count | Should -Be 1
         $approval = [string]$global:IFS_ADO_CHECK_POSTS[0].Body | ConvertFrom-Json
+        $approval.type.id | Should -Be '8c6f20a7-a545-4486-9777-f762fafe0d4d'
         $approval.settings.approvers[0].id | Should -Be 'approver-id'
         $approval.settings.approvers[0].displayName | Should -Be 'Shop Release Approvers'
     }
@@ -216,8 +216,31 @@ Describe 'Finalisation du kit Azure DevOps' {
         { & $script:installScript -Phase Finalize -RepositoryPath $script:tempRoot } | Should -Throw '*simulated check failure*'
         $global:IFS_ADO_CHECK_POSTS.Count | Should -Be 1
         $approval = [string]$global:IFS_ADO_CHECK_POSTS[0].Body | ConvertFrom-Json
+        $approval.type.id | Should -Be '8c6f20a7-a545-4486-9777-f762fafe0d4d'
         $approval.settings.approvers[0].id | Should -Be 'approver-id'
         $approval.settings.approvers[0].displayName | Should -Be 'Shop Release Approvers'
+    }
+
+    It 'utilise les types fixes des controles et evite la route de liste non disponible' {
+        $global:IFS_ADO_FINALIZE_MODE = 'PresentApprover'
+        $global:IFS_ADO_THROW_CHECK_POST_AT = 3
+
+        { & $script:installScript -Phase Finalize -RepositoryPath $script:tempRoot } | Should -Throw '*simulated check failure*'
+        $global:IFS_ADO_TYPE_API_CALLS.Count | Should -Be 0
+        $global:IFS_ADO_CHECK_POSTS.Count | Should -Be 3
+
+        $checkTypes = @($global:IFS_ADO_CHECK_POSTS | ForEach-Object { [string]$_.Body | ConvertFrom-Json })
+        $checkTypes[0].type.id | Should -Be '2ef31ad6-baa0-403a-8b45-2cbc9b4e5563'
+        $checkTypes[1].type.id | Should -Be 'fe1de3ee-a436-41b4-bb20-f6eb4cb879a7'
+        $checkTypes[1].settings.definitionRef.id | Should -Be '86b05a0c-73e6-4f7d-b3cf-e38f3b39a75b'
+        $checkTypes[1].settings.inputs.allowedBranches | Should -Be 'refs/heads/main'
+        $checkTypes[1].settings.inputs.ensureProtectionOfBranch | Should -Be 'true'
+        $checkTypes[1].settings.inputs.allowUnknownStatusBranch | Should -Be 'false'
+        $checkTypes[2].type.id | Should -Be '4020e66e-b0f3-47e1-bc88-48f3cc59b5f3'
+        $checkTypes[2].settings.extendsChecks[0].repositoryType | Should -Be 'git'
+        $checkTypes[2].settings.extendsChecks[0].repositoryName | Should -Be 'shop/InfraFlowSculptor'
+        $checkTypes[2].settings.extendsChecks[0].repositoryRef | Should -Be 'refs/heads/main'
+        $checkTypes[2].settings.extendsChecks[0].templatePath | Should -Be '.ifs/templates/infra-release.yml'
     }
 
     It 'utilise la file du run courant si le projet ne renvoie aucune file' {
