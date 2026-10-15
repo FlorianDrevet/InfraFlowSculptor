@@ -93,7 +93,7 @@ jobs:
         shell: pwsh
         run: |
           $version = (Get-Content reference/pilot/pins.json -Raw | ConvertFrom-Json).bicepCliVersion
-          az bicep install --version $version
+          az bicep install --version "v$version"
           $output = az bicep version | Out-String
           if ($LASTEXITCODE -ne 0 -or $output -notmatch "Bicep CLI version $([regex]::Escape($version))\b") {
             throw "La version Bicep installée ne correspond pas à $version : $output"

@@ -3,7 +3,8 @@ Describe 'Profil de coût de publication P-08' {
         $script:repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
         $script:proofToolsPath = Join-Path $script:repoRoot 'tools/proofs/ProofTools.psm1'
         $script:pilotRoot = Join-Path $script:repoRoot 'reference/pilot/bicep-azdo'
-        $script:azExecutable = (Get-Command -Name az.cmd -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+        $script:azCommandName = if ($IsWindows) { 'az.cmd' } else { 'az' }
+        $script:azExecutable = (Get-Command -Name $script:azCommandName -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
         $script:profilePaths = @(
             'core/infra/main.dev.bicepparam'
             'core/infra/main.prd.bicepparam'
