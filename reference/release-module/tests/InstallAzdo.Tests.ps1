@@ -6,7 +6,7 @@ Describe 'Finalisation du kit Azure DevOps' {
         $script:environmentNames = @(
             'SYSTEM_COLLECTIONURI', 'SYSTEM_TEAMPROJECT', 'SYSTEM_TEAMPROJECTID', 'BUILD_REPOSITORY_ID',
             'BUILD_REPOSITORY_NAME', 'SYSTEM_ACCESSTOKEN', 'BUILD_SOURCEBRANCH', 'AGENT_TEMPDIRECTORY',
-            'BUILD_DEFINITIONID', 'BUILD_BUILDID'
+            'BUILD_DEFINITIONID', 'BUILD_BUILDID', 'IFS_READINESS_DEV', 'IFS_APP_AUTH_DEV'
         )
     }
 
@@ -42,6 +42,8 @@ Describe 'Finalisation du kit Azure DevOps' {
         $env:AGENT_TEMPDIRECTORY = $script:reportDirectory
         $env:BUILD_DEFINITIONID = '999'
         $env:BUILD_BUILDID = '1001'
+        [Environment]::SetEnvironmentVariable('IFS_READINESS_DEV', $null, 'Process')
+        [Environment]::SetEnvironmentVariable('IFS_APP_AUTH_DEV', $null, 'Process')
 
         $global:IFS_ADO_FINALIZE_MODE = 'MissingApprover'
         $global:IFS_ADO_CURRENT_BUILD_READS = 0
@@ -72,7 +74,7 @@ Describe 'Finalisation du kit Azure DevOps' {
         Mock Invoke-RestMethod {
             param($Method, $Uri, $Headers, $ContentType, $Body)
             $path = ([uri]$Uri).AbsolutePath + ([uri]$Uri).Query
-            if ($Method -eq 'PATCH' -and $path -match 'pipelines/pipelinePermissions/endpoint/') {
+            if ($Method -eq 'PATCH' -and $path -match 'pipelines/pipelinePermissions/(endpoint|environment)/') {
                 $global:IFS_ADO_PATCHES.Add([pscustomobject]@{ Uri = [string]$Uri; Body = $Body })
                 return [pscustomobject]@{}
             }
@@ -241,6 +243,17 @@ Describe 'Finalisation du kit Azure DevOps' {
         $checkTypes[2].settings.extendsChecks[0].repositoryName | Should -Be 'shop/InfraFlowSculptor'
         $checkTypes[2].settings.extendsChecks[0].repositoryRef | Should -Be 'refs/heads/main'
         $checkTypes[2].settings.extendsChecks[0].templatePath | Should -Be '.ifs/templates/infra-release.yml'
+    }
+
+    It 'finalise le rapport quand les variables de disponibilite Azure sont absentes' {
+        $global:IFS_ADO_FINALIZE_MODE = 'PresentApprover'
+        $global:IFS_ADO_THROW_CHECK_POST_AT = -1
+
+        { & $script:installScript -Phase Finalize -RepositoryPath $script:tempRoot } | Should -Not -Throw
+
+        $report = Get-Content -LiteralPath (Join-Path $script:reportDirectory 'ifs-install-report.json') -Raw | ConvertFrom-Json
+        $report.readiness[0].infraAuthentication | Should -Be 'non verifie'
+        $report.readiness[0].appAuthentication | Should -Be 'non verifie'
     }
 
     It 'utilise la file du run courant si le projet ne renvoie aucune file' {

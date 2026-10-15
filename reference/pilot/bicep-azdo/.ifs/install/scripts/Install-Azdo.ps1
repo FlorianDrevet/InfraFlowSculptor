@@ -690,8 +690,9 @@ foreach ($target in $model.Targets) {
 }
 
 $script:Report.readiness = @($model.Targets | ForEach-Object {
-    $infraState = [string](Get-Item "Env:IFS_READINESS_$($_.Name.ToUpperInvariant())" -ErrorAction SilentlyContinue).Value
-    $appState = [string](Get-Item "Env:IFS_APP_AUTH_$($_.Name.ToUpperInvariant())" -ErrorAction SilentlyContinue).Value
+    $targetSuffix = $_.Name.ToUpperInvariant()
+    $infraState = [string][Environment]::GetEnvironmentVariable("IFS_READINESS_$targetSuffix", [EnvironmentVariableTarget]::Process)
+    $appState = [string][Environment]::GetEnvironmentVariable("IFS_APP_AUTH_$targetSuffix", [EnvironmentVariableTarget]::Process)
     [ordered]@{
         target = $_.Name
         infraAuthentication = $(if ($infraState) { $infraState } else { 'non verifie' })
