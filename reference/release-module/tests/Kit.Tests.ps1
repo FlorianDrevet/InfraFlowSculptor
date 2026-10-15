@@ -177,6 +177,8 @@ Describe 'Kit installation P-05' {
                 RoleDefinitionId = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
             }
             Set-IfsRoleAssignment @arguments | Should -Be 'cree'
+            [void]$global:IFS_ROLE_ASSIGNMENTS[0].PSObject.Properties.Remove('condition')
+            [void]$global:IFS_ROLE_ASSIGNMENTS[0].PSObject.Properties.Remove('conditionVersion')
             Set-IfsRoleAssignment @arguments | Should -Be 'laisse tel quel'
         }
 

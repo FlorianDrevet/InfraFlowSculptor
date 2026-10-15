@@ -457,7 +457,9 @@ function Set-IfsRoleAssignment {
         } | Select-Object -First 1)
         if ($equivalent.Count -gt 0) {
             $current = $equivalent[0]
-            $sameCondition = ([string]$current.condition -eq [string]$Condition) -and ([string]$current.conditionVersion -eq $(if ($Condition) { '2.0' } else { '' }))
+            $currentCondition = [string](Get-IfsObjectProperty -Object $current -Name 'condition')
+            $currentConditionVersion = [string](Get-IfsObjectProperty -Object $current -Name 'conditionVersion')
+            $sameCondition = ($currentCondition -eq [string]$Condition) -and ($currentConditionVersion -eq $(if ($Condition) { '2.0' } else { '' }))
             if (-not $sameCondition) {
                 throw "Une attribution preexistante non geree pour '$RoleDefinitionId' ne respecte pas la condition RBAC attendue; aucune attribution ne sera modifiee."
             }
@@ -472,7 +474,9 @@ function Set-IfsRoleAssignment {
         if ([string]$current.description -notmatch [regex]::Escape("managed-by: $script:IfsManagedBy")) {
             throw "L'attribution '$assignmentId' existe sans marque de propriete IFS; elle ne sera pas modifiee."
         }
-        $conditionMatches = ([string]$current.condition -eq [string]$Condition) -and ([string]$current.conditionVersion -eq $(if ($Condition) { '2.0' } else { '' }))
+        $currentCondition = [string](Get-IfsObjectProperty -Object $current -Name 'condition')
+        $currentConditionVersion = [string](Get-IfsObjectProperty -Object $current -Name 'conditionVersion')
+        $conditionMatches = ($currentCondition -eq [string]$Condition) -and ($currentConditionVersion -eq $(if ($Condition) { '2.0' } else { '' }))
         $descriptionMatches = [string]$current.description -eq $expectedDescription
         if (([string]$current.roleDefinitionId).TrimEnd('/') -match [regex]::Escape($roleId) -and $conditionMatches -and $descriptionMatches) {
             return 'laisse tel quel'
