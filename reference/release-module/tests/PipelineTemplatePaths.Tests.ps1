@@ -27,3 +27,21 @@ Describe 'Chemins des templates Azure Pipelines dans la reference' {
         }
     }
 }
+
+Describe "Exposition du principal de service aux tâches AzureCLI infra" {
+    BeforeAll {
+        $script:repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
+        $script:pilotRoot = Join-Path $script:repoRoot 'reference/pilot/bicep-azdo'
+        $script:infraStagesPath = Join-Path $script:pilotRoot '.ifs/templates/infra-target-stages.yml'
+        $script:infraStages = [IO.File]::ReadAllText($script:infraStagesPath)
+    }
+
+    It "Expose servicePrincipalId à la tâche d’aperçu" {
+        $taskStart = $script:infraStages.IndexOf('    - task: AzureCLI@2', [StringComparison]::Ordinal)
+        $taskEnd = $script:infraStages.IndexOf('    - publish:', $taskStart, [StringComparison]::Ordinal)
+        $taskStart | Should -BeGreaterThan -1
+        $taskEnd | Should -BeGreaterThan $taskStart
+        $previewTask = $script:infraStages.Substring($taskStart, $taskEnd - $taskStart)
+        $previewTask | Should -Match '(?m)^\s*addSpnToEnvironment:\s*true\b'
+    }
+}

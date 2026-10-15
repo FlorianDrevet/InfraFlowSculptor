@@ -45,6 +45,7 @@ stages:
           -TemplateFile "$(Pipeline.Workspace)/ci/infra/${{ parameters.component }}/infra/main.bicep"
           -ParameterFile "$(Pipeline.Workspace)/ci/infra/${{ parameters.component }}/infra/main.${{ parameters.target.name }}.bicepparam"
           -OutputDirectory "$(Pipeline.Workspace)/ifs-preview"
+        addSpnToEnvironment: true
       env:
         ${{ each secretWrite in parameters.secretWrites }}:
           ${{ secretWrite.name }}: ${{ secretWrite.value }}
