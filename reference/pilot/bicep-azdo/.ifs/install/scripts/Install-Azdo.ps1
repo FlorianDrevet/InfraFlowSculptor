@@ -665,7 +665,7 @@ foreach ($target in $model.Targets) {
         $templatePath = Get-IfsRequiredTemplatePath -Target $target.Name -Application:$isApplicationEndpoint
         $requiredSettings = [ordered]@{
             displayName = "$($script:OwnerMarker); ifs-kit-revision: $($model.Revision)"
-            extendsChecks = @([ordered]@{ repositoryType = 'git'; repositoryName = "$($script:Project)/$($script:RepositoryName)"; repositoryRef = $script:DefaultBranch; templatePath = $templatePath })
+            extendsChecks = @([ordered]@{ repositoryType = 'git'; repositoryName = $script:RepositoryName; repositoryRef = $script:DefaultBranch; templatePath = $templatePath })
         }
         $null = Set-IfsCheck -Type $branchType -ResourceType 'endpoint' -ResourceId ([string]$endpoint[0].id) -ResourceName $endpointName -Settings $branchSettings
         $null = Set-IfsCheck -Type $templateType -ResourceType 'endpoint' -ResourceId ([string]$endpoint[0].id) -ResourceName $endpointName -Settings $requiredSettings
