@@ -314,7 +314,9 @@ function Get-IfsManagedPipelineId {
     $managed = @(Get-IfsAdoValue $response | Where-Object {
         ([string]$_.path).StartsWith("\$ProjectCode", [StringComparison]::OrdinalIgnoreCase) -and [string]$_.description -match [regex]::Escape($script:OwnerMarker)
     } | ForEach-Object { [int]$_.id })
-    $managed += @($CurrentDefinitions | Where-Object { $_.Id } | ForEach-Object { [int]$_.Id })
+    $managed += @($CurrentDefinitions | Where-Object {
+        $null -ne $_.PSObject.Properties['Id'] -and [int]$_.Id -gt 0
+    } | ForEach-Object { [int]$_.Id })
     if ($env:BUILD_DEFINITIONID -match '^\d+$') { $managed += [int]$env:BUILD_DEFINITIONID }
     return @($managed | Sort-Object -Unique)
 }

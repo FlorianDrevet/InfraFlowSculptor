@@ -127,6 +127,15 @@ Describe 'Finalisation du kit Azure DevOps' {
         }
     }
 
+    It "retire les autorisations temporaires si Prepare a echoue avant de creer les pipelines" {
+        $global:IFS_ADO_DEFINITIONS = @()
+
+        { & $script:installScript -Phase Finalize -RepositoryPath $script:tempRoot } | Should -Throw '*absent apres la phase Prepare*'
+
+        @($global:IFS_ADO_PATCHES | Where-Object { $_.Uri -match '/endpoint/301\?' }).Count | Should -BeGreaterThan 0
+        @($global:IFS_ADO_PATCHES | Where-Object { $_.Uri -match '/endpoint/302\?' }).Count | Should -BeGreaterThan 0
+    }
+
     It 'utilise la file du run courant si le projet ne renvoie aucune file' {
         $global:IFS_ADO_FINALIZE_MODE = 'EmptyQueues'
 
