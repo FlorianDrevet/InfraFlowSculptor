@@ -422,7 +422,7 @@ function Set-IfsCheck {
         [int] $Timeout = 43200,
         [switch] $ImmutableExisting
     )
-    $query = "pipelines/checks/configurations?resourceType=$([uri]::EscapeDataString($ResourceType))&resourceId=$([uri]::EscapeDataString($ResourceId))&api-version=$script:ChecksApiVersion"
+    $query = "pipelines/checks/configurations?resourceType=$([uri]::EscapeDataString($ResourceType))&resourceId=$([uri]::EscapeDataString($ResourceId))&`$expand=settings&api-version=$script:ChecksApiVersion"
     $response = Invoke-IfsAdoApi -Path $query
     $existing = @(Get-IfsAdoValue $response | Where-Object { $_.type.id -eq $Type.id } | Select-Object -First 1)
     if ($existing.Count -gt 0) {
@@ -431,10 +431,12 @@ function Set-IfsCheck {
             Add-IfsReportEvent -Target $ResourceName -Name "controle $($Type.name)" -Status 'laisse tel quel' -Details 'Le verrou existe deja; aucune modification.'
             return $current
         }
-        $currentInstructions = [string]$current.settings.instructions
-        $hasMarker = $currentInstructions.Contains($script:OwnerMarker) -or ([string]$current.settings.displayName).Contains($script:OwnerMarker)
+        $currentSettings = Get-IfsAdoProperty -Object $current -Name 'settings'
+        $currentInstructions = [string](Get-IfsAdoProperty -Object $currentSettings -Name 'instructions')
+        $currentDisplayName = [string](Get-IfsAdoProperty -Object $currentSettings -Name 'displayName')
+        $hasMarker = $currentInstructions.Contains($script:OwnerMarker) -or $currentDisplayName.Contains($script:OwnerMarker)
         if (-not $hasMarker) {
-            $jsonCurrent = ConvertTo-Json -InputObject $current.settings -Depth 50 -Compress
+            $jsonCurrent = ConvertTo-Json -InputObject $currentSettings -Depth 50 -Compress
             $jsonExpected = ConvertTo-Json -InputObject $Settings -Depth 50 -Compress
             if ($jsonCurrent -eq $jsonExpected) {
                 Add-IfsReportEvent -Target $ResourceName -Name "controle $($Type.name)" -Status 'deja conforme' -Details 'Les reglages correspondent au modele.'

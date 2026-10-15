@@ -50,6 +50,7 @@ Describe 'Finalisation du kit Azure DevOps' {
         $global:IFS_ADO_TIMELINE_READS = 0
         $global:IFS_ADO_PATCHES = [Collections.Generic.List[object]]::new()
         $global:IFS_ADO_CHECK_POSTS = [Collections.Generic.List[object]]::new()
+        $global:IFS_ADO_CHECK_GETS = [Collections.Generic.List[string]]::new()
         $global:IFS_ADO_TYPE_API_CALLS = [Collections.Generic.List[string]]::new()
         $global:IFS_ADO_THROW_CHECK_POST_AT = 1
         $global:IFS_ADO_DEFINITIONS = @(
@@ -83,6 +84,7 @@ Describe 'Finalisation du kit Azure DevOps' {
                 if ($global:IFS_ADO_CHECK_POSTS.Count -eq $global:IFS_ADO_THROW_CHECK_POST_AT) { throw 'simulated check failure' }
                 return [pscustomobject]@{ id = 500 + $global:IFS_ADO_CHECK_POSTS.Count }
             }
+            if ($Method -eq 'PATCH' -and $path -match 'pipelines/checks/configurations/') { return [pscustomobject]@{ id = 510 } }
             if ($path -match 'git/repositories/') { return [pscustomobject]@{ defaultBranch = 'refs/heads/main' } }
             if ($path -match 'distributedtask/queues') {
                 if ($global:IFS_ADO_FINALIZE_MODE -in @('EmptyQueues', 'MissingBuildQueue')) { return [pscustomobject]@{ value = @() } }
@@ -126,7 +128,24 @@ Describe 'Finalisation du kit Azure DevOps' {
                 throw 'unsupported check-types API called'
             }
             if ($path -match 'distributedtask/environments\?') { return [pscustomobject]@{ value = @([pscustomobject]@{ id = 401; name = 'shop-dev'; description = 'managed-by: infraflowsculptor' }) } }
-            if ($path -match 'pipelines/checks/configurations') { return [pscustomobject]@{ value = @() } }
+            if ($Method -eq 'GET' -and $path -match 'pipelines/checks/configurations') {
+                $global:IFS_ADO_CHECK_GETS.Add($path)
+                if ($global:IFS_ADO_FINALIZE_MODE -eq 'ExistingBranchCheck' -and $path -match 'resourceId=401') {
+                    return [pscustomobject]@{ value = @([pscustomobject]@{ id = 509; type = [pscustomobject]@{ id = '2ef31ad6-baa0-403a-8b45-2cbc9b4e5563'; name = 'ExclusiveLock' } }) }
+                }
+                if ($global:IFS_ADO_FINALIZE_MODE -eq 'ExistingBranchCheck' -and $path -match 'resourceId=301') {
+                    if ($path.Contains('$expand=settings')) {
+                        $settings = [pscustomobject]@{
+                            displayName = 'managed-by: infraflowsculptor; ifs-kit-revision: 1'
+                            definitionRef = [pscustomobject]@{ id = '86b05a0c-73e6-4f7d-b3cf-e38f3b39a75b'; name = 'evaluatebranchProtection'; version = '0.0.1' }
+                            inputs = [pscustomobject]@{ allowedBranches = 'refs/heads/main'; ensureProtectionOfBranch = 'true'; allowUnknownStatusBranch = 'false' }
+                        }
+                        return [pscustomobject]@{ value = @([pscustomobject]@{ id = 510; resource = [pscustomobject]@{ type = 'endpoint'; id = '301'; name = 'ifs-shop-dev' }; type = [pscustomobject]@{ id = 'fe1de3ee-a436-41b4-bb20-f6eb4cb879a7'; name = 'Task Check' }; settings = $settings }) }
+                    }
+                    return [pscustomobject]@{ value = @([pscustomobject]@{ id = 510; resource = [pscustomobject]@{ type = 'endpoint'; id = '301'; name = 'ifs-shop-dev' }; type = [pscustomobject]@{ id = 'fe1de3ee-a436-41b4-bb20-f6eb4cb879a7'; name = 'Task Check' } }) }
+                }
+                return [pscustomobject]@{ value = @() }
+            }
             throw "Unexpected mock Azure DevOps request: $Method $path"
         }
     }
@@ -134,7 +153,7 @@ Describe 'Finalisation du kit Azure DevOps' {
     AfterEach {
         foreach ($name in $script:environmentNames) { [Environment]::SetEnvironmentVariable($name, $script:environmentBackup[$name], 'Process') }
         if (Test-Path -LiteralPath $script:tempRoot) { Remove-Item -LiteralPath $script:tempRoot -Recurse -Force }
-        Remove-Variable -Name IFS_ADO_FINALIZE_MODE, IFS_ADO_CURRENT_BUILD_READS, IFS_ADO_TIMELINE_READS, IFS_ADO_PATCHES, IFS_ADO_CHECK_POSTS, IFS_ADO_TYPE_API_CALLS, IFS_ADO_THROW_CHECK_POST_AT, IFS_ADO_DEFINITIONS, IFS_ADO_ENDPOINTS -Scope Global -ErrorAction SilentlyContinue
+        Remove-Variable -Name IFS_ADO_FINALIZE_MODE, IFS_ADO_CURRENT_BUILD_READS, IFS_ADO_TIMELINE_READS, IFS_ADO_PATCHES, IFS_ADO_CHECK_POSTS, IFS_ADO_CHECK_GETS, IFS_ADO_TYPE_API_CALLS, IFS_ADO_THROW_CHECK_POST_AT, IFS_ADO_DEFINITIONS, IFS_ADO_ENDPOINTS -Scope Global -ErrorAction SilentlyContinue
     }
 
     It "retire l'autorisation temporaire si le groupe approbateur est absent" {
@@ -254,6 +273,16 @@ Describe 'Finalisation du kit Azure DevOps' {
         $report = Get-Content -LiteralPath (Join-Path $script:reportDirectory 'ifs-install-report.json') -Raw | ConvertFrom-Json
         $report.readiness[0].infraAuthentication | Should -Be 'non verifie'
         $report.readiness[0].appAuthentication | Should -Be 'non verifie'
+    }
+
+    It 'demande les reglages des controles existants avant de les realigner' {
+        $global:IFS_ADO_FINALIZE_MODE = 'ExistingBranchCheck'
+        $global:IFS_ADO_THROW_CHECK_POST_AT = 1
+
+        { & $script:installScript -Phase Finalize -RepositoryPath $script:tempRoot } | Should -Throw '*simulated check failure*'
+
+        @($global:IFS_ADO_CHECK_GETS | Where-Object { $_.Contains('$expand=settings') }).Count | Should -BeGreaterThan 0
+        $global:IFS_ADO_PATCHES.Count | Should -BeGreaterThan 0
     }
 
     It 'utilise la file du run courant si le projet ne renvoie aucune file' {
