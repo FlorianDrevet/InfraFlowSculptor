@@ -480,6 +480,14 @@ $queueResponse = Invoke-IfsAdoApi -Path "distributedtask/queues?api-version=$scr
 $queues = @(Get-IfsAdoValue $queueResponse)
 $queue = @($queues | Where-Object { $_.name -match 'Azure Pipelines|Hosted' } | Select-Object -First 1)
 if ($queue.Count -eq 0) { $queue = @($queues | Select-Object -First 1) }
+if ($queue.Count -eq 0 -and $env:BUILD_BUILDID -match '^\d+$') {
+    $currentBuild = Invoke-IfsAdoApi -Path "build/builds/$($env:BUILD_BUILDID)?api-version=$script:ApiVersion"
+    $currentQueue = if ($null -ne $currentBuild -and $currentBuild.PSObject.Properties['queue']) { $currentBuild.queue } else { $null }
+    if ($null -ne $currentQueue -and $currentQueue.PSObject.Properties['id'] -and [int]$currentQueue.id -gt 0) {
+        $queue = @($currentQueue)
+        Write-Information -MessageData ("File d'agents derivee du run courant : {0}." -f [string]$currentQueue.name) -InformationAction Continue
+    }
+}
 if ($queue.Count -eq 0) { throw 'Aucune file d''agents Azure DevOps disponible dans ce projet.' }
 $queue = $queue[0]
 $definitions = @(Get-IfsPipelineDefinition -Model $model)

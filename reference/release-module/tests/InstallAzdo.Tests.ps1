@@ -5,7 +5,7 @@ Describe 'Finalisation du kit Azure DevOps' {
         $script:environmentNames = @(
             'SYSTEM_COLLECTIONURI', 'SYSTEM_TEAMPROJECT', 'SYSTEM_TEAMPROJECTID', 'BUILD_REPOSITORY_ID',
             'BUILD_REPOSITORY_NAME', 'SYSTEM_ACCESSTOKEN', 'BUILD_SOURCEBRANCH', 'AGENT_TEMPDIRECTORY',
-            'BUILD_DEFINITIONID'
+            'BUILD_DEFINITIONID', 'BUILD_BUILDID'
         )
     }
 
@@ -40,8 +40,10 @@ Describe 'Finalisation du kit Azure DevOps' {
         $env:BUILD_SOURCEBRANCH = 'refs/heads/main'
         $env:AGENT_TEMPDIRECTORY = $script:reportDirectory
         $env:BUILD_DEFINITIONID = '999'
+        $env:BUILD_BUILDID = '1001'
 
         $global:IFS_ADO_FINALIZE_MODE = 'MissingApprover'
+        $global:IFS_ADO_CURRENT_BUILD_READS = 0
         $global:IFS_ADO_PATCHES = [Collections.Generic.List[object]]::new()
         $global:IFS_ADO_DEFINITIONS = @(
             [pscustomobject]@{
@@ -71,11 +73,18 @@ Describe 'Finalisation du kit Azure DevOps' {
             }
             if ($Method -eq 'POST' -and $path -match 'pipelines/checks/configurations') { throw 'simulated check failure' }
             if ($path -match 'git/repositories/') { return [pscustomobject]@{ defaultBranch = 'refs/heads/main' } }
-            if ($path -match 'distributedtask/queues') { return [pscustomobject]@{ value = @([pscustomobject]@{ id = 1; name = 'Azure Pipelines' }) } }
+            if ($path -match 'distributedtask/queues') {
+                if ($global:IFS_ADO_FINALIZE_MODE -eq 'EmptyQueues') { return [pscustomobject]@{ value = @() } }
+                return [pscustomobject]@{ value = @([pscustomobject]@{ id = 1; name = 'Azure Pipelines' }) }
+            }
+            if ($path -match 'build/builds/1001') {
+                $global:IFS_ADO_CURRENT_BUILD_READS++
+                return [pscustomobject]@{ queue = [pscustomobject]@{ id = 41; name = 'Azure Pipelines' } }
+            }
             if ($path -match 'build/definitions') { return [pscustomobject]@{ value = $global:IFS_ADO_DEFINITIONS } }
             if ($path -match 'serviceendpoint/endpoints') { return [pscustomobject]@{ value = $global:IFS_ADO_ENDPOINTS } }
             if ($path -match 'identities\?') {
-                if ($global:IFS_ADO_FINALIZE_MODE -eq 'MissingApprover') { return [pscustomobject]@{ value = @() } }
+                if ($global:IFS_ADO_FINALIZE_MODE -in @('MissingApprover', 'EmptyQueues')) { return [pscustomobject]@{ value = @() } }
                 return [pscustomobject]@{ value = @([pscustomobject]@{ id = 'approver-id'; providerDisplayName = 'Shop Release Approvers'; displayName = 'Shop Release Approvers' }) }
             }
             if ($path -match 'pipelines/checks/types') {
@@ -95,7 +104,7 @@ Describe 'Finalisation du kit Azure DevOps' {
     AfterEach {
         foreach ($name in $script:environmentNames) { [Environment]::SetEnvironmentVariable($name, $script:environmentBackup[$name], 'Process') }
         if (Test-Path -LiteralPath $script:tempRoot) { Remove-Item -LiteralPath $script:tempRoot -Recurse -Force }
-        Remove-Variable -Name IFS_ADO_FINALIZE_MODE, IFS_ADO_PATCHES, IFS_ADO_DEFINITIONS, IFS_ADO_ENDPOINTS -Scope Global -ErrorAction SilentlyContinue
+        Remove-Variable -Name IFS_ADO_FINALIZE_MODE, IFS_ADO_CURRENT_BUILD_READS, IFS_ADO_PATCHES, IFS_ADO_DEFINITIONS, IFS_ADO_ENDPOINTS -Scope Global -ErrorAction SilentlyContinue
     }
 
     It "retire l'autorisation temporaire si le groupe approbateur est absent" {
@@ -110,6 +119,13 @@ Describe 'Finalisation du kit Azure DevOps' {
             $installer.Count | Should -Be 1
             $installer[0].authorized | Should -BeFalse
         }
+    }
+
+    It 'utilise la file du run courant si le projet ne renvoie aucune file' {
+        $global:IFS_ADO_FINALIZE_MODE = 'EmptyQueues'
+
+        { & $script:installScript -Phase Finalize -RepositoryPath $script:tempRoot } | Should -Throw '*Shop Release Approvers*introuvable*'
+        $global:IFS_ADO_CURRENT_BUILD_READS | Should -Be 1
     }
 
     It "retire l'autorisation temporaire si la creation d'un controle echoue" {
