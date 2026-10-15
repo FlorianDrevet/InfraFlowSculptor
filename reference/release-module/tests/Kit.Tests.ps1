@@ -210,6 +210,28 @@ Describe 'Kit installation P-05' {
         $list[0] | Should -Not -Contain '--all'
     }
 
+    It 'retourne Reason quand le membre SQL est deja present' {
+        $global:IFS_AZ_HANDLER = {
+            param($Arguments)
+            $global:LASTEXITCODE = 0
+            if ($Arguments.Count -ge 3 -and $Arguments[0] -eq 'ad' -and $Arguments[1] -eq 'group' -and $Arguments[2] -eq 'show') {
+                return '{"id":"group-object-id"}'
+            }
+            if ($Arguments.Count -ge 4 -and $Arguments[0] -eq 'ad' -and $Arguments[1] -eq 'group' -and $Arguments[2] -eq 'member' -and $Arguments[3] -eq 'check') {
+                return '{"value":true}'
+            }
+            return '{}'
+        }
+
+        InModuleScope IfsInstall {
+            $result = Add-IfsSqlGroupMember -PrincipalId '00000000-0000-0000-0000-000000000002'
+
+            $result.Status | Should -Be 'present'
+            $result.PSObject.Properties.Name | Should -Contain 'Reason'
+            $null = [pscustomobject]@{ Status = $result.Status; Command = $result.Command; Reason = $result.Reason }
+        }
+    }
+
     It 'met a jour une attribution RBAC geree avec le document JSON role-assignment' {
         $scope = '/subscriptions/00000000-0000-0000-0000-000000000001'
         $principalId = '00000000-0000-0000-0000-000000000002'

@@ -712,9 +712,9 @@ function Add-IfsSqlGroupMember {
         $group = Invoke-IfsAzJson -Arguments @('ad', 'group', 'show', '--group', $GroupName)
         if ($null -eq $group -or [string]::IsNullOrWhiteSpace([string]$group.id)) { throw "Groupe Entra introuvable: $GroupName" }
         $membership = Invoke-IfsAzJson -Arguments @('ad', 'group', 'member', 'check', '--group', [string]$group.id, '--member-id', $PrincipalId)
-        if ($membership.value -eq $true) { return [pscustomobject]@{ Status = 'present'; Command = $null } }
+        if ($membership.value -eq $true) { return [pscustomobject]@{ Status = 'present'; Command = $null; Reason = $null } }
         [void](Invoke-IfsAz -Arguments @('ad', 'group', 'member', 'add', '--group', [string]$group.id, '--member-id', $PrincipalId) -Write)
-        return [pscustomobject]@{ Status = $(if ($script:IfsWhatIf) { 'a faire' } else { 'ajoute' }); Command = "az ad group member add --group '$($group.id)' --member-id '$PrincipalId'" }
+        return [pscustomobject]@{ Status = $(if ($script:IfsWhatIf) { 'a faire' } else { 'ajoute' }); Command = "az ad group member add --group '$($group.id)' --member-id '$PrincipalId'"; Reason = $null }
     }
     catch {
         $groupId = $null
