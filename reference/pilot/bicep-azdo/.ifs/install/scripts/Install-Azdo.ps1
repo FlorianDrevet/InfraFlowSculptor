@@ -493,6 +493,20 @@ if ($queue.Count -eq 0 -and $env:BUILD_BUILDID -match '^\d+$') {
     $currentBuild = Invoke-IfsAdoApi -Path "build/builds/$($env:BUILD_BUILDID)?api-version=$script:ApiVersion"
     $currentQueue = Get-IfsAdoProperty -Object $currentBuild -Name 'queue'
     $currentQueueId = Get-IfsAdoProperty -Object $currentQueue -Name 'id'
+    if ($null -eq $currentQueueId -or [int]$currentQueueId -le 0) {
+        $timeline = Invoke-IfsAdoApi -Path "build/builds/$($env:BUILD_BUILDID)/timeline?api-version=$script:ApiVersion"
+        $records = Get-IfsAdoProperty -Object $timeline -Name 'records'
+        $currentJob = @($records | Where-Object {
+            [string](Get-IfsAdoProperty -Object $_ -Name 'type') -eq 'Job'
+        } | Select-Object -First 1)
+        $timelineQueueId = if ($currentJob.Count -gt 0) { Get-IfsAdoProperty -Object $currentJob[0] -Name 'queueId' } else { $null }
+        if ($null -ne $timelineQueueId -and [int]$timelineQueueId -gt 0) {
+            $queueName = Get-IfsAdoProperty -Object $currentQueue -Name 'name'
+            if ([string]::IsNullOrWhiteSpace([string]$queueName)) { $queueName = 'Azure Pipelines' }
+            $currentQueue = [ordered]@{ id = [int]$timelineQueueId; name = [string]$queueName }
+            $currentQueueId = $timelineQueueId
+        }
+    }
     if ($null -ne $currentQueue -and $null -ne $currentQueueId -and [int]$currentQueueId -gt 0) {
         $queue = @($currentQueue)
         $currentQueueName = Get-IfsAdoProperty -Object $currentQueue -Name 'name'
