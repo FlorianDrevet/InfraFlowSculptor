@@ -447,7 +447,7 @@ function Set-IfsRoleAssignment {
     $assignmentId = Get-IfsStableGuid -Value "$Scope|$PrincipalId|$roleId"
     $expectedDescription = "managed-by: $script:IfsManagedBy; ifs-kit-revision: $($script:IfsRevision)"
     if ($Description) { $expectedDescription += "; $Description" }
-    $existing = Invoke-IfsAzJson -Arguments @('role', 'assignment', 'list', '--scope', $Scope, '--all', '--subscription', $SubscriptionId)
+    $existing = Invoke-IfsAzJson -Arguments @('role', 'assignment', 'list', '--scope', $Scope, '--subscription', $SubscriptionId)
     $assignment = @($existing | Where-Object { [string]$_.name -eq $assignmentId } | Select-Object -First 1)
     if ($assignment.Count -eq 0) {
         $equivalent = @($existing | Where-Object {

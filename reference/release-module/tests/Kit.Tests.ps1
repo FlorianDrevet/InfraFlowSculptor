@@ -183,6 +183,33 @@ Describe 'Kit installation P-05' {
         @($global:IFS_AZ_CALLS | Where-Object { $_[0] -eq 'role' -and $_[1] -eq 'assignment' -and $_[2] -in @('create', 'update') }).Count | Should -Be 1
     }
 
+    It 'liste les attributions au scope exact sans --all' {
+        $global:IFS_AZ_HANDLER = {
+            param($Arguments)
+            $global:LASTEXITCODE = 0
+            if ($Arguments.Count -ge 3 -and $Arguments[0] -eq 'role' -and $Arguments[1] -eq 'assignment' -and $Arguments[2] -eq 'list') {
+                return '[]'
+            }
+            return '{}'
+        }
+
+        InModuleScope IfsInstall {
+            $script:IfsRevision = 1
+            $arguments = @{
+                SubscriptionId = '00000000-0000-0000-0000-000000000001'
+                Scope = '/subscriptions/00000000-0000-0000-0000-000000000001'
+                PrincipalId = '00000000-0000-0000-0000-000000000002'
+                RoleDefinitionId = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
+            }
+            Set-IfsRoleAssignment @arguments | Should -Be 'cree'
+        }
+
+        $list = @($global:IFS_AZ_CALLS | Where-Object { $_[0] -eq 'role' -and $_[1] -eq 'assignment' -and $_[2] -eq 'list' })
+        $list.Count | Should -Be 1
+        $list[0] | Should -Contain '--scope'
+        $list[0] | Should -Not -Contain '--all'
+    }
+
     It 'met a jour une attribution RBAC geree avec le document JSON role-assignment' {
         $scope = '/subscriptions/00000000-0000-0000-0000-000000000001'
         $principalId = '00000000-0000-0000-0000-000000000002'
