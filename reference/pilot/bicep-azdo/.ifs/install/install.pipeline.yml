@@ -19,6 +19,7 @@ steps:
   env:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     BUILD_BUILDID: $(Build.BuildId)
+    BUILD_DEFINITIONID: $(System.DefinitionId)
 
 - task: AzureCLI@2
   displayName: Vérifier l'identité d'infrastructure dev et lancer un what-if vide
@@ -151,6 +152,7 @@ steps:
   env:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     BUILD_BUILDID: $(Build.BuildId)
+    BUILD_DEFINITIONID: $(System.DefinitionId)
 
 - task: PublishPipelineArtifact@1
   displayName: Publier le rapport d'installation

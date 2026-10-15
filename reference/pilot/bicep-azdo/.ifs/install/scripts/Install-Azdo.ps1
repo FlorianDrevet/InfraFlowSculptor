@@ -318,6 +318,14 @@ function Get-IfsManagedPipelineId {
         $null -ne $_.PSObject.Properties['Id'] -and [int]$_.Id -gt 0
     } | ForEach-Object { [int]$_.Id })
     if ($env:BUILD_DEFINITIONID -match '^\d+$') { $managed += [int]$env:BUILD_DEFINITIONID }
+    elseif ($env:BUILD_BUILDID -match '^\d+$') {
+        $currentBuild = Invoke-IfsAdoApi -Path "build/builds/$($env:BUILD_BUILDID)?api-version=$script:ApiVersion"
+        $currentDefinition = Get-IfsAdoProperty -Object $currentBuild -Name 'definition'
+        $currentDefinitionId = Get-IfsAdoProperty -Object $currentDefinition -Name 'id'
+        if ($null -ne $currentDefinitionId -and [int]$currentDefinitionId -gt 0) {
+            $managed += [int]$currentDefinitionId
+        }
+    }
     return @($managed | Sort-Object -Unique)
 }
 

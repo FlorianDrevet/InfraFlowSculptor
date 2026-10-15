@@ -2,6 +2,7 @@ Describe 'Finalisation du kit Azure DevOps' {
     BeforeAll {
         $script:repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
         $script:installScript = Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/.ifs/install/scripts/Install-Azdo.ps1'
+        $script:installPipeline = Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/.ifs/install/install.pipeline.yml'
         $script:environmentNames = @(
             'SYSTEM_COLLECTIONURI', 'SYSTEM_TEAMPROJECT', 'SYSTEM_TEAMPROJECTID', 'BUILD_REPOSITORY_ID',
             'BUILD_REPOSITORY_NAME', 'SYSTEM_ACCESSTOKEN', 'BUILD_SOURCEBRANCH', 'AGENT_TEMPDIRECTORY',
@@ -84,6 +85,7 @@ Describe 'Finalisation du kit Azure DevOps' {
             }
             if ($path -match 'build/builds/1001') {
                 $global:IFS_ADO_CURRENT_BUILD_READS++
+                if ($global:IFS_ADO_FINALIZE_MODE -eq 'MissingBuildDefinition') { return [ordered]@{ id = 1001; definition = [ordered]@{ id = 999 } } }
                 if ($global:IFS_ADO_FINALIZE_MODE -eq 'MissingBuildQueue') { return [ordered]@{ id = 1001 } }
                 return [ordered]@{ queue = [ordered]@{ id = 41; name = 'Azure Pipelines' } }
             }
@@ -134,6 +136,26 @@ Describe 'Finalisation du kit Azure DevOps' {
 
         @($global:IFS_ADO_PATCHES | Where-Object { $_.Uri -match '/endpoint/301\?' }).Count | Should -BeGreaterThan 0
         @($global:IFS_ADO_PATCHES | Where-Object { $_.Uri -match '/endpoint/302\?' }).Count | Should -BeGreaterThan 0
+    }
+
+    It "retrouve le pipeline courant quand BUILD_DEFINITIONID est absent pendant le nettoyage" {
+        $global:IFS_ADO_FINALIZE_MODE = 'MissingBuildDefinition'
+        $global:IFS_ADO_DEFINITIONS = @()
+        [Environment]::SetEnvironmentVariable('BUILD_DEFINITIONID', $null, 'Process')
+
+        { & $script:installScript -Phase Finalize -RepositoryPath $script:tempRoot } | Should -Throw '*absent apres la phase Prepare*'
+        $global:IFS_ADO_CURRENT_BUILD_READS | Should -BeGreaterThan 0
+        $global:IFS_ADO_PATCHES.Count | Should -BeGreaterThan 0
+
+        foreach ($patch in $global:IFS_ADO_PATCHES) {
+            $body = [string]$patch.Body | ConvertFrom-Json
+            @($body.pipelines | Where-Object { [int]$_.id -eq 999 -and -not $_.authorized }).Count | Should -Be 1
+        }
+    }
+
+    It 'transmet BUILD_DEFINITIONID aux deux phases du pipeline installateur' {
+        $pipeline = Get-Content -LiteralPath $script:installPipeline -Raw
+        [regex]::Matches($pipeline, '(?m)^\s+BUILD_DEFINITIONID:\s+\$\(System\.DefinitionId\)\s*$').Count | Should -Be 2
     }
 
     It 'utilise la file du run courant si le projet ne renvoie aucune file' {
