@@ -85,6 +85,16 @@ Describe "Aperçu et empreinte" {
         (Get-Content (Join-Path $script:tempRoot "ifs-preview.json") -Raw | ConvertFrom-Json).fingerprint | Should -Not -BeNullOrEmpty
         ($global:IFS_AZ_CALLS | ForEach-Object { $_ -join " " } | Where-Object { $_ -match "lease|upload|delete|create|set|update" }) | Should -BeNullOrEmpty
         ($global:IFS_AZ_CALLS | ForEach-Object { $_ -join " " } | Where-Object { $_ -match "what-if|storage blob exists|storage blob download" }).Count | Should -BeGreaterThan 0
+        $whatIfCall = $global:IFS_AZ_CALLS | Where-Object { ($_ -join " ") -match "deployment sub what-if" } | Select-Object -First 1
+        $whatIfCall | Should -Contain "--no-pretty-print"
+    }
+
+    It "refuse une réponse What-If scalaire au lieu de publier un aperçu vide" {
+        $global:IFS_WHATIF = '"pas-un-objet"'
+
+        { Invoke-IfsPreview -ReleaseData $script:orderData -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -OutputDirectory $script:tempRoot } |
+            Should -Throw "*objet JSON What-If*"
+        Test-Path -LiteralPath (Join-Path $script:tempRoot "ifs-preview.json") | Should -BeFalse
     }
 
     It "inclut l'Object ID applicatif dans l'aperçu orders" {

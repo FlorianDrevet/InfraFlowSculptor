@@ -19,7 +19,7 @@ function Invoke-IfsAz {
 function ConvertFrom-IfsJson {
     param([AllowEmptyString()][string] $Json)
     if ([string]::IsNullOrWhiteSpace($Json)) { return $null }
-    try { return ConvertFrom-Json -InputObject $Json -Depth 100 }
+    try { return ConvertFrom-Json -InputObject $Json -Depth 100 -ErrorAction Stop }
     catch { throw ('La réponse Azure CLI n''est pas un JSON valide : {0}' -f $_.Exception.Message) }
 }
 
@@ -547,10 +547,13 @@ function Invoke-IfsPreview {
     }
     $whatIfResult = Invoke-IfsAz -Arguments (@(
         'deployment', 'sub', 'what-if', '--name', ('ifs-{0}-preview' -f $ReleaseData.unit),
-        '--location', $ReleaseData.location, '--template-file', $TemplateFile,
+        '--location', $ReleaseData.location, '--template-file', $TemplateFile, '--no-pretty-print',
         '--parameters'
     ) + $parameters + @('--result-format', 'FullResourcePayloads', '--output', 'json'))
     $whatIf = ConvertFrom-IfsJson $whatIfResult.Text
+    if ($null -eq $whatIf -or $null -eq (Get-IfsValue $whatIf 'changes' $null)) {
+        throw 'Azure CLI n''a pas renvoyé un objet JSON What-If valide avec la propriété changes.'
+    }
     $changes = @(Get-IfsWhatIfChange $whatIf)
     $stackResult = Invoke-IfsAz -Arguments @('stack', 'sub', 'show', '--name', $ReleaseData.unit, '--subscription', $ReleaseData.subscriptionId, '--output', 'json') -AllowFailure
     if ($stackResult.ExitCode -eq 0) { $stack = ConvertFrom-IfsJson $stackResult.Text }
