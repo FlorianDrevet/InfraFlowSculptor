@@ -872,7 +872,8 @@ Describe "Déploiement de pile et application" {
         $outputPath = Join-Path $script:tempRoot "app/ifs-app-report.json"
         $report = Invoke-IfsAppDeploy -Application "orders-api" -Component "orders" -Target "dev" `
             -ResourceId "/subscriptions/test/resourceGroups/test/providers/Microsoft.App/containerApps/orders-api" `
-            -Image $image -HealthUrl ([uri]"https://orders-api.example/health") -OutputPath $outputPath -HealthTimeoutSeconds 1
+            -Image $image -ImageTag "1234-a1b2c3d4e5f6" -HealthUrl ([uri]"https://orders-api.example/health") `
+            -OutputPath $outputPath -HealthTimeoutSeconds 1
 
         $report.result | Should -Be "Succeeded"
         $report.healthStatus | Should -Be 204
@@ -881,6 +882,8 @@ Describe "Déploiement de pile et application" {
         $updateCall = $global:IFS_AZ_CALLS | Where-Object { ($_ -join " ") -match "containerapp update" } | Select-Object -First 1
         $updateCall | Should -Contain "--image"
         $updateCall | Should -Contain $image
+        $updateCall | Should -Contain "--set-env-vars"
+        $updateCall | Should -Contain "IMAGE_TAG=1234-a1b2c3d4e5f6"
         $updateCall | Should -Contain "--revision-suffix"
     }
 }

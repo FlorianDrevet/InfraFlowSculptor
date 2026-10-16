@@ -1317,6 +1317,7 @@ function Invoke-IfsAppDeploy {
         [Parameter(Mandatory)][string] $Target,
         [Parameter(Mandatory)][string] $ResourceId,
         [Parameter(Mandatory)][ValidatePattern('@sha256:[a-fA-F0-9]{64}$')][string] $Image,
+        [Parameter(Mandatory)][ValidatePattern('^[A-Za-z0-9_.-]+$')][string] $ImageTag,
         [Parameter(Mandatory)][uri] $HealthUrl,
         [Parameter(Mandatory)][string] $OutputPath,
         [ValidateRange(1, 300)][int] $HealthTimeoutSeconds = 300
@@ -1324,7 +1325,7 @@ function Invoke-IfsAppDeploy {
     $result = Invoke-IfsAz -Arguments @('containerapp', 'show', '--ids', $ResourceId, '--output', 'json') -AllowFailure
     if ($result.ExitCode -ne 0 -or (Test-IfsNotFoundError $result.Text)) { throw ('Déployez d''abord l''infrastructure du composant {0} en {1} : application absente ({2}).' -f $Component, $Target, $ResourceId) }
     $revision = 'ifs-{0}' -f ([guid]::NewGuid().ToString('N').Substring(0, 12))
-    [void](Invoke-IfsAz -Arguments @('containerapp', 'update', '--ids', $ResourceId, '--image', $Image, '--revision-suffix', $revision, '--output', 'none'))
+    [void](Invoke-IfsAz -Arguments @('containerapp', 'update', '--ids', $ResourceId, '--image', $Image, '--set-env-vars', ('IMAGE_TAG={0}' -f $ImageTag), '--revision-suffix', $revision, '--output', 'none'))
     $deadline = [DateTime]::UtcNow.AddSeconds($HealthTimeoutSeconds)
     $status = 0
     do {

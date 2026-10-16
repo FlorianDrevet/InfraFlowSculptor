@@ -23,6 +23,7 @@ if ($imageManifest.schema -ne 'ifs-image/v1' -or $imageManifest.application -ne 
     throw 'Le manifeste image ne correspond pas à cette application et à cette release.'
 }
 if ([string]$imageManifest.image -notmatch '^.+@sha256:[a-fA-F0-9]{64}$') { throw 'Le manifeste image ne contient pas une référence immuable avec empreinte SHA-256.' }
+if ([string]$imageManifest.tag -notmatch '^[A-Za-z0-9_.-]+$') { throw 'Le manifeste image ne contient pas un tag valide.' }
 
 $resourceId = [string]$appState[0].resourceId
 $fqdn = [string](& az containerapp show --ids $resourceId --query properties.configuration.ingress.fqdn --output tsv 2>&1)
@@ -36,6 +37,7 @@ Invoke-IfsAppDeploy `
     -Target $Target `
     -ResourceId $resourceId `
     -Image ([string]$imageManifest.image) `
+    -ImageTag ([string]$imageManifest.tag) `
     -HealthUrl $healthUrl `
     -OutputPath $OutputPath `
     -HealthTimeoutSeconds $HealthTimeoutSeconds | Out-Null
