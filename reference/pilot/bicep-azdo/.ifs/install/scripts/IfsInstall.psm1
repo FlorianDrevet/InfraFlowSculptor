@@ -516,9 +516,9 @@ function Update-IfsResourceTag {
     if ((Get-IfsTagValue $tags 'ifs-kit-revision') -eq [string]$Revision) { return 'laisse tel quel' }
     $base = @('--subscription', $SubscriptionId)
     switch ($Kind) {
-        'group' { $arguments = @('group', 'update', '--name', $Name, '--set', "tags.ifs-kit-revision=$Revision") + $base }
-        'identity' { $arguments = @('identity', 'update', '--resource-group', $ResourceGroup, '--name', $Name, '--set', "tags.ifs-kit-revision=$Revision") + $base }
-        'storage' { $arguments = @('storage', 'account', 'update', '--resource-group', $ResourceGroup, '--name', $Name, '--set', "tags.ifs-kit-revision=$Revision") + $base }
+        'group' { $arguments = @('group', 'update', '--name', $Name, '--set', "tags.ifs-kit-revision=$Revision", '--force-string') + $base }
+        'identity' { $arguments = @('identity', 'update', '--resource-group', $ResourceGroup, '--name', $Name, '--set', "tags.ifs-kit-revision=$Revision", '--force-string') + $base }
+        'storage' { $arguments = @('storage', 'account', 'update', '--resource-group', $ResourceGroup, '--name', $Name, '--set', "tags.ifs-kit-revision=$Revision", '--force-string') + $base }
     }
     [void](Invoke-IfsAz -Arguments $arguments -Write)
     return 'mis a jour'

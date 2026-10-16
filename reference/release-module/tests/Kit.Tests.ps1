@@ -338,6 +338,24 @@ Describe 'Kit installation P-05' {
         { Assert-IfsRevisionNotOlder -CurrentRevision 1 -ExistingRevision 2 -ObjectName 'rg-test' } | Should -Throw
     }
 
+    It 'preserve les revisions de kit comme chaines pendant la mise a jour des tags' {
+        $global:IFS_AZ_HANDLER = { param($Arguments) $global:LASTEXITCODE = 0; return '{}' }
+        $resource = [pscustomobject]@{
+            tags = [ordered]@{ 'managed-by' = 'infraflowsculptor'; 'ifs-kit-revision' = '1' }
+        }
+
+        foreach ($kind in @('group', 'identity', 'storage')) {
+            $global:IFS_AZ_CALLS.Clear()
+            Update-IfsResourceTag -Kind $kind -Name 'ifs-test' -ResourceGroup 'rg-ifs-test' `
+                -SubscriptionId '00000000-0000-0000-0000-000000000001' -Revision 2 -Resource $resource | Should -Be 'mis a jour'
+
+            $call = [string[]]$global:IFS_AZ_CALLS[0]
+            $call | Should -Contain '--force-string'
+            $setIndex = [Array]::IndexOf($call, '--set')
+            $call[$setIndex + 1] | Should -Be 'tags.ifs-kit-revision=2'
+        }
+    }
+
     It 'limite exactement la condition RBAC aux roles du pilote' {
         $roles = @(
             '3b03c2da-16b3-4a49-8834-0f8130efdd3b'
