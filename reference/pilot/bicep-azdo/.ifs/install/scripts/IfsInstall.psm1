@@ -492,8 +492,15 @@ function Set-IfsRoleAssignment {
         $updatedAssignment['condition'] = if ($Condition) { $Condition } else { $null }
         $updatedAssignment['conditionVersion'] = if ($Condition) { '2.0' } else { $null }
         $assignmentJson = ConvertTo-Json -InputObject $updatedAssignment -Depth 30 -Compress
-        $arguments = @('role', 'assignment', 'update', '--role-assignment', $assignmentJson, '--subscription', $SubscriptionId)
-        [void](Invoke-IfsAz -Arguments $arguments -Write)
+        $assignmentPath = Join-Path ([IO.Path]::GetTempPath()) ("ifs-role-assignment-$([guid]::NewGuid().ToString('N')).json")
+        try {
+            [IO.File]::WriteAllText($assignmentPath, $assignmentJson, [Text.UTF8Encoding]::new($false))
+            $arguments = @('role', 'assignment', 'update', '--role-assignment', $assignmentPath, '--subscription', $SubscriptionId)
+            [void](Invoke-IfsAz -Arguments $arguments -Write)
+        }
+        finally {
+            Remove-Item -LiteralPath $assignmentPath -Force -ErrorAction SilentlyContinue
+        }
         return 'mis a jour'
     }
     [void](Invoke-IfsAz -Arguments $arguments -Write)
@@ -555,7 +562,7 @@ function Set-IfsServiceEndpoint {
             $path = Join-Path ([IO.Path]::GetTempPath()) ('ifs-endpoint-' + [guid]::NewGuid().ToString('N') + '.json')
             try {
                 [IO.File]::WriteAllText($path, (ConvertTo-Json -InputObject $full -Depth 100), [Text.UTF8Encoding]::new($false))
-                [void](Invoke-IfsAz -Arguments @('devops', 'invoke', '--area', 'serviceendpoint', '--resource', 'endpoints', '--http-method', 'PUT', '--route-parameters', "project=$ProjectId", "endpointId=$($current.id)", '--api-version', '7.1-preview.4', '--in-file', $path, '--org', $Organization, '--output', 'json') -Write)
+                [void](Invoke-IfsAz -Arguments @('devops', 'invoke', '--area', 'serviceendpoint', '--resource', 'endpoints', '--http-method', 'PUT', '--route-parameters', "project=$ProjectId", "endpointId=$($current.id)", '--api-version', '7.1', '--in-file', $path, '--org', $Organization, '--output', 'json') -Write)
             }
             finally { Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue }
         }

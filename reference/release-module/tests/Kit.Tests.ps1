@@ -239,11 +239,26 @@ Describe 'Kit installation P-05' {
         $principalId = '00000000-0000-0000-0000-000000000002'
         $roleId = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
         $condition = "@Request[Microsoft.Authorization/roleAssignments:RoleDefinitionId] GuidEquals {$roleId}"
+        $global:IFS_ROLE_ASSIGNMENT_DOCUMENT = $null
+        $global:IFS_ROLE_ASSIGNMENT_FILE_ARGUMENT = $null
+        $global:IFS_ROLE_ASSIGNMENT_TEMP_PATH = $null
         $global:IFS_AZ_HANDLER = {
             param($Arguments)
             $global:LASTEXITCODE = 0
             if ($Arguments[0..2] -join ' ' -eq 'role assignment list') {
                 return ConvertTo-Json -InputObject @($global:IFS_ROLE_ASSIGNMENTS) -Depth 20 -Compress
+            }
+            if ($Arguments[0..2] -join ' ' -eq 'role assignment update') {
+                $jsonIndex = [Array]::IndexOf($Arguments, '--role-assignment') + 1
+                $global:IFS_ROLE_ASSIGNMENT_FILE_ARGUMENT = [string]$Arguments[$jsonIndex]
+                if (Test-Path -LiteralPath $global:IFS_ROLE_ASSIGNMENT_FILE_ARGUMENT) {
+                    $global:IFS_ROLE_ASSIGNMENT_TEMP_PATH = $global:IFS_ROLE_ASSIGNMENT_FILE_ARGUMENT
+                    $json = [IO.File]::ReadAllText($global:IFS_ROLE_ASSIGNMENT_TEMP_PATH)
+                }
+                else {
+                    $json = $global:IFS_ROLE_ASSIGNMENT_FILE_ARGUMENT
+                }
+                $global:IFS_ROLE_ASSIGNMENT_DOCUMENT = ConvertFrom-Json -InputObject $json
             }
             return '{}'
         }
@@ -271,8 +286,9 @@ Describe 'Kit installation P-05' {
         $update.Count | Should -Be 1
         $update[0] | Should -Contain '--role-assignment'
         $update[0] | Should -Not -Contain '--ids'
-        $jsonIndex = [Array]::IndexOf([string[]]$update[0], '--role-assignment') + 1
-        $updatedAssignment = [string]$update[0][$jsonIndex] | ConvertFrom-Json
+        $global:IFS_ROLE_ASSIGNMENT_FILE_ARGUMENT | Should -Match '^.+\.json$'
+        Test-Path -LiteralPath $global:IFS_ROLE_ASSIGNMENT_TEMP_PATH | Should -BeFalse
+        $updatedAssignment = $global:IFS_ROLE_ASSIGNMENT_DOCUMENT
         $updatedAssignment.id | Should -Match '/roleAssignments/'
         $updatedAssignment.description | Should -Be 'managed-by: infraflowsculptor; ifs-kit-revision: 9'
         $updatedAssignment.condition | Should -Be $condition
@@ -354,6 +370,12 @@ Describe 'Kit installation P-05' {
             $setIndex = [Array]::IndexOf($call, '--set')
             $call[$setIndex + 1] | Should -Be 'tags.ifs-kit-revision=2'
         }
+    }
+
+    It 'utilise la version stable 7.1 pour mettre a jour une service connection' {
+        $moduleSource = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/.ifs/install/scripts/IfsInstall.psm1') -Raw
+
+        $moduleSource | Should -Match "'--api-version', '7\.1'"
     }
 
     It 'limite exactement la condition RBAC aux roles du pilote' {
