@@ -55,6 +55,14 @@ Describe "Outils de sortie de référence" {
         }
     }
 
+    It "compose le FQDN SQL sans ajouter un point déjà fourni par le suffixe Azure" {
+        $ordersMainPath = Join-Path $script:repoRoot "reference/pilot/bicep-azdo/orders/infra/main.bicep"
+        $ordersMain = [IO.File]::ReadAllText($ordersMainPath)
+
+        $ordersMain | Should -Match "\$\{externalResources\.dataSqlDatabase\.server\.name\}\$\{environment\(\)\.suffixes\.sqlServerHostname\}"
+        $ordersMain | Should -Not -Match "server\.name\}\.\$\{environment\(\)\.suffixes\.sqlServerHostname"
+    }
+
     It "garde les overlays de preuve en France Central" {
         $revisionRoot = Join-Path $script:repoRoot "reference/pilot/revisions"
         $patchFiles = @(Get-ChildItem -LiteralPath $revisionRoot -Filter "changes.patch" -File -Recurse)

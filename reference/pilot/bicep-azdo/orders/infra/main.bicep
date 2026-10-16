@@ -215,7 +215,7 @@ module caApiModule 'br/public:avm/res/app/container-app:0.23.0' = if (caApi.depl
         env: [
           {
             name: 'Sql__Server'
-            value: '${externalResources.dataSqlDatabase.server.name}.${environment().suffixes.sqlServerHostname}'
+            value: '${externalResources.dataSqlDatabase.server.name}${environment().suffixes.sqlServerHostname}'
           }
           {
             name: 'Sql__Database'
