@@ -37,6 +37,24 @@ Describe "Outils de sortie de référence" {
         [regex]::Matches($installPipeline, '(?m)^\s+BUILD_BUILDID:\s+\$\(Build\.BuildId\)\s*$').Count | Should -Be 2
     }
 
+    It "configure les diagnostics SQL uniquement au niveau de la base" {
+        $dataRoot = Join-Path $script:repoRoot "reference/pilot/bicep-azdo/data/infra"
+        $main = [IO.File]::ReadAllText((Join-Path $dataRoot "main.bicep"))
+        $types = [IO.File]::ReadAllText((Join-Path $dataRoot "types.bicep"))
+
+        $main | Should -Match "diagnosticSettings: sqlDatabaseDiagnosticSettings"
+        $main | Should -Not -Match "sqlOrdersDiagnosticsModule|server-diagnostics\.bicep"
+        $types | Should -Match "databaseDiagnosticSettings: diagnosticSettingConfig\[\]"
+        $types | Should -Not -Match "(?m)^\s*diagnosticSettings: diagnosticSettingConfig\[\]$"
+
+        foreach ($target in @("dev", "prd")) {
+            $parameters = [IO.File]::ReadAllText((Join-Path $dataRoot "main.$target.bicepparam"))
+            $parameters | Should -Match "databaseDiagnosticSettings: \["
+            $parameters | Should -Match "name: 'diag-sqldb-shop-orders-$target'"
+            $parameters | Should -Not -Match "name: 'diag-sql-shop-orders-$target'"
+        }
+    }
+
     It "garde les overlays de preuve en France Central" {
         $revisionRoot = Join-Path $script:repoRoot "reference/pilot/revisions"
         $patchFiles = @(Get-ChildItem -LiteralPath $revisionRoot -Filter "changes.patch" -File -Recurse)

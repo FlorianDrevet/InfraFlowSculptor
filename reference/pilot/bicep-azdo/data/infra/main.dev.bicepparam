@@ -45,14 +45,6 @@ param sqlOrders = {
     'ifs-environment': 'dev'
     'managed-by': 'infraflowsculptor'
   }
-  diagnosticSettings: [
-    {
-      name: 'diag-sql-shop-orders-dev'
-      logCategoryGroup: 'allLogs'
-      metricCategory: 'AllMetrics'
-      logAnalyticsDestinationType: 'Dedicated'
-    }
-  ]
   databaseDiagnosticSettings: [
     {
       name: 'diag-sqldb-shop-orders-dev'

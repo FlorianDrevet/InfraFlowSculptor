@@ -98,9 +98,6 @@ type sqlOrdersConfig = {
   @description('Tags effectifs du serveur et de la base SQL.')
   tags: object
 
-  @description('Paramètres de diagnostic du serveur SQL.')
-  diagnosticSettings: diagnosticSettingConfig[]
-
   @description('Paramètres de diagnostic de la base SQL.')
   databaseDiagnosticSettings: diagnosticSettingConfig[]
 }

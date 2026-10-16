@@ -92,16 +92,3 @@ module sqlOrdersModule 'br/public:avm/res/sql/server:0.22.0' = if (sqlOrders.dep
     enableTelemetry: false
   }
 }
-
-module sqlOrdersDiagnosticsModule './server-diagnostics.bicep' = if (sqlOrders.deploy && !empty(sqlOrders.diagnosticSettings)) {
-  name: 'sqlOrdersDiagnostics-${target.code}-${uniqueString(sqlOrders.name)}'
-  scope: rg_main
-  params: {
-    sqlServerName: sqlOrders.name
-    workspaceResourceId: coreLog.id
-    diagnosticSettings: sqlOrders.diagnosticSettings
-  }
-  dependsOn: [
-    sqlOrdersModule
-  ]
-}
