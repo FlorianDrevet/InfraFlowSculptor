@@ -989,7 +989,22 @@ function Invoke-IfsDataAccess {
     try {
         foreach ($access in $ReleaseData.dataAccess) {
             $serverName = ([string]$access.server).Split('.')[0]
-            $server = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments @('sql', 'server', 'show', '--name', $serverName, '--subscription', $ReleaseData.subscriptionId, '--output', 'json')).Text
+            $serverResourceGroupPattern = '(?i)/resourceGroups/(?<resourceGroup>[^/]+)/providers/Microsoft\.Sql/servers/(?<serverName>[^/]+)(?:/databases/[^/]+)?$'
+            $serverResourceGroups = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+            foreach ($dependency in @($ReleaseData.dependencies)) {
+                foreach ($resource in @($dependency.resources)) {
+                    $resourceId = [string](Get-IfsValue $resource 'id' '')
+                    $resourceMatch = [regex]::Match($resourceId, $serverResourceGroupPattern)
+                    if ($resourceMatch.Success -and $resourceMatch.Groups['serverName'].Value -ieq $serverName) {
+                        [void]$serverResourceGroups.Add($resourceMatch.Groups['resourceGroup'].Value)
+                    }
+                }
+            }
+            if ($serverResourceGroups.Count -ne 1) {
+                throw ('Groupe de ressources SQL absent ou ambigu pour {0} dans les dépendances de la release.' -f $serverName)
+            }
+            $resourceGroup = [string]($serverResourceGroups | Select-Object -First 1)
+            $server = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments @('sql', 'server', 'show', '--name', $serverName, '--resource-group', $resourceGroup, '--subscription', $ReleaseData.subscriptionId, '--output', 'json')).Text
             $resourceGroup = [string](Get-IfsValue $server 'resourceGroup')
             if ([string]::IsNullOrWhiteSpace($resourceGroup)) { throw ('Groupe de ressources SQL absent pour {0}.' -f $serverName) }
             $rules = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments @('sql', 'server', 'firewall-rule', 'list', '--name', $serverName, '--resource-group', $resourceGroup, '--subscription', $ReleaseData.subscriptionId, '--output', 'json')).Text

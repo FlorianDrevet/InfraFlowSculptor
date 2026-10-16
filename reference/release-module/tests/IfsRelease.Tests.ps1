@@ -657,6 +657,52 @@ Describe "Déploiement de pile et application" {
         }
     }
 
+    It "transmet le groupe de ressources à Azure CLI pour accéder au serveur SQL" {
+        $global:IFS_AZ_HANDLER = {
+            param($Arguments)
+            $global:LASTEXITCODE = 0
+            $command = $Arguments -join ' '
+            if ($command -match '^sql server show') {
+                if ($Arguments -notcontains '--resource-group') {
+                    $global:LASTEXITCODE = 2
+                    return 'ERROR: (--resource-group | --ids) are required'
+                }
+                return '{"resourceGroup":"rg-shop-orders-main-dev"}'
+            }
+            if ($command -match '^sql server firewall-rule list') { return '[]' }
+            if ($command -match '^containerapp show') { return '{"principalId":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}' }
+            if ($command -match '^account get-access-token') { return '{"accessToken":"test-token"}' }
+            return '{}'
+        }
+        Mock Install-Module -ModuleName IfsRelease { }
+        Mock Import-Module -ModuleName IfsRelease { }
+        function global:Invoke-Sqlcmd {
+            [CmdletBinding()]
+            param(
+                [string] $ServerInstance,
+                [string] $Database,
+                [string] $AccessToken,
+                [string] $InputFile,
+                [string[]] $Variable
+            )
+        }
+
+        try {
+            Invoke-IfsDataAccess -ReleaseData $script:orderData -SqlScript (Join-Path $script:repoRoot "reference/pilot/bicep-azdo/orders/infra/scripts/data-access.sql") -RunId "test-run" | Out-Null
+
+            $serverDependency = @($script:orderData.dependencies | ForEach-Object { $_.resources } | Where-Object { $_.id -match '/providers/Microsoft\.Sql/servers/[^/]+$' }) | Select-Object -First 1
+            $expectedResourceGroup = [regex]::Match($serverDependency.id, '/resourceGroups/([^/]+)/').Groups[1].Value
+            $serverShowCall = $global:IFS_AZ_CALLS | Where-Object { ($_ -join ' ') -match '^sql server show ' } | Select-Object -First 1
+            $resourceGroupIndex = [Array]::IndexOf($serverShowCall, '--resource-group')
+
+            $resourceGroupIndex | Should -BeGreaterThan -1
+            $serverShowCall[$resourceGroupIndex + 1] | Should -BeExactly $expectedResourceGroup
+        }
+        finally {
+            Remove-Item Function:global:Invoke-Sqlcmd -ErrorAction SilentlyContinue
+        }
+    }
+
     It "normalise les ressources détachées objet ou chaîne en identifiants" {
         $resourceObjectId = '/subscriptions/test/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/one'
         $resourceStringId = '/subscriptions/test/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/two'
