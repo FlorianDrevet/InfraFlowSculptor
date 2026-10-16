@@ -95,7 +95,7 @@
     },
     {
       "path": ".ifs/templates/scripts/IfsRelease.psm1",
-      "sha256": "9893cfcb355adee52e905b4ae3ba3bbbf915eeaa011b88cf8042f64da67668aa"
+      "sha256": "d8b38f78f97af69cc69c15a34504129edad80678d7607685b8bf7286f5ed75c1"
     },
     {
       "path": ".ifs/templates/scripts/Install-IfsTrivy.ps1",
@@ -103,7 +103,7 @@
     },
     {
       "path": ".ifs/templates/scripts/Invoke-IfsAppDeploy.ps1",
-      "sha256": "663a87c596ae3f473dcfe86c7e7f835fd251bbc2fbad6bce7ee391a45bbe53f6"
+      "sha256": "5f127b6c6d8773ffa484b4127f31a7b156d0d5e9300670ac17f1b1b8213eee14"
     },
     {
       "path": ".ifs/templates/scripts/Invoke-IfsInfraDeploy.ps1",
