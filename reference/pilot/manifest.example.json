@@ -87,7 +87,7 @@
     },
     {
       "path": ".ifs/templates/scripts/Build-IfsImage.ps1",
-      "sha256": "d8b08c0429260cb65f0f6d1b18cbfb9a7e21f4984a37664c2a4d211725dc588f"
+      "sha256": "d7f30bdfc5e9e1941e89615672c1ef409634c3c10990aa89416ee9a67c0206f2"
     },
     {
       "path": ".ifs/templates/scripts/IfsLeaseRenewal.ps1",
