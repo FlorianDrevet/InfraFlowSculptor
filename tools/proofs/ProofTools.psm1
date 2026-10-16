@@ -708,6 +708,7 @@ function Set-ProofCostProfile {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Fichier requis absent : $relativePath" }
     $text = Read-ProofCostProfileText -Path $path -RelativePath $relativePath -Encoding $encoding -Report $report
     $text = Set-ProofCostProfileScalar -Text $text -Path $relativePath -Pattern "(?m)^[ \t]*acrSku:[ \t]*'(?<value>[^']+)'[ \t]*$" -AllowedValues @('Standard') -TargetValue 'Basic' -Setting 'acrMain.acrSku' -Report $report
+    $text = Set-ProofCostProfileScalar -Text $text -Path $relativePath -Pattern "(?m)^[ \t]*networkRuleSetDefaultAction:[ \t]*'(?<value>[^']+)'[ \t]*$" -AllowedValues @('Deny') -TargetValue 'Allow' -Setting 'acrMain.networkRuleSetDefaultAction' -Report $report
     $pendingWrites[$relativePath] = $text
 
     foreach ($target in @('dev', 'prd')) {

@@ -16,12 +16,13 @@ Describe 'Profil de coût de publication P-08' {
             'orders/infra/main.prd.bicepparam'
             'platform/infra/main.shared.bicepparam'
         )
+        $script:platformSourcePaths = @('platform/infra/main.bicep', 'platform/infra/types.bicep')
         Import-Module $script:proofToolsPath -Force
 
         function Copy-PilotCostProfileFiles {
             param([Parameter(Mandatory)][string] $DestinationRoot)
 
-            foreach ($relativePath in $script:profilePaths) {
+            foreach ($relativePath in @($script:profilePaths) + @($script:platformSourcePaths)) {
                 $sourcePath = Join-Path $script:pilotRoot $relativePath
                 $destinationPath = Join-Path $DestinationRoot $relativePath
                 $null = New-Item -ItemType Directory -Path (Split-Path -Parent $destinationPath) -Force
@@ -42,6 +43,8 @@ Describe 'Profil de coût de publication P-08' {
             $changes = @(Set-ProofCostProfile -BicepRoot $tempRoot)
 
             $acr = [IO.File]::ReadAllText((Join-Path $tempRoot 'platform/infra/main.shared.bicepparam'))
+            $platformMain = [IO.File]::ReadAllText((Join-Path $tempRoot 'platform/infra/main.bicep'))
+            $platformTypes = [IO.File]::ReadAllText((Join-Path $tempRoot 'platform/infra/types.bicep'))
             $coreDev = [IO.File]::ReadAllText((Join-Path $tempRoot 'core/infra/main.dev.bicepparam'))
             $corePrd = [IO.File]::ReadAllText((Join-Path $tempRoot 'core/infra/main.prd.bicepparam'))
             $dataDev = [IO.File]::ReadAllText((Join-Path $tempRoot 'data/infra/main.dev.bicepparam'))
@@ -52,7 +55,10 @@ Describe 'Profil de coût de publication P-08' {
             $ordersPrd = [IO.File]::ReadAllText((Join-Path $tempRoot 'orders/infra/main.prd.bicepparam'))
 
             $acr | Should -Match "acrSku: 'Basic'"
+            $acr | Should -Match "networkRuleSetDefaultAction: 'Allow'"
             $acr | Should -Not -Match "acrSku: 'Standard'"
+            $platformMain | Should -Match ([regex]::Escape('networkRuleSetDefaultAction: acrMain.networkRuleSetDefaultAction'))
+            $platformTypes | Should -Match "networkRuleSetDefaultAction: 'Allow' \| 'Deny'"
             foreach ($core in @($coreDev, $corePrd)) {
                 $core | Should -Match "retentionInDays: 90"
                 $core | Should -Match "dailyQuotaGb: '1'"
@@ -217,7 +223,7 @@ Describe 'Profil de coût de publication P-08' {
                 -SqlAdminGroupObjectIdPrd '55555555-5555-4555-8555-555555555555' -WhatIf 6>&1 | Out-String)
 
             $whatIfOutput | Should -Match 'WhatIf OK'
-            foreach ($setting in @('appiMain.retentionInDays', 'acrMain.acrSku', 'sqlOrders.databaseSkuName', 'caApi.maxReplicas', 'structure.sqlTypes')) {
+            foreach ($setting in @('appiMain.retentionInDays', 'acrMain.acrSku', 'acrMain.networkRuleSetDefaultAction', 'sqlOrders.databaseSkuName', 'caApi.maxReplicas', 'structure.sqlTypes')) {
                 $whatIfOutput | Should -Match ([regex]::Escape($setting))
             }
             $targetStatus = (& git -C $targetRoot status --porcelain=v1 --untracked-files=all | Out-String).Trim()

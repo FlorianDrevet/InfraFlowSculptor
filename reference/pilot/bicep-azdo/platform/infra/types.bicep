@@ -54,6 +54,9 @@ type acrMainConfig = {
   @description('Accès réseau public explicite du registre.')
   publicNetworkAccess: 'Enabled' | 'Disabled'
 
+  @description('Action réseau par défaut du registre quand aucune règle ne correspond.')
+  networkRuleSetDefaultAction: 'Allow' | 'Deny'
+
   @description('Indique si les tirages anonymes d’image sont activés.')
   anonymousPullEnabled: bool
 

@@ -34,6 +34,7 @@ module acrMainModule 'br/public:avm/res/container-registry/registry:0.13.0' = if
     acrAdminUserEnabled: acrMain.adminUserEnabled
     anonymousPullEnabled: acrMain.anonymousPullEnabled
     publicNetworkAccess: acrMain.publicNetworkAccess
+    networkRuleSetDefaultAction: acrMain.networkRuleSetDefaultAction
     tags: acrMain.tags
     diagnosticSettings: []
     enableTelemetry: false
