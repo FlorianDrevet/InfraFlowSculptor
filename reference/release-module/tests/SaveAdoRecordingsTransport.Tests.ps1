@@ -35,6 +35,32 @@ Describe 'Transport de capture Azure DevOps sans PAT' {
         $script:argumentCapture.Arguments | Should -Contain 'buildId=568'
     }
 
+    It 'traite une timeline vide comme un run rejete avant sa creation' {
+        $script:azInvoker = { param([string[]] $Arguments) @() }
+
+        $response = Invoke-AdoRecordingsCliJsonGet -Organization 'example' `
+            -Area 'build' -Resource 'timeline' -RouteParameters @{
+                project = 'shop42'
+                buildId = '631'
+            } -QueryParameters @{} -AzInvoker $script:azInvoker -Kind 'timeline'
+
+        $response.RawJson | Should -Be '{"count":0,"value":[]}'
+        $response.Data.count | Should -Be 0
+        @($response.Data.value) | Should -HaveCount 0
+    }
+
+    It 'refuse une reponse vide pour un endpoint autre que la timeline' {
+        $script:azInvoker = { param([string[]] $Arguments) @() }
+
+        {
+            Invoke-AdoRecordingsCliJsonGet -Organization 'example' `
+                -Area 'build' -Resource 'builds' -RouteParameters @{
+                    project = 'shop42'
+                    buildId = '631'
+                } -QueryParameters @{} -AzInvoker $script:azInvoker -Kind 'build'
+        } | Should -Throw "Lecture Azure DevOps impossible pour 'build' avec la session Azure CLI. Verifiez le run et les droits Build (Read)."
+    }
+
     It 'telecharge les artefacts par la session CLI avec le projet explicite' {
         Invoke-AdoRecordingsArtifactDownload -Organization 'https://dev.azure.com/example' `
             -Project 'shop42' -RunId 568 -ArtifactName 'ifs-install-report' -Path 'C:\temp\capture' `

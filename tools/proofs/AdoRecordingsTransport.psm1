@@ -71,7 +71,14 @@ function Invoke-AdoRecordingsCliJsonGet {
     try {
         $commandOutput = Invoke-AdoRecordingsCliCommand -Arguments $arguments.ToArray() -AzInvoker $AzInvoker
         $rawJson = (@($commandOutput) -join [Environment]::NewLine).Trim()
-        if ([string]::IsNullOrWhiteSpace($rawJson)) { throw 'empty response' }
+        if ([string]::IsNullOrWhiteSpace($rawJson)) {
+            if ($Area -eq 'build' -and $Resource -eq 'timeline') {
+                $rawJson = '{"count":0,"value":[]}'
+            }
+            else {
+                throw 'empty response'
+            }
+        }
         $data = ConvertFrom-Json -InputObject $rawJson -AsHashtable -Depth 100 -DateKind String
         return [pscustomobject]@{ RawJson = $rawJson; Data = $data }
     }
