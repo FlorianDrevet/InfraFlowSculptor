@@ -21,10 +21,12 @@ if ($registryResourceId -notmatch '^/subscriptions/([^/]+)/') { throw "L'identif
 $registrySubscription = $Matches[1]
 if ($registryResourceId -notmatch '/registries/([^/]+)$') { throw 'Le nom du registre est absent de son identifiant de ressource.' }
 $registryName = $Matches[1]
-$registryInfoJson = @(& az acr show --name $registryName --subscription $registrySubscription --query '{name:name,loginServer:loginServer}' --output json 2>&1)
-if ($LASTEXITCODE -ne 0) { throw "Lecture du registre $registryName impossible : $($registryInfoJson -join ' ')" }
-$registry = ($registryInfoJson -join [Environment]::NewLine) | ConvertFrom-Json -Depth 10
-if ([string]::IsNullOrWhiteSpace([string]$registry.loginServer)) { throw 'Azure Container Registry ne renvoie aucun loginServer.' }
+# RG-APP-08: the build identity has AcrPush only, so resolve the public login suffix without an ARM read.
+$suffixOutput = @(& az cloud show --query suffixes.acrLoginServerEndpoint --output tsv 2>&1)
+if ($LASTEXITCODE -ne 0) { throw "Lecture du suffixe de connexion ACR du cloud Azure impossible : $($suffixOutput -join ' ')" }
+$registrySuffix = ($suffixOutput -join [Environment]::NewLine).Trim()
+if ($registrySuffix -notmatch '^\.[A-Za-z0-9][A-Za-z0-9.-]*$') { throw 'Le suffixe de connexion ACR du cloud Azure est invalide.' }
+$registry = [pscustomobject]@{ name = $registryName; loginServer = '{0}{1}' -f $registryName, $registrySuffix }
 [void](& az acr login --name $registryName --subscription $registrySubscription --only-show-errors 2>&1)
 if ($LASTEXITCODE -ne 0) { throw "Connexion au registre $registryName impossible." }
 
