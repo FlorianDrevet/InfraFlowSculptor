@@ -827,7 +827,7 @@ function Invoke-IfsPendingOperation {
             if (-not $access) { $access = @($ReleaseData.dataAccess | Where-Object { ('{0}/{1}/{2}' -f $_.server, $_.database, $_.principal.resourceId) -eq $operation.objectId } | Select-Object -First 1)[0] }
             if (-not $access) { throw ('L''accès aux données de l''opération {0} n''est plus décrit dans la release courante.' -f $operation.id) }
             if ($operation.state -eq 'ToDo') { [void](Set-IfsOperationState -Context $Context -OperationId $operation.id -State 'Started') }
-            $oneAccess = [pscustomobject]@{ dataAccess = @($access); subscriptionId = $ReleaseData.subscriptionId }
+            $oneAccess = [pscustomobject]@{ dataAccess = @($access); dependencies = @($ReleaseData.dependencies); subscriptionId = $ReleaseData.subscriptionId }
             $dataResult = Invoke-IfsDataAccess -ReleaseData $oneAccess -SqlScript $SqlScript -RunId $RunId
             foreach ($rule in $dataResult.temporaryFirewallRules) { $summary.temporaryFirewallRules.Add([string]$rule.Name) }
             $summary.cleanedFirewallRules.AddRange([string[]]$dataResult.cleanedFirewallRules)

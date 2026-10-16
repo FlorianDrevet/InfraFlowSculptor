@@ -346,6 +346,34 @@ Describe "Journal d'opérations" {
         $result.revokedAccess | Should -BeNullOrEmpty
     }
 
+    It "transmet les dépendances du serveur lors de la reprise d'un accès SQL" {
+        Mock Save-IfsJournalBlob -ModuleName IfsRelease {}
+        Mock Invoke-IfsDataAccess -ModuleName IfsRelease {
+            param($ReleaseData, $SqlScript, $RunId)
+            $global:IFS_REPLAY_SQL_DEPENDENCIES = @($ReleaseData.dependencies)
+            return [pscustomobject]@{ temporaryFirewallRules = @(); cleanedFirewallRules = @() }
+        }
+        $now = [DateTime]::UtcNow.ToString("o")
+        $operation = [pscustomobject]@{
+            id = "a" * 64; revision = 4; commit = "def456"; kind = "data-access"; objectId = "server/database/principal"; state = "Started"
+            createdAt = $now; updatedAt = $now; note = $null; details = $script:orderData.dataAccess[0]
+        }
+        $context = [pscustomobject]@{
+            Journal = [pscustomobject]@{ schema = "ifs-operation-journal/v1"; unit = "ifs-shop-orders-dev"; target = "dev"; operations = @($operation) }
+            Account = "stifsshopdev"; Container = "ifs-operations"; Blob = "ifs-shop-orders-dev.json"; LeaseId = "test"; RenewalFailureFile = $null
+        }
+        $expectedServer = @($script:orderData.dependencies | ForEach-Object { $_.resources } | Where-Object { $_.id -match '/providers/Microsoft\.Sql/servers/[^/]+$' } | Select-Object -First 1)[0].id
+        $global:IFS_REPLAY_SQL_DEPENDENCIES = @()
+
+        InModuleScope IfsRelease -Parameters @{ ContextValue = $context; ReleaseDataValue = $script:orderData } {
+            Invoke-IfsPendingOperation -Context $ContextValue -ReleaseData $ReleaseDataValue -TemplateFile "main.bicep" -ParameterFile "main.dev.bicepparam" -DeploymentIdentityObjectId "identity" -SqlScript "data-access.sql" -Revision 4 -Commit "def456" -RunId "run-resume" | Out-Null
+        }
+
+        @($global:IFS_REPLAY_SQL_DEPENDENCIES | ForEach-Object { $_.resources } | ForEach-Object { $_.id }) | Should -Contain $expectedServer
+        $operation.state | Should -Be "Done"
+        Should -Invoke Invoke-IfsDataAccess -ModuleName IfsRelease -Times 1 -Exactly
+    }
+
     It "marque un objet absent comme terminé avec la note prévue" {
         $journal = [pscustomobject]@{ schema = "ifs-operation-journal/v1"; unit = "ifs-shop-orders-dev"; target = "dev"; operations = @([pscustomobject]@{ id = "x"; state = "Started"; kind = "revoke"; objectId = "/role/gone"; revision = 3; commit = "abc"; createdAt = [DateTime]::UtcNow.ToString("o"); updatedAt = [DateTime]::UtcNow.ToString("o") }) }
         $context = [pscustomobject]@{ Journal = $journal; Account = "stifsshopdev"; Container = "ifs-operations"; Blob = "ifs-shop-orders-dev.json"; LeaseId = "test"; RenewalFailureFile = $null }
