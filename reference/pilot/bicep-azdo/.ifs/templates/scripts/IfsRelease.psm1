@@ -958,18 +958,23 @@ function Test-IfsSqlPermissionPropagationError {
 
 function Get-IfsSqlPrincipal {
     param([Parameter(Mandatory)][object] $Access, [Parameter(Mandatory)][string] $SubscriptionId)
+    $clientId = ''
     if ($Access.principal.kind -eq 'systemAssigned') {
         $identity = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments @('containerapp', 'show', '--ids', $Access.principal.resourceId, '--query', 'identity', '--output', 'json')).Text
         $principalId = [string](Get-IfsValue $identity 'principalId' '')
         $principalName = ([string]$Access.principal.resourceId).Split('/')[-1]
+        if ($principalId -notmatch '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
+            throw ('L''Object ID de l''identite SQL {0} n''est pas un GUID valide.' -f $Access.principal.resourceId)
+        }
+        $clientId = (Invoke-IfsAz -Arguments @('ad', 'sp', 'show', '--id', $principalId, '--query', 'appId', '--output', 'tsv')).Text.Trim()
     }
     else {
         $identity = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments @('identity', 'show', '--ids', $Access.principal.resourceId, '--subscription', $SubscriptionId, '--output', 'json')).Text
-        $principalId = [string](Get-IfsValue $identity 'principalId' '')
         $principalName = [string](Get-IfsValue $identity 'name' ([string]$Access.principal.resourceId).Split('/')[-1])
+        $clientId = [string](Get-IfsValue $identity 'clientId' '')
     }
-    if ($principalId -notmatch '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
-        throw ('L''identifiant principal SQL de {0} n''est pas un GUID valide.' -f $Access.principal.resourceId)
+    if ($clientId -notmatch '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
+        throw ('Le Client ID du principal SQL {0} n''est pas un GUID valide.' -f $Access.principal.resourceId)
     }
     $roles = switch ($Access.level) {
         'Read' { 'db_datareader' }
@@ -977,7 +982,7 @@ function Get-IfsSqlPrincipal {
         'Schema' { 'db_datareader,db_datawriter,db_ddladmin' }
         default { throw ('Niveau d''accès SQL non pris en charge : {0}' -f $Access.level) }
     }
-    return [pscustomobject]@{ Name = $principalName; ClientId = $principalId; Roles = $roles }
+    return [pscustomobject]@{ Name = $principalName; ClientId = $clientId; Roles = $roles }
 }
 
 function Invoke-IfsDataAccess {

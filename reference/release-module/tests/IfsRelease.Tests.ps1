@@ -659,22 +659,31 @@ Describe "Déploiement de pile et application" {
         $stack.detachedResources | Should -BeNullOrEmpty
     }
 
-    It "utilise le principalId Object ID comme SID SQL pour les identités système et utilisateur" {
+    It "utilise le Client ID Microsoft Entra comme SID SQL pour les identités système et utilisateur" {
         $applicationClientId = '11111111-2222-3333-4444-555555555555'
         $principalObjectId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
-        $global:IFS_SQL_IDENTITY = ConvertTo-Json -InputObject @{
+        $global:IFS_SQL_APPLICATION_CLIENT_ID = $applicationClientId
+        $global:IFS_SQL_USER_IDENTITY = ConvertTo-Json -InputObject @{
             clientId = $applicationClientId
             principalId = $principalObjectId
             name = 'id-ifs-app-shop-dev'
         } -Compress
+        $global:IFS_SQL_SYSTEM_IDENTITY = ConvertTo-Json -InputObject @{
+            principalId = $principalObjectId
+            type = 'SystemAssigned'
+        } -Compress
         $global:IFS_AZ_HANDLER = {
             param($Arguments)
             $global:LASTEXITCODE = 0
-            if (($Arguments -join ' ') -match 'containerapp show|identity show') { return $global:IFS_SQL_IDENTITY }
+            $command = $Arguments -join ' '
+            if ($command -match '^containerapp show') { return $global:IFS_SQL_SYSTEM_IDENTITY }
+            if ($command -match '^identity show') { return $global:IFS_SQL_USER_IDENTITY }
+            if ($command -match '^ad sp show') { return $global:IFS_SQL_APPLICATION_CLIENT_ID }
             return '{}'
         }
 
         foreach ($kind in @('systemAssigned', 'userAssigned')) {
+            $global:IFS_AZ_CALLS.Clear()
             $access = [pscustomobject]@{
                 principal = [pscustomobject]@{
                     kind = $kind
@@ -692,8 +701,17 @@ Describe "Déploiement de pile et application" {
                 Get-IfsSqlPrincipal -Access $AccessValue -SubscriptionId 'test'
             }
 
-            $principal.ClientId | Should -BeExactly $principalObjectId
-            $principal.ClientId | Should -Not -BeExactly $applicationClientId
+            $principal.ClientId | Should -BeExactly $applicationClientId
+            $servicePrincipalCall = @($global:IFS_AZ_CALLS | Where-Object { ($_ -join ' ') -match '^ad sp show ' })
+            if ($kind -eq 'systemAssigned') {
+                $servicePrincipalCall.Count | Should -Be 1
+                $servicePrincipalCall[0] | Should -Contain $principalObjectId
+                $servicePrincipalCall[0] | Should -Contain '--query'
+                $servicePrincipalCall[0] | Should -Contain 'appId'
+            }
+            else {
+                $servicePrincipalCall | Should -BeNullOrEmpty
+            }
         }
     }
 
@@ -711,6 +729,7 @@ Describe "Déploiement de pile et application" {
             }
             if ($command -match '^sql server firewall-rule list') { return '[]' }
             if ($command -match '^containerapp show') { return '{"principalId":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}' }
+            if ($command -match '^ad sp show') { return '11111111-2222-3333-4444-555555555555' }
             if ($command -match '^account get-access-token') { return '{"accessToken":"test-token"}' }
             return '{}'
         }
@@ -758,6 +777,7 @@ Describe "Déploiement de pile et application" {
             if ($command -match '^sql server show') { return '{"resourceGroup":"rg-shop-orders-main-dev"}' }
             if ($command -match '^sql server firewall-rule list') { return '[]' }
             if ($command -match '^containerapp show') { return '{"principalId":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}' }
+            if ($command -match '^ad sp show') { return '11111111-2222-3333-4444-555555555555' }
             if ($command -match '^account get-access-token') { return '{"accessToken":"test-token"}' }
             return '{}'
         }
