@@ -510,24 +510,64 @@ function Read-IfsAppOwnedState {
     return $states.ToArray()
 }
 
-function Get-IfsAppOwnedImageParameter {
+function New-IfsAppOwnedParameterFile {
     [CmdletBinding()]
-    param([AllowEmptyCollection()][object[]] $AppOwnedState = @())
+    param(
+        [Parameter(Mandatory)][string] $ParameterFile,
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]] $AppOwnedState
+    )
 
-    $imagesByParameter = [System.Collections.Generic.Dictionary[string, string]]::new([StringComparer]::OrdinalIgnoreCase)
+    if ($AppOwnedState.Count -eq 0) { throw 'Aucun état applicatif à intégrer aux paramètres Bicep.' }
+    $overrides = [ordered]@{}
     foreach ($state in $AppOwnedState) {
         $parameter = [string](Get-IfsValue $state 'parameter' '')
         $image = [string](Get-IfsValue $state 'image' '')
-        if ([string]::IsNullOrWhiteSpace($parameter) -or [string]::IsNullOrWhiteSpace($image)) {
+        if ($parameter -notmatch '^[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*$' -or [string]::IsNullOrWhiteSpace($image)) {
             throw 'L''état de l''image applicative ne contient pas de paramètre Bicep et d''image valides.'
         }
-        if ($imagesByParameter.ContainsKey($parameter) -and $imagesByParameter[$parameter] -ne $image) {
+        $parts = $parameter.Split('.')
+        $parameterName = $parts[0]
+        $propertyName = $parts[1]
+        if (-not $overrides.Contains($parameterName)) { $overrides[$parameterName] = [ordered]@{} }
+        $parameterOverrides = $overrides[$parameterName]
+        if ($parameterOverrides.Contains($propertyName) -and $parameterOverrides[$propertyName] -cne $image) {
             throw ('Plusieurs images applicatives différentes sont déclarées pour le paramètre Bicep {0}.' -f $parameter)
         }
-        $imagesByParameter[$parameter] = $image
+        $parameterOverrides[$propertyName] = $image
     }
 
-    return @($imagesByParameter.GetEnumerator() | Sort-Object Key | ForEach-Object { '{0}={1}' -f $_.Key, $_.Value })
+    $outputPath = Join-Path ([IO.Path]::GetTempPath()) ('ifs-app-owned-parameters-' + [guid]::NewGuid().ToString('N') + '.json')
+    try {
+        [void](Invoke-IfsAz -Arguments @('bicep', 'build-params', '--file', $ParameterFile, '--outfile', $outputPath))
+        if (-not (Test-Path -LiteralPath $outputPath -PathType Leaf)) {
+            throw 'Bicep n''a pas produit le fichier de paramètres JSON attendu.'
+        }
+        $document = Get-Content -LiteralPath $outputPath -Raw | ConvertFrom-Json -AsHashtable -Depth 100
+        $parameters = Get-IfsValue $document 'parameters'
+        if ($parameters -isnot [System.Collections.IDictionary]) {
+            throw 'Le fichier de paramètres Bicep converti ne contient pas un objet parameters valide.'
+        }
+        foreach ($parameterName in $overrides.Keys) {
+            $parameter = Get-IfsValue $parameters $parameterName
+            $value = Get-IfsValue $parameter 'value'
+            if ($value -isnot [System.Collections.IDictionary]) {
+                throw ('Le paramètre Bicep {0} doit être un objet pour préserver son état applicatif.' -f $parameterName)
+            }
+            foreach ($propertyName in $overrides[$parameterName].Keys) {
+                if (-not $value.Contains($propertyName)) {
+                    throw ('La propriété {0}.{1} est absente des paramètres Bicep.' -f $parameterName, $propertyName)
+                }
+                $value[$propertyName] = $overrides[$parameterName][$propertyName]
+            }
+        }
+        $json = ConvertTo-Json -InputObject $document -Depth 100
+        [IO.File]::WriteAllText($outputPath, $json, [Text.UTF8Encoding]::new($false))
+        return $outputPath
+    }
+    catch {
+        if (Test-Path -LiteralPath $outputPath -PathType Leaf) { [IO.File]::Delete($outputPath) }
+        throw
+    }
 }
 
 function Get-IfsAccessRevocation {
@@ -572,18 +612,27 @@ function Invoke-IfsPreview {
     [void](Test-IfsSecretReference $ReleaseData)
     $appState = @(Read-IfsAppOwnedState $ReleaseData)
     $parameters = @($ParameterFile)
+    $generatedParameterFile = $null
+    if ($appState.Count -gt 0) {
+        $generatedParameterFile = New-IfsAppOwnedParameterFile -ParameterFile $ParameterFile -AppOwnedState $appState
+        $parameters = @($generatedParameterFile)
+    }
     if ($ReleaseData.component -eq 'core' -and -not [string]::IsNullOrWhiteSpace($DeploymentIdentityObjectId)) {
         $parameters += "deploymentPrincipalId=$DeploymentIdentityObjectId"
     }
     if ($ReleaseData.component -in @('platform', 'orders') -and -not [string]::IsNullOrWhiteSpace($ApplicationIdentityObjectId)) {
         $parameters += "appDeliveryPrincipalId=$ApplicationIdentityObjectId"
     }
-    $parameters += @(Get-IfsAppOwnedImageParameter -AppOwnedState $appState)
-    $whatIfResult = Invoke-IfsAz -Arguments (@(
-        'deployment', 'sub', 'what-if', '--name', ('ifs-{0}-preview' -f $ReleaseData.unit),
-        '--location', $ReleaseData.location, '--template-file', $TemplateFile, '--no-pretty-print',
-        '--parameters'
-    ) + $parameters + @('--result-format', 'FullResourcePayloads', '--output', 'json'))
+    try {
+        $whatIfResult = Invoke-IfsAz -Arguments (@(
+            'deployment', 'sub', 'what-if', '--name', ('ifs-{0}-preview' -f $ReleaseData.unit),
+            '--location', $ReleaseData.location, '--template-file', $TemplateFile, '--no-pretty-print',
+            '--parameters'
+        ) + $parameters + @('--result-format', 'FullResourcePayloads', '--output', 'json'))
+    }
+    finally {
+        if ($generatedParameterFile -and (Test-Path -LiteralPath $generatedParameterFile -PathType Leaf)) { [IO.File]::Delete($generatedParameterFile) }
+    }
     $whatIf = ConvertFrom-IfsJson -Json $whatIfResult.Text -Context ('az deployment sub what-if pour {0}' -f $ReleaseData.unit)
     if ($null -eq $whatIf -or $null -eq (Get-IfsValue $whatIf 'changes' $null)) {
         throw 'Azure CLI n''a pas renvoyé un objet JSON What-If valide avec la propriété changes.'
@@ -882,23 +931,35 @@ function Invoke-IfsStackDeployment {
         [string] $ApplicationIdentityObjectId,
         [AllowEmptyCollection()][object[]] $AppOwnedState = @()
     )
-    $parameters = @($ParameterFile)
-    if ($ReleaseData.component -eq 'core') {
-        if ([string]::IsNullOrWhiteSpace($DeploymentIdentityObjectId)) { throw "Le composant core exige l'Object ID de l'identite de deploiement pour le role Key Vault." }
-        $parameters += "deploymentPrincipalId=$DeploymentIdentityObjectId"
+    if ($ReleaseData.component -eq 'core' -and [string]::IsNullOrWhiteSpace($DeploymentIdentityObjectId)) {
+        throw "Le composant core exige l'Object ID de l'identite de deploiement pour le role Key Vault."
     }
-    if ($ReleaseData.component -in @('platform', 'orders')) {
-        if ([string]::IsNullOrWhiteSpace($ApplicationIdentityObjectId)) { throw "Le composant '$($ReleaseData.component)' exige l'Object ID de l'identite applicative pour ses attributions RBAC." }
-        $parameters += "appDeliveryPrincipalId=$ApplicationIdentityObjectId"
+    if ($ReleaseData.component -in @('platform', 'orders') -and [string]::IsNullOrWhiteSpace($ApplicationIdentityObjectId)) {
+        throw "Le composant '$($ReleaseData.component)' exige l'Object ID de l'identite applicative pour ses attributions RBAC."
     }
-    $parameters += @(Get-IfsAppOwnedImageParameter -AppOwnedState $AppOwnedState)
-    $arguments = @('stack', 'sub', 'create', '--name', $ReleaseData.unit, '--location', $ReleaseData.location, '--template-file', $TemplateFile, '--parameters') + $parameters + @('--action-on-unmanage', 'detachAll', '--subscription', $ReleaseData.subscriptionId, '--yes', '--output', 'json')
-    if ($ReleaseData.protected) {
-        if ([string]::IsNullOrWhiteSpace($DeploymentIdentityObjectId)) { throw 'La cible protégée exige l''identité de déploiement pour son deny assignment.' }
-        $arguments += @('--deny-settings-mode', 'denyDelete', '--deny-settings-excluded-principals', $DeploymentIdentityObjectId)
+    if ($ReleaseData.protected -and [string]::IsNullOrWhiteSpace($DeploymentIdentityObjectId)) {
+        throw 'La cible protégée exige l''identité de déploiement pour son deny assignment.'
     }
-    else { $arguments += @('--deny-settings-mode', 'none') }
-    $stack = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments $arguments).Text
+
+    $generatedParameterFile = $null
+    try {
+        $parameters = @($ParameterFile)
+        if ($AppOwnedState.Count -gt 0) {
+            $generatedParameterFile = New-IfsAppOwnedParameterFile -ParameterFile $ParameterFile -AppOwnedState $AppOwnedState
+            $parameters = @($generatedParameterFile)
+        }
+        if ($ReleaseData.component -eq 'core') { $parameters += "deploymentPrincipalId=$DeploymentIdentityObjectId" }
+        if ($ReleaseData.component -in @('platform', 'orders')) { $parameters += "appDeliveryPrincipalId=$ApplicationIdentityObjectId" }
+        $arguments = @('stack', 'sub', 'create', '--name', $ReleaseData.unit, '--location', $ReleaseData.location, '--template-file', $TemplateFile, '--parameters') + $parameters + @('--action-on-unmanage', 'detachAll', '--subscription', $ReleaseData.subscriptionId, '--yes', '--output', 'json')
+        if ($ReleaseData.protected) {
+            $arguments += @('--deny-settings-mode', 'denyDelete', '--deny-settings-excluded-principals', $DeploymentIdentityObjectId)
+        }
+        else { $arguments += @('--deny-settings-mode', 'none') }
+        $stack = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments $arguments).Text
+    }
+    finally {
+        if ($generatedParameterFile -and (Test-Path -LiteralPath $generatedParameterFile -PathType Leaf)) { [IO.File]::Delete($generatedParameterFile) }
+    }
     $detachedResources = @(Get-IfsValue $stack 'detachedResources' @() | ForEach-Object {
         $resourceId = if ($_ -is [string]) { $_ } else { [string](Get-IfsValue $_ 'id' '') }
         if ([string]::IsNullOrWhiteSpace($resourceId)) { throw 'Azure a retourne une ressource detachee sans identifiant.' }

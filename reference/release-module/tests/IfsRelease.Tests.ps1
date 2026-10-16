@@ -23,6 +23,10 @@ BeforeEach {
     $global:IFS_FIXTURE_ROOT = $script:fixtureRoot
     $global:IFS_STACK = Get-Content -LiteralPath (Join-Path $script:fixtureRoot "stack-empty.json") -Raw
     $global:IFS_WHATIF = Get-Content -LiteralPath (Join-Path $script:fixtureRoot "what-if-create.json") -Raw
+    $global:IFS_WHATIF_PARAMETER_JSON = $null
+    $global:IFS_WHATIF_PARAMETER_PATH = $null
+    $global:IFS_STACK_PARAMETER_JSON = $null
+    $global:IFS_STACK_PARAMETER_PATH = $null
     $global:IFS_AZ_HANDLER = {
         param($Arguments)
         $global:LASTEXITCODE = 0
@@ -44,10 +48,43 @@ BeforeEach {
         if ($text -match "storage blob lease (renew|release)") { return "true" }
         if ($text -match "keyvault secret list") { return [IO.File]::ReadAllText((Join-Path $global:IFS_FIXTURE_ROOT "keyvault-secret-list.json")) }
         if ($text -match "resource show") { return [IO.File]::ReadAllText((Join-Path $global:IFS_FIXTURE_ROOT "resource-show.json")) }
+        if ($text -match "bicep build-params") {
+            $outputIndex = [Array]::IndexOf($Arguments, "--outfile") + 1
+            $document = [ordered]@{
+                '$schema' = "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#"
+                contentVersion = "1.0.0.0"
+                parameters = [ordered]@{
+                    caApi = [ordered]@{ value = [ordered]@{
+                        deploy = $true
+                        name = "orders-api"
+                        image = "bootstrap-image"
+                        cpu = "0.5"
+                        preserved = [ordered]@{ marker = "from-parameter-file" }
+                    } }
+                }
+            }
+            [IO.File]::WriteAllText($Arguments[$outputIndex], (ConvertTo-Json -InputObject $document -Depth 100), [Text.UTF8Encoding]::new($false))
+            return "{}"
+        }
         if ($text -match "deployment sub what-if") {
+            $parameterIndex = [Array]::IndexOf($Arguments, "--parameters") + 1
+            $parameterPath = $Arguments[$parameterIndex]
+            if ($parameterPath.EndsWith(".json", [StringComparison]::OrdinalIgnoreCase)) {
+                $global:IFS_WHATIF_PARAMETER_PATH = $parameterPath
+                $global:IFS_WHATIF_PARAMETER_JSON = Get-Content -LiteralPath $parameterPath -Raw | ConvertFrom-Json -AsHashtable -Depth 100
+            }
             return $global:IFS_WHATIF
         }
         if ($text -match "stack sub show") { return $global:IFS_STACK }
+        if ($text -match "stack sub create") {
+            $parameterIndex = [Array]::IndexOf($Arguments, "--parameters") + 1
+            $parameterPath = $Arguments[$parameterIndex]
+            if ($parameterPath.EndsWith(".json", [StringComparison]::OrdinalIgnoreCase)) {
+                $global:IFS_STACK_PARAMETER_PATH = $parameterPath
+                $global:IFS_STACK_PARAMETER_JSON = Get-Content -LiteralPath $parameterPath -Raw | ConvertFrom-Json -AsHashtable -Depth 100
+            }
+            return $global:IFS_STACK
+        }
         if ($text -match "container create") { return '{"created":true}' }
         if ($text -match "containerapp show") { return [IO.File]::ReadAllText((Join-Path $global:IFS_FIXTURE_ROOT "containerapp-show.json")) }
         return "{}"
@@ -145,7 +182,12 @@ Describe "Aperçu et empreinte" {
         $preview = Invoke-IfsPreview -ReleaseData $script:orderData -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -OutputDirectory $script:tempRoot
         $call = $global:IFS_AZ_CALLS | Where-Object { ($_ -join " ") -match "deployment sub what-if" } | Select-Object -First 1
 
-        $call | Should -Contain "caApi.image=$image"
+        $parameterIndex = [Array]::IndexOf($call, "--parameters") + 1
+        $call[$parameterIndex] | Should -Match "\.json$"
+        $call | Should -Not -Contain "caApi.image=$image"
+        $global:IFS_WHATIF_PARAMETER_JSON.parameters.caApi.value.image | Should -Be $image
+        $global:IFS_WHATIF_PARAMETER_JSON.parameters.caApi.value.preserved.marker | Should -Be "from-parameter-file"
+        Test-Path -LiteralPath $global:IFS_WHATIF_PARAMETER_PATH | Should -BeFalse
         $preview.appOwnedState[0].image | Should -Be $image
     }
 
@@ -689,7 +731,12 @@ Describe "Déploiement de pile et application" {
         Invoke-IfsStackDeployment -ReleaseData $data -TemplateFile "main.bicep" -ParameterFile "main.bicepparam" -DeploymentIdentityObjectId "identity" -ApplicationIdentityObjectId "22222222-2222-2222-2222-222222222222" -AppOwnedState $appState | Out-Null
         $call = $global:IFS_AZ_CALLS | Where-Object { ($_ -join " ") -match "stack sub create" } | Select-Object -First 1
 
-        $call | Should -Contain "caApi.image=$image"
+        $parameterIndex = [Array]::IndexOf($call, "--parameters") + 1
+        $call[$parameterIndex] | Should -Match "\.json$"
+        $call | Should -Not -Contain "caApi.image=$image"
+        $global:IFS_STACK_PARAMETER_JSON.parameters.caApi.value.image | Should -Be $image
+        $global:IFS_STACK_PARAMETER_JSON.parameters.caApi.value.preserved.marker | Should -Be "from-parameter-file"
+        Test-Path -LiteralPath $global:IFS_STACK_PARAMETER_PATH | Should -BeFalse
     }
 
     It "utilise le Client ID Microsoft Entra comme SID SQL pour les identités système et utilisateur" {
