@@ -556,9 +556,22 @@ function Set-IfsServiceEndpoint {
         $existingRevision = [regex]::Match([string]$current.description, 'ifs-kit-revision:\s*(\d+)')
         if (-not $existingRevision.Success) { throw "La service connection '$Name' ne porte pas de revision de kit valide." }
         Assert-IfsRevisionNotOlder -CurrentRevision $Revision -ExistingRevision ([int]$existingRevision.Groups[1].Value) -ObjectName $Name
-        if ([int]$existingRevision.Groups[1].Value -lt $Revision -and -not $script:IfsWhatIf) {
-            $full = Invoke-IfsAzJson -Arguments @('devops', 'service-endpoint', 'show', '--id', [string]$current.id, '--org', $Organization, '--project', $Project)
+        $full = Invoke-IfsAzJson -Arguments @('devops', 'service-endpoint', 'show', '--id', [string]$current.id, '--org', $Organization, '--project', $Project)
+        $projectReferences = @($full.serviceEndpointProjectReferences | Where-Object { [string]$_.projectReference.id -eq $ProjectId })
+        if ($projectReferences.Count -eq 0) { throw "La service connection '$Name' n'est pas liee au projet '$Project'." }
+        foreach ($projectReference in $projectReferences) {
+            if ([string]$projectReference.description -notmatch [regex]::Escape("managed-by: $script:IfsManagedBy")) {
+                throw "La reference de projet de la service connection '$Name' n'appartient pas a IFS; elle ne sera pas modifiee."
+            }
+            $referenceRevision = [regex]::Match([string]$projectReference.description, 'ifs-kit-revision:\s*(\d+)')
+            if (-not $referenceRevision.Success) { throw "La reference de projet de la service connection '$Name' ne porte pas une revision de kit valide." }
+            Assert-IfsRevisionNotOlder -CurrentRevision $Revision -ExistingRevision ([int]$referenceRevision.Groups[1].Value) -ObjectName "$Name (reference projet)"
+        }
+        $needsUpdate = ([int]$existingRevision.Groups[1].Value -lt $Revision) -or ([string]$full.description -ne $description) -or
+            @($projectReferences | Where-Object { [string]$_.description -ne $description }).Count -gt 0
+        if ($needsUpdate -and -not $script:IfsWhatIf) {
             $full.description = $description
+            foreach ($projectReference in $projectReferences) { $projectReference.description = $description }
             $path = Join-Path ([IO.Path]::GetTempPath()) ('ifs-endpoint-' + [guid]::NewGuid().ToString('N') + '.json')
             try {
                 [IO.File]::WriteAllText($path, (ConvertTo-Json -InputObject $full -Depth 100), [Text.UTF8Encoding]::new($false))
@@ -566,7 +579,15 @@ function Set-IfsServiceEndpoint {
             }
             finally { Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue }
         }
-        return Invoke-IfsAzJson -Arguments @('devops', 'service-endpoint', 'show', '--id', [string]$current.id, '--org', $Organization, '--project', $Project)
+        $updated = Invoke-IfsAzJson -Arguments @('devops', 'service-endpoint', 'show', '--id', [string]$current.id, '--org', $Organization, '--project', $Project)
+        if (-not $script:IfsWhatIf) {
+            if ([string]$updated.description -ne $description) { throw "La description globale de la service connection '$Name' n'a pas ete reconciliee." }
+            $updatedProjectReferences = @($updated.serviceEndpointProjectReferences | Where-Object { [string]$_.projectReference.id -eq $ProjectId })
+            if ($updatedProjectReferences.Count -eq 0 -or @($updatedProjectReferences | Where-Object { [string]$_.description -ne $description }).Count -gt 0) {
+                throw "La description de la reference projet de la service connection '$Name' n'a pas ete reconciliee."
+            }
+        }
+        return $updated
     }
 
     $configuration = [ordered]@{

@@ -23,11 +23,15 @@
     },
     {
       "path": ".ifs/install/scripts/IfsInstall.psm1",
-      "sha256": "43e00224750a28797824a4e5768a7f135c8d4984e99e0ccc99a0f3c9fdc9a526"
+      "sha256": "d1c8f0b478a31278122a50afbdfdaf4cf6171ca7b9465572fc7111abd6bb068c"
     },
     {
       "path": ".ifs/install/scripts/Install-Azdo.ps1",
       "sha256": "f8588da08122e7cc1940a1014f41f021f8c2f5f32c15507c803f8da34f59f661"
+    },
+    {
+      "path": ".ifs/install/tests/IfsInstall.Tests.ps1",
+      "sha256": "49e97e582174af0d437a9dd7ec08ad23eca30c6adae03af9bd26b6b73ce91836"
     },
     {
       "path": ".ifs/pins.json",

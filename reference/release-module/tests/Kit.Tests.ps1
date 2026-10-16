@@ -126,7 +126,7 @@ Describe 'Kit installation P-05' {
 
     AfterAll {
         Remove-Item Function:\global:az -ErrorAction SilentlyContinue
-        Remove-Variable -Name IFS_AZ_CALLS, IFS_AZ_HANDLER, IFS_ROLE_ASSIGNMENTS, IFS_BICEP_PARAMETERS, IFS_RESOURCE_GROUPS -Scope Global -ErrorAction SilentlyContinue
+        Remove-Variable -Name IFS_AZ_CALLS, IFS_AZ_HANDLER, IFS_ROLE_ASSIGNMENTS, IFS_BICEP_PARAMETERS, IFS_RESOURCE_GROUPS, IFS_ENDPOINT_DOCUMENT, IFS_ENDPOINT_UPDATE_DOCUMENT -Scope Global -ErrorAction SilentlyContinue
     }
 
     It 'ne lance aucune commande az decriture avec WhatIf' {
@@ -370,6 +370,59 @@ Describe 'Kit installation P-05' {
             $setIndex = [Array]::IndexOf($call, '--set')
             $call[$setIndex + 1] | Should -Be 'tags.ifs-kit-revision=2'
         }
+    }
+
+    It 'met a jour la description de la reference projet lors de la mise a jour d une service connection' {
+        $endpointId = '11111111-2222-3333-4444-555555555555'
+        $projectId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+        $global:IFS_ENDPOINT_DOCUMENT = [pscustomobject]@{
+            authorization = [pscustomobject]@{ parameters = [pscustomobject]@{}; scheme = 'WorkloadIdentityFederation' }
+            data = [pscustomobject]@{ environment = 'AzureCloud'; scopeLevel = 'Subscription' }
+            description = 'managed-by: infraflowsculptor; ifs-kit-revision: 1'
+            id = $endpointId
+            isReady = $true
+            isShared = $false
+            name = 'ifs-shop-dev'
+            serviceEndpointProjectReferences = @([pscustomobject]@{
+                description = 'managed-by: infraflowsculptor; ifs-kit-revision: 1'
+                name = 'ifs-shop-dev'
+                projectReference = [pscustomobject]@{ id = $projectId; name = 'shop' }
+            })
+            type = 'AzureRM'
+            url = 'https://management.azure.com/'
+        }
+        $global:IFS_AZ_HANDLER = {
+            param($Arguments)
+            $global:LASTEXITCODE = 0
+            if ($Arguments[0..2] -join ' ' -eq 'devops service-endpoint list') {
+                return ConvertTo-Json -InputObject @([pscustomobject]@{
+                    id = $endpointId
+                    name = 'ifs-shop-dev'
+                    description = 'managed-by: infraflowsculptor; ifs-kit-revision: 1'
+                }) -Depth 20 -Compress
+            }
+            if ($Arguments[0..2] -join ' ' -eq 'devops service-endpoint show') {
+                return ConvertTo-Json -InputObject $global:IFS_ENDPOINT_DOCUMENT -Depth 100 -Compress
+            }
+            if ($Arguments[0..1] -join ' ' -eq 'devops invoke') {
+                $fileIndex = [Array]::IndexOf($Arguments, '--in-file')
+                $global:IFS_ENDPOINT_UPDATE_DOCUMENT = Get-Content -LiteralPath ([string]$Arguments[$fileIndex + 1]) -Raw | ConvertFrom-Json -Depth 100
+                $global:IFS_ENDPOINT_DOCUMENT = $global:IFS_ENDPOINT_UPDATE_DOCUMENT
+                return '{}'
+            }
+            throw "Unexpected Azure CLI command: $($Arguments -join ' ')"
+        }
+
+        InModuleScope IfsInstall -Parameters @{ ProjectId = $projectId } {
+            $script:IfsWhatIf = $false
+            Set-IfsServiceEndpoint -Organization 'https://dev.azure.com/example/' -Project 'shop' -ProjectId $ProjectId `
+                -Name 'ifs-shop-dev' -SubscriptionId '00000000-0000-0000-0000-000000000001' `
+                -SubscriptionName 'example' -TenantId '00000000-0000-0000-0000-000000000002' `
+                -ClientId '00000000-0000-0000-0000-000000000003' -Revision 2 | Out-Null
+        }
+
+        $global:IFS_ENDPOINT_UPDATE_DOCUMENT.description | Should -Be 'managed-by: infraflowsculptor; ifs-kit-revision: 2'
+        $global:IFS_ENDPOINT_UPDATE_DOCUMENT.serviceEndpointProjectReferences[0].description | Should -Be 'managed-by: infraflowsculptor; ifs-kit-revision: 2'
     }
 
     It 'utilise la version stable 7.1 pour mettre a jour une service connection' {
