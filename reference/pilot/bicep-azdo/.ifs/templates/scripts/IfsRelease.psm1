@@ -1024,12 +1024,12 @@ function Invoke-IfsDataAccess {
             $server = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments @('sql', 'server', 'show', '--name', $serverName, '--resource-group', $resourceGroup, '--subscription', $ReleaseData.subscriptionId, '--output', 'json')).Text
             $resourceGroup = [string](Get-IfsValue $server 'resourceGroup')
             if ([string]::IsNullOrWhiteSpace($resourceGroup)) { throw ('Groupe de ressources SQL absent pour {0}.' -f $serverName) }
-            $rules = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments @('sql', 'server', 'firewall-rule', 'list', '--name', $serverName, '--resource-group', $resourceGroup, '--subscription', $ReleaseData.subscriptionId, '--output', 'json')).Text
+            $rules = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments @('sql', 'server', 'firewall-rule', 'list', '--server', $serverName, '--resource-group', $resourceGroup, '--subscription', $ReleaseData.subscriptionId, '--output', 'json')).Text
             foreach ($rule in $rules | Where-Object { $_.name -like 'ifs-temp-*' }) {
                 $ruleId = '/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Sql/servers/{2}/firewallRules/{3}' -f $ReleaseData.subscriptionId, $resourceGroup, $serverName, $rule.name
                 $created = Get-IfsTemporaryFirewallRuleCreatedAt -Rule $rule -ResourceId $ruleId
                 if ($created -and ([DateTimeOffset]::UtcNow - $created.ToUniversalTime()).TotalHours -gt 2) {
-                    [void](Invoke-IfsAz -Arguments @('sql', 'server', 'firewall-rule', 'delete', '--name', $serverName, '--resource-group', $resourceGroup, '--rule-name', $rule.name, '--subscription', $ReleaseData.subscriptionId, '--yes', '--output', 'none'))
+                    [void](Invoke-IfsAz -Arguments @('sql', 'server', 'firewall-rule', 'delete', '--server', $serverName, '--resource-group', $resourceGroup, '--name', $rule.name, '--subscription', $ReleaseData.subscriptionId, '--yes', '--output', 'none'))
                     $cleaned.Add([string]$rule.name)
                 }
             }
@@ -1038,7 +1038,7 @@ function Invoke-IfsDataAccess {
                 $ip = [string](Invoke-RestMethod -Uri 'https://api.ipify.org' -TimeoutSec 15)
                 $suffix = (($firewallRunId -replace '[^a-zA-Z0-9-]', '') + [guid]::NewGuid().ToString('N')).Substring(0, 36)
                 $firewall = [pscustomobject]@{ Server = $serverName; ResourceGroup = $resourceGroup; Name = ('ifs-temp-{0}' -f $suffix) }
-                [void](Invoke-IfsAz -Arguments @('sql', 'server', 'firewall-rule', 'create', '--name', $serverName, '--resource-group', $resourceGroup, '--rule-name', $firewall.Name, '--start-ip-address', $ip, '--end-ip-address', $ip, '--subscription', $ReleaseData.subscriptionId, '--output', 'none'))
+                [void](Invoke-IfsAz -Arguments @('sql', 'server', 'firewall-rule', 'create', '--server', $serverName, '--resource-group', $resourceGroup, '--name', $firewall.Name, '--start-ip-address', $ip, '--end-ip-address', $ip, '--subscription', $ReleaseData.subscriptionId, '--output', 'none'))
                 $opened.Add($firewall)
             }
             $principal = Get-IfsSqlPrincipal -Access $access -SubscriptionId $ReleaseData.subscriptionId
@@ -1063,7 +1063,7 @@ function Invoke-IfsDataAccess {
     }
     finally {
         foreach ($rule in $opened) {
-            [void](Invoke-IfsAz -Arguments @('sql', 'server', 'firewall-rule', 'delete', '--name', $rule.Server, '--resource-group', $rule.ResourceGroup, '--rule-name', $rule.Name, '--yes', '--output', 'none') -AllowFailure)
+            [void](Invoke-IfsAz -Arguments @('sql', 'server', 'firewall-rule', 'delete', '--server', $rule.Server, '--resource-group', $rule.ResourceGroup, '--name', $rule.Name, '--yes', '--output', 'none') -AllowFailure)
         }
     }
     return [pscustomobject]@{ temporaryFirewallRules = @($opened); cleanedFirewallRules = $cleaned.ToArray() }

@@ -732,11 +732,68 @@ Describe "Déploiement de pile et application" {
 
             $serverDependency = @($script:orderData.dependencies | ForEach-Object { $_.resources } | Where-Object { $_.id -match '/providers/Microsoft\.Sql/servers/[^/]+$' }) | Select-Object -First 1
             $expectedResourceGroup = [regex]::Match($serverDependency.id, '/resourceGroups/([^/]+)/').Groups[1].Value
+            $expectedServerName = [string]$script:orderData.dataAccess[0].server -split '\.' | Select-Object -First 1
             $serverShowCall = $global:IFS_AZ_CALLS | Where-Object { ($_ -join ' ') -match '^sql server show ' } | Select-Object -First 1
             $resourceGroupIndex = [Array]::IndexOf($serverShowCall, '--resource-group')
+            $firewallListCall = $global:IFS_AZ_CALLS | Where-Object { ($_ -join ' ') -match '^sql server firewall-rule list ' } | Select-Object -First 1
+            $firewallServerIndex = [Array]::IndexOf($firewallListCall, '--server')
 
             $resourceGroupIndex | Should -BeGreaterThan -1
             $serverShowCall[$resourceGroupIndex + 1] | Should -BeExactly $expectedResourceGroup
+            $firewallServerIndex | Should -BeGreaterThan -1
+            $firewallListCall[$firewallServerIndex + 1] | Should -BeExactly $expectedServerName
+        }
+        finally {
+            Remove-Item Function:global:Invoke-Sqlcmd -ErrorAction SilentlyContinue
+        }
+    }
+
+    It "utilise les options Azure CLI du serveur et de la règle pour le pare-feu SQL temporaire" {
+        $restrictedData = ConvertFrom-Json -InputObject (ConvertTo-Json -InputObject $script:orderData -Depth 100) -Depth 100
+        $restrictedData.dataAccess[0].exposure = 'Restricted'
+        $global:IFS_AZ_HANDLER = {
+            param($Arguments)
+            $global:LASTEXITCODE = 0
+            $command = $Arguments -join ' '
+            if ($command -match '^sql server show') { return '{"resourceGroup":"rg-shop-orders-main-dev"}' }
+            if ($command -match '^sql server firewall-rule list') { return '[]' }
+            if ($command -match '^containerapp show') { return '{"principalId":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}' }
+            if ($command -match '^account get-access-token') { return '{"accessToken":"test-token"}' }
+            return '{}'
+        }
+        Mock Install-Module -ModuleName IfsRelease { }
+        Mock Import-Module -ModuleName IfsRelease { }
+        Mock Invoke-RestMethod { return '198.51.100.17' }
+        function global:Invoke-Sqlcmd {
+            [CmdletBinding()]
+            param(
+                [string] $ServerInstance,
+                [string] $Database,
+                [string] $AccessToken,
+                [string] $InputFile,
+                [string[]] $Variable
+            )
+        }
+
+        try {
+            Invoke-IfsDataAccess -ReleaseData $restrictedData -SqlScript (Join-Path $script:repoRoot "reference/pilot/bicep-azdo/orders/infra/scripts/data-access.sql") -RunId "test-run" | Out-Null
+
+            $expectedServerName = [string]$restrictedData.dataAccess[0].server -split '\.' | Select-Object -First 1
+            $createCall = $global:IFS_AZ_CALLS | Where-Object { ($_ -join ' ') -match '^sql server firewall-rule create ' } | Select-Object -First 1
+            $createServerIndex = [Array]::IndexOf($createCall, '--server')
+            $createNameIndex = [Array]::IndexOf($createCall, '--name')
+            $deleteCall = $global:IFS_AZ_CALLS | Where-Object { ($_ -join ' ') -match '^sql server firewall-rule delete ' } | Select-Object -Last 1
+            $deleteServerIndex = [Array]::IndexOf($deleteCall, '--server')
+            $deleteNameIndex = [Array]::IndexOf($deleteCall, '--name')
+
+            $createServerIndex | Should -BeGreaterThan -1
+            $createCall[$createServerIndex + 1] | Should -BeExactly $expectedServerName
+            $createNameIndex | Should -BeGreaterThan -1
+            $createCall[$createNameIndex + 1] | Should -Match '^ifs-temp-'
+            $deleteServerIndex | Should -BeGreaterThan -1
+            $deleteCall[$deleteServerIndex + 1] | Should -BeExactly $expectedServerName
+            $deleteNameIndex | Should -BeGreaterThan -1
+            $deleteCall[$deleteNameIndex + 1] | Should -Match '^ifs-temp-'
         }
         finally {
             Remove-Item Function:global:Invoke-Sqlcmd -ErrorAction SilentlyContinue
