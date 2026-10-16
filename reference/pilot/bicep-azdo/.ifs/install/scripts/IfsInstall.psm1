@@ -86,13 +86,18 @@ function Get-IfsRbacScopePlan {
                         $resourceId = [string](Get-IfsObjectProperty -Object $resource -Name 'id')
                         $match = [regex]::Match($resourceId, '^/subscriptions/(?<subscription>[^/]+)/resourceGroups/(?<group>[^/]+)/providers/')
                         if (-not $match.Success) { continue }
-                        $roleId = $null
-                        if ($resourceId -match '/providers/Microsoft\.KeyVault/vaults/') { $roleId = [string]$RoleIds.KeyVaultSecretsUser }
-                        elseif ($resourceId -match '/providers/Microsoft\.OperationalInsights/workspaces/') { $roleId = [string]$RoleIds.LogAnalyticsReader }
-                        elseif ($resourceId -match '/providers/Microsoft\.ContainerRegistry/registries/') { $roleId = [string]$RoleIds.AcrPull }
-                        if ($roleId) {
+                        $dependencyRoleIds = @()
+                        if ($resourceId -match '/providers/Microsoft\.KeyVault/vaults/') { $dependencyRoleIds = @([string]$RoleIds.KeyVaultSecretsUser) }
+                        elseif ($resourceId -match '/providers/Microsoft\.OperationalInsights/workspaces/') {
+                            $dependencyRoleIds = @(
+                                [string]$RoleIds.LogAnalyticsReader
+                                [string]$RoleIds.LogAnalyticsDataReader
+                            )
+                        }
+                        elseif ($resourceId -match '/providers/Microsoft\.ContainerRegistry/registries/') { $dependencyRoleIds = @([string]$RoleIds.AcrPull) }
+                        if ($dependencyRoleIds.Count -gt 0) {
                             $dependencyScope = "/subscriptions/$($match.Groups['subscription'].Value)/resourceGroups/$($match.Groups['group'].Value)"
-                            & $addRole $dependencyScope $roleId
+                            foreach ($roleId in $dependencyRoleIds) { & $addRole $dependencyScope $roleId }
                         }
                     }
                 }
@@ -422,6 +427,7 @@ function Get-IfsRoleDefinitionId {
         'Key Vault Secrets User' = '4633458b-17de-408a-b874-0445c86b69e6'
         'Key Vault Secrets Officer' = 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
         'Log Analytics Reader' = '73c42c96-874c-492b-b04d-ab87d138a893'
+        'Log Analytics Data Reader' = '3b03c2da-16b3-4a49-8834-0f8130efdd3b'
         'Container Apps Contributor' = '358470bc-b998-42bd-ab17-a7e34c199c0f'
         'Storage Blob Data Contributor' = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
     }
@@ -760,6 +766,7 @@ function Invoke-IfsAzureSetup {
     $roleKvSecretsUser = Get-IfsRoleDefinitionId -RoleName 'Key Vault Secrets User'
     $roleKvSecretsOfficer = Get-IfsRoleDefinitionId -RoleName 'Key Vault Secrets Officer'
     $roleLogsReader = Get-IfsRoleDefinitionId -RoleName 'Log Analytics Reader'
+    $roleLogsDataReader = Get-IfsRoleDefinitionId -RoleName 'Log Analytics Data Reader'
     $roleContainerAppsContributor = Get-IfsRoleDefinitionId -RoleName 'Container Apps Contributor'
 
     foreach ($release in $plan.Releases) {
@@ -773,6 +780,7 @@ function Invoke-IfsAzureSetup {
         KeyVaultSecretsOfficer = $roleKvSecretsOfficer
         KeyVaultSecretsUser = $roleKvSecretsUser
         LogAnalyticsReader = $roleLogsReader
+        LogAnalyticsDataReader = $roleLogsDataReader
         AcrPull = $roleAcrPull
         AcrPush = $roleAcrPush
         ContainerAppsContributor = $roleContainerAppsContributor

@@ -101,7 +101,7 @@ jobs:
 
       - name: Test PowerShell release and reference tools
         shell: pwsh
-        run: Invoke-Pester -Path ./reference/release-module/tests -CI
+        run: Invoke-Pester -Path ./reference/release-module/tests, ./reference/pilot/bicep-azdo/.ifs/install/tests -CI
 
       - name: Analyze PowerShell scripts
         shell: pwsh

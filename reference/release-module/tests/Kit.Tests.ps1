@@ -340,11 +340,12 @@ Describe 'Kit installation P-05' {
 
     It 'limite exactement la condition RBAC aux roles du pilote' {
         $roles = @(
+            '3b03c2da-16b3-4a49-8834-0f8130efdd3b'
             '7f951dda-4ed3-4680-a7ca-43fe172d538d'
             '4633458b-17de-408a-b874-0445c86b69e6'
             '73c42c96-874c-492b-b04d-ab87d138a893'
         )
-        $set = '{4633458b-17de-408a-b874-0445c86b69e6,73c42c96-874c-492b-b04d-ab87d138a893,7f951dda-4ed3-4680-a7ca-43fe172d538d}'
+        $set = '{3b03c2da-16b3-4a49-8834-0f8130efdd3b,4633458b-17de-408a-b874-0445c86b69e6,73c42c96-874c-492b-b04d-ab87d138a893,7f951dda-4ed3-4680-a7ca-43fe172d538d}'
         $expected = "((!(ActionMatches{'Microsoft.Authorization/roleAssignments/write'}) AND !(ActionMatches{'Microsoft.Authorization/roleAssignments/delete'})) OR (@Request[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals $set)) AND ((!(ActionMatches{'Microsoft.Authorization/roleAssignments/delete'})) OR (@Resource[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals $set))"
 
         (Get-IfsRbacCondition -RoleDefinitionIds $roles) | Should -BeExactly $expected
@@ -355,6 +356,7 @@ Describe 'Kit installation P-05' {
             KeyVaultSecretsOfficer = 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
             KeyVaultSecretsUser = '4633458b-17de-408a-b874-0445c86b69e6'
             LogAnalyticsReader = '73c42c96-874c-492b-b04d-ab87d138a893'
+            LogAnalyticsDataReader = '3b03c2da-16b3-4a49-8834-0f8130efdd3b'
             AcrPull = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
             AcrPush = '8311e382-0749-4cb8-b61a-304f252e45ec'
             ContainerAppsContributor = '358470bc-b998-42bd-ab17-a7e34c199c0f'
@@ -382,6 +384,7 @@ Describe 'Kit installation P-05' {
         @($scopes | Where-Object Scope -eq '/subscriptions/sub-dev/resourceGroups/rg-core').RoleDefinitionIds | Should -Contain $roleIds.KeyVaultSecretsOfficer
         @($scopes | Where-Object Scope -eq '/subscriptions/sub-dev/resourceGroups/rg-core').RoleDefinitionIds | Should -Contain $roleIds.KeyVaultSecretsUser
         @($scopes | Where-Object Scope -eq '/subscriptions/sub-dev/resourceGroups/rg-core').RoleDefinitionIds | Should -Contain $roleIds.LogAnalyticsReader
+        @($scopes | Where-Object Scope -eq '/subscriptions/sub-dev/resourceGroups/rg-core').RoleDefinitionIds | Should -Contain $roleIds.LogAnalyticsDataReader
         @($scopes | Where-Object Scope -eq '/subscriptions/sub-dev/resourceGroups/rg-orders').RoleDefinitionIds | Should -Contain $roleIds.ContainerAppsContributor
         @($scopes | Where-Object Scope -eq '/subscriptions/sub-shared/resourceGroups/rg-platform').RoleDefinitionIds | Should -Contain $roleIds.AcrPull
         $scopes.Scope | Should -Not -Contain '/subscriptions/sub-dev'
