@@ -95,7 +95,7 @@
     },
     {
       "path": ".ifs/templates/scripts/IfsRelease.psm1",
-      "sha256": "111623f2958004cd05fe8286cb0d9bcaa6defaf47e8e488b06a8e907115c96f8"
+      "sha256": "311a76a0984f34ef5d0b105dc058f882840ad4280a38b1219e4ebd9595cf7d1e"
     },
     {
       "path": ".ifs/templates/scripts/Install-IfsTrivy.ps1",
@@ -167,7 +167,7 @@
     },
     {
       "path": "data/infra/main.bicep",
-      "sha256": "00814997802ab3594b8e7b6bc3b96cb1a406edbad47d9bad0337ccbf1c3b04c3"
+      "sha256": "19972246239fcaa1ff76ac90595eb594725514ae98fcf2ec8382196ac7aefb1c"
     },
     {
       "path": "data/infra/main.dev.bicepparam",
@@ -223,7 +223,7 @@
     },
     {
       "path": "orders/infra/main.bicep",
-      "sha256": "6489f16329286e49e393ed2a5f0e83dbca4e824380dd56936f16feade91bb9a6"
+      "sha256": "d8e03449458be4a0f340f6062a8100ce18dc2360bf89e775d50ad61c00963164"
     },
     {
       "path": "orders/infra/main.dev.bicepparam",
@@ -275,11 +275,11 @@
     },
     {
       "path": "platform/infra/main.bicep",
-      "sha256": "7ef812a47fc425e0a828581c63665ce4052ecceb78495bc8280b404f862f82e5"
+      "sha256": "9cc77039547b68d05e04e17d9ddea1f3f6d12017ec2f325f48b8945ae54107d1"
     },
     {
       "path": "platform/infra/main.shared.bicepparam",
-      "sha256": "603ab7dd85cb8d2aa672e0ce0304659fa29170229f98ad7b641322b238dcf2b6"
+      "sha256": "2a6c473dc36e3f3e4d0d1d04fac0a803af652cb5d17f22548e54f04b7d1341bc"
     },
     {
       "path": "platform/infra/pipelines/ci.yml",
@@ -303,7 +303,7 @@
     },
     {
       "path": "platform/infra/types.bicep",
-      "sha256": "f3214d0f14e26dbddedbdb62abcd74eeb8118a13535a12e9d50b1976d9a01a98"
+      "sha256": "6c7802d8072a8df37d28e09c17327a5add55643d08248ba84701854a8e45f5ee"
     }
   ]
 }
