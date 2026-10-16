@@ -597,9 +597,20 @@ function Invoke-IfsPreview {
     $revoked = [System.Collections.Generic.List[object]]::new()
     foreach ($change in @(Get-IfsAccessRevocation -Changes $changes -ReleaseData $ReleaseData)) { $revoked.Add($change) }
     $accessTypes = @($ReleaseData.accessObjectTypes)
+    $unsupportedAccessTypes = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($change in $changes | Where-Object { (Get-IfsChangeType $_) -eq 'Unsupported' }) {
+        $resourceExpression = [string](Get-IfsValue $change 'resourceId' '')
+        foreach ($type in $accessTypes) {
+            if ($resourceExpression.IndexOf([string]$type, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+                [void]$unsupportedAccessTypes.Add([string]$type)
+            }
+        }
+    }
     foreach ($resourceId in $unmanagedIds) {
-        $isAccessObject = @($accessTypes | Where-Object { $resourceId -match ('(?i)/{0}/' -f [regex]::Escape([string]$_)) }).Count -gt 0
-        if ($isAccessObject -and -not @($revoked | Where-Object { $_.resourceId -ieq $resourceId }).Count) {
+        $resourceAccessType = @($accessTypes | Where-Object { $resourceId -match ('(?i)/{0}/' -f [regex]::Escape([string]$_)) } | Select-Object -First 1)
+        $isAccessObject = $resourceAccessType.Count -gt 0
+        $accessTypeIsUnsupported = $isAccessObject -and $unsupportedAccessTypes.Contains([string]$resourceAccessType[0])
+        if ($isAccessObject -and -not $accessTypeIsUnsupported -and -not @($revoked | Where-Object { $_.resourceId -ieq $resourceId }).Count) {
             $revoked.Add([pscustomobject]@{ resourceId = $resourceId; changeType = 'Detach' })
         }
     }
@@ -629,6 +640,12 @@ function Invoke-IfsPreview {
     $effects = [ordered]@{ changes = $fingerprintChanges; stackResources = $fingerprintStackResources; detachedOrDeleted = $detachedResources; revokedAccess = $revokedPreview; dataWrites = $dataWrites; appOwnedState = @($ReleaseData.appOwnedState) }
     $fingerprint = Get-IfsEffectFingerprint -Effects $effects
     $appState = @(Read-IfsAppOwnedState $ReleaseData)
+    $limitations = [System.Collections.Generic.List[string]]::new()
+    $limitations.Add('What-if ne prévoit pas les écritures de plan de données à partir de leur valeur réelle.')
+    $limitations.Add('L''aperçu des piles est une comparaison des ressources ARM gérées et du modèle.')
+    if ($unsupportedAccessTypes.Count -gt 0) {
+        $limitations.Add("What-If ne résout pas certains identifiants d’accès ; leur absence ne déclenche pas une révocation implicite.")
+    }
     $preview = [pscustomobject]@{
         schema = 'ifs-preview/v1'
         project = $ReleaseData.project
@@ -645,7 +662,7 @@ function Invoke-IfsPreview {
         revokedAccess = $revokedPreview
         dataWrites = $dataWrites
         appOwnedState = $appState
-        limitations = @('What-if ne prévoit pas les écritures de plan de données à partir de leur valeur réelle.', 'L''aperçu des piles est une comparaison des ressources ARM gérées et du modèle.')
+        limitations = $limitations.ToArray()
     }
     $previewJson = ConvertTo-Json -InputObject $preview -Depth 100
     if (-not (Test-Json -Json $previewJson -SchemaFile (Get-IfsSchemaPath 'ifs-preview.schema.json'))) {

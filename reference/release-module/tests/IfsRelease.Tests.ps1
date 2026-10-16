@@ -211,6 +211,18 @@ Describe "Aperçu et empreinte" {
         ($preview.revokedAccess | ForEach-Object resourceId) | Should -Contain $roleId
         ($global:IFS_AZ_CALLS | ForEach-Object { $_ -join " " } | Where-Object { $_ -match "lease|upload|resource delete" }) | Should -BeNullOrEmpty
     }
+
+    It "ne prend pas un rôle What-If non pris en charge pour un accès retiré" {
+        $roleId = "/subscriptions/test/resourceGroups/core/providers/Microsoft.KeyVault/vaults/kv/providers/Microsoft.Authorization/roleAssignments/current"
+        $symbolicRoleId = "[extensionResourceId('/subscriptions/test/resourceGroups/core/providers/Microsoft.KeyVault/vaults/kv', 'Microsoft.Authorization/roleAssignments', guid(...))]"
+        $global:IFS_STACK = @{ resources = @(@{ id = $roleId }) } | ConvertTo-Json -Depth 20 -Compress
+        $global:IFS_WHATIF = @{ changes = @(@{ resourceId = $symbolicRoleId; changeType = "Unsupported" }) } | ConvertTo-Json -Depth 20 -Compress
+
+        $preview = Invoke-IfsPreview -ReleaseData $script:orderData -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -OutputDirectory $script:tempRoot
+
+        ($preview.revokedAccess | ForEach-Object resourceId) | Should -Not -Contain $roleId
+        $preview.limitations | Should -Contain "What-If ne résout pas certains identifiants d’accès ; leur absence ne déclenche pas une révocation implicite."
+    }
 }
 
 Describe "Journal d'opérations" {
