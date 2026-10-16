@@ -140,6 +140,15 @@ Describe "Aperçu et empreinte" {
         $call | Should -Contain "appDeliveryPrincipalId=$applicationId"
     }
 
+    It "transmet l'image applicative actuelle au What-If" {
+        $image = "mcr.microsoft.com/example:1"
+        $preview = Invoke-IfsPreview -ReleaseData $script:orderData -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -OutputDirectory $script:tempRoot
+        $call = $global:IFS_AZ_CALLS | Where-Object { ($_ -join " ") -match "deployment sub what-if" } | Select-Object -First 1
+
+        $call | Should -Contain "caApi.image=$image"
+        $preview.appOwnedState[0].image | Should -Be $image
+    }
+
     It "inclut l'Object ID de déploiement dans l'aperçu core" {
         $data = Read-IfsReleaseData -Path $script:coreRelease
         $template = Join-Path $script:repoRoot "reference/pilot/bicep-azdo/core/infra/main.bicep"
@@ -551,6 +560,8 @@ Describe "Rapports de release" {
         $global:IFS_AZ_CALLS.Clear()
         Mock Test-IfsNewerManifest -ModuleName IfsRelease { return $false }
         Mock Invoke-IfsPendingOperation -ModuleName IfsRelease {
+            param($AppOwnedState)
+            [void]$global:IFS_AZ_CALLS.Add([pscustomobject]@{ kind = 'pending-app-owned-state'; state = @($AppOwnedState) })
             return [pscustomobject]@{ detachedResources = @(); revokedAccess = @(); temporaryFirewallRules = @(); cleanedFirewallRules = @() }
         }
 
@@ -565,6 +576,9 @@ Describe "Rapports de release" {
         $appStateLines.Count | Should -Be 2
         $appStateLines[0] | Should -BeLessThan $leaseLine
         $appStateLines[1] | Should -BeGreaterThan $leaseLine
+        $pendingState = @($global:IFS_AZ_CALLS | Where-Object { $_.kind -eq 'pending-app-owned-state' })
+        $pendingState.Count | Should -Be 1
+        $pendingState[0].state[0].image | Should -Be "mcr.microsoft.com/example:1"
     }
 
     It "rapporte un déploiement partiel après un échec de pile" {
@@ -657,6 +671,25 @@ Describe "Déploiement de pile et application" {
         $call | Should -Contain "--deny-settings-mode"
         $call | Should -Contain "none"
         $stack.detachedResources | Should -BeNullOrEmpty
+    }
+
+    It "passe l'image applicative courante comme paramètre de pile" {
+        $image = "crshop42.azurecr.io/orders/api@sha256:$('a' * 64)"
+        $appState = @([pscustomobject]@{
+            resourceId = "/subscriptions/test/resourceGroups/rg/providers/Microsoft.App/containerApps/api"
+            parameter = "caApi.image"
+            image = $image
+            traffic = @()
+            bootstrap = $false
+        })
+        $data = [pscustomobject]@{
+            unit = "ifs-shop-orders-dev"; component = "orders"; location = "francecentral"; subscriptionId = "test"; protected = $false
+        }
+
+        Invoke-IfsStackDeployment -ReleaseData $data -TemplateFile "main.bicep" -ParameterFile "main.bicepparam" -DeploymentIdentityObjectId "identity" -ApplicationIdentityObjectId "22222222-2222-2222-2222-222222222222" -AppOwnedState $appState | Out-Null
+        $call = $global:IFS_AZ_CALLS | Where-Object { ($_ -join " ") -match "stack sub create" } | Select-Object -First 1
+
+        $call | Should -Contain "caApi.image=$image"
     }
 
     It "utilise le Client ID Microsoft Entra comme SID SQL pour les identités système et utilisateur" {

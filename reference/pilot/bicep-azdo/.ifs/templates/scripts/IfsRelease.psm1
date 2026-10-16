@@ -510,6 +510,26 @@ function Read-IfsAppOwnedState {
     return $states.ToArray()
 }
 
+function Get-IfsAppOwnedImageParameter {
+    [CmdletBinding()]
+    param([AllowEmptyCollection()][object[]] $AppOwnedState = @())
+
+    $imagesByParameter = [System.Collections.Generic.Dictionary[string, string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($state in $AppOwnedState) {
+        $parameter = [string](Get-IfsValue $state 'parameter' '')
+        $image = [string](Get-IfsValue $state 'image' '')
+        if ([string]::IsNullOrWhiteSpace($parameter) -or [string]::IsNullOrWhiteSpace($image)) {
+            throw 'L''état de l''image applicative ne contient pas de paramètre Bicep et d''image valides.'
+        }
+        if ($imagesByParameter.ContainsKey($parameter) -and $imagesByParameter[$parameter] -ne $image) {
+            throw ('Plusieurs images applicatives différentes sont déclarées pour le paramètre Bicep {0}.' -f $parameter)
+        }
+        $imagesByParameter[$parameter] = $image
+    }
+
+    return @($imagesByParameter.GetEnumerator() | Sort-Object Key | ForEach-Object { '{0}={1}' -f $_.Key, $_.Value })
+}
+
 function Get-IfsAccessRevocation {
     param([object[]] $Changes, [object] $ReleaseData)
     $types = @($ReleaseData.accessObjectTypes)
@@ -550,6 +570,7 @@ function Invoke-IfsPreview {
     [void](Test-IfsDependency -ReleaseData $ReleaseData -Target $ReleaseData.target)
     [void](Test-IfsSecretVariable $ReleaseData)
     [void](Test-IfsSecretReference $ReleaseData)
+    $appState = @(Read-IfsAppOwnedState $ReleaseData)
     $parameters = @($ParameterFile)
     if ($ReleaseData.component -eq 'core' -and -not [string]::IsNullOrWhiteSpace($DeploymentIdentityObjectId)) {
         $parameters += "deploymentPrincipalId=$DeploymentIdentityObjectId"
@@ -557,6 +578,7 @@ function Invoke-IfsPreview {
     if ($ReleaseData.component -in @('platform', 'orders') -and -not [string]::IsNullOrWhiteSpace($ApplicationIdentityObjectId)) {
         $parameters += "appDeliveryPrincipalId=$ApplicationIdentityObjectId"
     }
+    $parameters += @(Get-IfsAppOwnedImageParameter -AppOwnedState $appState)
     $whatIfResult = Invoke-IfsAz -Arguments (@(
         'deployment', 'sub', 'what-if', '--name', ('ifs-{0}-preview' -f $ReleaseData.unit),
         '--location', $ReleaseData.location, '--template-file', $TemplateFile, '--no-pretty-print',
@@ -639,7 +661,6 @@ function Invoke-IfsPreview {
     $fingerprintStackResources = @($managedResources | Sort-Object { [string](Get-IfsValue $_ 'id' (Get-IfsValue $_ 'resourceId' '')) })
     $effects = [ordered]@{ changes = $fingerprintChanges; stackResources = $fingerprintStackResources; detachedOrDeleted = $detachedResources; revokedAccess = $revokedPreview; dataWrites = $dataWrites; appOwnedState = @($ReleaseData.appOwnedState) }
     $fingerprint = Get-IfsEffectFingerprint -Effects $effects
-    $appState = @(Read-IfsAppOwnedState $ReleaseData)
     $limitations = [System.Collections.Generic.List[string]]::new()
     $limitations.Add('What-if ne prévoit pas les écritures de plan de données à partir de leur valeur réelle.')
     $limitations.Add('L''aperçu des piles est une comparaison des ressources ARM gérées et du modèle.')
@@ -780,6 +801,7 @@ function Invoke-IfsPendingOperation {
         [Parameter(Mandatory)][string] $ParameterFile,
         [Parameter(Mandatory)][string] $DeploymentIdentityObjectId,
         [string] $ApplicationIdentityObjectId,
+        [AllowEmptyCollection()][object[]] $AppOwnedState = @(),
         [Parameter(Mandatory)][AllowEmptyString()][string] $SqlScript,
         [Parameter(Mandatory)][int] $Revision,
         [Parameter(Mandatory)][string] $Commit,
@@ -816,7 +838,7 @@ function Invoke-IfsPendingOperation {
         }
         if ($operation.kind -eq 'deploy-unit') {
             if ($operation.state -eq 'ToDo') { [void](Set-IfsOperationState -Context $Context -OperationId $operation.id -State 'Started') }
-            $stackOutput = Invoke-IfsStackDeployment -ReleaseData $ReleaseData -TemplateFile $TemplateFile -ParameterFile $ParameterFile -DeploymentIdentityObjectId $DeploymentIdentityObjectId -ApplicationIdentityObjectId $ApplicationIdentityObjectId
+            $stackOutput = Invoke-IfsStackDeployment -ReleaseData $ReleaseData -TemplateFile $TemplateFile -ParameterFile $ParameterFile -DeploymentIdentityObjectId $DeploymentIdentityObjectId -ApplicationIdentityObjectId $ApplicationIdentityObjectId -AppOwnedState $AppOwnedState
             $summary.detachedResources.AddRange([string[]]$stackOutput.detachedResources)
             if ($env:IFS_TEST_ABORT_AFTER -eq 'deploy-unit') { [Environment]::Exit(137) }
             [void](Set-IfsOperationState -Context $Context -OperationId $operation.id -State 'Done')
@@ -857,7 +879,8 @@ function Invoke-IfsStackDeployment {
         [Parameter(Mandatory)][string] $TemplateFile,
         [Parameter(Mandatory)][string] $ParameterFile,
         [Parameter(Mandatory)][string] $DeploymentIdentityObjectId,
-        [string] $ApplicationIdentityObjectId
+        [string] $ApplicationIdentityObjectId,
+        [AllowEmptyCollection()][object[]] $AppOwnedState = @()
     )
     $parameters = @($ParameterFile)
     if ($ReleaseData.component -eq 'core') {
@@ -868,6 +891,7 @@ function Invoke-IfsStackDeployment {
         if ([string]::IsNullOrWhiteSpace($ApplicationIdentityObjectId)) { throw "Le composant '$($ReleaseData.component)' exige l'Object ID de l'identite applicative pour ses attributions RBAC." }
         $parameters += "appDeliveryPrincipalId=$ApplicationIdentityObjectId"
     }
+    $parameters += @(Get-IfsAppOwnedImageParameter -AppOwnedState $AppOwnedState)
     $arguments = @('stack', 'sub', 'create', '--name', $ReleaseData.unit, '--location', $ReleaseData.location, '--template-file', $TemplateFile, '--parameters') + $parameters + @('--action-on-unmanage', 'detachAll', '--subscription', $ReleaseData.subscriptionId, '--yes', '--output', 'json')
     if ($ReleaseData.protected) {
         if ([string]::IsNullOrWhiteSpace($DeploymentIdentityObjectId)) { throw 'La cible protégée exige l''identité de déploiement pour son deny assignment.' }
@@ -1266,7 +1290,7 @@ function Invoke-IfsInfraDeploy {
         }
         $steps.Add([pscustomobject]@{ number = 6; name = 'journal'; result = 'Succeeded'; replayed = @($previousOperations | ForEach-Object { $_.id }) })
         try {
-            $execution = Invoke-IfsPendingOperation -Context $context -ReleaseData $data -TemplateFile $TemplateFile -ParameterFile $ParameterFile -DeploymentIdentityObjectId $DeploymentIdentityObjectId -ApplicationIdentityObjectId $ApplicationIdentityObjectId -SqlScript $SqlScript -Revision $metadata.Revision -Commit $metadata.Commit -RunId $RunId
+            $execution = Invoke-IfsPendingOperation -Context $context -ReleaseData $data -TemplateFile $TemplateFile -ParameterFile $ParameterFile -DeploymentIdentityObjectId $DeploymentIdentityObjectId -ApplicationIdentityObjectId $ApplicationIdentityObjectId -AppOwnedState $appState -SqlScript $SqlScript -Revision $metadata.Revision -Commit $metadata.Commit -RunId $RunId
         }
         catch {
             $createdAfterFailure = [System.Collections.Generic.List[string]]::new()
