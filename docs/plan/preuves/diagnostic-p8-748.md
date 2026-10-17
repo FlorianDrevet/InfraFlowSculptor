@@ -187,9 +187,38 @@ for ($pass = 1; $pass -le 5; $pass++) {
 Write-Host "Cinq passes terminées. Garder les captures locales sous : $sessionRoot"
 ```
 
-## État après D1a
+## État après D1a (historique)
 
 P-08 passe à `EN_ATTENTE_DE_RECETTE`. À réception du chemin D1b et des résultats, reprendre uniquement avec
 `python tools/plan/gate.py resume P-08`, comparer les cinq sorties hors ligne, puis consigner les constats D1 en
 distinguant explicitement la reproductibilité personnelle du run #748 non diagnostiqué. Aucun pipeline ou release ne
 doit être lancé avant les conditions D3 précisées au plan.
+
+## Résultats D1b (2026-10-17)
+
+Les cinq aperçus ont été produits depuis l’artefact infra de la CI #746, avec les mêmes template et paramètres, en
+appelant `Invoke-IfsPreview` sous l’identité Azure CLI personnelle. `servicePrincipalId` était absent et la
+souscription active correspondait aux données de release. Les cinq aperçus `ifs-preview/v1` et leurs cinq
+`metadata.json` ont été conservés hors dépôt dans
+`%LOCALAPPDATA%\InfraFlowSculptor\P08\D1b\20261017T215336Z\` ; le fichier de comparaisons s’y trouve également.
+
+Les métadonnées et captures ont été validées : schéma, identité, contexte, empreintes SHA-256 des sorties et des
+entrées, versions d’outils et cohérence entre chaque capture et ses métadonnées. Les quatre comparaisons de
+`run-01` avec `run-02` à `run-05` donnent `Identique`, avec la même empreinte
+`77dc939ffd65b288a6534f5172191753ea05a06bb3d14bdad7d9626e112a87b1` et aucun delta classé. Les cinq contextes
+sont `shop42 / orders / dev / ifs-shop42-orders-dev`.
+
+Pour permettre ces lectures sous l’identité personnelle, les rôles `Storage Blob Data Reader` au conteneur
+`ifs-operations` du compte `stifsshop42dev` et `Key Vault Reader` au coffre `kv-shop42-main-dev` ont été attribués
+sur demande de l’utilisateur. Le premier a permis de lire le journal d’opérations ; le second, les métadonnées de
+référence du secret. Aucune valeur de secret n’a été lue. Les deux attributions restent en place.
+
+L’extension Azure CLI `containerapp` écrivait un avertissement dans la sortie JSON consommée par le module. Les
+passes ont utilisé `AZURE_CORE_ONLY_SHOW_ERRORS=true` dans le seul processus de capture pour supprimer cet
+avertissement ; la configuration persistante de la CLI n’a pas été modifiée.
+
+D1b démontre uniquement la répétabilité de ces aperçus sous l’identité personnelle. Elle ne diagnostique pas la
+divergence du run #748 : le What-If recalculé original reste introuvable et #748 demeure non diagnostiqué. Aucun
+pipeline, approbation, déploiement ou mutation n’a été lancé. P-08 reste KO ; aucun nouveau pipeline ou release ne
+doit être lancé avant que Claude ait détaillé D2/D3 et que les conditions D3 du plan soient remplies. Le nettoyage
+Shop42 reste suspendu.
