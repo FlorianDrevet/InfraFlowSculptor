@@ -513,9 +513,258 @@ action impossible à réaliser avec les accès déjà ouverts.
       `reference/pilot/manifest.example.json` (`reference/tools/Update-ManifestExample.ps1`) car un fichier est ajouté sous
       `reference/pilot/bicep-azdo/`.
    5. Mettre à jour la recette ([§ 5](recettes/01-preuves.md#5-p8--livraison-applicative-pendant-lattente-dinfrastructure))
-      seulement si l'implémentation change une commande qu'elle cite ; republier le clone si nécessaire. Commit
+      seulement si l'implémentation change une commande qu'elle cite ; le clone publié se met à jour par l'étape 0 ter (pas
+   de republication : `Publish-PilotReference.ps1` refuse un clone qui contient déjà les fichiers). Commit
       `fix(reference): lier l'empreinte approuvée à l'empreinte appliquée`. Ni rejouer #738, ni réapprouver #740, ni
       réécrire leurs captures : le parcours positif exige un **nouveau** run.
+0 ter. **Mise à jour du clone publié `C:/src/shop42`** (arbitrage Claude du 2026-10-17 : **option A**, aucun nouvel outil, aucun
+   overlay), **après** l'étape 0 bis commitée et **avant** le nouveau run P8. Ce n'est pas une étape de code : c'est une
+   procédure d'exécution, et elle ne change aucun fichier du dépôt IFS.
+   - **Pourquoi pas un outil ni un overlay.** (a) Le clone `shop42` est le seul à devoir être mis à jour : `shop43` et `shop44`
+     sont des publications neuves depuis un commit qui contient déjà le correctif, et `shop42` est supprimé après P8
+     ([DT-42](../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure) point 6) ; un outil serait écrit pour un seul usage.
+     (b) Un overlay de `New-ProofRevision.ps1` simule une **révision du modèle** (il avance `revision` et `proofLineage`, il est
+     lié aux critères 6–12) ; une correction de la référence n'est pas une révision, et un `changes.patch` sur
+     `IfsRelease.psm1` dupliquerait un fichier généré. (c) Les fichiers du clone ne sont pas des copies de la source : la
+     table de remplacement les transforme (`projet shop` → `projet shop42` dans l'en-tête de `IfsRelease.psm1`). On ne les
+     reconstruit donc **pas à la main** : on les prend dans une **publication neuve** faite par le script existant.
+   - **Amendement du 2026-10-17 (répétition générale, option B).** La répétition a montré que « équivalent à une publication
+     neuve » est **faux** pour `shop42` : la publication neuve de `b5f617e` *ajoute* `.ifs/install/tests/IfsInstall.Tests.ps1`,
+     *retire* `data/infra/server-diagnostics.bicep` (absent de la source IFS à `HEAD` et à `ca0baca`, mais suivi dans le clone et
+     compté dans son manifeste) et change `units.data.fingerprint` (`c590eaaf…2e0eb` → `67a463bb…32994`). Une copie de la
+     publication neuve changerait donc l'empreinte de `data`, que les pipelines lisent. Le clone n'est pas reconstructible
+     depuis la source ; **on ne le reconstruit pas**. Mise à jour **strictement ciblée** à la place : un fichier modifié, un
+     fichier ajouté, tout le reste conservé.
+   - **Invariant à prouver (remplace l'équivalence à une publication neuve).** Après l'opération :
+     (1) `core/`, `data/`, `platform/`, `orders/` sont inchangés (mêmes chemins, mêmes `sha256`, donc mêmes
+     `units.*.fingerprint` que le manifeste *actuel* du clone, pas ceux de la publication neuve) ; (2) `revision` 2 et
+     `proofLineage` `p3-role` ; (3) l'ensemble des chemins gérés = l'ancien ensemble + le schéma v2, rien de retiré, en
+     particulier `data/infra/server-diagnostics.bicep` et les deux fichiers P8 ; (4) seuls `.ifs/templates/scripts/IfsRelease.psm1`
+     (pris dans la publication neuve) et `.ifs/templates/schemas/ifs-report.v2.schema.json` (idem, ajouté) changent dans le
+     dépôt, hors manifeste ; (5) le manifeste est recalculé sur l'**arbre réel** et le décrit exactement (dont les deux
+     fichiers P8, dont l'empreinte passe de « source publiée » à « clone »). Les deux fichiers mis à jour sont sous
+     `.ifs/templates/` et `src/api/` n'entre dans aucune empreinte d'unité (`Write-ProofManifest` ne hache par composant que
+     `core/`, `data/`, `platform/`, `orders/`) : ni le contrôle de révision plus récente ni l'empreinte des effets ne voient
+     le changement.
+   - **Non-objectifs.** Ne **pas** ajouter `IfsInstall.Tests.ps1` (test Pester du kit d'installation, lu par aucun pipeline ;
+     l'ajouter élargirait le périmètre sans raison). Ne **pas** supprimer ni expliquer `server-diagnostics.bicep` : c'est un fichier
+     suivi et présent dans l'arbre du clone et dans le manifeste de `shop42`. On le conserve parce qu'une mise à jour ciblée ne
+     doit changer aucun autre chemin. Son origine et son éventuel déploiement ne sont **pas établis** (aucune référence trouvée
+     dans les Bicep et YAML du clone) ; à consigner tel quel dans `resultats.md`, sans conséquence sur P8.
+   - **Dérogation P8 (arbitrage Claude du 2026-10-17, valable pour `shop42` seulement).** L'audit de tous les fichiers gérés
+     de `C:/src/shop42` à `91c022e…` (révision 2, `p3-role`, commit de manifeste `ca0baca…`, 98 fichiers) constate deux
+     écarts, tous deux sous `src/api/`, introduits par la PR 73 (marqueur d'assembly `ifs-proof=p8` dans `Program.cs`, test
+     `Assembly_ContainsP8ImageMarker` + `using System.Reflection;` dans le fichier de tests) sans que le manifeste ait été
+     recalculé. Ce code est requis pour la preuve de l'image D2 de P8 : **on le conserve** et on corrige le manifeste, qui
+     était périmé pour ces deux fichiers. Un écart n'est autorisé que si **toutes** les conditions suivantes sont vraies ; sinon
+     `BLOQUE` :
+
+     | Chemin | Empreinte du manifeste (= source publiée neuve) | Empreinte autorisée du clone |
+     |---|---|---|
+     | `src/api/Program.cs` | `5a5b3037356e2f667a56ebf1ad483e2f673420a9f64701dfaa425ed2f7648ba6` | `876d3356ac1d6481c49b16ae5643f0c27e2d1d5457a91dc5696c6d60e104f4de` |
+     | `src/api/tests/WitnessAppEndpointTests.cs` | `cee53e008f7568d8f6aa6037f5c48ae4212d3841acac664df8d7c1b66513c172` | `2c450e0c5aab684794fce47f39d42553a49790de40b89c58ca518670f84e0a1b` |
+
+     1. **Périmètre figé.** `shop42`, `HEAD` = `91c022ebed81c1b5a08155a810f21ba676cea96d`, arbre propre, `revision` 2,
+        `proofLineage` `p3-role`. Toute autre valeur : la dérogation ne s'applique pas (pas d'extension à un autre clone ni à
+        une autre empreinte ; `shop43`/`shop44` sont des publications neuves sans marqueur).
+     2. **Exactement deux divergences.** L'empreinte logique (CRLF→LF) de **chacun des fichiers du manifeste** est recalculée ;
+        l'ensemble des fichiers divergents doit être exactement ces deux chemins. Un troisième fichier, un fichier absent ou un
+        fichier non UTF-8 : arrêt.
+     3. **Empreintes exactes.** Le manifeste du clone porte l'empreinte de la colonne 2 pour chaque chemin, la publication neuve
+        porte la même, et le clone porte l'empreinte de la colonne 3. Une autre valeur, même « proche » : arrêt.
+     4. **Changement additif uniquement.** Entre la publication neuve et le clone (fins de ligne ignorées), `rtk proxy git diff --no-index --numstat`
+        donne 0 ligne supprimée et au moins une ligne ajoutée pour chaque fichier ; le texte ajouté de `Program.cs` contient
+        `ifs-proof` et `p8`, celui du fichier de tests contient `using System.Reflection;` et `Assembly_ContainsP8ImageMarker`.
+        Entre le commit de publication `225cb57` et `HEAD`, `rtk git -C C:/src/shop42 diff --numstat` donne aussi 0 ligne supprimée pour ces deux
+        chemins. Les empreintes du 3 garantissent le contenu exact ; ce contrôle garantit que c'est bien un ajout.
+     5. **Le reste est strict.** Les 96 autres fichiers du manifeste du clone valent leur empreinte, `rtk git -C C:/src/shop42 status` n'a aucun
+        changement hors fichiers du manifeste. La comparaison à la publication neuve ne sert qu'à **choisir les deux fichiers à
+        copier** ; elle ne sert plus de référence d'équivalence (voir l'amendement ci-dessus).
+     6. **Fin de procédure.** Le manifeste recalculé par `Write-ProofManifest` égale l'**ancien** manifeste du clone pour tous
+        les chemins sauf : `IfsRelease.psm1` (empreinte de la publication neuve), le schéma v2 (ajouté, empreinte de la
+        publication neuve), et les deux fichiers P8 (empreinte du clone). Les quatre `units.*.fingerprint` sont **égales à
+        celles de l'ancien manifeste**.
+
+     **Sémantique de `commit` (arbitrage Claude du 2026-10-17).** Après cette opération, `commit` = le commit IFS d'où
+     proviennent `IfsRelease.psm1` et le schéma v2 (celui de la publication neuve, `b5f617e…` en entier), et **non** « le commit
+     dont l'arbre est publié ». Il ne l'était déjà plus : le clone contient `server-diagnostics.bicep` (absent de `ca0baca`) et son
+     `IfsInstall.psm1` correspond à la source récente alors que `commit` valait `ca0baca…`. Garder `ca0baca…` serait faux pour
+     `IfsRelease.psm1` et ne permettrait pas de retrouver le contrat v2 ; mettre `b5f617e…` ne revendique aucune équivalence. Les
+     exceptions à l'équivalence (`server-diagnostics.bicep` conservé, `IfsInstall.Tests.ps1` absent, deux fichiers P8) se
+     consignent dans le message du commit Azure Repos et dans `resultats.md` (ligne P8, remarques). **Contrôle préalable** :
+     rechercher dans `reference/pilot/bicep-azdo/.ifs/` et dans les YAML du clone toute lecture de `manifest.commit` /
+     `.commit` ; attendu : aucune lecture hors affichage du nom de run. Si une lecture existe, **BLOQUE**.
+   - **État du clone attendu : `revision` 2, `proofLineage` `p3-role`** (P3a a fusionné `p3-role` dans `main` ; l'overlay `p2`
+     n'est jamais appliqué à `shop42`, cf. recette § 6). Ne pas supposer : la procédure lit l'état et s'arrête s'il est autre.
+   - **Préalables.** `rtk git -C $ifsRoot status --porcelain -- reference/pilot/bicep-azdo samples/witness-app` vide et `HEAD`
+     contient le commit de l'étape 0 bis ; Pester et `Test-Reference*.ps1` verts ; dans `C:/src/shop42` : arbre propre, branche
+     `fix/p08-approved-preview-fingerprint` créée sur `origin/main`, `rtk git -C C:/src/shop42 fetch origin` puis `origin/main` = `91c022e…`.
+   1. **Répétition générale, sans toucher `C:/src/shop42`** : `rtk git clone --no-hardlinks --branch fix/p08-approved-preview-fingerprint C:/src/shop42 $env:TEMP/ifs-shop42-rehearsal`,
+      puis le bloc ci-dessous avec `$target = "$env:TEMP/ifs-shop42-rehearsal"`. Elle exerce aussi le cas `core.autocrlf` du poste
+      (les empreintes sont logiques, indépendantes des fins de ligne). Le bloc supprime `$fresh` en dernière ligne, après
+      vérification de son chemin exact. **Nettoyage de la répétition** : `$env:TEMP/ifs-shop42-rehearsal`, dans la même session
+      PowerShell (la fonction `Remove-TempCopy` du bloc est définie dès sa première ligne, même si le bloc s'est arrêté plus
+      loin), seulement avec `Remove-TempCopy "$env:TEMP/ifs-shop42-rehearsal" 'ifs-shop42-rehearsal'` ; la fonction refuse tout autre
+      chemin. Faire de même pour un `$fresh` resté en place après un arrêt du bloc : `Remove-TempCopy $fresh 'ifs-shop42-fresh'`.
+      Ne jamais passer `C:/src/shop42` à cette fonction. Contrôler ensuite que les deux chemins n'existent plus
+      (`Test-Path -LiteralPath` vaut `False`) ; ne supprimer aucune autre copie.
+   2. **Exécution réelle** : le même bloc avec `$target = 'C:/src/shop42'`.
+
+      ```powershell
+      $ifsRoot = 'C:/Users/florian.drevet/RiderProjects/InfraFlowSculptor'
+      $target  = 'C:/src/shop42'                       # ou la répétition générale
+      $fresh   = Join-Path $env:TEMP 'ifs-shop42-fresh' # ne doit pas exister
+      Import-Module "$ifsRoot/tools/proofs/ProofTools.psm1" -Force
+      $utf8 = [Text.UTF8Encoding]::new($false)
+      function Remove-TempCopy([string]$Path, [string]$Leaf) {   # seule suppression récursive autorisée : exactement $env:TEMP/<Leaf>, sous GetTempPath()
+          $full     = [IO.Path]::GetFullPath($Path)
+          $expected = [IO.Path]::GetFullPath((Join-Path $env:TEMP $Leaf))
+          $root     = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+          if ($full -ine $expected -or $full.Length -le $root.Length -or -not $full.StartsWith($root, [StringComparison]::OrdinalIgnoreCase)) {
+              throw "Suppression refusee : '$full' n'est pas '$expected' sous '$root'."
+          }
+          $item = Get-Item -LiteralPath $full -Force -ErrorAction Stop
+          if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "Suppression refusee : '$full' est un lien." }
+          Remove-Item -LiteralPath $full -Recurse -Force
+      }
+      function Get-Param($rel, $key) {
+          $m = [regex]::Match([IO.File]::ReadAllText("$target/$rel", $utf8), "$key\s*:\s*'(?<v>[^']+)'")
+          if (-not $m.Success) { throw "$key absent de $rel" }
+          $m.Groups['v'].Value
+      }
+      $before = Get-Content "$target/.ifs/manifest.json" -Raw | ConvertFrom-Json -AsHashtable -Depth 100
+      $rev = [int]$before.revision; $lineage = [string]$before.proofLineage
+      $old = @{}; foreach ($f in $before.files) { $old[[string]$f.path] = [string]$f.sha256 }
+      $oldUnits = @{}; foreach ($c in 'core','data','platform','orders') { $oldUnits[$c] = [string]$before.units[$c].fingerprint }
+
+      # 0. Dérogation P8 : seuls ces deux fichiers peuvent différer du manifeste, avec ces empreintes exactes
+      $p8 = @(
+          @{ Path = 'src/api/Program.cs'
+             Manifest = '5a5b3037356e2f667a56ebf1ad483e2f673420a9f64701dfaa425ed2f7648ba6'
+             Clone    = '876d3356ac1d6481c49b16ae5643f0c27e2d1d5457a91dc5696c6d60e104f4de'
+             Added    = @('ifs-proof', 'p8') },
+          @{ Path = 'src/api/tests/WitnessAppEndpointTests.cs'
+             Manifest = 'cee53e008f7568d8f6aa6037f5c48ae4212d3841acac664df8d7c1b66513c172'
+             Clone    = '2c450e0c5aab684794fce47f39d42553a49790de40b89c58ca518670f84e0a1b'
+             Added    = @('using System.Reflection;', 'Assembly_ContainsP8ImageMarker') }
+      )
+      $hashOf = { param($file) & (Get-Module ProofTools) { param($x) Get-ProofLogicalFileHash -Path $x } $file }  # fonction privée du module, appelée telle quelle
+      if ("$rev/$lineage" -cne '2/p3-role' -or [string]$before.project -cne 'shop42') { throw "Perimetre de la derogation depasse : $($before.project) $rev/$lineage." }
+      if ((rtk git -C $target rev-parse HEAD).Trim() -cne '91c022ebed81c1b5a08155a810f21ba676cea96d') { throw 'HEAD du clone different de 91c022e.' }
+      if (@(rtk git -C $target status --porcelain).Count -ne 0) { throw 'Le clone n''est pas propre.' }
+      $diverged = @($before.files | Where-Object { (& $hashOf "$target/$($_.path)") -cne [string]$_.sha256 } | ForEach-Object { [string]$_.path } | Sort-Object)
+      $allowed  = @($p8 | ForEach-Object { $_.Path } | Sort-Object)
+      if (($diverged -join '|') -cne ($allowed -join '|')) { throw "Divergences hors derogation. trouvees=[$diverged] autorisees=[$allowed]" }
+      rtk git -C $target cat-file -e '225cb57^{commit}'; if ($LASTEXITCODE -ne 0) { throw '225cb57 introuvable ou ambigu.' }
+      $expected = $before | ConvertTo-Json -Depth 100 | ConvertFrom-Json -AsHashtable -Depth 100   # copie ; $before reste intact
+      foreach ($e in $p8) {
+          $entry = @($expected.files | Where-Object { [string]$_.path -ceq $e.Path })
+          if ($entry.Count -ne 1 -or [string]$entry[0].sha256 -cne $e.Manifest) { throw "Empreinte du manifeste inattendue : $($e.Path)" }
+          if ((& $hashOf "$target/$($e.Path)") -cne $e.Clone) { throw "Empreinte du clone inattendue : $($e.Path)" }
+          $ns = (rtk git -C $target diff --numstat 225cb57 HEAD -- $e.Path) -split '\s+'
+          if ($ns.Count -lt 3 -or $ns[1] -cne '0' -or $ns[0] -notmatch '^[1-9]\d*$') { throw "Changement depuis 225cb57 non additif : $($e.Path)" }
+          $entry[0].sha256 = $e.Clone
+      }
+      [void](Assert-ProofManifestWorkingTree -RepositoryPath $target -Manifest $expected)   # les 98 fichiers + statut git, avec les deux seules empreintes autorisées
+
+      # 1. Publication neuve avec les paramètres lus dans le clone, puis le même overlay que lui
+      rtk git init $fresh
+      $publish = @{
+          RepositoryPath = $fresh; ProjectCode = [string]$before.project
+          SubscriptionDev = Get-Param 'core/infra/main.dev.bicepparam' 'subscriptionId'
+          SubscriptionPrd = Get-Param 'core/infra/main.prd.bicepparam' 'subscriptionId'
+          SubscriptionShared = Get-Param 'platform/infra/main.shared.bicepparam' 'subscriptionId'
+          SqlAdminGroupObjectIdDev = Get-Param 'data/infra/main.dev.bicepparam' 'administratorGroupObjectId'
+          SqlAdminGroupObjectIdPrd = Get-Param 'data/infra/main.prd.bicepparam' 'administratorGroupObjectId'
+      }
+      $sqlFree = [IO.File]::ReadAllText("$target/data/infra/main.prd.bicepparam", $utf8) -match '(?m)^\s*useFreeLimit:\s*true\s*$'
+      & "$ifsRoot/tools/proofs/Publish-PilotReference.ps1" @publish -SqlFreeOffer:$sqlFree
+      switch ("$rev/$lineage") {
+          '1/baseline' { }
+          '2/p3-role'  { & "$ifsRoot/tools/proofs/New-ProofRevision.ps1" -RepositoryPath $fresh -Revision p3-role }
+          default      { throw "Etat du clone inattendu : revision $rev, filiation '$lineage'." }
+      }
+
+      # 2. Écart de la publication neuve, connu et borné (répétition du 2026-10-17). Elle ne sert qu'à choisir les deux fichiers à copier.
+      #    Attendu, exactement : modifié = IfsRelease.psm1 ; ajoutés = schéma v2 + IfsInstall.Tests.ps1 ; retiré = server-diagnostics.bicep ;
+      #    fingerprints core/platform/orders identiques, data différente. Tout autre écart = arrêt.
+      $ref = Get-Content "$fresh/.ifs/manifest.json" -Raw | ConvertFrom-Json -AsHashtable -Depth 100
+      $new = @{}; foreach ($f in $ref.files) { $new[[string]$f.path] = [string]$f.sha256 }
+      $changed = @($new.Keys | Where-Object { $old.ContainsKey($_) -and $old[$_] -cne $new[$_] } | Sort-Object)
+      $added   = @($new.Keys | Where-Object { -not $old.ContainsKey($_) } | Sort-Object)
+      $removed = @($old.Keys | Where-Object { -not $new.ContainsKey($_) } | Sort-Object)
+      $wantAdded = @('.ifs/install/tests/IfsInstall.Tests.ps1', '.ifs/templates/schemas/ifs-report.v2.schema.json')
+      if (($changed -join '|') -cne '.ifs/templates/scripts/IfsRelease.psm1' -or
+          ($added -join '|') -cne ($wantAdded -join '|') -or ($removed -join '|') -cne 'data/infra/server-diagnostics.bicep') {
+          throw "Ecart inattendu. modifies=[$changed] ajoutes=[$added] retires=[$removed]"
+      }
+      foreach ($c in 'core','platform','orders') {
+          if ($before.units[$c].fingerprint -cne $ref.units[$c].fingerprint) { throw "Fingerprint d'unite change : $c" }
+      }
+      if ($before.units['data'].fingerprint -cne 'c590eaaf6552b716149ac5f6a90951b3840042faf939cca7ec0712a80672e0eb' -or
+          $ref.units['data'].fingerprint -cne '67a463bb79fe2869867d0cad6c4623736ac5c1069f33cd79e5c48b4ed4d32994') {
+          throw 'Fingerprint data different de celui observe a la repetition : arret.'   # c'est lui que la mise a jour ciblee doit preserver
+      }
+      foreach ($e in $p8) {   # la source neuve égale le manifeste ; le clone n'y ajoute que des lignes
+          if ($new[$e.Path] -cne $e.Manifest) { throw "Publication neuve inattendue : $($e.Path)" }
+          $ns = (rtk proxy git diff --no-index --ignore-cr-at-eol --numstat -- "$fresh/$($e.Path)" "$target/$($e.Path)") -split '\s+'
+          if ($ns.Count -lt 3 -or $ns[1] -cne '0' -or $ns[0] -notmatch '^[1-9]\d*$') { throw "Ecart P8 non additif : $($e.Path)" }
+          $addedText = (@(rtk proxy git diff --no-index --ignore-cr-at-eol --unified=0 -- "$fresh/$($e.Path)" "$target/$($e.Path)") | Where-Object { $_ -match '^\+[^+]' }) -join "`n"
+          foreach ($needle in $e.Added) { if (-not $addedText.Contains($needle)) { throw "Marqueur P8 absent ($needle) : $($e.Path)" } }
+      }
+
+      # 3. Application ciblée : deux fichiers pris dans la publication neuve, TOUT le reste du clone conservé.
+      #    ManagedPaths = anciens chemins dans leur ancien ordre + le schéma, inséré à sa place ordinale (l'ordre des fichiers data/ fonde units.data).
+      $schema = '.ifs/templates/schemas/ifs-report.v2.schema.json'
+      $oldOrder = @($before.files | ForEach-Object { [string]$_.path })
+      [string[]]$managed = $oldOrder + $schema; [Array]::Sort($managed, [StringComparer]::Ordinal)   # tri ordinal, comme Get-ProofManagedFileList
+      if (($oldOrder -join '|') -cne (($managed | Where-Object { $_ -cne $schema }) -join '|')) { throw 'Ordre des anciens chemins different du tri ordinal : arret.' }   # avant toute copie : une précondition en échec ne laisse aucun fichier modifié
+      foreach ($p in '.ifs/templates/scripts/IfsRelease.psm1', $schema) {
+          Copy-Item -LiteralPath "$fresh/$p" -Destination "$target/$p" -Force
+      }
+      $before.commit = $ref.commit
+      Write-ProofManifest -RepositoryPath $target -Manifest $before -ManagedPaths $managed -Revision $rev -ProofLineage $lineage
+
+      # 4. Contrôles finaux : le manifeste décrit l'arbre réel ; tout sauf 4 chemins égale l'ANCIEN manifeste du clone
+      $after = Get-Content "$target/.ifs/manifest.json" -Raw | ConvertFrom-Json -AsHashtable -Depth 100
+      $now = @{}; foreach ($f in $after.files) { $now[[string]$f.path] = [string]$f.sha256 }
+      $want = $old.Clone()
+      $want['.ifs/templates/scripts/IfsRelease.psm1'] = $new['.ifs/templates/scripts/IfsRelease.psm1']   # publication neuve
+      $want[$schema] = $new[$schema]                                                                       # publication neuve (ajout)
+      foreach ($e in $p8) { $want[$e.Path] = $e.Clone }                                                    # empreinte du clone (dérogation)
+      if ($now.Count -ne $want.Count -or $now.Count -ne $old.Count + 1 -or @($want.Keys | Where-Object { $now[$_] -cne $want[$_] }).Count -ne 0) { throw 'Manifeste different de ancien + 4 chemins attendus.' }
+      if (-not $now.ContainsKey('data/infra/server-diagnostics.bicep') -or -not (Test-Path -LiteralPath "$target/data/infra/server-diagnostics.bicep" -PathType Leaf)) { throw 'server-diagnostics.bicep perdu.' }
+      if ($now.ContainsKey('.ifs/install/tests/IfsInstall.Tests.ps1') -or (Test-Path -LiteralPath "$target/.ifs/install/tests/IfsInstall.Tests.ps1")) { throw 'IfsInstall.Tests.ps1 ne doit pas etre ajoute.' }
+      foreach ($c in 'core','data','platform','orders') { if ($after.units[$c].fingerprint -cne $oldUnits[$c]) { throw "Fingerprint d'unite change : $c" } }   # $oldUnits : pris avant Write-ProofManifest, qui modifie $before
+      if ([int]$after.revision -ne $rev -or [string]$after.proofLineage -cne $lineage -or $after.commit -cne $ref.commit) { throw 'Revision, filiation ou commit incorrects.' }
+      [void](Assert-ProofManifestWorkingTree -RepositoryPath $target -Manifest $after)
+      Import-Module "$target/.ifs/templates/scripts/IfsRelease.psm1" -Force
+      if (-not (Get-Command Write-IfsReleaseReport).Parameters.ContainsKey('ApprovedPreviewFingerprint')) { throw 'Module du clone sans ApprovedPreviewFingerprint.' }
+      if ((& $hashOf "$target/.ifs/templates/scripts/IfsRelease.psm1") -cne $new['.ifs/templates/scripts/IfsRelease.psm1']) { throw 'IfsRelease.psm1 different de la publication neuve.' }
+      rtk git -C $target status --short   # exactement 3 lignes : M manifest.json, M IfsRelease.psm1, ?? ifs-report.v2.schema.json
+      rtk git -C $target diff -- .ifs/manifest.json   # seuls changent : commit, generatedAtUtc, sha256 de IfsRelease.psm1, sha256 des deux fichiers P8 (empreinte du manifeste → empreinte du clone), entrée du schéma v2
+      Remove-TempCopy $fresh 'ifs-shop42-fresh'   # vérifie juste avant : chemin résolu = $env:TEMP/ifs-shop42-fresh, sous GetTempPath(), pas un lien
+      ```
+
+      Toute exception ou tout écart = **arrêt** : ne rien corriger à la main, ne pas éditer le manifeste, statut `BLOQUE` avec
+      la sortie complète (cas typiques : état du clone ≠ `2/p3-role`, `HEAD` ≠ `91c022e`, troisième fichier géré divergent ou
+      empreinte P8 autre que celles du tableau, écart P8 non additif, écart de la publication neuve autre que les quatre
+      connus de l'étape 2, `units.*.fingerprint` différente de l'ancien manifeste après l'étape 3, `commit` lu par un pipeline,
+      mauvais `-SqlFreeOffer`). La dérogation ne s'étend pas :
+      on n'ajoute pas de chemin ni d'empreinte au tableau sans nouvel arbitrage de Claude.
+   3. **Pousser dans Azure Repos, pas dans le dépôt IFS.** Dans `C:/src/shop42`, branche `fix/p08-approved-preview-fingerprint` :
+      `rtk git -C C:/src/shop42 add .ifs/manifest.json .ifs/templates/scripts/IfsRelease.psm1 .ifs/templates/schemas/ifs-report.v2.schema.json`
+      (ces trois chemins seulement), commit `rtk git -C C:/src/shop42 commit -m "fix(ifs): ifs-report/v2 avec l'empreinte d'aperçu approuvée (IFS <7 premiers caractères de $ref.commit>)"`
+      avec en corps de message : « Mise à jour ciblée, pas une republication : IfsRelease.psm1 et le schéma v2 viennent de IFS
+      <$ref.commit> ; server-diagnostics.bicep conservé ; IfsInstall.Tests.ps1 non ajouté ; src/api P8 conservé ; units.* inchangées »,
+      `rtk git -C C:/src/shop42 push -u origin fix/p08-approved-preview-fingerprint`, PR vers `main` (même procédure que les PR #51/#52), fusion.
+   4. **Avant de lancer le run P8** : `rtk git -C C:/src/shop42 fetch origin` ; `rtk git -C C:/src/shop42 diff --stat 91c022e origin/main` ne liste que ces trois chemins
+      (sinon, `main` a bougé : arrêt) ; relire les `trigger`/`pr` des YAML du clone : si la fusion a déclenché un run, attendre sa fin
+      (aucune release applicative ne doit être en cours ni démarrer entre l'aperçu et l'approbation). Le contrôle de la preuve
+      est dans le rapport du nouveau run : `schema` = `ifs-report/v2`. Un rapport `ifs-report/v1` signifie que le run n'a pas
+      utilisé le clone mis à jour : ne pas approuver, `BLOQUE`.
+   5. **Dépôt IFS** : rien à fusionner vers `main` avant le run. Le commit de l'étape 0 bis reste sur `impl/preuves` ; le
+      pousser (sans PR) est recommandé pour que `commit` du manifeste soit résolvable, mais le run ne le lit pas.
 1. Avant toute commande Azure, exiger dans `NEXT.md` un plafond chiffré confirmé, une estimation actualisée et
    l'inventaire de référence. Le feu vert général ne remplace pas ce verrou. Une fois le verrou franchi, exécuter la
    recette dans l'ordre P1, P9, P3, P8, P2, P4, P5, P7, avec un seul jeu Azure à la fois. Après chaque run, capturer les

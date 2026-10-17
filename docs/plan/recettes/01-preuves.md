@@ -390,6 +390,17 @@ P8 comporte donc deux volets :
 **État initial du parcours positif :** l'API orders répond en prd avec le digest D2 (livré par #739, sain en DEV/PRD) ;
 aucun run de release d'infrastructure n'est en attente ; #738 n'est pas relancé.
 
+0. **Préalable : clone à jour.** `main` d'Azure Repos contient la mise à jour de `IfsRelease.psm1`, du schéma
+   `ifs-report.v2.schema.json` et du manifeste, faite par l'[étape 0 ter de P-08](../01-preuves.md#p-08--exécution-des-preuves-accompagnement)
+   (jamais par `Publish-PilotReference.ps1`, qui refuse un clone déjà publié). Sans cela, le rapport serait `ifs-report/v1` et
+   le run inutilisable comme preuve. Dans `shop42`, `src/api/Program.cs` et `src/api/tests/WitnessAppEndpointTests.cs`
+   gardent le marqueur d'image P8 (PR 73) : écart autorisé et borné par l'étape 0 ter (empreintes exactes, ajout seul) ; les
+   autres clones n'en ont pas. **Mise à jour ciblée, pas une publication neuve** (amendement du 2026-10-17) : seuls
+   `IfsRelease.psm1` et le schéma v2 changent ; `data/infra/server-diagnostics.bicep` est conservé, `IfsInstall.Tests.ps1`
+   n'est pas ajouté, et `units.core/data/platform/orders.fingerprint` restent **égales à celles de l'ancien manifeste**
+   (`data` = `c590eaaf…2e0eb`). Le champ `commit` du manifeste désigne alors l'origine des deux fichiers mis à jour, pas
+   l'arbre entier. Vérifier avant le run : `git -C C:/src/shop42 diff --stat 91c022e origin/main` (après `git -C C:/src/shop42 fetch origin`) ne liste que `.ifs/manifest.json`,
+   `IfsRelease.psm1` et le schéma v2, et le rapport du run porte `schema` = `ifs-report/v2`.
 1. Déclencher une **nouvelle** release orders/infra/pipelines/release.yml, après la livraison de D2. Quand l'aperçu prd
    est publié et attend une approbation, noter D2 et l'empreinte de l'aperçu (`preview.fingerprint`), et capturer le run
    (p8-infra-preview-d2-run-<id>). `manifestFingerprint` est une empreinte d'un **autre domaine de hachage** : ne pas la
