@@ -1162,7 +1162,7 @@ function Invoke-IfsDataAccess {
 function Write-IfsReleaseReport {
     <#
     .SYNOPSIS
-    Écrit le rapport ifs-report/v1 même si le déploiement échoue après une mutation.
+    Écrit le rapport ifs-report/v2 même si le déploiement échoue après une mutation.
     .DESCRIPTION
     Le rapport contient les métadonnées du manifeste, le journal, les ressources détachées, les accès révoqués et le résultat.
     #>
@@ -1171,6 +1171,7 @@ function Write-IfsReleaseReport {
         [Parameter(Mandatory)][object] $ReleaseData,
         [Parameter(Mandatory)][string] $ManifestPath,
         [Parameter(Mandatory)][string] $OutputPath,
+        [Parameter(Mandatory)][ValidatePattern('^[a-f0-9]{64}$')][string] $ApprovedPreviewFingerprint,
         [AllowNull()][object] $Context,
         [string[]] $DetachedResources = @(),
         [string[]] $RevokedAccess = @(),
@@ -1183,7 +1184,7 @@ function Write-IfsReleaseReport {
     $metadata = Get-IfsManifestInfo $ManifestPath
     $journal = if ($Context) { $Context.Journal } else { Read-IfsOperationJournal $ReleaseData }
     $report = [pscustomobject]@{
-        schema = 'ifs-report/v1'
+        schema = 'ifs-report/v2'
         project = $ReleaseData.project
         component = $ReleaseData.component
         unit = $ReleaseData.unit
@@ -1191,6 +1192,7 @@ function Write-IfsReleaseReport {
         revision = $metadata.Revision
         commit = $metadata.Commit
         manifestFingerprint = Get-IfsEffectFingerprint -Effects $metadata.Manifest
+        approvedPreviewFingerprint = $ApprovedPreviewFingerprint
         generatedAt = [DateTime]::UtcNow.ToString('o')
         steps = @($Steps)
         journal = $journal
@@ -1202,7 +1204,7 @@ function Write-IfsReleaseReport {
         error = $ErrorMessage
     }
     $json = ConvertTo-Json -InputObject $report -Depth 100
-    if (-not (Test-Json -Json $json -SchemaFile (Get-IfsSchemaPath 'ifs-report.schema.json'))) { throw 'Le rapport produit ne respecte pas ifs-report/v1.' }
+    if (-not (Test-Json -Json $json -SchemaFile (Get-IfsSchemaPath 'ifs-report.v2.schema.json'))) { throw 'Le rapport produit ne respecte pas ifs-report/v2.' }
     $directory = Split-Path -Parent $OutputPath
     if ($directory) { New-Item -ItemType Directory -Path $directory -Force | Out-Null }
     [IO.File]::WriteAllText($OutputPath, $json, [Text.UTF8Encoding]::new($false))
@@ -1383,7 +1385,7 @@ function Invoke-IfsInfraDeploy {
         }
         finally {
             $result = if ($failure) { if ($mutationStarted) { 'PartiallyApplied' } else { 'FailedBeforeMutation' } } else { 'Succeeded' }
-            [void](Write-IfsReleaseReport -ReleaseData $data -ManifestPath $ManifestPath -OutputPath $OutputPath -Context $context -DetachedResources $detached.ToArray() -RevokedAccess $revoked.ToArray() -Steps $steps.ToArray() -TemporaryFirewallRules $temporaryFirewallRules.ToArray() -CleanedFirewallRules $cleanedFirewallRules.ToArray() -Result $result -ErrorMessage $failure)
+            [void](Write-IfsReleaseReport -ReleaseData $data -ManifestPath $ManifestPath -OutputPath $OutputPath -ApprovedPreviewFingerprint ([string]$approved.fingerprint) -Context $context -DetachedResources $detached.ToArray() -RevokedAccess $revoked.ToArray() -Steps $steps.ToArray() -TemporaryFirewallRules $temporaryFirewallRules.ToArray() -CleanedFirewallRules $cleanedFirewallRules.ToArray() -Result $result -ErrorMessage $failure)
         }
     }
 }

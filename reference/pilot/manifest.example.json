@@ -82,6 +82,10 @@
       "sha256": "af7967a1567d0f13cf00fb90af6b89aa8a68526eb1581cd7c842b40b5734591b"
     },
     {
+      "path": ".ifs/templates/schemas/ifs-report.v2.schema.json",
+      "sha256": "e667a05da91c30d88394e0917c58a07f687fb8a611738bfe1d25b565afe9241a"
+    },
+    {
       "path": ".ifs/templates/schemas/operation-journal.schema.json",
       "sha256": "b070a77996ffad0328e82c9d0bebe95b5264eb821b584ef37439308a921de698"
     },
@@ -99,7 +103,7 @@
     },
     {
       "path": ".ifs/templates/scripts/IfsRelease.psm1",
-      "sha256": "37dd6f8e7d7248c9aa0dd0c2fd69e33bd4b2306afa0cf8af5e25277503b4140a"
+      "sha256": "cac1b3ab5f54594a141f5278725b761fb12655c29b684a8d3c9d3b86a19aeefd"
     },
     {
       "path": ".ifs/templates/scripts/Install-IfsTrivy.ps1",

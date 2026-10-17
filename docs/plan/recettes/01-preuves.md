@@ -328,8 +328,9 @@ Azure du témoin fonctionnels.
 
 1. Dans Azure DevOps, lancer la release orders/infra/pipelines/release.yml. Attendre que ifs-preview-prd soit publié
    et que le stage protégé prd attende une approbation. Ne l'approuvez pas encore.
-2. Capturer immédiatement ce run (p3a-orders-old-run-<id>). Noter le manifestFingerprint de l'aperçu et le commit du
-   run.
+2. Capturer immédiatement ce run (p3a-orders-old-run-<id>). Noter `preview.fingerprint` de l'aperçu ([DT-43](../../technique/01-decisions.md#dt-43--empreinte-dapercu-approuvée-liée-à-lempreinte-appliquée))
+   et le commit du run. Ne pas noter `manifestFingerprint` à la place : c'est l'empreinte du manifeste, d'un autre domaine
+   de hachage.
 3. Dans le clone Azure Repos, depuis le dépôt IFS, appliquer l'overlay écrit à la main :
 
         Set-Location $ifsRoot
@@ -390,25 +391,34 @@ P8 comporte donc deux volets :
 aucun run de release d'infrastructure n'est en attente ; #738 n'est pas relancé.
 
 1. Déclencher une **nouvelle** release orders/infra/pipelines/release.yml, après la livraison de D2. Quand l'aperçu prd
-   est publié et attend une approbation, noter D2 et l'empreinte de l'aperçu (`manifestFingerprint`), et capturer le run
-   (p8-infra-preview-d2-run-<id>).
+   est publié et attend une approbation, noter D2 et l'empreinte de l'aperçu (`preview.fingerprint`), et capturer le run
+   (p8-infra-preview-d2-run-<id>). `manifestFingerprint` est une empreinte d'un **autre domaine de hachage** : ne pas la
+   noter comme empreinte d'aperçu ni la comparer à `preview.fingerprint` ([DT-43](../../technique/01-decisions.md#dt-43--empreinte-dapercu-approuvée-liée-à-lempreinte-appliquée)).
 2. **Ne lancer aucune release applicative** (ni CI avec nouvelle image, ni orders/apps/api/pipelines/release.yml) entre
    la publication de cet aperçu et son approbation. Si une livraison applicative survient malgré tout, le run est un
    nouveau cas négatif : ne pas l'approuver pour forcer le résultat, le consigner et repartir d'un nouvel aperçu.
 3. Approuver le stage prd de cette release d'infrastructure. Vérifier dans ifs-report-prd que l'image D2 est conservée
-   (pas de retour à D1) et que l'empreinte appliquée égale l'empreinte approuvée. Vérifier /health sur D2. Capturer le
-   run final (p8-infra-result-d2-run-<id>).
+   (pas de retour à D1) et que `approvedPreviewFingerprint` du rapport (schéma v2) est égal à `preview.fingerprint` de
+   l'aperçu approuvé. Ne pas comparer `manifestFingerprint` à `preview.fingerprint` : ce sont deux domaines de hachage
+   distincts, jamais égaux. Vérifier /health sur D2. Capturer le run final (p8-infra-result-d2-run-<id>).
 
 **Résultat attendu :**
 
 - cas négatif (#738) : `FailedBeforeMutation` quand la release applicative s'intercale entre l'aperçu et l'approbation,
   sans mutation Azure ;
-- parcours positif : l'infrastructure conserve D2 ; les empreintes approuvée et appliquée sont égales, sans release
-  applicative entre l'aperçu et l'approbation.
+- parcours positif : l'infrastructure conserve D2 ; `approvedPreviewFingerprint` (rapport) égale `preview.fingerprint`
+  (aperçu approuvé), sans release applicative entre l'aperçu et l'approbation.
+
+**Constat du run #740 (2026-10-17, factuel).** Release orders PRD lancée après D2 : D2 conservée, `/health` = 200, résultat
+fonctionnel OK. La preuve est **incomplète** : le rapport `ifs-report` ne porte pas l'empreinte approuvée, donc l'égalité
+approuvée/appliquée ne peut pas être démontrée. Captures : `p8-infra-result-d2-run-740`. #740 n'est pas consigné comme
+preuve OK de P8 et n'est ni rejoué ni réapprouvé ; l'implémentation de [DT-43](../../technique/01-decisions.md#dt-43--empreinte-dapercu-approuvée-liée-à-lempreinte-appliquée)
+([P-08, étape 0 bis](../01-preuves.md#p-08--exécution-des-preuves-accompagnement)) puis un **nouveau** run sont requis.
 
 **Preuves :** cas négatif : captures existantes de #738 et #739 (`p8-*` déjà enregistrées), D1/D2, inventaire inchangé.
 Parcours positif : image.json avec D2, aperçu et rapport d'infrastructure du nouveau run, empreintes approuvée/appliquée,
-/health. Aucune preuve du parcours positif n'est encore exécutée : P8 reste KO tant qu'elle n'est pas capturée et consignée.
+/health. Aucune preuve **complète** du parcours positif n'est encore exécutée : #740 existe mais est incomplet comme preuve
+(constat ci-dessus). P8 reste KO tant qu'un nouveau run n'est pas capturé et consigné.
 
 **Nettoyage :** aucun rollback d'image ; l'état en prd reste D2. Garder la modification témoin (git) jusqu'à R-03.
 **Dernière preuve de `shop42`** : le nettoyage reste **suspendu** jusqu'à la réussite du parcours positif de P8 (captures

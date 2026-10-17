@@ -553,16 +553,109 @@ Describe "Secrets et dépendances" {
 }
 
 Describe "Rapports de release" {
+    It "refuse une application quand l'empreinte approuvée a changé avant toute mutation" {
+        $manifestPath = Join-Path $script:tempRoot "manifest-preview-mismatch.json"
+        $approvedPath = Join-Path $script:tempRoot "approved-preview-mismatch.json"
+        $reportPath = Join-Path $script:tempRoot "report-preview-mismatch.json"
+        $approvedFingerprint = "a" * 64
+        Set-Content -LiteralPath $manifestPath -Value '{"revision":4,"commit":"rev4","units":{"core":{"fingerprint":"abc"}}}'
+        Set-Content -LiteralPath $approvedPath -Value (ConvertTo-Json -InputObject ([ordered]@{ fingerprint = $approvedFingerprint }) -Compress)
+
+        Mock Test-IfsNewerManifest -ModuleName IfsRelease { return $false }
+        Mock Invoke-IfsPreview -ModuleName IfsRelease {
+            return [pscustomobject]@{ fingerprint = ("b" * 64) }
+        }
+        {
+            Invoke-IfsInfraDeploy -ReleasePath $script:coreRelease -ManifestPath $manifestPath -PreviewPath $approvedPath -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -SqlScript "" -OutputPath $reportPath -DefaultBranch "main" -ManifestPathInRepository ".ifs/manifest.json" -DeploymentIdentityObjectId "00000000-0000-0000-0000-000000000001"
+        } | Should -Throw "*Les effets ont changé depuis l'aperçu approuvé*"
+
+        $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+        $report.result | Should -Be "FailedBeforeMutation"
+        $report.schema | Should -Be "ifs-report/v2"
+        $report.approvedPreviewFingerprint | Should -Be $approvedFingerprint
+        @($report.journal.operations | Where-Object { $_.state -in @("Started", "Done") }).Count | Should -Be 0
+        $calls = @($global:IFS_AZ_CALLS | ForEach-Object { $_ -join " " })
+        ($calls | Select-String "storage blob lease acquire|storage blob upload|stack sub create|resource delete|keyvault secret set|firewall-rule create") | Should -BeNullOrEmpty
+    }
+
+    It "versionne le schéma du rapport en conservant la lecture des rapports v1" {
+        $schemaRoot = Join-Path $script:repoRoot "reference/pilot/bicep-azdo/.ifs/templates/schemas"
+        $v1SchemaPath = Join-Path $schemaRoot "ifs-report.schema.json"
+        $v2SchemaPath = Join-Path $schemaRoot "ifs-report.v2.schema.json"
+        Test-Path -LiteralPath $v2SchemaPath -PathType Leaf | Should -BeTrue
+
+        $v1Schema = Get-Content -LiteralPath $v1SchemaPath -Raw | ConvertFrom-Json -AsHashtable
+        $v1Schema.properties.schema.const | Should -Be "ifs-report/v1"
+        $v2Schema = Get-Content -LiteralPath $v2SchemaPath -Raw | ConvertFrom-Json -AsHashtable
+        $v2Schema.properties.schema.const | Should -Be "ifs-report/v2"
+        $v2Schema.required | Should -Contain "approvedPreviewFingerprint"
+
+        $v2Report = [ordered]@{
+            schema = "ifs-report/v2"
+            project = "shop"
+            component = "orders"
+            unit = "ifs-shop-orders-dev"
+            target = "dev"
+            revision = 4
+            commit = "rev4"
+            manifestFingerprint = "b" * 64
+            approvedPreviewFingerprint = "a" * 64
+            generatedAt = [DateTime]::UtcNow.ToString("o")
+            steps = @()
+            journal = [ordered]@{ schema = "ifs-operation-journal/v1"; unit = "ifs-shop-orders-dev"; target = "dev"; operations = @() }
+            detachedResources = @()
+            revokedAccess = @()
+            temporaryFirewallRules = @()
+            cleanedFirewallRules = @()
+            result = "Succeeded"
+            error = $null
+        }
+        $v2Json = ConvertTo-Json -InputObject $v2Report -Depth 100
+        (Test-Json -Json $v2Json -SchemaFile $v2SchemaPath) | Should -BeTrue
+
+        $v2ReportWithoutFingerprint = [ordered]@{}
+        foreach ($key in $v2Report.Keys) {
+            if ($key -ne "approvedPreviewFingerprint") { $v2ReportWithoutFingerprint[$key] = $v2Report[$key] }
+        }
+        $withoutFingerprintJson = ConvertTo-Json -InputObject $v2ReportWithoutFingerprint -Depth 100
+        (Test-Json -Json $withoutFingerprintJson -SchemaFile $v2SchemaPath -ErrorAction SilentlyContinue) | Should -BeFalse
+
+        $v2Report.approvedPreviewFingerprint = "A" * 64
+        $invalidFingerprintJson = ConvertTo-Json -InputObject $v2Report -Depth 100
+        (Test-Json -Json $invalidFingerprintJson -SchemaFile $v2SchemaPath -ErrorAction SilentlyContinue) | Should -BeFalse
+
+        $v1Report = [ordered]@{}
+        foreach ($key in $v2Report.Keys) {
+            if ($key -ne "approvedPreviewFingerprint") { $v1Report[$key] = $v2Report[$key] }
+        }
+        $v1Report.schema = "ifs-report/v1"
+        $v1Json = ConvertTo-Json -InputObject $v1Report -Depth 100
+        (Test-Json -Json $v1Json -SchemaFile $v1SchemaPath) | Should -BeTrue
+        (Test-Json -Json $v1Json -SchemaFile $v2SchemaPath -ErrorAction SilentlyContinue) | Should -BeFalse
+
+        $recordingRoot = Join-Path $script:repoRoot "src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/AzureDevOps/Recordings"
+        if (Test-Path -LiteralPath $recordingRoot -PathType Container) {
+            $capturedReports = @(Get-ChildItem -LiteralPath $recordingRoot -Filter "ifs-report.json" -File -Recurse)
+            foreach ($capturedReport in $capturedReports) {
+                $capturedJson = Get-Content -LiteralPath $capturedReport.FullName -Raw
+                $captured = ConvertFrom-Json -InputObject $capturedJson
+                if ($captured.schema -eq "ifs-report/v1") {
+                    (Test-Json -Json $capturedJson -SchemaFile $v1SchemaPath) | Should -BeTrue
+                }
+            }
+        }
+    }
     It "accepte un script SQL vide pour le déploiement d'une unité sans accès SQL" {
         $manifestPath = Join-Path $script:tempRoot "manifest-empty-sql.json"
         $approvedPath = Join-Path $script:tempRoot "approved-empty-sql.json"
         $reportPath = Join-Path $script:tempRoot "report-empty-sql.json"
         Set-Content -LiteralPath $manifestPath -Value '{"revision":4,"commit":"rev4","units":{"core":{"fingerprint":"approved"}}}'
-        Set-Content -LiteralPath $approvedPath -Value '{"fingerprint":"approved","created":[],"dataWrites":[],"revokedAccess":[]}'
+        $approvedFingerprint = "a" * 64
+        Set-Content -LiteralPath $approvedPath -Value (ConvertTo-Json -InputObject ([ordered]@{ fingerprint = $approvedFingerprint; created = @(); dataWrites = @(); revokedAccess = @() }) -Compress)
 
         Mock Test-IfsNewerManifest -ModuleName IfsRelease { return $false }
         Mock Invoke-IfsPreview -ModuleName IfsRelease {
-            return [pscustomobject]@{ fingerprint = "approved"; created = @(); dataWrites = @(); revokedAccess = @() }
+            return [pscustomobject]@{ fingerprint = $approvedFingerprint; created = @(); dataWrites = @(); revokedAccess = @() }
         }
         Mock Open-IfsOperationJournal -ModuleName IfsRelease {
             return [pscustomobject]@{ Journal = [pscustomobject]@{ unit = "ifs-shop-core-dev"; target = "dev"; operations = @() } }
@@ -582,12 +675,16 @@ Describe "Rapports de release" {
         $manifestPath = Join-Path $script:tempRoot "manifest.json"
         $reportPath = Join-Path $script:tempRoot "ifs-report.json"
         Set-Content -LiteralPath $manifestPath -Value '{"revision":4,"commit":"rev4","units":{"orders":{"fingerprint":"abc"}}}'
-        $report = Write-IfsReleaseReport -ReleaseData $script:orderData -ManifestPath $manifestPath -OutputPath $reportPath -Steps @() -Result FailedBeforeMutation -ErrorMessage "précontrôle"
+        $approvedFingerprint = "a" * 64
+        $report = Write-IfsReleaseReport -ReleaseData $script:orderData -ManifestPath $manifestPath -OutputPath $reportPath -ApprovedPreviewFingerprint $approvedFingerprint -Steps @() -Result FailedBeforeMutation -ErrorMessage "précontrôle"
         $report.result | Should -Be "FailedBeforeMutation"
+        $report.schema | Should -Be "ifs-report/v2"
+        $report.approvedPreviewFingerprint | Should -Be $approvedFingerprint
         $saved = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
-        $saved.schema | Should -Be "ifs-report/v1"
+        $saved.schema | Should -Be "ifs-report/v2"
         $saved.revision | Should -Be 4
-        (Test-Json -Json (Get-Content -LiteralPath $reportPath -Raw) -SchemaFile (Join-Path $script:repoRoot "reference/release-module/schemas/ifs-report.schema.json")) | Should -BeTrue
+        $saved.approvedPreviewFingerprint | Should -Be $approvedFingerprint
+        (Test-Json -Json (Get-Content -LiteralPath $reportPath -Raw) -SchemaFile (Join-Path $script:repoRoot "reference/pilot/bicep-azdo/.ifs/templates/schemas/ifs-report.v2.schema.json")) | Should -BeTrue
     }
 
     It "relit l'image applicative après la prise du bail du journal" {
@@ -621,6 +718,16 @@ Describe "Rapports de release" {
         $pendingState = @($global:IFS_AZ_CALLS | Where-Object { $_.kind -eq 'pending-app-owned-state' })
         $pendingState.Count | Should -Be 1
         $pendingState[0].state[0].image | Should -Be "mcr.microsoft.com/example:1"
+        $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+        $report.schema | Should -Be "ifs-report/v2"
+        $report.approvedPreviewFingerprint | Should -Be $initialPreview.fingerprint
+        $module = Get-Module IfsRelease
+        $expectedManifestFingerprint = & $module {
+            param($path)
+            $metadata = Get-IfsManifestInfo -ManifestPath $path
+            Get-IfsEffectFingerprint -Effects $metadata.Manifest
+        } $manifestPath
+        $report.manifestFingerprint | Should -Be $expectedManifestFingerprint
     }
 
     It "rapporte un déploiement partiel après un échec de pile" {
@@ -659,12 +766,16 @@ Describe "Rapports de release" {
         $previewPath = Join-Path $script:tempRoot "approved-preview.json"
         $reportPath = Join-Path $script:tempRoot "rejected-report.json"
         Set-Content -LiteralPath $manifestPath -Value '{"revision":4,"commit":"rev4","units":{"orders":{"fingerprint":"old"}}}'
-        Set-Content -LiteralPath $previewPath -Value '{"fingerprint":"approved"}'
+        $approvedFingerprint = "a" * 64
+        Set-Content -LiteralPath $previewPath -Value (ConvertTo-Json -InputObject ([ordered]@{ fingerprint = $approvedFingerprint }) -Compress)
         Mock Test-IfsNewerManifest -ModuleName IfsRelease { throw "Une révision plus récente (5) modifie ce composant." }
         {
             Invoke-IfsInfraDeploy -ReleasePath $script:ordersRelease -ManifestPath $manifestPath -PreviewPath $previewPath -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -SqlScript (Join-Path $script:repoRoot "reference/pilot/bicep-azdo/orders/infra/scripts/data-access.sql") -OutputPath $reportPath -DefaultBranch "main" -ManifestPathInRepository ".ifs/manifest.json" -DeploymentIdentityObjectId "00000000-0000-0000-0000-000000000001" -ApplicationIdentityObjectId "00000000-0000-0000-0000-000000000002"
         } | Should -Throw "*modifie ce composant*"
-        (Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json).result | Should -Be "FailedBeforeMutation"
+        $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+        $report.result | Should -Be "FailedBeforeMutation"
+        $report.schema | Should -Be "ifs-report/v2"
+        $report.approvedPreviewFingerprint | Should -Be $approvedFingerprint
         $calls = @($global:IFS_AZ_CALLS | ForEach-Object { $_ -join " " })
         ($calls | Select-String "blob upload|lease acquire|lease renew|stack sub create|resource delete|keyvault secret set|firewall-rule create") | Should -BeNullOrEmpty
     }

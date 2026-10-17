@@ -10,7 +10,7 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `EN_ATTENTE_DE_RECETTE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
 | **Verrou** | P-08 : arbitrage rendu (option B) ; reste le parcours positif P8 (nouvel aperçu infra après D2) |
@@ -65,7 +65,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 - S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
 - S-17 — sur un clone neuf, suivre [README — Démarrer](README.md#démarrer-windows) jusqu'à « Bonjour Alice Martin ». Les prérequis passent ; le démarrage du clone reste à vérifier quand les ports fixes 4200, 8080, 5257 et 3000 seront libres, car l'AppHost de travail reste actif.
-- P-08 — P1, P9, P3a et P3b sont OK et consignées. P8 reste KO : #738 est conservé comme preuve négative `FailedBeforeMutation` après l’intercalation de D2 par #739 ; ne pas le rejouer. Pour le parcours positif, déclencher une nouvelle release infra PRD après #739, sans release applicative entre l’aperçu et l’approbation ; vérifier D2 et l’égalité des empreintes approuvée/appliquée. Consigner le résultat ; le nettoyage Shop42 reste suspendu jusque-là.
+- P-08 — P1, P9, P3a et P3b sont OK et consignées. P8 reste KO : #738 est conservé comme preuve négative `FailedBeforeMutation` après l’intercalation de D2 par #739 ; ne pas le rejouer. Le run #740 (infra PRD après D2) est fonctionnellement réussi (D2 conservée, `/health` = 200) mais **incomplet comme preuve** : son rapport ne porte pas `approvedPreviewFingerprint` ([DT-43](docs/technique/01-decisions.md#dt-43--empreinte-dapercu-approuvée-liée-à-lempreinte-appliquée)). Requis : d’abord le changement contrat/test (étape 0 bis de P-08, test d’abord : nouveau schéma `ifs-report.v2.schema.json` ajouté, schémas v1 et captures existantes inchangés, `Write-IfsReleaseReport` dans `IfsRelease.psm1` émet v2, test dans `reference/release-module/tests/IfsRelease.Tests.ps1` ; le contrôle d’empreinte existant et son message sont conservés ; ni chargeur ni migration), puis un **nouveau** run infra PRD après #739, sans release applicative entre l’aperçu et l’approbation ; vérifier D2 et `approvedPreviewFingerprint` = `preview.fingerprint`. Ne pas rejouer #738 ni réapprouver #740. Consigner le résultat ; le nettoyage Shop42 reste suspendu jusque-là.
 Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.
 

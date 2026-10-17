@@ -51,6 +51,7 @@ l'utilisateur peut les inverser avant l'étape qui les applique ; le plan indiqu
 | [DT-40](#dt-40--ordre-des-comportements-du-médiateur) | Ordre des comportements du médiateur | Décidée |
 | [DT-41](#dt-41--build-en-mode-code-au-jalon-2) | Build en mode Code au jalon 2 (écart de spec) | Décidée |
 | [DT-42](#dt-42--coût-des-preuves-éphémères-azure) | Coût des preuves éphémères Azure (France Central, profil minimal, suppression par projet) | ⚖️ Stratégie approuvée ; estimation France Central à confirmer avant Azure |
+| [DT-43](#dt-43--empreinte-dapercu-approuvée-liée-à-lempreinte-appliquée) | Empreinte d'aperçu approuvée liée à l'empreinte appliquée (`approvedPreviewFingerprint`) | Décidée |
 
 ---
 
@@ -723,3 +724,74 @@ la région change et l'estimation doit être recalculée pour celle-ci.
    exacte des IDs gérés par chaque pile au moment du nettoyage ; éligibilité à l'offre gratuite ; limites ACR Basic
    face à l'image témoin ; plafond d'ingestion sans effet sur `/health/dependencies`.
 9. **Inventaire avant/après création** ([inventaires](../plan/preuves/inventaires-azure.md)) : capturer les ressources déjà présentes dans les portées ciblées, puis consigner chaque ID, groupe et pile créé par Luna. Au nettoyage, ne supprimer que ces IDs ; `deleteAll` n'est permis que si tous les éléments gérés par la pile sont dans cet inventaire.
+
+### DT-43 — Empreinte d'aperçu approuvée liée à l'empreinte appliquée
+
+Décidée (2026-10-17, Claude, arbitrage A sur P-08 après le run #740). Elle précise le contrôle de fraîcheur de la release
+d'infrastructure ; elle ne remplace aucune décision antérieure.
+
+**Constat.** Le run #740 (release orders PRD après D2) a réussi : D2 conservée, `/health` = 200. La preuve est pourtant
+**incomplète** : le rapport `ifs-report` ne porte que `manifestFingerprint`, alors que l'aperçu approuvé porte
+`preview.fingerprint`. Ce sont deux empreintes **de domaines de hachage distincts** ; rien dans le rapport ne permet de
+vérifier que l'aperçu approuvé est celui qui a été appliqué.
+
+**Décision.**
+
+1. **Deux domaines de hachage, distincts et inchangés.** `preview.fingerprint` (empreinte de l'aperçu : ce que l'approbateur
+   a relu) et `manifestFingerprint` (empreinte du manifeste) ne sont ni égalisées, ni dérivées l'une de l'autre, ni comparées
+   entre elles. Le calcul et la valeur de `manifestFingerprint` **ne changent pas**.
+2. **Champ obligatoire `approvedPreviewFingerprint`** dans le rapport `ifs-report` v2 : copie **littérale** de
+   `preview.fingerprint` de l'aperçu approuvé, sans recalcul ni transformation. Source : `$approved`, lu par
+   `Invoke-IfsInfraDeploy` depuis `-PreviewPath` ; transmis à `Write-IfsReleaseReport` par un nouveau paramètre obligatoire
+   `-ApprovedPreviewFingerprint`. Le schéma v2 l'exige (`^[a-f0-9]{64}$`). Aucune valeur par défaut ni de repli : si l'aperçu
+   approuvé n'a pas d'empreinte valide, l'écriture du rapport échoue.
+3. **Le contrôle fail-closed existe déjà ; il est conservé tel quel.** `Invoke-IfsInfraDeploy` recalcule l'aperçu dans son
+   `try` (`Invoke-IfsPreview`, donc `Get-IfsEffectFingerprint`, même algorithme que la publication), **avant**
+   `Open-IfsOperationJournal` et donc avant toute mutation, puis compare `current.fingerprint` à `approved.fingerprint`. En
+   cas d'écart il lève « Les effets ont changé depuis l'aperçu approuvé ; relancez la release pour une nouvelle
+   approbation. » et le rapport est `FailedBeforeMutation` (cas #738). **Ni second recalcul, ni seconde comparaison, ni
+   nouveau code d'erreur, ni changement de ce message.**
+4. **Quels rapports portent le champ.** L'aperçu approuvé est lu **avant** l'entrée dans le `try`. Tout rapport écrit par le
+   `finally` de `Invoke-IfsInfraDeploy` porte donc `approvedPreviewFingerprint`, quel que soit `result`, y compris
+   `FailedBeforeMutation` (écart d'empreinte, révision plus récente détectée par `Test-IfsNewerManifest`, échec du recalcul de
+   l'aperçu). Un échec **avant** le `try` (lecture des données de release, contrôles de paramètres, lecture du manifeste ou
+   de l'aperçu approuvé) n'écrit **aucun** rapport aujourd'hui : cette règle ne change pas, aucun rapport ni valeur de
+   remplacement n'est créé pour ces cas. Le journal d'un rapport `FailedBeforeMutation` n'est **pas** forcément vide (il peut
+   contenir des opérations antérieures) : l'invariant est « aucune opération passée à `Started` ou `Done` par ce run ».
+5. **Version du schéma : v1 conservé, v2 ajouté.** Un champ obligatoire rend invalides les rapports v1 déjà produits ; v1 n'est
+   donc pas modifié.
+   - **v1 conservé, octet pour octet :** `reference/pilot/bicep-azdo/.ifs/templates/schemas/ifs-report.schema.json`
+     (`schema` = `ifs-report/v1`) et sa copie `reference/release-module/schemas/ifs-report.schema.json`.
+   - **v2 ajouté :** `reference/pilot/bicep-azdo/.ifs/templates/schemas/ifs-report.v2.schema.json` = copie de v1 avec :
+     titre « … v2 », `$id` `https://infraflowsculptor.example/schemas/ifs-report.v2.schema.json`, `schema` = `ifs-report/v2`,
+     `approvedPreviewFingerprint` (chaîne, `^[a-f0-9]{64}$`) ajouté à `required` et à `properties`, `additionalProperties:
+     false` conservé, `$defs.operationJournal` inchangé. **Pas de seconde copie v2** dans `reference/release-module/schemas/`
+     (le fichier du clone est celui que le code exécute) ; si un contrôle `Test-Reference*.ps1` en exige une, question pour
+     Claude plutôt qu'un choix de Luna.
+   - **Émetteur :** `Write-IfsReleaseReport` (`reference/pilot/bicep-azdo/.ifs/templates/scripts/IfsRelease.psm1`) n'émet plus
+     que `ifs-report/v2` et valide contre `ifs-report.v2.schema.json` ; le module ne lit plus de rapport `ifs-report`, il n'y a
+     donc pas de sélection par version dans le code.
+6. **Captures existantes : ni migration ni chargeur.** Tous les artefacts `ifs-report` déjà conservés sous
+   `src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/AzureDevOps/Recordings/` (dont #738 et #740) sont des documents v1,
+   jamais réécrits. `tools/proofs/AdoRecordingsTransport.psm1` télécharge les artefacts tels quels et aucun chargeur de
+   rapport v1/v2 n'existe dans le dépôt : les tests lisent les rapports par `ConvertFrom-Json`. On **n'en crée pas** (aucun
+   consommateur réel ne le demande). Le minimum qui garantit la lecture des captures v1 est un test Pester (étape 0 bis de
+   P-08) qui valide chaque artefact `ifs-report` existant contre le schéma v1 conservé. #739 est une release applicative : son
+   rapport est `ifs-app-report/v1`, hors périmètre de cette décision. Si un consommateur réel de rapports apparaît plus tard,
+   question pour Claude.
+7. **Vérification de recette.** L'égalité « approuvée = appliquée » se vérifie dans un rapport v2 par
+   `approvedPreviewFingerprint == preview.fingerprint` ; jamais par `manifestFingerprint == preview.fingerprint`
+   ([recette § 5](../plan/recettes/01-preuves.md#5-p8--livraison-applicative-pendant-lattente-dinfrastructure)).
+
+**Écartés.** Unifier les deux domaines de hachage (change `manifestFingerprint`, invalide les manifestes et captures
+existants, mélange deux sémantiques) ; comparer `manifestFingerprint` à `preview.fingerprint` (valeurs de domaines
+différents, jamais égales) ; ajouter le champ en option dans v1 (la preuve resterait optionnelle, donc contournable) ; un
+second recalcul et un code d'erreur `PreviewFingerprintMismatch` (doublon du contrôle existant, change le message des
+captures #738) ; un chargeur ou une migration des captures (aucun consommateur réel).
+
+**Révision du 2026-10-17 (même jour, avant toute mise en œuvre).** Après vérification de `IfsRelease.psm1`, les points 3 à 6
+ont été corrigés **en place**, sans nouvelle DT : la décision n'était pas commitée ni appliquée. Retirés : le second recalcul
+avec `PreviewFingerprintMismatch`, le « journal d'opérations vide » et l'obligation de faire lire v1 et v2 par un chargeur.
+
+**Portée.** Mise en œuvre dans P-08 (test contrat d'abord) : [01-preuves § P-08](../plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement).
+Aucune autre décision (DT-42 comprise) ni preuve P1–P9 ne change ; le cas négatif #738 reste un résultat attendu.

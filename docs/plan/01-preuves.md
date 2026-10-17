@@ -471,6 +471,51 @@ action impossible à réaliser avec les accès déjà ouverts.
       laisse aucune écriture partielle si une valeur est inattendue ; `bicep build` du clone profilé sans avertissement ;
       tous les emplacements Azure du clone valent `francecentral` et aucun emplacement ne vaut `northeurope` ;
       `GP_Gen5_2` et `Standard` (ACR) sont absents du clone.
+0 bis. **Contrat d'empreinte approuvée/appliquée** ([DT-43](../technique/01-decisions.md#dt-43--empreinte-dapercu-approuvée-liée-à-lempreinte-appliquée)),
+   **hors ligne, avant le nouveau run P8** (le run #740 est fonctionnellement réussi mais sa preuve est incomplète : son
+   `ifs-report` n'a pas d'`approvedPreviewFingerprint`). **Test d'abord**, un test rouge par comportement, puis
+   l'implémentation minimale. Fichiers concernés, sans autre :
+   - code exécuté : `reference/pilot/bicep-azdo/.ifs/templates/scripts/IfsRelease.psm1` (`Invoke-IfsInfraDeploy`,
+     `Write-IfsReleaseReport`) ;
+   - schéma v1 **conservé sans modification** : `reference/pilot/bicep-azdo/.ifs/templates/schemas/ifs-report.schema.json` et sa
+     copie `reference/release-module/schemas/ifs-report.schema.json` ;
+   - schéma v2 **ajouté** : `reference/pilot/bicep-azdo/.ifs/templates/schemas/ifs-report.v2.schema.json` (contenu exact :
+     [DT-43 point 5](../technique/01-decisions.md#dt-43--empreinte-dapercu-approuvée-liée-à-lempreinte-appliquée)) ;
+   - tests : `reference/release-module/tests/IfsRelease.Tests.ps1` (il importe le module du clone, mais valide aujourd'hui
+     contre `reference/release-module/schemas/ifs-report.schema.json`).
+
+   Il n'y a ni chargeur ni migration à écrire : `tools/proofs/AdoRecordingsTransport.psm1` télécharge les artefacts tels quels
+   et aucun chargeur de rapports n'existe ; les captures existantes ne sont pas réécrites (DT-43 point 6).
+   1. Test contrat du schéma (`IfsRelease.Tests.ps1`, `Test-Json -SchemaFile`) : contre `ifs-report.v2.schema.json`, un rapport
+      sans `approvedPreviewFingerprint` est invalide, un rapport avec le champ est valide, un champ qui n'est pas 64 caractères
+      hexadécimaux minuscules est invalide, un rapport dont `schema` vaut `ifs-report/v1` est invalide. Contre le schéma v1
+      conservé (les deux fichiers), chaque artefact `ifs-report` existant sous
+      `src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/AzureDevOps/Recordings/` (dont #738 et #740) reste valide ;
+      c'est le minimum qui garantit la lecture des captures v1. Le test qui valide aujourd'hui le rapport **produit** contre
+      `reference/release-module/schemas/ifs-report.schema.json` valide désormais contre le schéma v2 du clone (celui que le
+      code exécute).
+   2. Test contrat du rapport (`Invoke-IfsInfraDeploy` avec `az` simulé, comme les tests existants) : `approvedPreviewFingerprint`
+      est la copie littérale de `fingerprint` de l'aperçu approuvé fourni dans `-PreviewPath`, pour un rapport `Succeeded` **et**
+      pour un rapport `FailedBeforeMutation` produit après lecture de cet aperçu ; `manifestFingerprint` garde sa valeur et son
+      calcul (`Get-IfsEffectFingerprint` appliqué au manifeste) ; aucun test ne compare les deux champs. Un échec avant le `try`
+      (aperçu approuvé illisible) n'écrit toujours aucun rapport (comportement actuel inchangé).
+   3. Test de l'application (même base) : le contrôle existant est conservé. Si l'aperçu recalculé a une `fingerprint` différente
+      de celle de l'aperçu approuvé, l'exception actuelle (« Les effets ont changé depuis l'aperçu approuvé… ») est levée,
+      `result` vaut `FailedBeforeMutation`, aucune opération du journal n'est passée à `Started` ou `Done`, `stack sub create`
+      n'est pas appelé ; si elles sont égales, l'application continue. Aucun nouveau code d'erreur. Si un test existant couvre
+      déjà ce comportement, le conserver et ne pas le dupliquer.
+   4. Implémentation minimale : créer `ifs-report.v2.schema.json` ; dans `IfsRelease.psm1`, ajouter à `Write-IfsReleaseReport` le
+      paramètre obligatoire `-ApprovedPreviewFingerprint`, émettre `schema = 'ifs-report/v2'` et la propriété
+      `approvedPreviewFingerprint`, valider via `Get-IfsSchemaPath 'ifs-report.v2.schema.json'`, adapter le message d'erreur et le
+      commentaire qui citent `ifs-report/v1` ; dans le `finally` de `Invoke-IfsInfraDeploy`, passer `$approved.fingerprint`. Ne pas
+      modifier la comparaison `$current.fingerprint -ne $approved.fingerprint`, ni `manifestFingerprint`, ni les schémas v1.
+      Adapter tout autre appelant de `Write-IfsReleaseReport` trouvé par recherche dans le dépôt. Recalculer
+      `reference/pilot/manifest.example.json` (`reference/tools/Update-ManifestExample.ps1`) car un fichier est ajouté sous
+      `reference/pilot/bicep-azdo/`.
+   5. Mettre à jour la recette ([§ 5](recettes/01-preuves.md#5-p8--livraison-applicative-pendant-lattente-dinfrastructure))
+      seulement si l'implémentation change une commande qu'elle cite ; republier le clone si nécessaire. Commit
+      `fix(reference): lier l'empreinte approuvée à l'empreinte appliquée`. Ni rejouer #738, ni réapprouver #740, ni
+      réécrire leurs captures : le parcours positif exige un **nouveau** run.
 1. Avant toute commande Azure, exiger dans `NEXT.md` un plafond chiffré confirmé, une estimation actualisée et
    l'inventaire de référence. Le feu vert général ne remplace pas ce verrou. Une fois le verrou franchi, exécuter la
    recette dans l'ordre P1, P9, P3, P8, P2, P4, P5, P7, avec un seul jeu Azure à la fois. Après chaque run, capturer les
