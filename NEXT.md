@@ -10,10 +10,10 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `EN_COURS` |
+| **Statut** | `EN_ATTENTE_DE_RECETTE` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
-| **Verrou** | P-08 : étape 0 quater D1a hors ligne ; aucun pipeline ou release avant diagnostic et conditions D3 |
+| **Verrou** | P-08 : D1a hors ligne terminé ; attente des cinq captures D1b personnelles ; aucun pipeline ou release avant les conditions D3 |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
 | **Dernière mise à jour** | 2026-10-17 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
@@ -65,7 +65,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 - S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
 - S-17 — sur un clone neuf, suivre [README — Démarrer](README.md#démarrer-windows) jusqu'à « Bonjour Alice Martin ». Les prérequis passent ; le démarrage du clone reste à vérifier quand les ports fixes 4200, 8080, 5257 et 3000 seront libres, car l'AppHost de travail reste actif.
-- P-08 — P1, P9, P3a et P3b sont OK et consignées. P8 reste KO : #738 est conservé comme preuve négative ; #740 est fonctionnellement réussi mais incomplet, car son rapport v1 ne relie pas l’aperçu approuvé. La PR #74 a livré le rapport v2 et le CI #746 a réussi. Au run #748, `approvedPreviewFingerprint` correspond au preview publié, mais le recalcul sous verrou a divergé en DEV : `FailedBeforeMutation`, aucune étape exécutée, PRD ignorée. L’artefact `ifs-preview-dev` est disponible ; le log de déploiement #20 téléchargé ne contient pas de JSON What-If recalculé identifiable. Le #748 reste non diagnostiqué tant que cette sortie manque. D1a est en cours ; après D1a, l’utilisateur fournira les captures D1b (cinq aperçus DEV sous son identité, sans pipeline ni mutation). Aucun pipeline ou release avant les conditions D3 inscrites au plan. Le nettoyage Shop42 reste suspendu.
+- P-08 — P1, P9, P3a et P3b sont OK et consignées. P8 reste KO : #738 est conservé comme preuve négative ; #740 est fonctionnellement réussi mais incomplet, car son rapport v1 ne relie pas l’aperçu approuvé. La PR #74 a livré le rapport v2 et le CI #746 a réussi. Au run #748, `approvedPreviewFingerprint` correspond au preview publié, mais le recalcul sous verrou a divergé en DEV : `FailedBeforeMutation`, aucune étape exécutée, PRD ignorée. L’artefact `ifs-preview-dev` est disponible ; les logs de preview #9 et de déploiement #20 ne contiennent pas de JSON What-If recalculé identifiable. Le #748 reste non diagnostiqué tant que cette sortie manque. D1a est terminé : l’audit, le comparateur hors ligne et le protocole sont consignés dans [`diagnostic-p8-748.md`](docs/plan/preuves/diagnostic-p8-748.md). P-08 attend cinq aperçus D1b DEV exécutés par l’utilisateur sous son identité personnelle, sans pipeline ni mutation ; conserver les captures et `metadata.json` sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\D1b\` et transmettre le chemin de session. Aucun pipeline ou release avant les conditions D3 inscrites au plan. Le nettoyage Shop42 reste suspendu.
 Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.
 
@@ -80,7 +80,7 @@ Aucune question en attente.
 **Décision P-08 (Claude, 2026-10-17) — option B.** Le refus fail-closed est conservé (aucun changement de code). La recette P8 ([§ 5](docs/plan/recettes/01-preuves.md#5-p8--livraison-applicative-pendant-lattente-dinfrastructure)) est révisée : #738 est le cas négatif conservé (`FailedBeforeMutation` attendu), ni forcé ni rejoué.
 
 Prochaines actions :
-1. Luna : terminer 0 quater D1a hors ligne ; ne pas télécharger ni publier les captures brutes dans le dépôt.
-2. Après D1a : attendre les cinq aperçus D1b et leurs métadonnées de l'utilisateur via `EN_ATTENTE_DE_RECETTE`.
-3. Après `gate.py resume P-08` : comparer les captures, consigner D1, puis poursuivre D2/D3 selon le diagnostic consigné au plan. Aucun pipeline/release avant D3.
+1. L’utilisateur exécute les cinq passes D1b en suivant [`diagnostic-p8-748.md`](docs/plan/preuves/diagnostic-p8-748.md), sans pipeline, approbation ou mutation ; les JSON restent hors du dépôt.
+2. À réception du chemin de session et des résultats, Luna exécute `python tools/plan/gate.py resume P-08`, compare les captures et consigne D1. Si le What-If recalculé original de #748 manque toujours, #748 reste non diagnostiqué.
+3. Après D1, Claude précise D2/D3 avant tout pipeline ou release.
 4. Nettoyage Shop42 suspendu jusqu’à la réussite de P8 et des autres conditions de la procédure T.

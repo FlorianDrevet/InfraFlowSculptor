@@ -44,3 +44,4 @@
 | 2026-10-15 14:08 | Luna | `P-08` reprise sur résultats de recette transmis par l'utilisateur |  |
 | 2026-10-17 09:49 | Luna | `P-08` attend une recette de l'utilisateur |  |
 | 2026-10-17 10:01 | Luna | `P-08` reprise sur résultats de recette transmis par l'utilisateur |  |
+| 2026-10-17 21:02 | Luna | `P-08` attend une recette de l'utilisateur |  |
