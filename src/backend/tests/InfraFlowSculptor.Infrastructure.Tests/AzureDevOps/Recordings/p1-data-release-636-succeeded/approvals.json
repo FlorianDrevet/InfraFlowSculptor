@@ -1,0 +1,131 @@
+{
+  "captureScope": "Project approvals snapshot at capture time; the API response does not identify a build or pipeline run.",
+  "runIdContext": 636,
+  "queueTimeUtc": "2026-10-16T00:54:38.6600861+00:00",
+  "finishTimeUtc": "2026-10-16T01:08:51.9503857+00:00",
+  "captureTimeUtc": "2026-10-16T01:09:44.8032220Z",
+  "count": 2,
+  "possiblyTruncated": false,
+  "value": [
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_045?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-16T01:01:19.64Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_045",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-16T01:03:21.0098444Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "79",
+        "name": "project-redacted � data � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/636"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=636"
+            }
+          },
+          "id": 636,
+          "name": "20261016.3"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_002",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_002"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_004",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_003"
+          },
+          "comment": "Aper�u prd v�rifi� : 7 cr�ations en France Central, aucune modification, suppression ou r�vocation.",
+          "history": [],
+          "initiatedOn": "2026-10-16T01:01:19.6385784Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_002",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_002"
+          },
+          "lastModifiedOn": "2026-10-16T01:03:21.0098444Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    },
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_078?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-16T00:10:37.543Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_078",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-16T00:15:24.2102503Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "76",
+        "name": "project-redacted � core � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/630"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=630"
+            }
+          },
+          "id": 630,
+          "name": "20261016.1"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_002",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_002"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_004",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_003"
+          },
+          "comment": "Aper�u PRD relu : six cr�ations en France Central, aucune modification ni suppression ; le secret payments-api-key est �crit apr�s le d�ploiement.",
+          "history": [],
+          "initiatedOn": "2026-10-16T00:10:37.5438437Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_002",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_002"
+          },
+          "lastModifiedOn": "2026-10-16T00:15:24.2102503Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    }
+  ]
+}

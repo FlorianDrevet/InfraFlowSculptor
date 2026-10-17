@@ -1,0 +1,68 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+parameters:
+- name: project
+  type: string
+- name: component
+  type: string
+- name: application
+  type: string
+- name: registryServiceConnection
+  type: string
+- name: buildContext
+  type: string
+- name: dockerfile
+  type: string
+
+stages:
+- stage: Build
+  displayName: Build, scan et publication de l’image
+  jobs:
+  - job: BuildImage
+    displayName: Construire et publier une image immuable
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+      fetchDepth: '1'
+    - pwsh: |
+        $ErrorActionPreference = 'Stop'
+        & "$env:IFS_REPOSITORY_ROOT/.ifs/templates/scripts/Set-IfsRunName.ps1" -ManifestPath $env:IFS_MANIFEST_PATH -Component $env:IFS_COMPONENT -Target 'CI'
+      displayName: Nommer le run depuis le manifeste
+      env:
+        IFS_REPOSITORY_ROOT: $(Build.SourcesDirectory)
+        IFS_MANIFEST_PATH: $(Build.SourcesDirectory)/.ifs/manifest.json
+        IFS_COMPONENT: ${{ parameters.component }}
+    - pwsh: |
+        $ErrorActionPreference = 'Stop'
+        & "$env:IFS_REPOSITORY_ROOT/.ifs/templates/scripts/Install-IfsTrivy.ps1"
+      displayName: Installer Trivy à la version épinglée
+      env:
+        IFS_REPOSITORY_ROOT: $(Build.SourcesDirectory)
+    - task: AzureCLI@2
+      displayName: Buildx, analyse des vulnérabilités critiques et push OIDC
+      inputs:
+        azureSubscription: ${{ parameters.registryServiceConnection }}
+        scriptType: pscore
+        scriptLocation: scriptPath
+        scriptPath: $(Build.SourcesDirectory)/.ifs/templates/scripts/Build-IfsImage.ps1
+        arguments: >
+          -RepositoryRoot "$(Build.SourcesDirectory)"
+          -ReleasePath "$(Build.SourcesDirectory)/${{ parameters.component }}/infra/release.dev.json"
+          -BuildContext '${{ parameters.buildContext }}'
+          -DockerfilePath '${{ parameters.dockerfile }}'
+          -Application '${{ parameters.application }}'
+          -ImageManifestPath "$(Build.ArtifactStagingDirectory)/app/image.json"
+    - pwsh: |
+        $ErrorActionPreference = 'Stop'
+        $artifact = Join-Path $env:IFS_ARTIFACT_ROOT 'app'
+        New-Item -ItemType Directory -Path $artifact -Force | Out-Null
+        Copy-Item -LiteralPath (Join-Path $env:IFS_REPOSITORY_ROOT '.ifs') -Destination $artifact -Recurse -Force
+        Copy-Item -LiteralPath (Join-Path $env:IFS_REPOSITORY_ROOT $env:IFS_COMPONENT) -Destination $artifact -Recurse -Force
+      displayName: Ajouter le code de release et les modèles au manifeste image
+      env:
+        IFS_REPOSITORY_ROOT: $(Build.SourcesDirectory)
+        IFS_COMPONENT: ${{ parameters.component }}
+        IFS_ARTIFACT_ROOT: $(Build.ArtifactStagingDirectory)
+    - publish: $(Build.ArtifactStagingDirectory)/app
+      artifact: image
+      displayName: Publier l’empreinte de l’image et ses fichiers de release

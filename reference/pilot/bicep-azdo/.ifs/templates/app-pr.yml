@@ -1,0 +1,41 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+parameters:
+- name: project
+  type: string
+- name: component
+  type: string
+- name: application
+  type: string
+- name: buildContext
+  type: string
+- name: dockerfile
+  type: string
+
+stages:
+- stage: Validate
+  displayName: Build de pull request sans connexion Azure
+  jobs:
+  - job: Build
+    displayName: Construire l’image sans la publier
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+      fetchDepth: '1'
+    - pwsh: |
+        $ErrorActionPreference = 'Stop'
+        & "$env:IFS_REPOSITORY_ROOT/.ifs/templates/scripts/Set-IfsRunName.ps1" -ManifestPath $env:IFS_MANIFEST_PATH -Component $env:IFS_COMPONENT -Target 'PR'
+        $context = Join-Path $env:IFS_REPOSITORY_ROOT $env:IFS_BUILD_CONTEXT
+        $dockerfile = Join-Path $env:IFS_REPOSITORY_ROOT $env:IFS_DOCKERFILE
+        if (-not (Test-Path -LiteralPath $context -PathType Container)) { throw "Contexte Docker absent : $context" }
+        if (-not (Test-Path -LiteralPath $dockerfile -PathType Leaf)) { throw "Dockerfile absent : $dockerfile" }
+        $image = 'ifs-pr:{0}' -f $env:BUILD_BUILDID
+        & docker buildx build --platform linux/amd64 --file $dockerfile --tag $image --load $context
+        if ($LASTEXITCODE -ne 0) { throw 'Le build Docker de la pull request a échoué.' }
+      displayName: Nommer et construire l’application
+      env:
+        IFS_REPOSITORY_ROOT: $(Build.SourcesDirectory)
+        IFS_MANIFEST_PATH: $(Build.SourcesDirectory)/.ifs/manifest.json
+        IFS_COMPONENT: ${{ parameters.component }}
+        IFS_BUILD_CONTEXT: ${{ parameters.buildContext }}
+        IFS_DOCKERFILE: ${{ parameters.dockerfile }}

@@ -1,0 +1,27 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+parameters:
+- name: project
+  type: string
+- name: component
+  type: string
+
+stages:
+- stage: Validate
+  displayName: Contrôles de l’infrastructure
+  jobs:
+  - job: Bicep
+    displayName: Valider Bicep sans connexion Azure
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+      fetchDepth: '1'
+    - pwsh: |
+        $ErrorActionPreference = 'Stop'
+        & "$env:IFS_REPOSITORY_ROOT/.ifs/templates/scripts/Set-IfsRunName.ps1" -ManifestPath $env:IFS_MANIFEST_PATH -Component $env:IFS_COMPONENT -Target 'PR'
+        & "$env:IFS_REPOSITORY_ROOT/.ifs/templates/scripts/Test-IfsBicep.ps1" -RepositoryRoot $env:IFS_REPOSITORY_ROOT -Component $env:IFS_COMPONENT
+      displayName: Vérifier la révision et compiler les modèles Bicep
+      env:
+        IFS_REPOSITORY_ROOT: $(Build.SourcesDirectory)
+        IFS_MANIFEST_PATH: $(Build.SourcesDirectory)/.ifs/manifest.json
+        IFS_COMPONENT: ${{ parameters.component }}
