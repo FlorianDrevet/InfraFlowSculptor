@@ -10,10 +10,10 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `BLOQUE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
-| **Verrou** | P-08 : arbitrage requis sur l'écart d'empreinte What-If du run #748 ; aucun nouveau run avant diagnostic |
+| **Verrou** | P-08 : étape 0 quater D1a hors ligne ; aucun pipeline ou release avant diagnostic et conditions D3 |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
 | **Dernière mise à jour** | 2026-10-17 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
@@ -65,19 +65,22 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 - S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
 - S-17 — sur un clone neuf, suivre [README — Démarrer](README.md#démarrer-windows) jusqu'à « Bonjour Alice Martin ». Les prérequis passent ; le démarrage du clone reste à vérifier quand les ports fixes 4200, 8080, 5257 et 3000 seront libres, car l'AppHost de travail reste actif.
-- P-08 — P1, P9, P3a et P3b sont OK et consignées. P8 reste KO : #738 est conservé comme preuve négative ; #740 est fonctionnellement réussi mais incomplet, car son rapport v1 ne relie pas l’aperçu approuvé. La PR #74 a livré le rapport v2 et le CI #746 a réussi. Au run #748, `approvedPreviewFingerprint` correspond au preview publié, mais le recalcul sous verrou a divergé en DEV : `FailedBeforeMutation`, aucune étape exécutée, PRD ignorée. Aucun déploiement applicatif n’a eu lieu entre les deux aperçus. Capture locale : `p8-infra-dev-failed-run-748`. Ne pas relancer avant arbitrage et diagnostic ; le nettoyage Shop42 reste suspendu.
+- P-08 — P1, P9, P3a et P3b sont OK et consignées. P8 reste KO : #738 est conservé comme preuve négative ; #740 est fonctionnellement réussi mais incomplet, car son rapport v1 ne relie pas l’aperçu approuvé. La PR #74 a livré le rapport v2 et le CI #746 a réussi. Au run #748, `approvedPreviewFingerprint` correspond au preview publié, mais le recalcul sous verrou a divergé en DEV : `FailedBeforeMutation`, aucune étape exécutée, PRD ignorée. L’artefact `ifs-preview-dev` est disponible ; le log de déploiement #20 téléchargé ne contient pas de JSON What-If recalculé identifiable. Le #748 reste non diagnostiqué tant que cette sortie manque. D1a est en cours ; après D1a, l’utilisateur fournira les captures D1b (cinq aperçus DEV sous son identité, sans pipeline ni mutation). Aucun pipeline ou release avant les conditions D3 inscrites au plan. Le nettoyage Shop42 reste suspendu.
 Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.
 
 ## Questions pour Claude
 
-**P-08 — divergence d’empreinte What-If au run #748.** Le CI orders/infra #746 a réussi sur le commit `3f591758`. La release #748 a publié l’aperçu DEV `bec9d7c6492eb864e0fb7973427066f7ca2412b2a83faaf1fe3a24d8627b3460`, puis le recalcul sous verrou, cinq minutes plus tard, a produit une autre empreinte. Le rapport v2 est `FailedBeforeMutation`, avec `approvedPreviewFingerprint` égal à l’empreinte publiée, `steps` vide et sans hash recalculé ni diff. Aucun run applicatif ou autre release infra n’est intervenu ; le What-If annonce des changements de Container App, Managed Environment, diagnostics et identité managée.
+Aucune question en attente.
 
-**Question :** avant toute nouvelle mutation Azure, faut-il ajouter au plan un diagnostic What-If en lecture seule (3 à 5 répétitions sur les mêmes entrées, JSON brut et normalisé, empreintes et diff des chemins, journaux Activity/Policy), puis une étape séparée d’observabilité du rapport ; ou choisir une autre séquence ? Le contrôle fail-closed reste inchangé tant qu’une décision de conception distincte ne l’a pas révisé. Options à examiner sans trancher : diagnostic d’abord, ou nouvel aperçu/run avec le contrôle inchangé après vérification de l’état Azure. Le statut reste `BLOQUE` jusqu’à la réponse de Claude.
+**Arbitrage P-08 du 2026-10-17 (Claude CLI) — D1a/D1b.** L'étape 0 ter existante (mise à jour ciblée du clone `shop42`, PR #74) reste inchangée. Le diagnostic s'ajoute en 0 quater. D1a est hors ligne : audit des captures/artefacts, comparateur testé sur fixtures synthétiques et protocole. D1b mesure cinq aperçus DEV via le module de la CI #746 sous l'identité Azure CLI personnelle, marquée comme différente de la service connection. Aucun pipeline ni mutation. Ces passes ne prouvent rien causalement sur #748. Si le What-If recalculé du #748 ne peut pas être récupéré, ce run reste non diagnostiqué.
+
+**Statuts décidés par Claude.** P-08 passe à `EN_COURS` après l'arbitrage. Après D1a, `EN_ATTENTE_DE_RECETTE` ; à réception des captures D1b, `python tools/plan/gate.py resume P-08`, puis P-08 reste `EN_COURS`. Pas de revue intermédiaire via `gate.py` ; Claude relit P-08 au verrou final R-03.
 
 **Décision P-08 (Claude, 2026-10-17) — option B.** Le refus fail-closed est conservé (aucun changement de code). La recette P8 ([§ 5](docs/plan/recettes/01-preuves.md#5-p8--livraison-applicative-pendant-lattente-dinfrastructure)) est révisée : #738 est le cas négatif conservé (`FailedBeforeMutation` attendu), ni forcé ni rejoué.
 
 Prochaines actions :
-1. Claude : préciser le diagnostic de #748 et l’étape de plan requise ; Luna ne relance pas de release avant cette réponse.
-2. Après arbitrage : reprendre P-08 selon le plan actualisé, conserver le contrôle fail-closed sauf nouvelle décision explicite, puis consigner la preuve P8.
-3. Nettoyage Shop42 suspendu jusqu’à la réussite de P8 et des autres conditions de la procédure T.
+1. Luna : terminer 0 quater D1a hors ligne ; ne pas télécharger ni publier les captures brutes dans le dépôt.
+2. Après D1a : attendre les cinq aperçus D1b et leurs métadonnées de l'utilisateur via `EN_ATTENTE_DE_RECETTE`.
+3. Après `gate.py resume P-08` : comparer les captures, consigner D1, puis poursuivre D2/D3 selon le diagnostic consigné au plan. Aucun pipeline/release avant D3.
+4. Nettoyage Shop42 suspendu jusqu’à la réussite de P8 et des autres conditions de la procédure T.

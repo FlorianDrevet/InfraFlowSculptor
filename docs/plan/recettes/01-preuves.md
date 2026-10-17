@@ -390,6 +390,12 @@ P8 comporte donc deux volets :
 **État initial du parcours positif :** l'API orders répond en prd avec le digest D2 (livré par #739, sain en DEV/PRD) ;
 aucun run de release d'infrastructure n'est en attente ; #738 n'est pas relancé.
 
+**Préalable ajouté par l'arbitrage du 2026-10-17 :** la nouvelle preuve positive ci-dessous attend la clôture du diagnostic
+P-08, étape 0 quater, et la définition des conditions D2/D3 dans le plan. Aucun pipeline ou release n'est lancé pendant
+D1a/D1b. Les cinq aperçus sous l'identité personnelle ne diagnostiquent pas causalement le run #748 ; si son What-If
+recalculé est irrécupérable, le run reste « non diagnostiqué ». Ne pas poursuivre les étapes 1 à 3 avant la consigne D3
+inscrite au plan.
+
 0. **Préalable : clone à jour.** `main` d'Azure Repos contient la mise à jour de `IfsRelease.psm1`, du schéma
    `ifs-report.v2.schema.json` et du manifeste, faite par l'[étape 0 ter de P-08](../01-preuves.md#p-08--exécution-des-preuves-accompagnement)
    (jamais par `Publish-PilotReference.ps1`, qui refuse un clone déjà publié). Sans cela, le rapport serait `ifs-report/v1` et

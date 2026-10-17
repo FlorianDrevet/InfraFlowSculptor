@@ -765,6 +765,37 @@ action impossible à réaliser avec les accès déjà ouverts.
       utilisé le clone mis à jour : ne pas approuver, `BLOQUE`.
    5. **Dépôt IFS** : rien à fusionner vers `main` avant le run. Le commit de l'étape 0 bis reste sur `impl/preuves` ; le
       pousser (sans PR) est recommandé pour que `commit` du manifeste soit résolvable, mais le run ne le lit pas.
+0 quater. **Diagnostic de la divergence What-If du run #748** (arbitrage Claude CLI du 2026-10-17). Aucun pipeline ni aucune
+   release avant la fin du diagnostic et la définition des conditions de D3. Aucun changement au contrôle fail-closed.
+   - **D1a — Luna, hors ligne.** Auditer les captures existantes et les artefacts téléchargés dans
+     `%LOCALAPPDATA%\InfraFlowSculptor\P08\D1a\` : `infra` de la CI #746, `ifs-preview-dev` et `ifs-report-dev` de la release #748,
+     logs de preview #748 (9) et de déploiement #748 (20). Consigner dans
+     [`preuves/diagnostic-p8-748.md`](preuves/diagnostic-p8-748.md) les formats, empreintes, nombres de changements, métadonnées
+     utiles et données absentes ; ne pas y copier les contenus bruts, GUID Azure ou valeurs de propriétés. L'aperçu publié est
+     `ifs-preview/v1` ; le rapport v2 est `FailedBeforeMutation`, porte l'empreinte publiée et a `steps` vide. Le log 20 ne
+     contient pas de JSON What-If recalculé identifiable. Tant que le JSON initial et le What-If recalculé du #748 ne sont pas
+     tous deux récupérés, classer ce run **non diagnostiqué** ; ne lui attribuer aucune cause.
+   - **Comparateur hors ligne.** Ajouter `tools/proofs/Compare-IfsPreviews.psm1` et
+     `reference/release-module/tests/CompareIfsPreviews.Tests.ps1`. Le comparateur accepte des fichiers `ifs-preview/v1`,
+     compare leur fingerprint et les changements par ressource, type et chemins de delta sans dépendre de l'ordre des tableaux.
+     Il ne retire aucun champ d'effet et ne recalcule pas l'empreinte. Il distingue `Identique`, `Divergent` (ressources,
+     type de changement ou delta de propriété) et `NonConcluant` (entrée absente, illisible ou schéma/contexte incompatible).
+     `generatedAt` est consigné, mais ne participe pas à l'égalité. Les tests utilisent uniquement des fixtures synthétiques
+     et couvrent les trois verdicts. Commit D1a : `feat(preuves): diagnostic What-If hors ligne`.
+   - **D1b — utilisateur, lecture seule.** Depuis l'artefact `infra` de la CI #746, répéter cinq aperçus DEV avec le même
+     template et les mêmes paramètres en appelant `Invoke-IfsPreview` dans la portée du module chargé. Le contrôle
+     `servicePrincipalId` est dans le wrapper AzureCLI, hors de cette fonction ; ne pas définir ni simuler cette variable.
+     Marquer chaque sortie `identity: personal-az-cli` et `servicePrincipalId: absent` : ces passes mesurent seulement la
+     reproductibilité sous l'identité personnelle et n'expliquent pas le #748. Capturer cinq `ifs-preview/v1`, leur horodatage,
+     versions d'outils, contexte et SHA-256 ; les sorties brutes restent hors du dépôt et sont vérifiées avant partage.
+     Aucun pipeline, approbation, déploiement ou autre mutation.
+   - **Sortie D1a.** Le protocole exact D1b et les résultats d'audit sont dans `diagnostic-p8-748.md`. Après D1a, mettre
+     `NEXT.md` à `EN_ATTENTE_DE_RECETTE`. Quand l'utilisateur fournit les captures D1b, exécuter
+     `python tools/plan/gate.py resume P-08`, comparer hors ligne, puis consigner le diagnostic en distinguant le #748
+     (non diagnostiqué si son What-If recalculé manque) de la reproductibilité mesurée sous l'identité personnelle.
+   - **Suite.** Garder P-08 `EN_COURS` après `resume`. Détailler D2 et D3 à partir du diagnostic avant tout nouveau pipeline
+     ou release ; conserver le contrôle fail-closed. Il n'y a pas de revue intermédiaire via `gate.py` : la revue de Claude
+     intervient au verrou final R-03 après P-08.
 1. Avant toute commande Azure, exiger dans `NEXT.md` un plafond chiffré confirmé, une estimation actualisée et
    l'inventaire de référence. Le feu vert général ne remplace pas ce verrou. Une fois le verrou franchi, exécuter la
    recette dans l'ordre P1, P9, P3, P8, P2, P4, P5, P7, avec un seul jeu Azure à la fois. Après chaque run, capturer les
