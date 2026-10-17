@@ -29,3 +29,4 @@
 | 2026-10-15 | Luna | P-08 — région France Central décidée ; préflight de disponibilité 1–3 réussi en lecture seule, tarifs actualisés et budget consulté ; confirmation du plafond/estimation encore requise. |
 | 2026-10-15 | Luna | P-08 — plafond et sous-total confirmés ; sortie pilote et overlays alignés sur France Central, manifeste recalculé, contrôles de déterminisme et Bicep réussis, 69 tests Pester verts. |
 | 2026-10-15 | Luna | P-08 — CI GitHub corrigée (8/8 checks), projet privé Azure DevOps `shop42`, groupes Entra/Azure DevOps et dépôt de référence préparés. Préflight coûts : projections contradictoires et supérieures au plafond de 200 EUR/mois ; aucune ressource Azure créée, étape en attente de réconciliation des coûts. |
+| 2026-10-17 | Luna | P-08 — mémoire actualisée après les runs #739/#738 et l’arbitrage Claude option B ; #738 reste la preuve négative, le parcours positif et le nettoyage Shop42 restent en attente. |

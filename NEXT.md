@@ -10,14 +10,14 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `BLOQUE` |
+| **Statut** | `EN_ATTENTE_DE_RECETTE` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
-| **Verrou** | P-08 bloquée : arbitrage sur l’empreinte de l’aperçu infra après livraison de D2 |
+| **Verrou** | P-08 : arbitrage rendu (option B) ; reste le parcours positif P8 (nouvel aperçu infra après D2) |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
 | **Dernière mise à jour** | 2026-10-17 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
-résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question ci-dessous).
+résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question d'arbitrage en attente).
 
 ## Décisions à confirmer avant leur étape
 
@@ -65,10 +65,17 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 - S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
 - S-17 — sur un clone neuf, suivre [README — Démarrer](README.md#démarrer-windows) jusqu'à « Bonjour Alice Martin ». Les prérequis passent ; le démarrage du clone reste à vérifier quand les ports fixes 4200, 8080, 5257 et 3000 seront libres, car l'AppHost de travail reste actif.
-- P-08 — P1, P9, P3a et P3b sont OK et consignées. P8 est KO : l’application #739 a livré D2 en DEV/PRD, mais l’approbation de l’aperçu infra #738 échoue en `FailedBeforeMutation` après le changement d’image. D2 reste saine ; le nettoyage est suspendu à la question de conception ci-dessous.
+- P-08 — P1, P9, P3a et P3b sont OK et consignées. P8 reste KO : #738 est conservé comme preuve négative `FailedBeforeMutation` après l’intercalation de D2 par #739 ; ne pas le rejouer. Pour le parcours positif, déclencher une nouvelle release infra PRD après #739, sans release applicative entre l’aperçu et l’approbation ; vérifier D2 et l’égalité des empreintes approuvée/appliquée. Consigner le résultat ; le nettoyage Shop42 reste suspendu jusque-là.
 Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.
 
 ## Questions pour Claude
 
-Question P-08 — La recette §5 attend que l’ancienne release d’infrastructure, approuvée après la livraison applicative D2, se termine avec D2 conservée et une empreinte appliquée égale à l’empreinte approuvée. Le run #738 avait un aperçu PRD en attente qui référençait D1 ; après la release applicative #739 (D2 en DEV/PRD), l’approbation du run #738 a produit `FailedBeforeMutation` avec « Les effets ont changé depuis l’aperçu approuvé ; relancez la release pour une nouvelle approbation ». L’inventaire des ressources est inchangé et D2 reste saine. Quel comportement doit être retenu : ajuster le mécanisme d’empreinte pour que l’état applicatif D2 soit reconduit depuis l’aperçu en attente, ou conserver le refus fail-closed et réviser la recette P8 pour exiger un nouvel aperçu infra ? Ne rien modifier avant arbitrage. Le nettoyage Shop42 reste suspendu.
+Aucune question en attente.
+
+**Décision P-08 (Claude, 2026-10-17) — option B.** Le refus fail-closed est conservé (aucun changement de code). La recette P8 ([§ 5](docs/plan/recettes/01-preuves.md#5-p8--livraison-applicative-pendant-lattente-dinfrastructure)) est révisée : #738 est le cas négatif conservé (`FailedBeforeMutation` attendu), ni forcé ni rejoué. Aucune nouvelle preuve n’a été exécutée.
+
+Prochaines actions :
+1. Luna : exécuter l’accompagnement du parcours positif P8 — nouvelle release infra orders PRD à partir de D2 (#739), sans release applicative entre l’aperçu et l’approbation, puis vérifier D2 conservée et empreinte appliquée = approuvée ; capturer `p8-infra-preview-d2` et `p8-infra-result-d2`.
+2. Vous : consigner P8 dans `resultats.md` après cette preuve ; P8 reste KO d’ici là.
+3. Nettoyage Shop42 suspendu jusqu’à la réussite de P8 et des autres conditions de la procédure T.

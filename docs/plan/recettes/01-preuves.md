@@ -22,7 +22,8 @@
 > souscription, `francecentral` pour toutes les ressources Azure régionales, profil minimal ([reference-pilote § 1.6](../reference-pilote.md#16-profil-de-coût-des-preuves)),
 > un jeu de ressources par projet (`shop42`, `shop43`, `shop44`) déployé **après la suppression du précédent**, et suppression
 > de chaque jeu dès sa dernière preuve dépendante ([§ 10](#10-supprimer-les-ressources-azure-et-consigner-les-résultats)).
-> Les assertions de P1, P9, P3, P8, P2, P4, P5 et P7 sont inchangées.
+> Les assertions de P1, P9, P3, P2, P4, P5 et P7 sont inchangées. Celles de P8 sont révisées par l'arbitrage du
+> 2026-10-17 (option B, refus fail-closed conservé) : voir [§ 5](#5-p8--livraison-applicative-pendant-lattente-dinfrastructure).
 
 ## 0. Verrou de coût et préflight bloquants
 
@@ -375,29 +376,46 @@ une nouvelle release remet l'état désiré.
 
 **Durée indicative :** 45 à 90 minutes.
 
-**État initial :** l'API orders répond en prd avec un digest D1 ; aucun run de release d'infrastructure n'est en attente.
+**Arbitrage du 2026-10-17 (option B).** Le refus fail-closed est conservé : une approbation d'aperçu infra dont les
+effets ont changé parce qu'une release applicative s'est intercalée après l'aperçu doit aboutir à `FailedBeforeMutation`.
+P8 comporte donc deux volets :
 
-1. Déclencher la release orders/infra/pipelines/release.yml. Quand l'aperçu prd est publié et attend une approbation,
-   noter D1 et capturer le run (p8-infra-pending-run-<id>).
-2. Faire une modification bénigne, relue et limitée au code témoin sous src/api/ afin que le build produise une
-   nouvelle image. Fusionner la PR dans main, puis vérifier l'exécution de orders/apps/api/pipelines/ci.yml et le
-   nouvel image.json avec un digest D2, différent de D1.
-3. Laisser la release applicative orders/apps/api/pipelines/release.yml déployer D2 en dev puis en prd. Approuver
-   le stage prd de l'application et vérifier /health sur la nouvelle image. Capturer le run applicatif
-   (p8-app-prd-run-<id>).
-4. Revenir à l'ancienne release d'infrastructure en attente et l'approuver. Vérifier dans ifs-report-prd que l'image
-   D2 est reconduite et que l'empreinte appliquée égale celle approuvée. Capturer le run final
-   (p8-infra-result-run-<id>).
+- **Cas négatif conservé : #738 (déjà exécuté).** L'aperçu PRD de #738 référençait D1 ; après la release applicative
+  #739 (D2), son approbation a produit `FailedBeforeMutation` (« Les effets ont changé depuis l'aperçu approuvé »). Ce
+  comportement est le **résultat attendu** de ce cas. #738 n'est ni forcé, ni rejoué, ni réapprouvé ; ses captures
+  restent telles quelles.
+- **Parcours positif à exécuter : nouvel aperçu après D2.** Il part de D2, déjà livré par #739.
 
-**Résultat attendu :** l'infrastructure conserve D2, malgré le déploiement applicatif intervenu pendant
-l'approbation ; les empreintes approuvée et appliquée sont égales.
+**État initial du parcours positif :** l'API orders répond en prd avec le digest D2 (livré par #739, sain en DEV/PRD) ;
+aucun run de release d'infrastructure n'est en attente ; #738 n'est pas relancé.
 
-**Preuves :** image.json avec D1/D2, rapport applicatif prd, aperçu et rapport d'infrastructure, /health.
+1. Déclencher une **nouvelle** release orders/infra/pipelines/release.yml, après la livraison de D2. Quand l'aperçu prd
+   est publié et attend une approbation, noter D2 et l'empreinte de l'aperçu (`manifestFingerprint`), et capturer le run
+   (p8-infra-preview-d2-run-<id>).
+2. **Ne lancer aucune release applicative** (ni CI avec nouvelle image, ni orders/apps/api/pipelines/release.yml) entre
+   la publication de cet aperçu et son approbation. Si une livraison applicative survient malgré tout, le run est un
+   nouveau cas négatif : ne pas l'approuver pour forcer le résultat, le consigner et repartir d'un nouvel aperçu.
+3. Approuver le stage prd de cette release d'infrastructure. Vérifier dans ifs-report-prd que l'image D2 est conservée
+   (pas de retour à D1) et que l'empreinte appliquée égale l'empreinte approuvée. Vérifier /health sur D2. Capturer le
+   run final (p8-infra-result-d2-run-<id>).
+
+**Résultat attendu :**
+
+- cas négatif (#738) : `FailedBeforeMutation` quand la release applicative s'intercale entre l'aperçu et l'approbation,
+  sans mutation Azure ;
+- parcours positif : l'infrastructure conserve D2 ; les empreintes approuvée et appliquée sont égales, sans release
+  applicative entre l'aperçu et l'approbation.
+
+**Preuves :** cas négatif : captures existantes de #738 et #739 (`p8-*` déjà enregistrées), D1/D2, inventaire inchangé.
+Parcours positif : image.json avec D2, aperçu et rapport d'infrastructure du nouveau run, empreintes approuvée/appliquée,
+/health. Aucune preuve du parcours positif n'est encore exécutée : P8 reste KO tant qu'elle n'est pas capturée et consignée.
 
 **Nettoyage :** aucun rollback d'image ; l'état en prd reste D2. Garder la modification témoin (git) jusqu'à R-03.
-**Dernière preuve de `shop42`** : une fois P8 capturée en entier (`p8-infra-pending`, `p8-app-prd`, `p8-infra-result`) et
-P1, P9, P3a, P3b, P8 consignées dans resultats.md, supprimer le jeu Azure `shop42` ([§ 10](#10-supprimer-les-ressources-azure-et-consigner-les-résultats),
-procédure T). Ne démarrer `shop43` qu'ensuite.
+**Dernière preuve de `shop42`** : le nettoyage reste **suspendu** jusqu'à la réussite du parcours positif de P8 (captures
+du cas négatif #738/#739 et du parcours positif `p8-infra-preview-d2`, `p8-infra-result-d2`) et jusqu'à ce que P1, P9, P3a,
+P3b, P8 soient consignées dans resultats.md et que la porte de la procédure T soit satisfaite. Alors seulement, supprimer
+le jeu Azure `shop42` ([§ 10](#10-supprimer-les-ressources-azure-et-consigner-les-résultats), procédure T). Ne démarrer
+`shop43` qu'ensuite.
 
 ## 6. P2 — Révoquer l'accès à Log Analytics en prd
 
