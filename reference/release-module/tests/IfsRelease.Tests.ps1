@@ -578,6 +578,179 @@ Describe "Rapports de release" {
         ($calls | Select-String "storage blob lease acquire|storage blob upload|stack sub create|resource delete|keyvault secret set|firewall-rule create") | Should -BeNullOrEmpty
     }
 
+    It "conserve l'aperçu recalculé sans remplacer l'aperçu approuvé en cas de divergence" {
+        $approvedDirectory = Join-Path $script:tempRoot "approved-preview-mismatch-capture"
+        $reportDirectory = Join-Path $script:tempRoot "reports-preview-mismatch-capture"
+        New-Item -ItemType Directory -Path $approvedDirectory, $reportDirectory -Force | Out-Null
+        $approvedPath = Join-Path $approvedDirectory "ifs-preview.json"
+        $reportPath = Join-Path $reportDirectory "ifs-report.json"
+        $manifestPath = Join-Path $script:tempRoot "manifest-preview-mismatch-capture.json"
+        Set-Content -LiteralPath $manifestPath -Value '{"revision":4,"commit":"rev4","units":{"core":{"fingerprint":"abc"}}}'
+
+        $preview = [pscustomobject][ordered]@{
+            schema = "ifs-preview/v1"
+            project = "shop42"
+            component = "core"
+            unit = "ifs-shop42-core-dev"
+            target = "dev"
+            generatedAt = "2026-01-01T00:00:00.0000000Z"
+            fingerprint = "b" * 64
+            pendingOperations = @()
+            created = @()
+            modified = @()
+            recreated = @()
+            detachedOrDeleted = @()
+            revokedAccess = @()
+            dataWrites = @()
+            appOwnedState = @()
+            limitations = @("aperçu de test")
+        }
+        $recalculatedBytes = [Text.UTF8Encoding]::new($false).GetBytes((ConvertTo-Json -InputObject $preview -Depth 100))
+        $approved = [ordered]@{}
+        foreach ($property in $preview.PSObject.Properties) { $approved[$property.Name] = $property.Value }
+        $approved.fingerprint = "f" * 64
+        $approvedBytes = [Text.UTF8Encoding]::new($false).GetBytes((ConvertTo-Json -InputObject $approved -Depth 100))
+        [IO.File]::WriteAllBytes($approvedPath, $approvedBytes)
+
+        $global:IFS_RECALCULATED_PREVIEW = $preview
+        $global:IFS_RECALCULATED_PREVIEW_BYTES = $recalculatedBytes
+        Mock Test-IfsNewerManifest -ModuleName IfsRelease { return $false }
+        Mock Invoke-IfsPreview -ModuleName IfsRelease {
+            param($OutputDirectory)
+            New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+            [IO.File]::WriteAllBytes((Join-Path $OutputDirectory "ifs-preview.json"), $global:IFS_RECALCULATED_PREVIEW_BYTES)
+            return $global:IFS_RECALCULATED_PREVIEW
+        }
+
+        {
+            Invoke-IfsInfraDeploy -ReleasePath $script:coreRelease -ManifestPath $manifestPath -PreviewPath $approvedPath -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -SqlScript "" -OutputPath $reportPath -DefaultBranch "main" -ManifestPathInRepository ".ifs/manifest.json" -DeploymentIdentityObjectId "00000000-0000-0000-0000-000000000001"
+        } | Should -Throw "*Les effets ont changé depuis l'aperçu approuvé*"
+
+        $recalculatedPath = Join-Path $reportDirectory "ifs-preview-recalculated.json"
+        Test-Path -LiteralPath $recalculatedPath -PathType Leaf | Should -BeTrue
+        [Convert]::ToBase64String([IO.File]::ReadAllBytes($approvedPath)) | Should -Be ([Convert]::ToBase64String($approvedBytes))
+        [Convert]::ToBase64String([IO.File]::ReadAllBytes($recalculatedPath)) | Should -Be ([Convert]::ToBase64String($recalculatedBytes))
+
+        $recalculatedJson = Get-Content -LiteralPath $recalculatedPath -Raw
+        $recalculatedPreview = $recalculatedJson | ConvertFrom-Json
+        $recalculatedPreview.fingerprint | Should -Be $preview.fingerprint
+        $recalculatedPreview.fingerprint | Should -Not -Be ("f" * 64)
+        (Test-Json -Json $recalculatedJson -SchemaFile (Join-Path $script:repoRoot "reference/pilot/bicep-azdo/.ifs/templates/schemas/ifs-preview.schema.json")) | Should -BeTrue
+
+        $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+        $report.result | Should -Be "FailedBeforeMutation"
+        @($report.journal.operations | Where-Object { $_.state -in @("Started", "Done") }).Count | Should -Be 0
+        $calls = @($global:IFS_AZ_CALLS | ForEach-Object { $_ -join " " })
+        ($calls | Select-String "storage blob lease acquire|storage blob upload|stack sub create|resource delete|keyvault secret set|firewall-rule create") | Should -BeNullOrEmpty
+    }
+
+    It "ne publie pas d'aperçu recalculé quand les empreintes sont égales" {
+        $approvedDirectory = Join-Path $script:tempRoot "approved-preview-equal"
+        $reportDirectory = Join-Path $script:tempRoot "reports-preview-equal"
+        New-Item -ItemType Directory -Path $approvedDirectory, $reportDirectory -Force | Out-Null
+        $approvedPath = Join-Path $approvedDirectory "ifs-preview.json"
+        $reportPath = Join-Path $reportDirectory "ifs-report.json"
+        $manifestPath = Join-Path $script:tempRoot "manifest-preview-equal.json"
+        Set-Content -LiteralPath $manifestPath -Value '{"revision":4,"commit":"rev4","units":{"core":{"fingerprint":"abc"}}}'
+
+        $approvedPreview = [pscustomobject][ordered]@{
+            schema = "ifs-preview/v1"
+            project = "shop42"
+            component = "core"
+            unit = "ifs-shop42-core-dev"
+            target = "dev"
+            generatedAt = "2026-01-01T00:00:00.0000000Z"
+            fingerprint = "b" * 64
+            pendingOperations = @()
+            created = @()
+            modified = @()
+            recreated = @()
+            detachedOrDeleted = @()
+            revokedAccess = @()
+            dataWrites = @()
+            appOwnedState = @()
+            limitations = @("aperçu de test")
+        }
+        $approvedBytes = [Text.UTF8Encoding]::new($false).GetBytes((ConvertTo-Json -InputObject $approvedPreview -Depth 100))
+        [IO.File]::WriteAllBytes($approvedPath, $approvedBytes)
+        $currentPreview = [ordered]@{}
+        foreach ($property in $approvedPreview.PSObject.Properties) { $currentPreview[$property.Name] = $property.Value }
+        $currentPreview.generatedAt = "2026-02-01T00:00:00.0000000Z"
+        $global:IFS_RECALCULATED_PREVIEW = [pscustomobject]$currentPreview
+        $global:IFS_RECALCULATED_PREVIEW_BYTES = [Text.UTF8Encoding]::new($false).GetBytes((ConvertTo-Json -InputObject $global:IFS_RECALCULATED_PREVIEW -Depth 100))
+        Mock Test-IfsNewerManifest -ModuleName IfsRelease { return $false }
+        Mock Invoke-IfsPreview -ModuleName IfsRelease {
+            param($OutputDirectory)
+            New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+            [IO.File]::WriteAllBytes((Join-Path $OutputDirectory "ifs-preview.json"), $global:IFS_RECALCULATED_PREVIEW_BYTES)
+            return $global:IFS_RECALCULATED_PREVIEW
+        }
+        Mock Open-IfsOperationJournal -ModuleName IfsRelease { throw "arrêt de test après comparaison" }
+
+        {
+            Invoke-IfsInfraDeploy -ReleasePath $script:coreRelease -ManifestPath $manifestPath -PreviewPath $approvedPath -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -SqlScript "" -OutputPath $reportPath -DefaultBranch "main" -ManifestPathInRepository ".ifs/manifest.json" -DeploymentIdentityObjectId "00000000-0000-0000-0000-000000000001"
+        } | Should -Throw "*arrêt de test après comparaison*"
+
+        Test-Path -LiteralPath (Join-Path $reportDirectory "ifs-preview-recalculated.json") -PathType Leaf | Should -BeFalse
+        [Convert]::ToBase64String([IO.File]::ReadAllBytes($approvedPath)) | Should -Be ([Convert]::ToBase64String($approvedBytes))
+        $approvedPreview.fingerprint | Should -Be $currentPreview.fingerprint
+    }
+
+    It "conserve le refus d'origine si l'écriture de l'aperçu recalculé échoue" {
+        $approvedDirectory = Join-Path $script:tempRoot "approved-preview-write-failure"
+        $reportDirectory = Join-Path $script:tempRoot "reports-preview-write-failure"
+        New-Item -ItemType Directory -Path $approvedDirectory, $reportDirectory -Force | Out-Null
+        $approvedPath = Join-Path $approvedDirectory "ifs-preview.json"
+        $reportPath = Join-Path $reportDirectory "ifs-report.json"
+        $manifestPath = Join-Path $script:tempRoot "manifest-preview-write-failure.json"
+        Set-Content -LiteralPath $manifestPath -Value '{"revision":4,"commit":"rev4","units":{"core":{"fingerprint":"abc"}}}'
+
+        $preview = [pscustomobject][ordered]@{
+            schema = "ifs-preview/v1"
+            project = "shop42"
+            component = "core"
+            unit = "ifs-shop42-core-dev"
+            target = "dev"
+            generatedAt = "2026-01-01T00:00:00.0000000Z"
+            fingerprint = "b" * 64
+            pendingOperations = @()
+            created = @()
+            modified = @()
+            recreated = @()
+            detachedOrDeleted = @()
+            revokedAccess = @()
+            dataWrites = @()
+            appOwnedState = @()
+            limitations = @("aperçu de test")
+        }
+        $recalculatedBytes = [Text.UTF8Encoding]::new($false).GetBytes((ConvertTo-Json -InputObject $preview -Depth 100))
+        $approved = [ordered]@{}
+        foreach ($property in $preview.PSObject.Properties) { $approved[$property.Name] = $property.Value }
+        $approved.fingerprint = "f" * 64
+        $approvedBytes = [Text.UTF8Encoding]::new($false).GetBytes((ConvertTo-Json -InputObject $approved -Depth 100))
+        [IO.File]::WriteAllBytes($approvedPath, $approvedBytes)
+        $global:IFS_RECALCULATED_PREVIEW = $preview
+        $global:IFS_RECALCULATED_PREVIEW_BYTES = $recalculatedBytes
+        Mock Test-IfsNewerManifest -ModuleName IfsRelease { return $false }
+        Mock Invoke-IfsPreview -ModuleName IfsRelease {
+            param($OutputDirectory)
+            New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+            [IO.File]::WriteAllBytes((Join-Path $OutputDirectory "ifs-preview.json"), $global:IFS_RECALCULATED_PREVIEW_BYTES)
+            return $global:IFS_RECALCULATED_PREVIEW
+        }
+        Mock Copy-Item -ModuleName IfsRelease { throw "échec d'écriture simulé" }
+
+        {
+            Invoke-IfsInfraDeploy -ReleasePath $script:coreRelease -ManifestPath $manifestPath -PreviewPath $approvedPath -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -SqlScript "" -OutputPath $reportPath -DefaultBranch "main" -ManifestPathInRepository ".ifs/manifest.json" -DeploymentIdentityObjectId "00000000-0000-0000-0000-000000000001"
+        } | Should -Throw "*Les effets ont changé depuis l'aperçu approuvé*"
+
+        Assert-MockCalled Copy-Item -ModuleName IfsRelease -Times 1
+        [Convert]::ToBase64String([IO.File]::ReadAllBytes($approvedPath)) | Should -Be ([Convert]::ToBase64String($approvedBytes))
+        $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+        $report.result | Should -Be "FailedBeforeMutation"
+        @($report.journal.operations | Where-Object { $_.state -in @("Started", "Done") }).Count | Should -Be 0
+    }
+
     It "versionne le schéma du rapport en conservant la lecture des rapports v1" {
         $schemaRoot = Join-Path $script:repoRoot "reference/pilot/bicep-azdo/.ifs/templates/schemas"
         $v1SchemaPath = Join-Path $schemaRoot "ifs-report.schema.json"

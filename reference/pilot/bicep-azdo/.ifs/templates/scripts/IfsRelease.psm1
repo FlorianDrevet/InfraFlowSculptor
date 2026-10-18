@@ -1323,9 +1323,28 @@ function Invoke-IfsInfraDeploy {
     $failure = $null
     try {
         [void](Test-IfsNewerManifest -FrozenManifest $metadata.Manifest -DefaultBranch $DefaultBranch -ManifestPathInRepository $ManifestPathInRepository -ReleaseData $data)
-        $current = Invoke-IfsPreview -ReleaseData $data -TemplateFile $TemplateFile -ParameterFile $ParameterFile -OutputDirectory (Split-Path -Parent $PreviewPath) -DeploymentIdentityObjectId $DeploymentIdentityObjectId -ApplicationIdentityObjectId $ApplicationIdentityObjectId
-        if ($current.fingerprint -ne $approved.fingerprint) {
-            throw 'Les effets ont changé depuis l''aperçu approuvé ; relancez la release pour une nouvelle approbation.'
+        $previewOutputDirectory = Join-Path ([IO.Path]::GetTempPath()) ('ifs-preview-' + [guid]::NewGuid().ToString('N'))
+        $recalculatedPreviewPath = Join-Path $previewOutputDirectory 'ifs-preview.json'
+        $recalculatedArtifactPath = Join-Path (Split-Path -Parent $OutputPath) 'ifs-preview-recalculated.json'
+        try {
+            $current = Invoke-IfsPreview -ReleaseData $data -TemplateFile $TemplateFile -ParameterFile $ParameterFile -OutputDirectory $previewOutputDirectory -DeploymentIdentityObjectId $DeploymentIdentityObjectId -ApplicationIdentityObjectId $ApplicationIdentityObjectId
+            if ($current.fingerprint -ne $approved.fingerprint) {
+                $fingerprintMismatchMessage = 'Les effets ont changé depuis l''aperçu approuvé ; relancez la release pour une nouvelle approbation.'
+                try {
+                    Copy-Item -LiteralPath $recalculatedPreviewPath -Destination $recalculatedArtifactPath -Force -ErrorAction Stop | Out-Null
+                }
+                catch {
+                    if (Test-Path -LiteralPath $recalculatedArtifactPath -PathType Leaf) {
+                        Remove-Item -LiteralPath $recalculatedArtifactPath -Force -ErrorAction SilentlyContinue
+                    }
+                }
+                throw $fingerprintMismatchMessage
+            }
+        }
+        finally {
+            if (Test-Path -LiteralPath $previewOutputDirectory -PathType Container) {
+                Remove-Item -LiteralPath $previewOutputDirectory -Recurse -Force -ErrorAction SilentlyContinue
+            }
         }
         $context = Open-IfsOperationJournal -ReleaseData $data
         $appState = @(Read-IfsAppOwnedState $data)

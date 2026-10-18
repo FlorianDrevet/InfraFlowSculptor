@@ -32,3 +32,4 @@
 | 2026-10-17 | Luna | P-08 — mémoire actualisée après les runs #739/#738 et l’arbitrage Claude option B ; #738 reste la preuve négative, le parcours positif et le nettoyage Shop42 restent en attente. |
 | 2026-10-17 | Luna | P-08 D1a — diagnostic #748, comparateur What-If hors ligne testé et protocole D1b ; attente des cinq aperçus DEV personnels, sans changement au fail-closed. |
 | 2026-10-18 | Luna | P-08 D1b — cinq aperçus personnels identiques, rôles Reader limités consignés, #748 toujours non diagnostiqué ; D2/D3 en attente de définition Claude. |
+| 2026-10-18 | Luna | P-08 D2a — capture de l’aperçu recalculé en cas de divergence sans toucher à l’aperçu approuvé ; tests Pester ciblés et validations Bicep, déterminisme et pipelines verts. |
