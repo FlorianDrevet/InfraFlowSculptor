@@ -10,10 +10,10 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `BLOQUE` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
-| **Verrou** | P-08 : D1a/D1b et D2a terminés ; D2/D3 détaillés à l'[étape 0 quinquies](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) ; aucun pipeline ou release avant D2b et les conditions C1 à C8 de D3 |
+| **Verrou** | P-08 : D1a/D1b et D2a terminés ; D2/D3 détaillés à l'[étape 0 quinquies](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) ; aucun pipeline ou release avant D2b et les conditions C1 à C9 de D3 |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
 | **Dernière mise à jour** | 2026-10-18 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
@@ -66,15 +66,53 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 - S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
 - S-17 — sur un clone neuf, suivre [README — Démarrer](README.md#démarrer-windows) jusqu'à « Bonjour Alice Martin ». Les prérequis passent ; le démarrage du clone reste à vérifier quand les ports fixes 4200, 8080, 5257 et 3000 seront libres, car l'AppHost de travail reste actif.
-- P-08 — P1, P9, P3a et P3b sont OK et consignées. P8 reste KO : #738 est conservé comme preuve négative ; #740 est fonctionnellement réussi mais incomplet, car son rapport v1 ne relie pas l’aperçu approuvé. La PR #74 a livré le rapport v2 et le CI #746 a réussi. Au run #748, `approvedPreviewFingerprint` correspond au preview publié, mais le recalcul sous verrou a divergé en DEV : `FailedBeforeMutation`, aucune étape exécutée, PRD ignorée. L’artefact `ifs-preview-dev` est disponible ; les logs de preview #9 et de déploiement #20 ne contiennent pas de JSON What-If recalculé identifiable. Le #748 reste non diagnostiqué. D1a et D1b sont terminés ; cinq aperçus DEV sous l’identité personnelle ont donné quatre comparaisons `Identique` et l’empreinte commune `77dc939f…87b1`. Le détail est dans [`diagnostic-p8-748.md`](docs/plan/preuves/diagnostic-p8-748.md) ; captures et comparaisons restent hors dépôt sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\D1b\20261017T215336Z\`. D1b établit uniquement la répétabilité personnelle. D2/D3 sont détaillés (étape 0 quinquies) : #748 reste définitivement non diagnostiqué ; D2a (code hors ligne) et D2b (clone `shop42`) précèdent un essai unique de release soumis aux conditions C1 à C8 de D3. Le nettoyage Shop42 reste suspendu.
+- P-08 — P1, P9, P3a et P3b sont OK et consignées. P8 reste KO : #738 est conservé comme preuve négative ; #740 est fonctionnellement réussi mais incomplet, car son rapport v1 ne relie pas l’aperçu approuvé. La PR #74 a livré le rapport v2 et le CI #746 a réussi. Au run #748, `approvedPreviewFingerprint` correspond au preview publié, mais le recalcul sous verrou a divergé en DEV : `FailedBeforeMutation`, aucune étape exécutée, PRD ignorée. L’artefact `ifs-preview-dev` est disponible ; les logs de preview #9 et de déploiement #20 ne contiennent pas de JSON What-If recalculé identifiable. Le #748 reste non diagnostiqué. D1a et D1b sont terminés ; cinq aperçus DEV sous l’identité personnelle ont donné quatre comparaisons `Identique` et l’empreinte commune `77dc939f…87b1`. Le détail est dans [`diagnostic-p8-748.md`](docs/plan/preuves/diagnostic-p8-748.md) ; captures et comparaisons restent hors dépôt sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\D1b\20261017T215336Z\`. D1b établit uniquement la répétabilité personnelle. D2/D3 sont détaillés (étape 0 quinquies) : #748 reste définitivement non diagnostiqué ; D2a (code hors ligne) et D2b (clone `shop42`) précèdent un essai unique de release soumis aux conditions C1 à C9 de D3. Le nettoyage Shop42 reste suspendu.
 Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.
 
 ## Questions pour Claude
 
-*(Aucune question en attente.)*
+**Question de Claude à l'utilisateur — P-08, D2b.3 (2026-10-18).** Le verrou de D2b.3 est **confirmé** : ne pas pousser, ne pas
+fusionner. Aucun push/PR/merge dans Azure Repos, pipeline ni release Azure DevOps n'a eu lieu pour D2b. Choix à faire par vous ; Luna n'agit pas avant votre réponse.
 
-**Arbitrage P-08 du 2026-10-18 (Claude CLI) — D2/D3.** Réponse à la question « suite de 0 quater » : **option 1**. #748 reste définitivement non diagnostiqué (aucune source connue du What-If recalculé ; option 2 écartée, réouverture seulement si l'utilisateur désigne une source absente de l'audit D1a). Protocole complet à l'[étape 0 quinquies](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) : **D2a** (Luna, hors ligne, test d'abord) conserve `ifs-preview-recalculated.json` en cas de divergence sans toucher au fail-closed ; **D2b** met à jour le clone `shop42` de façon ciblée (même méthode que 0 ter), la release utilisant le module embarqué dans le CI ; **D3** n'autorise un **unique** essai de release `orders` (CI N construit après D2b, identité de la service connection, DEV puis PRD, approbations par l'utilisateur) que si les conditions C1 à C8 sont vérifiées et consignées ici. Divergence ou autre échec : arrêt, comparaison hors ligne publié/recalculé (diagnostic de **ce** run, pas de #748), `BLOQUE`, pas de second essai sans nouvelle décision. À noter : l'empreinte publiée par #748 (`bec9d7c6…`) diffère de celle de D1b (`77dc939f…`) ; cause non établie.
+*Vérification complémentaire en lecture seule.* Azure DevOps indique que le run #748 avait `reason=manual`, demandé par Florian DREVET,
+sur `refs/heads/main` au commit `3f5917588b83d11fc07d7f9838f5e895e037dd6d` ; il n'a donc pas été lancé automatiquement par le CI #746.
+La répétition D2b et l'exécution locale du clone sont consignées sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\D2b\rehearsal-20261018T090104Z\`
+et `%LOCALAPPDATA%\InfraFlowSculptor\P08\D2b\actual-20261018T090123Z\`.
+
+*Constat* (audit YAML de Luna, relayé ; Claude n'a pas pu relire `trigger-audit.txt` ni le clone, accès refusé) :
+- `orders/infra/pipelines/ci.yml` déclenche sur `main` pour `orders/infra/**` et `.ifs/**` ; il étend `infra-ci.yml`
+  (build Bicep + publication de `infra`, sans tâche Azure ni déploiement) : autorisé par D2b.3.
+- `orders/infra/pipelines/release.yml` a `trigger: none` mais une ressource pipeline sur ce CI avec trigger `main` ; il étend
+  `infra-release.yml`, étape DEV non protégée. Fusionner D2b ⇒ CI N puis **release automatique appliquée à DEV sans approbation**,
+  hors des conditions C1 à C9 et en consommant l'essai unique.
+- Défaut du plan, indépendant du choix : D3 (C7, C8, essai étape 2) suppose une **approbation avant l'application DEV**, or DEV
+  n'est pas protégée. Le plan ajoute donc **C9** (voir D3) ; sans elle, C8 ne pourrait être vérifié qu'après coup.
+
+*Options observées :*
+- **A — branche non fusionnée.** Pousser seulement `fix/p08-keep-recalculated-preview` (le CI ne se déclenche que sur `main` ; pas de
+  PR), vous lancez le CI à la main sur cette branche (⇒ N), puis la release à la main sur N (D3.1). `main` reste inchangé ; `shop42`
+  est supprimé après P8, la fusion n'est donc jamais nécessaire. À établir hors ligne avant le push : le filtre de branche de la
+  ressource pipeline, que la release n'exige pas que N provienne de `main` ou du HEAD du dépôt (contrôle de fraîcheur, commit du
+  manifeste), et que l'interface permet de choisir un run N d'une autre branche. Coût : D2b.4 et recette § 5 étape 0 à amender
+  (`main` ne contient pas la mise à jour) ; toute fusion ultérieure déclencherait la release DEV.
+- **B — désactiver la définition de pipeline `release` (vous, interface) pendant la fusion, puis la réactiver avant D3.** Garde la
+  fidélité « `main` contient la mise à jour ». Repose sur un comportement Azure DevOps non vérifié ici (un pipeline désactivé n'est pas
+  mis en file par un trigger de ressource) ; si faux, DEV est déployée sans garde, et rien ne permet de le vérifier avant la fusion.
+- **C — approbation temporaire sur l'environnement `shop42-dev` (vous, interface), puis fusion normale.** Une release automatique
+  s'arrête avant l'application DEV, vous la rejetez ; D3 est lancée ensuite à la main. Exigée de toute façon par C9. À établir hors
+  ligne : toute écriture Azure de l'étape DEV est dans un job de déploiement lié à cet environnement, et l'étape d'aperçu n'écrit
+  rien. Coût : D2b.3 amendée pour tolérer « release déclenchée mais bloquée à DEV » ; un run rejeté de plus dans l'historique.
+
+*Recommandation de Claude :* **C**, car C9 impose de toute façon cette approbation et la fusion garde `main` fidèle ; **A** en repli si
+la lecture hors ligne montre qu'une écriture DEV échappe à l'environnement. **B** seul est écarté (non vérifiable avant d'agir).
+
+*Réponse attendue :* la lettre choisie, et pour B ou C la confirmation que l'action d'interface est faite (capture de la page de
+contrôles de l'environnement ou du pipeline désactivé). Claude amende alors D2b.3/D2b.4 (et la recette § 5 pour A), puis le statut
+repasse à `A_FAIRE`. Statut : `BLOQUE` à poser par la procédure de [`docs/plan/README.md`](docs/plan/README.md#quand-le-plan-ne-suffit-pas)
+(commit `chore(plan): question sur P-08`) ; je n'ai pas modifié le tableau géré par `gate.py`.
+
+**Arbitrage P-08 du 2026-10-18 (Claude CLI) — D2/D3.** Réponse à la question « suite de 0 quater » : **option 1**. #748 reste définitivement non diagnostiqué (aucune source connue du What-If recalculé ; option 2 écartée, réouverture seulement si l'utilisateur désigne une source absente de l'audit D1a). Protocole complet à l'[étape 0 quinquies](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) : **D2a** (Luna, hors ligne, test d'abord) conserve `ifs-preview-recalculated.json` en cas de divergence sans toucher au fail-closed ; **D2b** met à jour le clone `shop42` de façon ciblée (même méthode que 0 ter), la release utilisant le module embarqué dans le CI ; **D3** n'autorise un **unique** essai de release `orders` (CI N construit après D2b, identité de la service connection, DEV puis PRD, approbations par l'utilisateur) que si les conditions C1 à C8 sont vérifiées et consignées ici (*énoncé d'origine, conservé : l'arbitrage du 2026-10-18 ne comptait alors que C1 à C8 ; C9 a été ajoutée ensuite à D3, qui exige désormais C1 à C9*). Divergence ou autre échec : arrêt, comparaison hors ligne publié/recalculé (diagnostic de **ce** run, pas de #748), `BLOQUE`, pas de second essai sans nouvelle décision. À noter : l'empreinte publiée par #748 (`bec9d7c6…`) diffère de celle de D1b (`77dc939f…`) ; cause non établie.
 
 **Arbitrage P-08 du 2026-10-17 (Claude CLI) — D1a/D1b.** L'étape 0 ter existante (mise à jour ciblée du clone `shop42`, PR #74) reste inchangée. Le diagnostic s'ajoute en 0 quater. D1a est hors ligne : audit des captures/artefacts, comparateur testé sur fixtures synthétiques et protocole. D1b mesure cinq aperçus DEV via le module de la CI #746 sous l'identité Azure CLI personnelle, marquée comme différente de la service connection. Aucun pipeline ni mutation. Ces passes ne prouvent rien causalement sur #748. Si le What-If recalculé du #748 ne peut pas être récupéré, ce run reste non diagnostiqué.
 
@@ -87,7 +125,7 @@ Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 **D2a terminé (Luna, 2026-10-18).** Commit `bbf1d86` poussé sur `impl/preuves`. Pester complet : 122/122 ; `Test-ReferenceBicep.ps1`, `Test-ReferenceDeterminism.ps1` et `Test-ReferencePipelines.ps1` réussis ; manifeste cohérent sur 77 fichiers. Ces sorties établissent C1 pour D3.
 
 Prochaines actions :
-1. Luna exécute D2b dans le clone `C:/src/shop42`, selon l'étape 0 quinquies ; contrôler les triggers avant le push et s'arrêter si une release, un pipeline applicatif ou un CI connecté à Azure peut être déclenché.
-2. Aucun lancement de release avant C1 à C8 vérifiées et consignées ici ; un seul essai.
+1. D2b : mise à jour locale de `C:/src/shop42` faite (branche `fix/p08-keep-recalculated-preview`, non commitée, non poussée) ; le contrôle des triggers a **bloqué** le push (fusion ⇒ CI puis release DEV automatique). Attendre la réponse à la question D2b.3 ci-dessus ; ne rien pousser, ne rien lancer.
+2. Aucun lancement de release avant C1 à C9 vérifiées et consignées ici ; un seul essai.
 3. Garder #748 non diagnostiqué ; conserver le fail-closed et #738 comme preuve négative.
 4. Nettoyage Shop42 suspendu jusqu’à la réussite de P8 et des autres conditions de la procédure T.

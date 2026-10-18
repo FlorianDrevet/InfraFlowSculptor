@@ -865,8 +865,13 @@ action impossible à réaliser avec les accès déjà ouverts.
         l'artefact `infra` de N contient `IfsRelease.psm1` de même empreinte logique que celui du clone, et `orders/infra/main.bicep` et
         `main.dev.bicepparam` de même SHA-256 que `inputSha256.template` et `inputSha256.parameters` des `metadata.json` D1b.
         Capturer : `Save-AdoRecordings.ps1 … -Scenario p8-d2b-ci-orders-run-<N>`.
+     5. **Verrou D2b.3 constaté (2026-10-18).** L'audit des YAML du clone établit que la fusion déclencherait `orders/infra/ci.yml`
+        (autorisé : build Bicep, sans Azure) **puis** `orders/infra/pipelines/release.yml` par sa ressource pipeline (trigger `main`),
+        avec une étape DEV non protégée : la règle du 3 s'applique, **rien n'est poussé**. Les sous-étapes 3 et 4 restent suspendues
+        jusqu'à la réponse de l'utilisateur à la question de `NEXT.md` (options A, B, C) ; Claude amende alors cette sous-étape par un
+        arbitrage daté. Aucune option n'est choisie ici, et aucun pipeline, push ou fusion n'est autorisé entre-temps.
    - **D3 — conditions, puis essai unique.** Luna ne lance **aucune** release `orders` tant que **toutes** les conditions suivantes
-     ne sont pas vérifiées, la même session, et consignées dans `NEXT.md` (ligne « Ressources Azure créées… », avec l'heure UTC).
+     (C1 à C9) ne sont pas vérifiées, la même session, et consignées dans `NEXT.md` (ligne « Ressources Azure créées… », avec l'heure UTC).
      Une condition fausse ou invérifiable : ne rien lancer, `BLOQUE` avec la condition en cause.
      - **C1** D2a commitée et poussée, ses vérifications vertes (sortie citée).
      - **C2** D2b terminée : conditions de la sous-étape 4 satisfaites, CI N réussi.
@@ -883,6 +888,13 @@ action impossible à réaliser avec les accès déjà ouverts.
        P-08 passe `EN_ATTENTE_DE_RECETTE` dès l'aperçu DEV publié, avec la consigne d'approbation ci-dessous.
      - **C8** Les effets de l'aperçu DEV publié sont : 0 création, 0 recréation, 0 suppression, 0 révocation, 0 opération en attente
        (le détail des modifications est relu par l'utilisateur). Sinon : ne pas approuver, consigner, arrêt.
+     - **C9** (ajoutée le 2026-10-18) Une **approbation humaine précède toute écriture Azure du stage DEV** de l'essai. L'étape DEV du
+       kit n'est pas protégée par défaut ([recette § 2](recettes/01-preuves.md#2-p1--première-installation-et-application-témoin) :
+       seule PRD est approuvée) ; sans cette garde, C7, C8 et l'étape 2 de l'essai sont inexécutables, C8 ne se vérifiant qu'après
+       l'application. Vérifié par lecture hors ligne de `infra-release.yml` (toute écriture Azure du stage DEV est dans un job de
+       déploiement lié à l'environnement `shop42-dev`, l'aperçu n'écrit rien) **et** par capture, fournie par l'utilisateur, de la
+       page de contrôles de cet environnement. Mise en place : action d'interface de l'utilisateur, selon la réponse à la question de
+       `NEXT.md` ; Luna ne modifie jamais un environnement ni un contrôle Azure DevOps.
 
      **Essai unique** (le déploiement DEV modifiera réellement DEV : c'est le contenu normal de la release `orders`, le même que celui
      de l'aperçu #748). Ordre :
