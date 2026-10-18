@@ -391,10 +391,14 @@ P8 comporte donc deux volets :
 aucun run de release d'infrastructure n'est en attente ; #738 n'est pas relancé.
 
 **Préalable ajouté par l'arbitrage du 2026-10-17 :** la nouvelle preuve positive ci-dessous attend la clôture du diagnostic
-P-08, étape 0 quater, et la définition des conditions D2/D3 dans le plan. Aucun pipeline ou release n'est lancé pendant
-D1a/D1b. Les cinq aperçus sous l'identité personnelle ne diagnostiquent pas causalement le run #748 ; si son What-If
-recalculé est irrécupérable, le run reste « non diagnostiqué ». Ne pas poursuivre les étapes 1 à 3 avant la consigne D3
-inscrite au plan.
+P-08, étape 0 quater, et le protocole D2/D3 de l'[étape 0 quinquies](../01-preuves.md#p-08--exécution-des-preuves-accompagnement)
+(arbitrage du 2026-10-18). Aucun pipeline ou release n'est lancé pendant D1a/D1b. Les cinq aperçus sous l'identité personnelle
+ne diagnostiquent pas causalement le run #748 ; son What-If recalculé est irrécupérable : #748 reste **définitivement non
+diagnostiqué** et aucune récupération n'est tentée. Ne pas poursuivre les étapes 1 à 3 avant que les conditions C1 à C8 de D3
+soient vérifiées et consignées dans `NEXT.md`. Les étapes 1 à 3 ne s'exécutent qu'**une seule fois** (essai unique de D3) :
+elles utilisent le CI `orders/infra` N construit après la mise à jour D2b du clone (module qui conserve
+`ifs-preview-recalculated.json`) et non l'artefact du CI #746. Si le DEV diverge de nouveau, l'essai s'arrête (cas b de D3) :
+ni relance, ni approbation de PRD, P8 reste KO.
 
 0. **Préalable : clone à jour.** `main` d'Azure Repos contient la mise à jour de `IfsRelease.psm1`, du schéma
    `ifs-report.v2.schema.json` et du manifeste, faite par l'[étape 0 ter de P-08](../01-preuves.md#p-08--exécution-des-preuves-accompagnement)
@@ -407,7 +411,8 @@ inscrite au plan.
    (`data` = `c590eaaf…2e0eb`). Le champ `commit` du manifeste désigne alors l'origine des deux fichiers mis à jour, pas
    l'arbre entier. Vérifier avant le run : `git -C C:/src/shop42 diff --stat 91c022e origin/main` (après `git -C C:/src/shop42 fetch origin`) ne liste que `.ifs/manifest.json`,
    `IfsRelease.psm1` et le schéma v2, et le rapport du run porte `schema` = `ifs-report/v2`.
-1. Déclencher une **nouvelle** release orders/infra/pipelines/release.yml, après la livraison de D2. Quand l'aperçu prd
+1. Déclencher une **nouvelle** release orders/infra/pipelines/release.yml sur le CI N de D3 (version explicite), après la
+   livraison de D2 ; DEV s'applique d'abord (étape 3 de D3), puis PRD. Quand l'aperçu prd
    est publié et attend une approbation, noter D2 et l'empreinte de l'aperçu (`preview.fingerprint`), et capturer le run
    (p8-infra-preview-d2-run-<id>). `manifestFingerprint` est une empreinte d'un **autre domaine de hachage** : ne pas la
    noter comme empreinte d'aperçu ni la comparer à `preview.fingerprint` ([DT-43](../../technique/01-decisions.md#dt-43--empreinte-dapercu-approuvée-liée-à-lempreinte-appliquée)).

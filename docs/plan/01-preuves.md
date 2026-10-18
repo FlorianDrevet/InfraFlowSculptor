@@ -793,9 +793,119 @@ action impossible à réaliser avec les accès déjà ouverts.
      `NEXT.md` à `EN_ATTENTE_DE_RECETTE`. Quand l'utilisateur fournit les captures D1b, exécuter
      `python tools/plan/gate.py resume P-08`, comparer hors ligne, puis consigner le diagnostic en distinguant le #748
      (non diagnostiqué si son What-If recalculé manque) de la reproductibilité mesurée sous l'identité personnelle.
-   - **Suite.** Garder P-08 `EN_COURS` après `resume`. Détailler D2 et D3 à partir du diagnostic avant tout nouveau pipeline
-     ou release ; conserver le contrôle fail-closed. Il n'y a pas de revue intermédiaire via `gate.py` : la revue de Claude
+   - **Suite.** Garder P-08 `EN_COURS` après `resume`. D2 et D3 sont détaillés à l'étape 0 quinquies ci-dessous ; conserver
+     le contrôle fail-closed. Il n'y a pas de revue intermédiaire via `gate.py` : la revue de Claude
      intervient au verrou final R-03 après P-08.
+0 quinquies. **D2 et D3 : instrumenter la divergence, puis un essai unique** (arbitrage Claude du 2026-10-18). Dans cette étape,
+   « D2a », « D2b » et « D3 » sont des phases du diagnostic ; l'« image D2 » reste l'image applicative livrée par #739.
+   - **Décision sur #748 : option 1.** Le run #748 reste **définitivement non diagnostiqué** : son What-If recalculé n'a été écrit
+     ni dans les logs 9 et 20, ni dans les captures, ni dans les artefacts (D1a), et Azure ne conserve pas le résultat d'un
+     What-If. Aucune source connue n'existe, donc aucune récupération n'est tentée (option 2 écartée) ; relancer un pipeline pour
+     « retrouver » l'original ne le retrouverait pas, puisque ce serait un autre calcul à un autre moment. Elle ne se rouvre que si
+     l'utilisateur désigne une source **absente** de l'audit D1a (alors : question dans `NEXT.md`, pas d'initiative). D1b n'est ni
+     un substitut ni une preuve de cause : elle établit seulement la répétabilité personnelle. Observation à consigner sans
+     interprétation : l'empreinte publiée par #748 (`bec9d7c6…3460`, identité de la service connection, 2026-10-17 10:19Z) diffère de
+     celle des cinq passes D1b (`77dc939f…87b1`, identité personnelle, 2026-10-17 soir) ; la cause (identité, moment, état Azure)
+     n'est pas établie et ne doit être attribuée à aucune des trois.
+   - **Objectif.** Obtenir la preuve positive de P8 (empreinte approuvée = empreinte appliquée, [DT-43](../technique/01-decisions.md#dt-43--empreinte-dapercu-approuvée-liée-à-lempreinte-appliquée))
+     par **un seul** nouvel essai de release `orders`, rendu diagnostiquable : si la divergence se reproduit, le What-If recalculé
+     est conservé et comparé. Le contrôle fail-closed n'est ni assoupli ni contourné.
+   - **D2a — Luna, hors ligne, test d'abord.** Un test rouge par comportement, puis l'implémentation minimale. Fichiers, sans autre
+     (hors la tâche de publication d'artefact ci-dessous) : `reference/pilot/bicep-azdo/.ifs/templates/scripts/IfsRelease.psm1`
+     (`Invoke-IfsInfraDeploy`), `reference/release-module/tests/IfsRelease.Tests.ps1`, `reference/pilot/manifest.example.json`
+     (recalculé par `reference/tools/Update-ManifestExample.ps1`).
+     1. Comportement : quand `$current.fingerprint -ne $approved.fingerprint`, **avant** l'exception existante, l'aperçu
+        recalculé (l'`ifs-preview/v1` que `Invoke-IfsPreview` vient de produire) est écrit octet pour octet sous le nom
+        `ifs-preview-recalculated.json`, dans le répertoire d'`ifs-report.json`. Sans divergence, ce fichier n'existe pas. L'aperçu
+        approuvé n'est jamais réécrit ni écrasé. Si l'écriture échoue, l'exception d'origine est quand même levée avec le même
+        message (l'échec d'écriture ne remplace pas le refus). Ni schéma de rapport, ni champ de rapport, ni code d'erreur, ni
+        paramètre n'est ajouté ; `result` reste `FailedBeforeMutation`, aucune opération du journal ne passe à `Started`/`Done`,
+        `stack sub create` n'est pas appelé.
+     2. Tests (`az` simulé, comme ceux de l'étape 0 bis) : (a) divergence : le fichier existe, ses octets égalent l'aperçu
+        recalculé simulé, il valide le schéma d'aperçu v1 existant, sa `fingerprint` diffère de l'approuvée, l'aperçu approuvé est
+        inchangé octet pour octet, exception et `result` inchangés, aucun `Started`/`Done`, pas d'appel à `stack sub create` ;
+        (b) égalité : aucun `ifs-preview-recalculated.json` ; (c) écriture impossible : même exception qu'en (a) ; (d) tous les
+        tests de l'étape 0 bis restent verts sans modification.
+     3. Publication : lire dans `.ifs/templates/` la tâche qui publie l'artefact `ifs-report-<cible>`. Si son chemin couvre le
+        répertoire du rapport ou un motif incluant le nouveau fichier, aucun YAML ne change. Sinon, ajouter ce seul fichier au
+        chemin déjà publié par **cette même tâche** (pas de nouvelle tâche, pas de nouvel artefact), puis
+        `Test-ReferencePipelines.ps1`. Tout autre besoin : `BLOQUE`.
+     4. Vérification : Pester complet (`reference/release-module/tests`), PSScriptAnalyzer, `Test-Reference*.ps1`, build Bicep
+        inchangés et verts ; `git status --porcelain` limité aux fichiers listés ci-dessus. Commit
+        `fix(reference): conserver l'aperçu recalculé lors d'une divergence`, pied `Étape: P-08`, puis push de `impl/preuves`.
+   - **D2b — Luna, mise à jour ciblée du clone `C:/src/shop42` (même méthode que l'étape 0 ter, nouvel arbitrage borné).**
+     *Pourquoi* : les releases utilisent le module **embarqué dans l'artefact `infra` de leur CI**, pas le dépôt ; la correction n'agit
+     qu'après un nouveau CI `orders/infra` construit depuis un `main` qui la contient. Périmètre : `shop42` uniquement.
+     1. Préalables : D2a commitée et poussée ; sources `reference/pilot/bicep-azdo samples/witness-app` propres ; dans le clone :
+        `fetch origin`, arbre propre, nouvelle branche `fix/p08-keep-recalculated-preview` créée sur `origin/main`, `revision` 2,
+        `proofLineage` `p3-role`, projet `shop42`, `Assert-ProofManifestWorkingTree` réussi (le manifeste de la fusion de la PR #74
+        décrit l'arbre exactement, les deux fichiers P8 de `src/api` compris : la dérogation de 0 ter n'est plus nécessaire). Noter
+        le hash de `origin/main` : c'est le point de départ de l'invariant 2.
+     2. Répétition générale puis exécution réelle : reprendre le bloc de 0 ter.2 (mêmes `Remove-TempCopy`, mêmes noms de répertoires
+        temporaires, mêmes arrêts) avec ces seules substitutions : supprimer l'étape « 0. Dérogation P8 » et la remplacer par
+        l'assertion ci-dessus ; à l'étape 2, l'écart attendu de la publication neuve est **exactement** modifiés = les chemins gérés
+        modifiés par le commit D2a (`rtk git diff --name-only <parent-de-D2a> <D2a> -- reference/pilot/bicep-azdo`, préfixe retiré) +
+        `src/api/Program.cs` + `src/api/tests/WitnessAppEndpointTests.cs` (marqueur P8 absent de la publication neuve) ; ajoutés =
+        `.ifs/install/tests/IfsInstall.Tests.ps1` ; retirés = `data/infra/server-diagnostics.bicep` ; `core`, `platform`, `orders`
+        identiques, `data` différente (valeurs de 0 ter conservées) ; à l'étape 3, ne copier **que** les chemins modifiés par D2a ;
+        l'ensemble des chemins gérés ne change pas (aucun ajout au manifeste), seul le manifeste est recalculé
+        (`Write-ProofManifest`) ; à l'étape 4, le manifeste final égale le manifeste de départ sauf les empreintes de ces chemins
+        et `commit`, les quatre `units.*.fingerprint` sont **égales** à celles de départ, et `rtk proxy git diff --no-index --numstat`
+        entre chaque fichier du clone et la publication neuve donne les mêmes nombres de lignes ajoutées/retirées que le commit D2a
+        sur le fichier source. Toute exception ou tout écart : arrêt, rien corrigé à la main, `BLOQUE` avec la sortie complète. La
+        sortie complète de la répétition et de l'exécution est conservée sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\D2b\`.
+     3. Avant de pousser : lire `trigger`/`pr`/`resources.pipelines` des YAML du clone. Autorisés, car sans mutation Azure : la
+        validation de PR (sans connexion Azure, P-04) et le CI `orders/infra` **uniquement si** son YAML ne contient ni connexion de
+        service Azure ni étape de déploiement. Si la fusion déclenche (directement ou par `resources.pipelines.trigger`) un
+        `release.yml`, un pipeline d'application ou un CI qui se connecte à Azure : ne pas pousser, `BLOQUE`.
+     4. Commit dans Azure Repos (seuls les chemins modifiés + `.ifs/manifest.json`), corps : « Mise à jour ciblée, pas une
+        republication : <chemins> viennent de IFS <commit D2a> ; rien d'autre ne change ; units.* inchangées », push, PR vers `main`
+        (même procédure que #51/#52/#74), fusion. Attendre la fin du CI `orders/infra` déclenché (numéro noté N). Vérifier :
+        `rtk git -C C:/src/shop42 diff --stat <origin/main de départ> origin/main` ne liste que les chemins attendus ; CI N réussi ;
+        l'artefact `infra` de N contient `IfsRelease.psm1` de même empreinte logique que celui du clone, et `orders/infra/main.bicep` et
+        `main.dev.bicepparam` de même SHA-256 que `inputSha256.template` et `inputSha256.parameters` des `metadata.json` D1b.
+        Capturer : `Save-AdoRecordings.ps1 … -Scenario p8-d2b-ci-orders-run-<N>`.
+   - **D3 — conditions, puis essai unique.** Luna ne lance **aucune** release `orders` tant que **toutes** les conditions suivantes
+     ne sont pas vérifiées, la même session, et consignées dans `NEXT.md` (ligne « Ressources Azure créées… », avec l'heure UTC).
+     Une condition fausse ou invérifiable : ne rien lancer, `BLOQUE` avec la condition en cause.
+     - **C1** D2a commitée et poussée, ses vérifications vertes (sortie citée).
+     - **C2** D2b terminée : conditions de la sous-étape 4 satisfaites, CI N réussi.
+     - **C3** Lecture seule des exécutions de `shop42` : aucune en cours ni en file ; `release.yml` d'`orders/infra` n'a aucun déclencheur
+       automatique ; aucune livraison applicative prévue jusqu'à la fin de l'essai.
+     - **C4** État DEV inchangé : une passe du script D1b (même code, boucle ramenée à 1, `AZURE_CORE_ONLY_SHOW_ERRORS=true` dans le seul
+       processus, artefact `infra` de N, dossier `D3-pre`) donne l'empreinte `77dc939ffd65b288a6534f5172191753ea05a06bb3d14bdad7d9626e112a87b1`.
+       Un autre résultat : arrêt, Azure a changé sans mutation connue.
+     - **C5** Inventaire en lecture seule égal à celui d'après #748 (163 ressources, 26 groupes, 7 piles, 57 rôles, 7 budgets, mêmes
+       IDs, comparaison insensible à la casse) ; coût réel et prévision du jour relevés dans l'inventaire ; l'absence de plafond
+       personnel décidée le 2026-10-17 est rappelée. Tout écart d'inventaire : arrêt.
+     - **C6** Image applicative DEV et PRD = image D2 (digests consignés avant l'essai).
+     - **C7** L'utilisateur, membre de « Shop42 Release Approvers », est disponible pour les approbations (Luna n'approuve jamais) :
+       P-08 passe `EN_ATTENTE_DE_RECETTE` dès l'aperçu DEV publié, avec la consigne d'approbation ci-dessous.
+     - **C8** Les effets de l'aperçu DEV publié sont : 0 création, 0 recréation, 0 suppression, 0 révocation, 0 opération en attente
+       (le détail des modifications est relu par l'utilisateur). Sinon : ne pas approuver, consigner, arrêt.
+
+     **Essai unique** (le déploiement DEV modifiera réellement DEV : c'est le contenu normal de la release `orders`, le même que celui
+     de l'aperçu #748). Ordre :
+     1. Lancer à la main `orders/infra/pipelines/release.yml` en fixant la ressource de CI sur **N** (version explicite). Si l'interface ne
+        permet pas de fixer N : `BLOQUE`. Noter l'identifiant de run R et l'heure.
+     2. Aperçu DEV publié : capturer (`p8-d3-preview-dev-run-<R>`), vérifier C8. **Consigne d'approbation à l'utilisateur** : approuver
+        DEV seulement si C8 est vrai et si aucune autre exécution n'a démarré ; sinon rejeter et prévenir.
+     3. Résultat DEV, trois cas exclusifs :
+        a. `Succeeded` : vérifier dans `ifs-report-dev` (`ifs-report/v2`) `approvedPreviewFingerprint` = `fingerprint` de l'aperçu publié.
+           Passer à PRD : même procédure (aperçu PRD capturé, mêmes effets exigés qu'en C8, aucune livraison applicative entre aperçu
+           et approbation), approbation par l'utilisateur, puis dans `ifs-report-prd` égalité des empreintes approuvée/appliquée, image D2
+           conservée, `/health` = 200. Capturer `p8-d3-result-dev-run-<R>` et `p8-d3-result-prd-run-<R>`. Seul ce cas permet de consigner
+           P8 **OK** dans `resultats.md`.
+        b. `FailedBeforeMutation` par divergence d'empreinte : **arrêt**. Ne pas approuver PRD, ne pas relancer, ne rien forcer. Télécharger
+           `ifs-report-dev` avec `ifs-preview-recalculated.json` et exécuter `Compare-IfsPreviews` entre l'aperçu publié de R et cet
+           aperçu recalculé (même contexte, comparaison légitime : mêmes run et identité). Consigner verdict et écarts (clés hachées,
+           jamais de valeurs) dans `diagnostic-p8-748.md` § D3 : cela diagnostique **R**, pas #748. P8 reste KO.
+        c. Toute autre issue (échec d'une étape, rapport `v1`, fichier de rapport absent, approbation expirée) : arrêt, capture, constat.
+     4. Dans les cas a et b, comparer ensuite l'aperçu publié de R à la passe `D3-pre` (identité personnelle) ; consigner le verdict comme
+        **observation**, jamais comme cause. Refaire le contrôle de coût et d'inventaire, puis capturer l'état final.
+     5. **Pas de second essai.** Après b ou c, `BLOQUE` avec question à Claude (verdict de comparaison, captures). Une nouvelle release
+        exige une nouvelle décision de Claude. Le nettoyage de `shop42` reste suspendu jusqu'à la réussite de P8 (cas a) et des autres
+        conditions de la procédure T.
 1. Avant toute commande Azure, exiger dans `NEXT.md` un plafond chiffré confirmé, une estimation actualisée et
    l'inventaire de référence. Le feu vert général ne remplace pas ce verrou. Une fois le verrou franchi, exécuter la
    recette dans l'ordre P1, P9, P3, P8, P2, P4, P5, P7, avec un seul jeu Azure à la fois. Après chaque run, capturer les

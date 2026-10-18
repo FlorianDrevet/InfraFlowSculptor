@@ -10,12 +10,12 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `BLOQUE` |
+| **Statut** | `A_FAIRE` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
-| **Verrou** | P-08 : D1a/D1b terminés ; décision Claude requise pour détailler D2/D3 ; aucun pipeline ou release avant les conditions D3 |
+| **Verrou** | P-08 : D1a/D1b terminés ; D2/D3 détaillés à l'[étape 0 quinquies](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) ; aucun pipeline ou release avant D2a, D2b et les conditions C1 à C8 de D3 |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
-| **Dernière mise à jour** | 2026-10-18 — Luna |
+| **Dernière mise à jour** | 2026-10-18 — Claude |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
 résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question d'arbitrage en attente).
 
@@ -66,13 +66,15 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 - S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
 - S-17 — sur un clone neuf, suivre [README — Démarrer](README.md#démarrer-windows) jusqu'à « Bonjour Alice Martin ». Les prérequis passent ; le démarrage du clone reste à vérifier quand les ports fixes 4200, 8080, 5257 et 3000 seront libres, car l'AppHost de travail reste actif.
-- P-08 — P1, P9, P3a et P3b sont OK et consignées. P8 reste KO : #738 est conservé comme preuve négative ; #740 est fonctionnellement réussi mais incomplet, car son rapport v1 ne relie pas l’aperçu approuvé. La PR #74 a livré le rapport v2 et le CI #746 a réussi. Au run #748, `approvedPreviewFingerprint` correspond au preview publié, mais le recalcul sous verrou a divergé en DEV : `FailedBeforeMutation`, aucune étape exécutée, PRD ignorée. L’artefact `ifs-preview-dev` est disponible ; les logs de preview #9 et de déploiement #20 ne contiennent pas de JSON What-If recalculé identifiable. Le #748 reste non diagnostiqué. D1a et D1b sont terminés ; cinq aperçus DEV sous l’identité personnelle ont donné quatre comparaisons `Identique` et l’empreinte commune `77dc939f…87b1`. Le détail est dans [`diagnostic-p8-748.md`](docs/plan/preuves/diagnostic-p8-748.md) ; captures et comparaisons restent hors dépôt sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\D1b\20261017T215336Z\`. D1b établit uniquement la répétabilité personnelle. D2/D3 ne sont pas détaillés ; aucun pipeline ou release avant leur définition par Claude et les conditions D3. Le nettoyage Shop42 reste suspendu.
+- P-08 — P1, P9, P3a et P3b sont OK et consignées. P8 reste KO : #738 est conservé comme preuve négative ; #740 est fonctionnellement réussi mais incomplet, car son rapport v1 ne relie pas l’aperçu approuvé. La PR #74 a livré le rapport v2 et le CI #746 a réussi. Au run #748, `approvedPreviewFingerprint` correspond au preview publié, mais le recalcul sous verrou a divergé en DEV : `FailedBeforeMutation`, aucune étape exécutée, PRD ignorée. L’artefact `ifs-preview-dev` est disponible ; les logs de preview #9 et de déploiement #20 ne contiennent pas de JSON What-If recalculé identifiable. Le #748 reste non diagnostiqué. D1a et D1b sont terminés ; cinq aperçus DEV sous l’identité personnelle ont donné quatre comparaisons `Identique` et l’empreinte commune `77dc939f…87b1`. Le détail est dans [`diagnostic-p8-748.md`](docs/plan/preuves/diagnostic-p8-748.md) ; captures et comparaisons restent hors dépôt sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\D1b\20261017T215336Z\`. D1b établit uniquement la répétabilité personnelle. D2/D3 sont détaillés (étape 0 quinquies) : #748 reste définitivement non diagnostiqué ; D2a (code hors ligne) et D2b (clone `shop42`) précèdent un essai unique de release soumis aux conditions C1 à C8 de D3. Le nettoyage Shop42 reste suspendu.
 Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.
 
 ## Questions pour Claude
 
-**Question P-08 — suite de 0 quater, D2/D3.** Le plan demande à Claude de détailler D2/D3 avant tout nouveau pipeline ou release, mais ne donne pas encore leur protocole, identité et cible, commandes, artefacts attendus, critères d’arrêt, ni les conditions D3 à vérifier. D1a n’a retrouvé aucun What-If recalculé identifiable dans les artefacts et logs examinés ; D1b a produit cinq aperçus personnels DEV identiques sans diagnostiquer #748. Options observées, sans arbitrage : (1) garder #748 non diagnostiqué et définir D2/D3 comme preuve indépendante ; (2) tenter d’abord une nouvelle récupération du What-If recalculé original si une source existe. Claude, quelle suite retenir et quel protocole exact écrire pour D2/D3 ?
+*(Aucune question en attente.)*
+
+**Arbitrage P-08 du 2026-10-18 (Claude CLI) — D2/D3.** Réponse à la question « suite de 0 quater » : **option 1**. #748 reste définitivement non diagnostiqué (aucune source connue du What-If recalculé ; option 2 écartée, réouverture seulement si l'utilisateur désigne une source absente de l'audit D1a). Protocole complet à l'[étape 0 quinquies](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) : **D2a** (Luna, hors ligne, test d'abord) conserve `ifs-preview-recalculated.json` en cas de divergence sans toucher au fail-closed ; **D2b** met à jour le clone `shop42` de façon ciblée (même méthode que 0 ter), la release utilisant le module embarqué dans le CI ; **D3** n'autorise un **unique** essai de release `orders` (CI N construit après D2b, identité de la service connection, DEV puis PRD, approbations par l'utilisateur) que si les conditions C1 à C8 sont vérifiées et consignées ici. Divergence ou autre échec : arrêt, comparaison hors ligne publié/recalculé (diagnostic de **ce** run, pas de #748), `BLOQUE`, pas de second essai sans nouvelle décision. À noter : l'empreinte publiée par #748 (`bec9d7c6…`) diffère de celle de D1b (`77dc939f…`) ; cause non établie.
 
 **Arbitrage P-08 du 2026-10-17 (Claude CLI) — D1a/D1b.** L'étape 0 ter existante (mise à jour ciblée du clone `shop42`, PR #74) reste inchangée. Le diagnostic s'ajoute en 0 quater. D1a est hors ligne : audit des captures/artefacts, comparateur testé sur fixtures synthétiques et protocole. D1b mesure cinq aperçus DEV via le module de la CI #746 sous l'identité Azure CLI personnelle, marquée comme différente de la service connection. Aucun pipeline ni mutation. Ces passes ne prouvent rien causalement sur #748. Si le What-If recalculé du #748 ne peut pas être récupéré, ce run reste non diagnostiqué.
 
@@ -83,7 +85,7 @@ Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 **Décision P-08 (Claude, 2026-10-17) — option B.** Le refus fail-closed est conservé (aucun changement de code). La recette P8 ([§ 5](docs/plan/recettes/01-preuves.md#5-p8--livraison-applicative-pendant-lattente-dinfrastructure)) est révisée : #738 est le cas négatif conservé (`FailedBeforeMutation` attendu), ni forcé ni rejoué.
 
 Prochaines actions :
-1. Claude précise D2/D3 dans le plan ou la documentation technique et remet P-08 à `A_FAIRE`.
-2. Luna exécute ensuite uniquement les étapes D2/D3 détaillées ; aucun pipeline ni release avant que les conditions D3 soient réunies.
-3. Garder #748 non diagnostiqué tant que son What-If recalculé original n’est pas retrouvé ; conserver le fail-closed et #738 comme preuve négative.
+1. Luna exécute dans l'ordre D2a, D2b puis D3 de l'étape 0 quinquies ; aucun pipeline ni release hors ce qu'elle autorise (validation de PR et CI `orders/infra` sans connexion Azure, après contrôle des YAML).
+2. Aucun lancement de release avant C1 à C8 vérifiées et consignées ici ; un seul essai.
+3. Garder #748 non diagnostiqué ; conserver le fail-closed et #738 comme preuve négative.
 4. Nettoyage Shop42 suspendu jusqu’à la réussite de P8 et des autres conditions de la procédure T.
