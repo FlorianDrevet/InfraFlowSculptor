@@ -13,9 +13,9 @@
 | **Statut** | `A_FAIRE` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
-| **Verrou** | P-08 : D1a/D1b terminés ; D2/D3 détaillés à l'[étape 0 quinquies](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) ; aucun pipeline ou release avant D2a, D2b et les conditions C1 à C8 de D3 |
+| **Verrou** | P-08 : D1a/D1b et D2a terminés ; D2/D3 détaillés à l'[étape 0 quinquies](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) ; aucun pipeline ou release avant D2b et les conditions C1 à C8 de D3 |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
-| **Dernière mise à jour** | 2026-10-18 — Claude |
+| **Dernière mise à jour** | 2026-10-18 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
 résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question d'arbitrage en attente).
 
@@ -78,14 +78,16 @@ Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 
 **Arbitrage P-08 du 2026-10-17 (Claude CLI) — D1a/D1b.** L'étape 0 ter existante (mise à jour ciblée du clone `shop42`, PR #74) reste inchangée. Le diagnostic s'ajoute en 0 quater. D1a est hors ligne : audit des captures/artefacts, comparateur testé sur fixtures synthétiques et protocole. D1b mesure cinq aperçus DEV via le module de la CI #746 sous l'identité Azure CLI personnelle, marquée comme différente de la service connection. Aucun pipeline ni mutation. Ces passes ne prouvent rien causalement sur #748. Si le What-If recalculé du #748 ne peut pas être récupéré, ce run reste non diagnostiqué.
 
-**Statuts décidés par Claude (arbitrage initial du 2026-10-17).** P-08 passe à `EN_COURS` après l'arbitrage. Après D1a, `EN_ATTENTE_DE_RECETTE` ; à réception des captures D1b, `python tools/plan/gate.py resume P-08`, puis P-08 reste `EN_COURS`. Pas de revue intermédiaire via `gate.py` ; Claude relit P-08 au verrou final R-03. Le statut courant est maintenant `BLOQUE`, car le plan ne détaille pas D2/D3.
+**Statuts décidés par Claude (arbitrage initial du 2026-10-17).** P-08 passe à `EN_COURS` après l'arbitrage. Après D1a, `EN_ATTENTE_DE_RECETTE` ; à réception des captures D1b, `python tools/plan/gate.py resume P-08`, puis P-08 reste `EN_COURS`. Pas de revue intermédiaire via `gate.py` ; Claude relit P-08 au verrou final R-03. Le blocage sur le détail de D2/D3 a été résolu par l'arbitrage Claude CLI du 2026-10-18 ; `gate.py check` accepte maintenant la reprise.
 
 **Résultat D1b (Luna, 2026-10-17).** Cinq captures et métadonnées validées dans `%LOCALAPPDATA%\InfraFlowSculptor\P08\D1b\20261017T215336Z\`. Les quatre comparaisons hors ligne sont `Identique`, fingerprint `77dc939ffd65b288a6534f5172191753ea05a06bb3d14bdad7d9626e112a87b1` ; `gate.py resume P-08` a repris l’étape le 2026-10-18. La répétabilité personnelle ne diagnostique pas #748.
 
 **Décision P-08 (Claude, 2026-10-17) — option B.** Le refus fail-closed est conservé (aucun changement de code). La recette P8 ([§ 5](docs/plan/recettes/01-preuves.md#5-p8--livraison-applicative-pendant-lattente-dinfrastructure)) est révisée : #738 est le cas négatif conservé (`FailedBeforeMutation` attendu), ni forcé ni rejoué.
 
+**D2a terminé (Luna, 2026-10-18).** Commit `bbf1d86` poussé sur `impl/preuves`. Pester complet : 122/122 ; `Test-ReferenceBicep.ps1`, `Test-ReferenceDeterminism.ps1` et `Test-ReferencePipelines.ps1` réussis ; manifeste cohérent sur 77 fichiers. Ces sorties établissent C1 pour D3.
+
 Prochaines actions :
-1. Luna exécute dans l'ordre D2a, D2b puis D3 de l'étape 0 quinquies ; aucun pipeline ni release hors ce qu'elle autorise (validation de PR et CI `orders/infra` sans connexion Azure, après contrôle des YAML).
+1. Luna exécute D2b dans le clone `C:/src/shop42`, selon l'étape 0 quinquies ; contrôler les triggers avant le push et s'arrêter si une release, un pipeline applicatif ou un CI connecté à Azure peut être déclenché.
 2. Aucun lancement de release avant C1 à C8 vérifiées et consignées ici ; un seul essai.
 3. Garder #748 non diagnostiqué ; conserver le fail-closed et #738 comme preuve négative.
 4. Nettoyage Shop42 suspendu jusqu’à la réussite de P8 et des autres conditions de la procédure T.
