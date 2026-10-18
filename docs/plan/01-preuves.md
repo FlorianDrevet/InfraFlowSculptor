@@ -854,29 +854,76 @@ action impossible à réaliser avec les accès déjà ouverts.
         entre chaque fichier du clone et la publication neuve donne les mêmes nombres de lignes ajoutées/retirées que le commit D2a
         sur le fichier source. Toute exception ou tout écart : arrêt, rien corrigé à la main, `BLOQUE` avec la sortie complète. La
         sortie complète de la répétition et de l'exécution est conservée sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\D2b\`.
-     3. Avant de pousser : lire `trigger`/`pr`/`resources.pipelines` des YAML du clone. Autorisés, car sans mutation Azure : la
-        validation de PR (sans connexion Azure, P-04) et le CI `orders/infra` **uniquement si** son YAML ne contient ni connexion de
-        service Azure ni étape de déploiement. Si la fusion déclenche (directement ou par `resources.pipelines.trigger`) un
-        `release.yml`, un pipeline d'application ou un CI qui se connecte à Azure : ne pas pousser, `BLOQUE`.
-     4. Commit dans Azure Repos (seuls les chemins modifiés + `.ifs/manifest.json`), corps : « Mise à jour ciblée, pas une
-        republication : <chemins> viennent de IFS <commit D2a> ; rien d'autre ne change ; units.* inchangées », push, PR vers `main`
-        (même procédure que #51/#52/#74), fusion. Attendre la fin du CI `orders/infra` déclenché (numéro noté N). Vérifier :
-        `rtk git -C C:/src/shop42 diff --stat <origin/main de départ> origin/main` ne liste que les chemins attendus ; CI N réussi ;
-        l'artefact `infra` de N contient `IfsRelease.psm1` de même empreinte logique que celui du clone, et `orders/infra/main.bicep` et
-        `main.dev.bicepparam` de même SHA-256 que `inputSha256.template` et `inputSha256.parameters` des `metadata.json` D1b.
-        Capturer : `Save-AdoRecordings.ps1 … -Scenario p8-d2b-ci-orders-run-<N>`.
-     5. **Verrou D2b.3 constaté (2026-10-18).** L'audit des YAML du clone établit que la fusion déclencherait `orders/infra/ci.yml`
-        (autorisé : build Bicep, sans Azure) **puis** `orders/infra/pipelines/release.yml` par sa ressource pipeline (trigger `main`),
-        avec une étape DEV non protégée : la règle du 3 s'applique, **rien n'est poussé**. Les sous-étapes 3 et 4 restent suspendues
-        jusqu'à la réponse de l'utilisateur à la question de `NEXT.md` (options A, B, C) ; Claude amende alors cette sous-étape par un
-        arbitrage daté. Aucune option n'est choisie ici, et aucun pipeline, push ou fusion n'est autorisé entre-temps.
+     3. **Garde DEV, puis audit des déclencheurs — avant tout commit, push, PR ou fusion** (option C, arbitrage du 2026-10-18,
+        voir la sous-étape 5). Dans cet ordre ; une vérification fausse ou invérifiable : ne rien commiter ni pousser, `BLOQUE`.
+        1. *Garde présente.* L'environnement `shop42-dev` (ID 10, organisation `floriandrevet0332`, projet `shop42`) porte, sur sa
+           page « Approvals and checks », un contrôle **Pre-check approvals** placé **avant** l'Exclusive Lock existant : approbateur
+           `[shop42]\Shop42 Release Approvers` (un seul membre suffit), « Allow approvers to approve their own runs » **désactivé**,
+           délai 30 jours. Luna, sous autorisation explicite de Florian, a configuré le check via l'interface le 2026-10-18 (14:43 UTC) ;
+           la capture de la page et de la fiche est visible dans cette session (aucune capture locale enregistrée). Luna la cite et, si
+           elle peut lire l'état en lecture seule, le recoupe ; hors cette configuration autorisée, elle ne crée, ne modifie et ne
+           supprime jamais ce contrôle. Si la capture est indisponible, est antérieure à une modification de l'environnement connue ou
+           diffère de cette description : arrêt.
+        2. *Seul `Deploy_dev` écrit.* Lecture hors ligne de `.ifs/templates/infra-target-stages.yml` et de
+           `orders/infra/pipelines/release.yml` **dans le clone mis à jour** : (a) `Preview_dev` est un `job` ordinaire, sans
+           `environment`, dont la seule tâche Azure exécute `Invoke-IfsInfraPreview.ps1` (aperçu en lecture seule) ; (b) `Deploy_dev`
+           est le seul `deployment` de la cible, lié à `environment: shop42-dev`, et la seule tâche qui exécute
+           `Invoke-IfsInfraDeploy.ps1` (donc la seule qui écrit dans Azure) ; (c) aucun autre fichier de `.ifs/templates/` ni de
+           `orders/` n'appelle `Invoke-IfsInfraDeploy`, `stack sub create` ou `az deployment` en écriture pour la cible dev ;
+           (d) `Deploy_prd` dépend de `Deploy_dev` (un rejet de `Deploy_dev` ne laisse donc pas PRD s'exécuter). Un écart : arrêt.
+        3. *Déclencheurs.* Lire `trigger`/`pr`/`resources.pipelines` des YAML du clone. Autorisés : la validation de PR (sans
+           connexion Azure, P-04) ; le CI `orders/infra` (`ci.yml` → `infra-ci.yml`, **uniquement si** son YAML ne contient ni
+           connexion de service Azure ni étape de déploiement) ; et **le seul run de release automatique de `release.yml`**, déclenché
+           par sa ressource pipeline sur ce CI, **à la condition que 1 et 2 soient vérifiés** (traité en 4.d). Tout autre
+           déclencheur (pipeline d'application, autre CI qui se connecte à Azure, autre ressource pipeline, planification) : ne pas
+           pousser, `BLOQUE`.
+     4. **Seulement si la sous-étape 3 est entièrement vérifiée** : commit, push, PR, fusion, CI N, puis run de release automatique R0.
+        1. Commit dans Azure Repos (seuls les chemins modifiés + `.ifs/manifest.json`), corps : « Mise à jour ciblée, pas une
+           republication : <chemins> viennent de IFS <commit D2a> ; rien d'autre ne change ; units.* inchangées », push, PR vers `main`
+           (même procédure que #51/#52/#74), fusion : Luna fait le commit/push, ouvre la PR et fusionne la branche, sous la délégation explicite
+           donnée par Florian pour poursuivre P-08. Aucune autre branche ni autre PR.
+        2. Attendre la fin du CI `orders/infra` déclenché (numéro noté N). Vérifier :
+           `rtk git -C C:/src/shop42 diff --stat <origin/main de départ> origin/main` ne liste que les chemins attendus ; CI N réussi ;
+           l'artefact `infra` de N contient `IfsRelease.psm1` de même empreinte logique que celui du clone, et `orders/infra/main.bicep` et
+           `main.dev.bicepparam` de même SHA-256 que `inputSha256.template` et `inputSha256.parameters` des `metadata.json` D1b.
+           Capturer : `Save-AdoRecordings.ps1 … -Scenario p8-d2b-ci-orders-run-<N>`.
+        3. **Run de release automatique R0 (attendu).** La fin réussie de N déclenche `release.yml` par sa ressource pipeline. Ce run,
+           noté **R0**, n'est **pas** l'essai unique de D3, ne compte pour aucune des conditions C1 à C9 et ne sert à aucune preuve.
+           Aucune release n'est lancée à la main pour le remplacer. Si R0 n'apparaît pas dans les 10 minutes qui suivent la fin de N :
+           le consigner tel quel (aucun R0, trigger de ressource non observé) et ne rien déclencher ; C3 s'applique alors sans
+           exception.
+        4. **Traitement de R0 : bloqué puis rejeté, jamais approuvé.** `Preview_dev` de R0 peut s'exécuter (lecture seule) et publier
+           `ifs-preview-dev`. `Deploy_dev` doit ensuite rester **en attente du Pre-check approvals**, sans démarrer ses étapes.
+           Sous la délégation explicite de Florian, Luna peut **rejeter** l'approbation de R0 dans l'interface, le run automatique connu
+           seulement ; **personne n'approuve R0, ni pour « voir »**, Luna jamais. Elle ne touche à aucun autre run. Consigner dans
+           `NEXT.md` : ID de R0, heure UTC de son apparition et du
+           rejet, état final de chaque stage (`Preview_dev` terminé, `Deploy_dev` rejeté, `Deploy_prd` ignoré), preuve que
+           `Deploy_dev` n'a jamais démarré (timeline : aucune tâche exécutée, pas d'artefact `ifs-report-dev`), capture
+           (`p8-d2b-release-auto-run-<R0>`) et le fait que R0 n'est pas l'essai D3.
+        5. **Arrêt immédiat si la garde ne tient pas** : `Deploy_dev` démarre ou exécute une tâche sans approbation, R0 est approuvé
+           par erreur, ou un autre run de release apparaît (ID ≠ R0, en cours ou en file). Luna arrête et demande à Florian au lieu d'annuler
+           le run en cause ; `BLOQUE` avec la timeline ; D3 est alors annulé tant que Claude n'a pas arbitré. L'état Azure est relevé
+           par l'inventaire en lecture seule de C5.
+     5. **Arbitrage D2b.3 du 2026-10-18 — option C retenue.** Le verrou constaté à l'audit (la fusion de D2b déclenche `ci.yml` puis,
+        par sa ressource pipeline, `release.yml` avec une étape DEV alors non protégée) est levé par la garde de la sous-étape 3.1,
+        configurée par Luna, sous autorisation explicite de Florian, via l'interface (aucun pipeline, release, commit, push, PR ni fusion n'avait eu lieu).
+        Les options A (branche non fusionnée) et B (désactivation de la définition de pipeline) sont écartées : A laisse `main` sans
+        la mise à jour, B repose sur un comportement non vérifiable avant d'agir. Ordre imposé : garde vérifiée → fusion → CI N →
+        R0 bloqué et rejeté → D3. Le texte d'instructions du contrôle (« ne pas approuver la release automatique déclenchée par la
+        fusion ») en est la consigne d'exécution côté interface.
    - **D3 — conditions, puis essai unique.** Luna ne lance **aucune** release `orders` tant que **toutes** les conditions suivantes
      (C1 à C9) ne sont pas vérifiées, la même session, et consignées dans `NEXT.md` (ligne « Ressources Azure créées… », avec l'heure UTC).
      Une condition fausse ou invérifiable : ne rien lancer, `BLOQUE` avec la condition en cause.
      - **C1** D2a commitée et poussée, ses vérifications vertes (sortie citée).
-     - **C2** D2b terminée : conditions de la sous-étape 4 satisfaites, CI N réussi.
-     - **C3** Lecture seule des exécutions de `shop42` : aucune en cours ni en file ; `release.yml` d'`orders/infra` n'a aucun déclencheur
-       automatique ; aucune livraison applicative prévue jusqu'à la fin de l'essai.
+     - **C2** D2b terminée : conditions de la sous-étape 4 satisfaites, CI N réussi, et R0 traité selon 4.4 (ou absence de R0
+       consignée selon 4.3).
+     - **C3** Lecture seule des exécutions de `shop42` : **aucune exécution en cours ni en file, sans exception**, et **au plus un
+       run de release déjà terminé hors de l'essai : R0**, le run automatique connu de 4.3, dont l'ID et l'état sont consignés dans
+       `NEXT.md`, **rejeté avant mutation** (`Deploy_dev` jamais démarré, pas d'`ifs-report-dev`, `Deploy_prd` ignoré). Tout autre run
+       de release depuis la fusion (ID ≠ R0), tout R0 non terminal ou ayant écrit : arrêt. R0 ne compte pas comme l'essai unique.
+       `release.yml` d'`orders/infra` n'a pas d'autre déclencheur automatique que sa ressource pipeline sur le CI ; aucun push sur
+       `main` ni aucun CI `orders/infra` n'est prévu ou en attente jusqu'à la fin de l'essai (un nouveau CI relancerait ce
+       déclencheur) ; aucune livraison applicative prévue.
      - **C4** État DEV inchangé : une passe du script D1b (même code, boucle ramenée à 1, `AZURE_CORE_ONLY_SHOW_ERRORS=true` dans le seul
        processus, artefact `infra` de N, dossier `D3-pre`) donne l'empreinte `77dc939ffd65b288a6534f5172191753ea05a06bb3d14bdad7d9626e112a87b1`.
        Un autre résultat : arrêt, Azure a changé sans mutation connue.
@@ -892,16 +939,28 @@ action impossible à réaliser avec les accès déjà ouverts.
        kit n'est pas protégée par défaut ([recette § 2](recettes/01-preuves.md#2-p1--première-installation-et-application-témoin) :
        seule PRD est approuvée) ; sans cette garde, C7, C8 et l'étape 2 de l'essai sont inexécutables, C8 ne se vérifiant qu'après
        l'application. Vérifié par lecture hors ligne de `infra-release.yml` (toute écriture Azure du stage DEV est dans un job de
-       déploiement lié à l'environnement `shop42-dev`, l'aperçu n'écrit rien) **et** par capture, fournie par l'utilisateur, de la
-       page de contrôles de cet environnement. Mise en place : action d'interface de l'utilisateur, selon la réponse à la question de
-       `NEXT.md` ; Luna ne modifie jamais un environnement ni un contrôle Azure DevOps.
+       déploiement lié à l'environnement `shop42-dev`, l'aperçu n'écrit rien) **et** par la capture de la page de contrôles de cet
+       environnement, visible dans la session. Mise en place : Luna, sous autorisation explicite de Florian, a configuré le check via
+       l'interface le 2026-10-18 à 14:43 UTC (option C, sous-étape D2b.3.1) ; hors cette configuration autorisée, Luna ne modifie
+       jamais un environnement ni un contrôle Azure DevOps. Re-vérifier en D3 que le contrôle **Pre-check approvals** est toujours en
+       place, inchangé, **avant** le lancement. *Point d'attention :* le groupe « Shop42 Release Approvers » ne comporte qu'**un
+       membre, Florian DREVET** (constaté en lecture seule dans Project Settings > Permissions > Shop42 Release Approvers > Members).
+       « Allow approvers to approve their own runs » est désactivé : Florian ne pourra pas approuver le run D3 qu'il aura lancé
+       lui-même. **D3 ne démarre pas** tant que l'utilisateur n'a pas choisi une solution de séparation des approbations, consignée :
+       (i) un second membre humain du groupe peut approuver, ou (ii) l'utilisateur active cette option dans l'interface **après** le
+       traitement de R0 et **avant** D3, avec une nouvelle capture. Luna n'active pas l'auto-approbation et n'ajoute personne au
+       groupe. Sans l'une des deux issues, ne rien lancer (`BLOQUE`). Les instructions du contrôle restent vraies : aucune approbation de R0 ; pour D3, approbation seulement après
+       relecture de l'aperçu C8.
 
      **Essai unique** (le déploiement DEV modifiera réellement DEV : c'est le contenu normal de la release `orders`, le même que celui
      de l'aperçu #748). Ordre :
+     0. Cet essai est **distinct de R0** (run automatique rejeté, sous-étape D2b.4.4) : R0 n'est ni réapprouvé, ni relancé, ni compté.
+        L'essai unique est le premier et seul run de release lancé à la main après C1 à C9.
      1. Lancer à la main `orders/infra/pipelines/release.yml` en fixant la ressource de CI sur **N** (version explicite). Si l'interface ne
-        permet pas de fixer N : `BLOQUE`. Noter l'identifiant de run R et l'heure.
-     2. Aperçu DEV publié : capturer (`p8-d3-preview-dev-run-<R>`), vérifier C8. **Consigne d'approbation à l'utilisateur** : approuver
-        DEV seulement si C8 est vrai et si aucune autre exécution n'a démarré ; sinon rejeter et prévenir.
+        permet pas de fixer N : `BLOQUE`. Noter l'identifiant de run R (≠ R0) et l'heure.
+     2. Aperçu DEV publié, `Deploy_dev` en attente du Pre-check approvals : capturer (`p8-d3-preview-dev-run-<R>`), vérifier C8.
+        **Consigne d'approbation à l'utilisateur** : approuver `Deploy_dev` seulement si C8 est vrai et si aucune autre exécution n'a
+        démarré ; sinon rejeter et prévenir. Luna n'approuve jamais.
      3. Résultat DEV, trois cas exclusifs :
         a. `Succeeded` : vérifier dans `ifs-report-dev` (`ifs-report/v2`) `approvedPreviewFingerprint` = `fingerprint` de l'aperçu publié.
            Passer à PRD : même procédure (aperçu PRD capturé, mêmes effets exigés qu'en C8, aucune livraison applicative entre aperçu

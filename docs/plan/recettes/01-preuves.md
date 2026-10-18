@@ -400,6 +400,20 @@ elles utilisent le CI `orders/infra` N construit après la mise à jour D2b du c
 `ifs-preview-recalculated.json`) et non l'artefact du CI #746. Si le DEV diverge de nouveau, l'essai s'arrête (cas b de D3) :
 ni relance, ni approbation de PRD, P8 reste KO.
 
+**Garde DEV et run automatique R0 (arbitrage du 2026-10-18, option C).** L'environnement `shop42-dev` porte un contrôle
+*Pre-check approvals* (groupe `Shop42 Release Approvers`, un membre suffit, auto-approbation désactivée, 30 jours) placé avant
+l'Exclusive Lock : **aucune écriture DEV sans approbation humaine**. Luna, sous autorisation explicite de Florian, a configuré ce
+check via l'interface le 2026-10-18 ; la capture de la page et de la fiche est visible dans la session (aucune capture locale
+enregistrée). Sous la délégation explicite donnée par Florian pour poursuivre P-08, Luna fait le commit/push, ouvre la PR et fusionne
+la mise à jour D2b (étape 0 ci-dessous) ; cette fusion déclenche le CI N, puis un run de release automatique **R0** par la ressource
+pipeline : son aperçu DEV peut s'exécuter, `Deploy_dev` reste bloqué, et Luna peut **rejeter R0, le run automatique connu, sans
+jamais l'approuver**. R0 est consigné (ID, état) dans `NEXT.md`, **n'est pas l'essai unique** et n'est ni réapprouvé ni rejoué ;
+aucun autre run n'est touché. Si un run inattendu apparaît, Luna s'arrête et demande à Florian au lieu de l'annuler. Seul le run
+lancé à la main à l'étape 1 est l'essai unique. *Limite C9 :* le groupe `Shop42 Release Approvers` n'a qu'un membre (Florian DREVET)
+et l'auto-approbation est désactivée : Florian ne pourra pas approuver le run D3 qu'il aura lancé lui-même. L'étape 1 ne démarre pas
+tant que l'utilisateur n'a pas choisi une solution de séparation des approbations ; Luna n'active pas l'auto-approbation et n'ajoute
+personne au groupe.
+
 0. **Préalable : clone à jour.** `main` d'Azure Repos contient la mise à jour de `IfsRelease.psm1`, du schéma
    `ifs-report.v2.schema.json` et du manifeste, faite par l'[étape 0 ter de P-08](../01-preuves.md#p-08--exécution-des-preuves-accompagnement)
    (jamais par `Publish-PilotReference.ps1`, qui refuse un clone déjà publié). Sans cela, le rapport serait `ifs-report/v1` et
@@ -410,9 +424,13 @@ ni relance, ni approbation de PRD, P8 reste KO.
    n'est pas ajouté, et `units.core/data/platform/orders.fingerprint` restent **égales à celles de l'ancien manifeste**
    (`data` = `c590eaaf…2e0eb`). Le champ `commit` du manifeste désigne alors l'origine des deux fichiers mis à jour, pas
    l'arbre entier. Vérifier avant le run : `git -C C:/src/shop42 diff --stat 91c022e origin/main` (après `git -C C:/src/shop42 fetch origin`) ne liste que `.ifs/manifest.json`,
-   `IfsRelease.psm1` et le schéma v2, et le rapport du run porte `schema` = `ifs-report/v2`.
-1. Déclencher une **nouvelle** release orders/infra/pipelines/release.yml sur le CI N de D3 (version explicite), après la
-   livraison de D2 ; DEV s'applique d'abord (étape 3 de D3), puis PRD. Quand l'aperçu prd
+   `IfsRelease.psm1` et le schéma v2, et le rapport du run porte `schema` = `ifs-report/v2`. *Mise à jour D2b (2026-10-18) :* elle
+   atteint `main` par la fusion de la branche `fix/p08-keep-recalculated-preview`, **après** vérification de la garde DEV
+   (D2b.3) ; la fusion produit le CI N puis le run automatique R0, rejeté sans approbation (D2b.4).
+1. Déclencher à la main une **nouvelle** release orders/infra/pipelines/release.yml (identifiant ≠ R0) sur le CI N de D3 (version
+   explicite), après la livraison de D2, **et seulement une fois C1 à C9 consignées et R0 rejeté avant mutation**. `Deploy_dev`
+   attend le Pre-check approvals : vous ne l'approuvez qu'après avoir relu l'aperçu DEV (C8 : 0 création, 0 recréation, 0 suppression,
+   0 révocation, 0 opération en attente). DEV s'applique ensuite (étape 3 de D3), puis PRD. Quand l'aperçu prd
    est publié et attend une approbation, noter D2 et l'empreinte de l'aperçu (`preview.fingerprint`), et capturer le run
    (p8-infra-preview-d2-run-<id>). `manifestFingerprint` est une empreinte d'un **autre domaine de hachage** : ne pas la
    noter comme empreinte d'aperçu ni la comparer à `preview.fingerprint` ([DT-43](../../technique/01-decisions.md#dt-43--empreinte-dapercu-approuvée-liée-à-lempreinte-appliquée)).
