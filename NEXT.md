@@ -10,10 +10,10 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `BLOQUE` |
+| **Statut** | `A_FAIRE` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
-| **Verrou** | D2b.2 — répétition du 2026-10-20 interrompue à l’étape 0 (`ProofTools` non chargé) ; transcript archivé, nouvel arbitrage Sol requis |
+| **Verrou** | D2b.2 — nouvel arbitrage Sol : importer `ProofTools.psm1`, nettoyer la copie temporaire et reprendre les deux passes complètes avec de nouveaux transcripts |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
 | **Dernière mise à jour** | 2026-10-20 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
@@ -96,8 +96,10 @@ propriétaire en passant explicitement le statut `BLOQUE` à `A_FAIRE` ; `gate.p
 par `CommandNotFoundException` : `Assert-ProofManifestWorkingTree` n'était pas disponible, car le runner n'avait pas importé
 `tools/proofs/ProofTools.psm1`. Aucune publication neuve ni modification du clone de preuve n'a eu lieu. Transcript complet archivé
 sous `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-rehearsal-attempt2-proofmanifest-module-not-imported-20261020T131420Z-transcript.txt`,
-SHA-256 `C0E40FB93D3A4B05D24EA845FBC492DBC6517EAEC0F0650A13B930C34F99D955`. Sol doit arbitrer la correction de chargement du module
-et autoriser une éventuelle nouvelle tentative ; jusque-là P-08 reste `BLOQUE`.
+SHA-256 `C0E40FB93D3A4B05D24EA845FBC492DBC6517EAEC0F0650A13B930C34F99D955`. Sol confirme que c'est une omission du runner et
+autorise à importer explicitement `tools/proofs/ProofTools.psm1` avant l'étape 0, conformément au bloc 0 ter.2. Sous la délégation de
+Florian, P-08 reprend en `A_FAIRE` après le commit de cette décision et `gate.py check` ; nettoyer d'abord la copie temporaire restante,
+puis refaire les deux passes intégralement avec de nouveaux transcripts. Toute nouvelle exception rebloque immédiatement P-08.
 
 Nouveau blocage d'authentification — l'essai de clone Git HTTPS avec le PAT fourni a été refusé par Azure Repos. Le clone original
 est resté propre ; son `origin/main` local vaut `3f5917588b83d11fc07d7f9838f5e895e037dd6d`, SHA également visible sur la page
@@ -150,7 +152,8 @@ et la [recette § 5](docs/plan/recettes/01-preuves.md#5-p8--livraison-applicativ
   propre, et doit repartir après une transition formelle vers `A_FAIRE`. Les commits, merge, push et PR restent interdits jusqu’à la fin
   de D2b.3.1–3.6. `gate.py` n'a ni commande `unblock` ni commande `start` ; `resume` reste réservé à `EN_ATTENTE_DE_RECETTE`.
   Après l'autorisation de reprise, une deuxième exception est survenue à l'étape 0 parce que `ProofTools.psm1` n'était pas chargé ;
-  transcript archivé, P-08 rebloqué et arbitrage Sol demandé avant tout autre rejeu.
+  transcript archivé et P-08 rebloqué. Sol a ensuite confirmé l'omission, autorisé l'import explicite et le rejeu complet, puis P-08 a
+  été rétabli à `A_FAIRE`. Toute nouvelle exception impose de nouveau `BLOQUE`.
 
 **Prérequis D2b vérifiés le 2026-10-20 :** le clone original est accessible dans `C:/Users/flori/RiderProjects/shop42` ; sa branche
 locale et distante `fix/p08-keep-recalculated-preview` contient le commit de Florian `2875cf3` et l’arbre est propre. Le clone de preuve
@@ -173,12 +176,11 @@ dans les dix minutes après N, cette décision ne précise pas quand activer le 
 
 Prochaines actions :
 
-1. Les deux transcripts des tentatives échouées sont conservés avec leurs SHA-256. La copie temporaire `ifs-shop42-rehearsal` issue de
-   la deuxième tentative reste présente ; la supprimer uniquement avec `Remove-TempCopy` après décision de Sol, puis vérifier l'absence
-   des deux chemins temporaires.
-2. Attendre l'arbitrage de Sol sur le chargement de `ProofTools.psm1`. Si Sol autorise le correctif, rétablir formellement P-08 en
-   `A_FAIRE`, vérifier `gate.py check`, charger le module explicitement, puis refaire entièrement les deux passes avec des transcripts
-   distincts. Aucun changement du clone original à `2875cf3` ni commit Shop42 avant D2b.3.1–3.6.
+1. Les deux transcripts des tentatives échouées sont conservés avec leurs SHA-256. Supprimer la copie temporaire `ifs-shop42-rehearsal`
+   uniquement avec `Remove-TempCopy`, puis vérifier l'absence des deux chemins temporaires.
+2. `A_FAIRE` est rétabli sur décision de Sol et `gate.py check` doit passer avant le rejeu. Importer explicitement
+   `tools/proofs/ProofTools.psm1`, puis refaire entièrement répétition et exécution avec deux nouveaux transcripts distincts. Aucun
+   changement du clone original à `2875cf3` ni commit Shop42 avant D2b.3.1–3.6.
 3. Après ces passes, Florian désactive exactement les huit définitions collatérales (`core` CI 74/release 76, `data` CI 77/release 79,
    `orders/apps/api` CI 83/release 85, `platform` CI 86/release 88) avec `queueStatus=disabled`, puis confirme les huit `disabled`,
    les deux définitions `orders/infra` (CI 80/release 82) toujours `enabled` et des files vides.
