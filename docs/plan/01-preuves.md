@@ -891,17 +891,22 @@ action impossible à réaliser avec les accès déjà ouverts.
             de vérifier : arrêt.
          6. *Portée des déclencheurs pendant la fenêtre.* Les dix définitions peuvent avoir des déclencheurs supplémentaires : ils
             sont tous consignés et compris, mais aucune définition collatérale ne doit pouvoir démarrer, car les huit sont `disabled`.
-            Après la suspension, seuls la validation de PR sans connexion Azure (P-04), le CI `orders/infra` N et son unique release
-            automatique R0 sont attendus. Aucun YAML du clone n'est modifié pour résoudre les déclencheurs. Toute exécution autre que
-            N/R0, toute file non vide ou toute écriture Azure avant approbation : arrêt, `BLOQUE`.
+            Après la suspension, seuls la validation de PR sans connexion Azure (P-04), le CI `orders/infra` N lancé manuellement
+            une fois par Florian après la fusion sur le SHA de fusion, puis son unique release automatique R0 sont attendus. L'override
+            UI « Disable continuous integration » observé sur la définition 80 est la raison de ce lancement manuel ; le déclencheur
+            de ressource de la release reste attendu après la réussite de N. Aucun YAML du clone n'est modifié pour résoudre les
+            déclencheurs. Toute exécution autre que N/R0, toute file non vide ou toute écriture Azure avant approbation : arrêt, `BLOQUE`.
      4. **Livraison limitée, seulement après vérification des sous-étapes 3.1 à 3.6.** Commit local, push de branche et PR par Luna ;
-        fusion par Florian ; CI N, puis run de release automatique R0.
+        fusion par Florian ; lancement manuel unique du CI N sur le SHA fusionné par Florian, puis run de release automatique R0.
         1. Commit dans Azure Repos (seuls les chemins modifiés + `.ifs/manifest.json`), corps : « Mise à jour ciblée, pas une
            republication : <chemins> viennent de IFS <commit D2a> ; rien d'autre ne change ; units.* inchangées », push, PR vers `main`
             (même procédure que #51/#52/#74). Luna fait le commit local, pousse sa branche et ouvre la PR ; Florian vérifie l'état
             des dix définitions et effectue la fusion lui-même, car les écritures Azure DevOps restent à sa charge selon `AGENTS.md`.
             Aucune autre branche ni autre PR.
-        2. Attendre la fin du CI `orders/infra` déclenché (numéro noté N). Vérifier :
+        2. Après la fusion, Florian vérifie que la tête de `main` est toujours le SHA de fusion, puis lance manuellement **une seule fois**
+           la définition CI `orders/infra` (ID 80) sur `refs/heads/main`. Noter N. Vérifier dans le run que `sourceBranch` =
+           `refs/heads/main`, `sourceVersion` = SHA de fusion et `reason` = `manual` ; un SHA différent, un autre run ou une
+           file non vide impose l'arrêt `BLOQUE` sans relancer. Vérifier ensuite :
            `rtk git -C C:/src/shop42 diff --stat <origin/main de départ> origin/main` ne liste que les chemins attendus ; CI N réussi ;
            l'artefact `infra` de N contient `IfsRelease.psm1` de même empreinte logique que celui du clone, et `orders/infra/main.bicep` et
            `main.dev.bicepparam` de même SHA-256 que `inputSha256.template` et `inputSha256.parameters` des `metadata.json` D1b.
@@ -938,8 +943,9 @@ action impossible à réaliser avec les accès déjà ouverts.
      ou invérifiable : ne pas lancer/ne pas approuver, `BLOQUE` avec la condition en cause.
      - **C1** D2a commitée et poussée, ses vérifications vertes (sortie citée).
      - **C2** D2b terminée selon le protocole : diff limité aux deux fichiers prévus, huit pipelines collatéraux `disabled`
-        (états initiaux et nouvelles révisions consignés), fusion `main` effectuée par Florian, CI orders/infra N réussi, et R0 rejeté
-        par Florian selon les règles D2b (ou absence de R0 consignée après dix minutes).
+        (états initiaux et nouvelles révisions consignés), fusion `main` effectuée par Florian, CI orders/infra N lancé manuellement
+        une fois par Florian sur le SHA de fusion et réussi, et R0 rejeté par Florian selon les règles D2b (ou absence de R0 consignée
+        après dix minutes).
      - **C3** Lecture seule : aucune exécution en cours ou en file parmi les dix définitions, aucun run inattendu depuis la fusion,
         et au plus R0 terminé et rejeté par Florian avant mutation. Les huit définitions collatérales restent `disabled`; CI et release
         orders/infra restent `enabled`. Aucun push ni nouveau CI orders/infra n'est autorisé jusqu'au terminal de l'essai D3.

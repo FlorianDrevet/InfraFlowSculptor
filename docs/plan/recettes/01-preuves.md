@@ -401,7 +401,8 @@ elles utilisent le CI `orders/infra` N construit après la mise à jour D2b du c
 `ifs-preview-recalculated.json`) et non l'artefact du CI #746. Si le DEV diverge de nouveau, l'essai s'arrête (cas b de D3) :
 ni relance, ni approbation de PRD, P8 reste KO.
 
-**Garde DEV et run automatique R0 (protocole D2b du 2026-10-20).** L'environnement `shop42-dev` porte un contrôle
+**Garde DEV, CI manuel N et run automatique R0 (protocole D2b du 2026-10-20, arbitrage GPT Sol confirmé par Florian).**
+L'environnement `shop42-dev` porte un contrôle
 *Pre-check approvals* (groupe `Shop42 Release Approvers`, un membre suffit, auto-approbation désactivée, 30 jours) avant l'Exclusive
 Lock : **aucune écriture DEV sans approbation humaine**. Florian a configuré ce contrôle le 2026-10-18 ; la capture de la page et de
 la fiche est visible dans cette session (aucune capture locale enregistrée). Avant tout commit/push/PR/merge, Florian relève les dix
@@ -409,7 +410,11 @@ définitions CI/release, vérifie les files vides, puis désactive les huit déf
 orders/apps/api) avec `queueStatus=disabled`. Les deux définitions orders/infra restent activées. Si un run est en cours/en file ou
 si un état est illisible, la livraison ne commence pas. Le détail des relevés, vérifications, rôles et restauration est dans
 [P-08, étape 0 quinquies](../01-preuves.md#p-08--exécution-des-preuves-accompagnement). Luna commite localement, pousse sa branche
-et ouvre la PR ; Florian fusionne. La fusion déclenche le CI N, puis un run de release automatique **R0** par ressource pipeline :
+et ouvre la PR ; Florian fusionne. Comme l'override UI « Disable continuous integration » désactive le CI YAML `orders/infra`, la
+fusion ne déclenche pas N. Florian vérifie que `main` est toujours au SHA de fusion, puis lance manuellement une seule fois le CI
+`orders/infra` (ID 80) sur `refs/heads/main`. Le run doit indiquer `sourceVersion` égal au SHA de fusion et `reason` = `manual` ;
+un autre SHA, un run inattendu ou une file non vide impose l'arrêt, sans relance. La réussite de N doit ensuite déclencher un run
+de release automatique **R0** par ressource pipeline :
 son aperçu DEV peut s'exécuter, `Deploy_dev` reste en attente, puis Florian rejette la demande d'approbation du seul R0 identifié
 avant toute tâche de déploiement. Personne n'approuve R0 et aucun autre run n'est touché. R0 est consigné dans `NEXT.md`, **n'est
 pas l'essai unique** et n'est ni réapprouvé ni rejoué. Seul le run manuel de l'étape 1 est l'essai unique. *C9 :* le groupe n'a qu'un
@@ -430,7 +435,8 @@ pas dans les dix minutes suivant N, ne pas activer ce réglage ni lancer D3 sans
    l'arbre entier. Vérifier avant le run : `git -C C:/src/shop42 diff --stat 91c022e origin/main` (après `git -C C:/src/shop42 fetch origin`) ne liste que `.ifs/manifest.json`,
    `IfsRelease.psm1` et le schéma v2, et le rapport du run porte `schema` = `ifs-report/v2`. *Mise à jour D2b (2026-10-18) :* elle
    atteint `main` par la fusion de la branche `fix/p08-keep-recalculated-preview`, **après** vérification de la garde DEV
-   (D2b.3) ; la fusion produit le CI N puis le run automatique R0, rejeté sans approbation (D2b.4).
+   (D2b.3) ; Florian lance ensuite une fois le CI N sur le SHA fusionné, puis sa réussite doit produire le run automatique R0,
+   rejeté sans approbation (D2b.4).
 1. Déclencher à la main une **nouvelle** release orders/infra/pipelines/release.yml (identifiant ≠ R0) sur le CI N de D3 (version
    explicite), après la livraison de D2, **et seulement une fois C1 à C7 et C9 consignées et R0 rejeté avant mutation**. `Deploy_dev`
    attend le Pre-check approvals : vous ne l'approuvez qu'après avoir relu l'aperçu DEV (C8 : 0 création, 0 recréation, 0 suppression,
