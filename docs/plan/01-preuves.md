@@ -845,6 +845,15 @@ action impossible à réaliser avec les accès déjà ouverts.
         homonyme). Vérifier `revision` 2, `proofLineage` `p3-role`, projet `shop42` et `Assert-ProofManifestWorkingTree` réussi
         (le manifeste de la fusion de la PR #74 décrit l'arbre exactement, les deux fichiers P8 de `src/api` compris : la dérogation
         de 0 ter n'est plus nécessaire). Noter le hash complet de `origin/main` : c'est le point de départ de l'invariant 2.
+        **Repli d'authentification — arbitrage GPT Sol du 2026-10-20.** Si le clone/fetch HTTPS est refusé pour authentification,
+        ne pas prétendre que `fetch origin` a réussi. Pour les deux passes locales D2b.2 seulement, créer le clone indépendant avec
+        `git clone --no-hardlinks` depuis le clone original propre ; récupérer localement sa ref `refs/remotes/origin/main` dans le
+        clone de preuve ; conserver comme remote `origin` l'URL Azure Repos ; comparer le SHA complet de cette ref au `main` lu en
+        lecture seule dans Azure DevOps par navigateur. Archiver le refus HTTPS et cette lecture sous
+        `%LOCALAPPDATA%\InfraFlowSculptor\P08\D2b\`. Si le SHA ne correspond pas, si la branche n'est pas lisible dans le navigateur
+        ou si l'arbre n'est pas propre, arrêter. Ce repli ne vaut pas authentification Git et ne débloque aucun push. Avant la livraison
+        D2b.4, un accès Git valide doit être vérifié par lecture seule ; si l'authentification échoue encore, ne pas pousser ni ouvrir
+        de PR et arrêter. Ne pas créer de PAT sans consentement spécifique de Florian.
      2. Répétition générale puis exécution réelle : reprendre le bloc de 0 ter.2 (mêmes `Remove-TempCopy`, mêmes noms de répertoires
         temporaires, mêmes arrêts) avec ces seules substitutions. Pour chaque passe, remplacer la valeur de `$target` du bloc par le
         chemin de sa cible : `$env:TEMP/ifs-shop42-rehearsal` pour la répétition, `C:/Users/flori/RiderProjects/shop42-d2b-proof`
@@ -911,7 +920,7 @@ action impossible à réaliser avec les accès déjà ouverts.
             UI « Disable continuous integration » observé sur la définition 80 est la raison de ce lancement manuel ; le déclencheur
             de ressource de la release reste attendu après la réussite de N. Aucun YAML du clone n'est modifié pour résoudre les
             déclencheurs. Toute exécution autre que N/R0, toute file non vide ou toute écriture Azure avant approbation : arrêt, `BLOQUE`.
-     4. **Livraison limitée, seulement après vérification des sous-étapes 3.1 à 3.6.** Le commit `2875cf3`, poussé avant cette garde,
+     4. **Livraison limitée, seulement après vérification des sous-étapes 3.1 à 3.6 et de l'accès Git en lecture seule.** Le commit `2875cf3`, poussé avant cette garde,
         reste un fait historique préservé. Aucun nouveau commit (même local) ni merge ne précède la confirmation des huit suspensions
         par Florian. Ensuite, Luna crée le commit de preuve dans le clone indépendant, réconcilie
         la branche distante existante sans réécrire son historique, pousse et ouvre la PR ; Florian fusionne ; il lance le CI N manuel

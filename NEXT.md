@@ -83,6 +83,14 @@ D2b.2 restent intactes et toute nouvelle exception impose `BLOQUE`. Aucun commit
 les sous-étapes D2b.3.1 à 3.6, y compris la confirmation par Florian des huit suspensions et des files vides. La décision précédente
 sur le CI N manuel après fusion et l’observation du R0 reste en vigueur.
 
+Nouveau blocage d'authentification — l'essai de clone Git HTTPS avec le PAT fourni a été refusé par Azure Repos. Le clone original
+est resté propre ; son `origin/main` local vaut `3f5917588b83d11fc07d7f9838f5e895e037dd6d`, SHA également visible sur la page
+Azure DevOps `shop42` dans le navigateur. Sur décision de GPT Sol du 2026-10-20, D2b.2 peut utiliser un clone indépendant
+`--no-hardlinks` depuis le clone original, récupérer localement cette ref, conserver l'URL ADO en `origin` et la recouper avec la
+lecture navigateur ; ce repli ne sera pas présenté comme un `fetch origin` réseau. La preuve est conservée dans
+`%LOCALAPPDATA%\InfraFlowSculptor\P08\D2b\d2b-git-auth-fallback-evidence.txt`. Un accès Git valide reste obligatoire avant D2b.4 ;
+aucun PAT neuf ne sera créé sans consentement spécifique.
+
 L’interface Azure DevOps a été vérifiée en lecture seule le 2026-10-20 pour les dix définitions.
 Elles sont toutes en révision 9 avec `queueStatus=enabled`. Pour les dix définitions, l’option UI « Override the YAML
 continuous integration trigger from here » est cochée et « Disable continuous integration » est sélectionné ; aucun déclencheur
