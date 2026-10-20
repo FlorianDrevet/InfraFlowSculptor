@@ -53,7 +53,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 | Abonnements Azure de test (preuves) | Souscription `fc4fa56f-e4e7-41e9-8a0d-559fcd27b827`, tenant `c833b396-517c-465d-bcce-b79702eaf932` ; `francecentral` et les fournisseurs/SKU requis disponibles ; utilisateur connecté Owner au scope souscription et User Access Administrator au scope tenant ; même souscription pour dev/prd/shared | 2026-10-15 |
 | Décision de coût et estimation des preuves ([contrôle](docs/plan/recettes/01-preuves.md#01-surveillance-des-coûts-avant-toute-action-sur-les-ressources-azure)) | Florian ne fixe **aucun plafond personnel** et autorise la poursuite sous contrôle des coûts (2026-10-17). Au contrôle Cost Management du 2026-10-17T10:36Z : 84,648182 EUR réels MTD ; prévision REST de 87,427283 EUR du 18 au 31/10, soit 172,075465 EUR projetés. L’API du budget préexistant de 200 EUR/mois indique toutefois 235,765571 EUR prévus et 0,430301 EUR dépensés ; cette divergence est conservée. Ce budget est une alerte, pas un coupe-circuit. Relever le coût réel, la prévision et l’estimation France Central à nouveau avant toute action Azure significative | 2026-10-17 |
 | Ressources Azure créées pour les preuves ([inventaire](docs/plan/preuves/inventaires-azure.md)) | Shop42 en France Central. Après #748 : 163 ressources, 26 groupes, 7 piles, 57 rôles et 7 budgets ; aucun ID ajouté ou retiré par rapport au préflight juste avant le run. D2 reste connue saine après #740 ; #748 n’a pas atteint PRD. P8 est KO et le nettoyage suspendu. IDs exacts hors dépôt dans `%LOCALAPPDATA%\InfraFlowSculptor\P08\after-infra-748-20261017T103510Z.json` | 2026-10-17 |
-| Organisation / projet Azure DevOps de test | Organisation `floriandrevet0332`, projet privé `shop42` et dépôt `shop42`. PR #74 fusionnée ; CI infra orders #746 réussi. La release infra #748 est arrêtée en DEV avec `FailedBeforeMutation` après divergence entre aperçu et recalcul sous verrou ; PRD ignorée. Aucune release applicative n’est intervenue entre les deux aperçus. Le cas négatif #738 reste conservé ; décisions Entra et groupes restent en place. Garde `shop42-dev` relue : *Pre-check approvals* (`Shop42 Release Approvers`, auto-approbation désactivée) avant l'Exclusive Lock. Le 2026-10-20, les dix définitions sont en révision 9 et `queueStatus=enabled` ; aucune exécution active/en file et aucune PR pour `fix/p08-keep-recalculated-preview`. L'override UI désactive CI, dont le CI `orders/infra` requis pour D2b ; le protocole prévoit maintenant un N manuel après fusion. Clone local : `C:/Users/flori/RiderProjects/shop42`, basé sur `3f591d7`. Le transcript de répétition D2b de 09:35 se termine par `Prepared branch manifest metadata differs from rehearsal`; le résumé de 09:41 indique PASS après rafraîchissement du manifeste, mais ne fournit pas les sorties complètes de répétition et d'exécution. Le manifeste a été recalculé avec `Write-ProofManifest` vers la source IFS `dbcaa9c` ; `.ifs/manifest.json` seul est modifié dans le clone, pas commité/poussé, et les 99 empreintes gérées restent inchangées. Florian a supprimé manuellement `ifs-shop42-rehearsal` et `ifs-shop42-fresh` le 2026-10-20 ; Luna a vérifié que les deux chemins sont absents. Aucune écriture Azure DevOps par Luna | 2026-10-20 |
+| Organisation / projet Azure DevOps de test | Organisation `floriandrevet0332`, projet privé `shop42` et dépôt `shop42`. PR #74 fusionnée ; CI infra orders #746 réussi. La release infra #748 est arrêtée en DEV avec `FailedBeforeMutation` après divergence entre aperçu et recalcul sous verrou ; PRD ignorée. Aucune release applicative n’est intervenue entre les deux aperçus. Le cas négatif #738 reste conservé ; décisions Entra et groupes restent en place. Garde `shop42-dev` relue : *Pre-check approvals* (`Shop42 Release Approvers`, auto-approbation désactivée) avant l'Exclusive Lock. Le 2026-10-20, les dix définitions sont en révision 9 et `queueStatus=enabled` ; aucune exécution active/en file et aucune PR pour `fix/p08-keep-recalculated-preview`. L'override UI désactive CI, dont le CI `orders/infra` requis pour D2b ; le protocole prévoit maintenant un N manuel après fusion. Le clone original `C:/Users/flori/RiderProjects/shop42` et sa branche distante restent propres à `2875cf3`, basé sur `origin/main` `3f59175`. Sol a arbitré un rejeu dans le clone indépendant `C:/Users/flori/RiderProjects/shop42-d2b-proof`, à créer depuis ce `origin/main`, puis une réconciliation par merge sans réécrire la branche. L'ancienne actualisation de `.ifs/manifest.json` a été restaurée ; son diff est archivé dans `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-prior-attempt-manifest-diff.patch`. Le transcript complet de 09:35 s'arrête sur `Prepared branch manifest metadata differs from rehearsal` ; le résumé de 09:41 ne remplace pas les deux sorties complètes exigées. Les deux chemins temporaires `ifs-shop42-rehearsal` et `ifs-shop42-fresh` ont été supprimés et vérifiés absents. Aucune écriture Azure DevOps par Luna | 2026-10-20 |
 | Droits Azure utilisés pour D1b | `Storage Blob Data Reader` au conteneur `ifs-operations` du compte `stifsshop42dev` et `Key Vault Reader` au coffre `kv-shop42-main-dev`, attribués à l’identité personnelle pour les lectures D1b. Les deux attributions restent en place ; aucune valeur de secret n’a été lue | 2026-10-17 |
 | Groupes Entra (`sg-shop42-sql-admins`) et Azure DevOps (« Shop42 Release Approvers ») | Créés dans le tenant fourni ; Florian DREVET est membre des deux groupes | 2026-10-15 |
 | Inscriptions Entra d'IFS (`dev`) | — | — |
@@ -72,22 +72,16 @@ Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 
 ## Questions pour Claude
 
-**Décision active — P-08 / D2b :** à la demande explicite de Florian du 2026-10-20, GPT Sol a autorité d’arbitrage équivalente à Claude.
-Sa recommandation est retenue : après la fusion, Florian lancera manuellement un unique CI `orders/infra` N sur le SHA fusionné,
-puis vérifiera si la réussite de N déclenche R0 par la ressource pipeline. Le plan et la recette ont été amendés en conséquence.
-**Aucune question de conception n’est en attente.** GPT Sol confirme que le résumé PASS ne remplace pas les sorties complètes exigées
-par D2b.2 : `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-rehearsal-transcript.txt` s’arrête sur l’exception de métadonnées ;
-`d2b-local-verification.txt` n’est qu’un résumé après rafraîchissement. `Write-ProofManifest` est prévu pendant une passe normale,
-mais son emploi après l’exception ne l’efface pas. L’échec antérieur maintient l’arrêt de livraison jusqu’à un rejeu complet
-proprement documenté, avec HEAD IFS fixé et sorties complètes distinctes. La cause exacte de l’écart reste à établir ; ne pas corriger
-la branche à la main.
-
-**Arbitrage de reprise du 2026-10-20 — Florian, via délégation à GPT Sol :** l’échec initial reste conservé comme preuve et n’est
-pas effacé par le rejeu. Florian autorise Luna à reprendre D2b.2 de bout en bout après avoir supprimé les deux copies temporaires.
-Cette autorisation lève uniquement le blocage qui empêchait le rejeu : elle ne modifie pas les assertions de D2b.2, n’autorise
-aucune correction manuelle du clone et n’autorise aucune livraison avant une répétition complète et une exécution réelle réussies,
-avec transcripts distincts. L’IFS reste fixé à `893f2a3dda4d7c8461be9c93f208a9e84d317962`. Toute nouvelle exception ou tout écart
-remet immédiatement P-08 à `BLOQUE`.
+**Décision active — P-08 / D2b :** Florian a délégué à GPT Sol une autorité d’arbitrage équivalente à Claude. Sol confirme que le résumé
+PASS ne remplace pas les sorties complètes : le transcript de 09:35 s’arrête sur `Prepared branch manifest metadata differs from
+rehearsal` et `d2b-local-verification.txt` n’est qu’un résumé après rafraîchissement. L’échec initial reste conservé comme preuve.
+Son arbitrage du 2026-10-20 autorise un amendement ciblé de D2b.1/.2/.4 : rejouer dans le clone indépendant
+`C:/Users/flori/RiderProjects/shop42-d2b-proof`, créé sur `origin/main` `3f59175`, avec la répétition sous `$TEMP/ifs-shop42-rehearsal` ;
+préserver le clone original et sa branche `2875cf3`, puis réconcilier le résultat testé par merge et identité de tout l’arbre, sans
+réécrire l’historique distant. L’IFS est fixé à `893f2a3dda4d7c8461be9c93f208a9e84d317962` pendant les deux passes. Les assertions
+D2b.2 restent intactes et toute nouvelle exception impose `BLOQUE`. Aucun commit, merge ou push nouveau avant la validation de toutes
+les sous-étapes D2b.3.1 à 3.6, y compris la confirmation par Florian des huit suspensions et des files vides. La décision précédente
+sur le CI N manuel après fusion et l’observation du R0 reste en vigueur.
 
 L’interface Azure DevOps a été vérifiée en lecture seule le 2026-10-20 pour les dix définitions.
 Elles sont toutes en révision 9 avec `queueStatus=enabled`. Pour les dix définitions, l’option UI « Override the YAML
@@ -120,20 +114,22 @@ et la [recette § 5](docs/plan/recettes/01-preuves.md#5-p8--livraison-applicativ
 - **Coût :** la décision de Florian du 2026-10-17 est de ne fixer aucun plafond personnel et de poursuivre sous surveillance.
   L'estimation France Central et le coût réel/prévision du 2026-10-17 restent historiques ; les actualiser et consigner une nouvelle
   confirmation avant toute action Azure significative. Le budget préexistant de 200 EUR/mois reste une alerte, pas un coupe-circuit.
-- **Historique du statut :** l’arbitrage du déclencheur UI a été résolu par GPT Sol, que Florian a rendu équivalent à Claude ; le CI N
-  manuel après fusion est maintenant prévu. Le transcript local a révélé l’exception non levée ; P-08 a été `BLOQUE` selon D2b.2.
-  Après suppression manuelle des deux copies temporaires, Florian a autorisé par délégation à GPT Sol un rejeu complet sans assouplir
-  D2b.2. Le statut `EN_COURS` autorise uniquement cette reprise locale ; en cas d’échec, rétablir `BLOQUE`. `gate.py` n'a ni commande
-  `unblock` ni commande `start` ; `resume` reste réservé à `EN_ATTENTE_DE_RECETTE`.
+- **Historique du statut :** après l’exception du transcript, P-08 est passé à `BLOQUE`. Florian a délégué l’arbitrage à GPT Sol, qui
+  a autorisé le clone indépendant et le merge par identité d’arbre ; les amendements ciblés D2b.1/.2/.4 consignent cette méthode.
+  `EN_COURS` autorise le rejeu local uniquement. Toute exception remet P-08 à `BLOQUE`. Les commits, merge, push et PR restent interdits
+  jusqu’à la fin de D2b.3.1–3.6. `gate.py` n'a ni commande `unblock` ni commande `start` ; `resume` reste réservé à
+  `EN_ATTENTE_DE_RECETTE`.
 
-**Prérequis D2b vérifiés le 2026-10-20 :** le clone est accessible dans `C:/Users/flori/RiderProjects/shop42` ; la branche distante
-`fix/p08-keep-recalculated-preview` contient le commit de Florian `2875cf3`. Les contrôles locaux du clone sont consignés sous
+**Prérequis D2b vérifiés le 2026-10-20 :** le clone original est accessible dans `C:/Users/flori/RiderProjects/shop42` ; sa branche
+locale et distante `fix/p08-keep-recalculated-preview` contient le commit de Florian `2875cf3` et l’arbre est propre. Le clone de preuve
+sera créé seulement après vérification de l’absence du chemin cible et de `origin/main` `3f59175`. Les contrôles locaux du clone sont consignés sous
 `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-local-verification.txt` ; l’inventaire YAML local des dix CI/releases est sous
-`%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-yaml-trigger-inventory.txt`. Le manifeste local a été rafraîchi par l’outil prévu ;
-seul `.ifs/manifest.json` est modifié dans le clone et n’est ni commité ni poussé. L’audit Azure DevOps a confirmé les dix définitions
+`%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-yaml-trigger-inventory.txt`. Le diff du précédent rafraîchissement de manifeste a été
+archivé puis restauré ; les copies temporaires sont absentes. L’audit Azure DevOps a confirmé les dix définitions
 en révision 9 et `queueStatus=enabled`, zéro run actif/en file, aucune PR pour la branche, et la garde `shop42-dev` conforme. Il a
-aussi révélé l’override CI décrit ci-dessus. Les huit définitions collatérales ne sont pas suspendues. L’arbitrage résout la
-contradiction, mais la livraison reste bloquée par l’exception de répétition D2b.2 ; aucune écriture Azure DevOps n’a été faite par Luna.
+aussi révélé l’override CI décrit ci-dessus. Les huit définitions collatérales ne sont pas suspendues. Le rejeu peut commencer après
+l’intégration des amendements de Sol ; la livraison reste bloquée jusqu’à la suspension confirmée et aux autres contrôles de D2b.3.
+Aucune écriture Azure DevOps n’a été faite par Luna.
 
 Florian a choisi d'activer lui-même l'auto-approbation après R0 et fournira une nouvelle capture avant D3. Si R0 n'apparaît pas
 dans les dix minutes après N, cette décision ne précise pas quand activer le réglage : demander une confirmation distincte avant D3.
@@ -145,14 +141,15 @@ Prochaines actions :
 
 1. ✅ Florian a supprimé manuellement les deux copies temporaires `C:/Users/flori/AppData/Local/Temp/ifs-shop42-rehearsal` et
    `C:/Users/flori/AppData/Local/Temp/ifs-shop42-fresh` ; Luna a vérifié leur absence le 2026-10-20.
-2. Luna reprend ensuite le protocole D2b.2 depuis une base propre avec l’IFS HEAD fixé, conserve un transcript complet distinct de la
-   répétition et de l’exécution réelle, puis vérifie le nettoyage des copies temporaires. Aucun commit/push/PR dans `shop42` avant deux
-   passes complètes réussies et les autres préalables.
+2. Luna crée le clone de preuve uniquement si `C:/Users/flori/RiderProjects/shop42-d2b-proof` est absent, vérifie la base `3f59175`,
+   puis exécute la répétition et l’exécution réelle avec l’IFS fixé, deux transcripts complets et les nettoyages prescrits. Aucune
+   écriture dans le clone original à `2875cf3` pendant ces passes ; aucun commit avant D2b.3.1–3.6.
 3. Après ces passes, Florian désactive exactement les huit définitions collatérales (`core` CI 74/release 76, `data` CI 77/release 79,
    `orders/apps/api` CI 83/release 85, `platform` CI 86/release 88) avec `queueStatus=disabled`, puis confirme les huit `disabled`,
    les deux définitions `orders/infra` (CI 80/release 82) toujours `enabled` et des files vides.
-4. Après cette confirmation, Luna vérifie le clone, finalise le manifeste local et pousse la branche/ouvre la PR ; Florian fusionne,
-   puis lance manuellement un seul N sur le SHA de fusion et rejette R0 avant toute tâche `Deploy_dev`.
+4. Après cette confirmation, Luna commite le résultat testé dans le clone de preuve, l’intègre par merge à la branche originale en
+   préservant `2875cf3` et en vérifiant l’identité de l’arbre, pousse sans force et ouvre la PR ; Florian fusionne, puis lance
+   manuellement un seul N sur le SHA de fusion et rejette R0 avant toute tâche `Deploy_dev`.
 5. Le choix C9 est fait : Florian active lui-même l’auto-approbation après R0 et fournit une nouvelle capture avant D3.
 6. Avant l'essai D3, vérifier C1–C7 et C9 ; après publication de `Preview_dev`, Florian vérifie C8 avant d'approuver `Deploy_dev`.
 7. Garder #748 non diagnostiqué, conserver le fail-closed et #738 comme preuve négative. Le nettoyage Shop42 reste suspendu jusqu'à

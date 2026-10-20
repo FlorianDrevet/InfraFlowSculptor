@@ -833,27 +833,41 @@ action impossible à réaliser avec les accès déjà ouverts.
      4. Vérification : Pester complet (`reference/release-module/tests`), PSScriptAnalyzer, `Test-Reference*.ps1`, build Bicep
         inchangés et verts ; `git status --porcelain` limité aux fichiers listés ci-dessus. Commit
         `fix(reference): conserver l'aperçu recalculé lors d'une divergence`, pied `Étape: P-08`, puis push de `impl/preuves`.
-   - **D2b — Luna, mise à jour ciblée du clone `C:/src/shop42` (même méthode que l'étape 0 ter, nouvel arbitrage borné).**
+   - **D2b — Luna, mise à jour ciblée sur un clone de preuve indépendant, puis réconciliation avec `C:/Users/flori/RiderProjects/shop42` (même méthode que l'étape 0 ter, arbitrage GPT Sol du 2026-10-20).**
      *Pourquoi* : les releases utilisent le module **embarqué dans l'artefact `infra` de leur CI**, pas le dépôt ; la correction n'agit
      qu'après un nouveau CI `orders/infra` construit depuis un `main` qui la contient. Périmètre : `shop42` uniquement.
-     1. Préalables : D2a commitée et poussée ; sources `reference/pilot/bicep-azdo samples/witness-app` propres ; dans le clone :
-        `fetch origin`, arbre propre, nouvelle branche `fix/p08-keep-recalculated-preview` créée sur `origin/main`, `revision` 2,
-        `proofLineage` `p3-role`, projet `shop42`, `Assert-ProofManifestWorkingTree` réussi (le manifeste de la fusion de la PR #74
-        décrit l'arbre exactement, les deux fichiers P8 de `src/api` compris : la dérogation de 0 ter n'est plus nécessaire). Noter
-        le hash de `origin/main` : c'est le point de départ de l'invariant 2.
+     1. Préalables : D2a commitée et poussée ; sources `reference/pilot/bicep-azdo samples/witness-app` propres. Préserver le clone
+        original `C:/Users/flori/RiderProjects/shop42`, sa branche et `origin/fix/p08-keep-recalculated-preview` au commit `2875cf3` ;
+        ne pas le réinitialiser ni le modifier pendant les deux passes. Créer seulement si le chemin est absent le clone de preuve
+        indépendant `C:/Users/flori/RiderProjects/shop42-d2b-proof` depuis le même dépôt Azure Repos. Dans ce clone : `fetch origin`,
+        vérifier `origin/main` = `3f5917588b83d11fc07d7f9838f5e895e037dd6d`, arbre propre, puis créer la branche locale
+        `fix/p08-keep-recalculated-preview` depuis `origin/main` avec `--no-track` (ne pas suivre ni modifier la branche distante
+        homonyme). Vérifier `revision` 2, `proofLineage` `p3-role`, projet `shop42` et `Assert-ProofManifestWorkingTree` réussi
+        (le manifeste de la fusion de la PR #74 décrit l'arbre exactement, les deux fichiers P8 de `src/api` compris : la dérogation
+        de 0 ter n'est plus nécessaire). Noter le hash complet de `origin/main` : c'est le point de départ de l'invariant 2.
      2. Répétition générale puis exécution réelle : reprendre le bloc de 0 ter.2 (mêmes `Remove-TempCopy`, mêmes noms de répertoires
-        temporaires, mêmes arrêts) avec ces seules substitutions : supprimer l'étape « 0. Dérogation P8 » et la remplacer par
-        l'assertion ci-dessus ; à l'étape 2, l'écart attendu de la publication neuve est **exactement** modifiés = les chemins gérés
-        modifiés par le commit D2a (`rtk git diff --name-only <parent-de-D2a> <D2a> -- reference/pilot/bicep-azdo`, préfixe retiré) +
-        `src/api/Program.cs` + `src/api/tests/WitnessAppEndpointTests.cs` (marqueur P8 absent de la publication neuve) ; ajoutés =
+        temporaires, mêmes arrêts) avec ces seules substitutions. Pour chaque passe, remplacer la valeur de `$target` du bloc par le
+        chemin de sa cible : `$env:TEMP/ifs-shop42-rehearsal` pour la répétition, `C:/Users/flori/RiderProjects/shop42-d2b-proof`
+        pour l'exécution réelle. La répétition se fait dans le clone temporaire créé depuis la branche propre du clone de preuve.
+        Garder le clone original à `2875cf3` intact. Fixer le dépôt IFS à `893f2a3dda4d7c8461be9c93f208a9e84d317962` pendant les deux
+        passes, utiliser `$ifsRoot = 'C:/Users/flori/RiderProjects/InfraFlowSculptor'`, conserver les sorties complètes dans
+        `d2b-rehearsal-rerun-transcript.txt` et `d2b-execution-rerun-transcript.txt` sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\D2b\`,
+        et ne créer aucun commit avant la fin des sous-étapes 3.1 à 3.6 ci-dessous.
+        Supprimer l'étape « 0. Dérogation P8 » et la remplacer par
+        l'assertion d'arbre propre ci-dessus ; à l'étape 2, l'écart attendu de la publication neuve est **exactement** modifiés = les
+        chemins gérés modifiés par le commit D2a (`rtk git diff --name-only <parent-de-D2a> <D2a> -- reference/pilot/bicep-azdo`,
+        préfixe retiré) + `src/api/Program.cs` + `src/api/tests/WitnessAppEndpointTests.cs` (marqueur P8 absent de la publication
+        neuve : `Program.cs` ne contient pas `[assembly: System.Reflection.AssemblyMetadata("ifs-proof", "p8")]` et
+        `WitnessAppEndpointTests.cs` ne contient pas `Assembly_ContainsP8ImageMarker`) ; ajoutés =
         `.ifs/install/tests/IfsInstall.Tests.ps1` ; retirés = `data/infra/server-diagnostics.bicep` ; `core`, `platform`, `orders`
-        identiques, `data` différente (valeurs de 0 ter conservées) ; à l'étape 3, ne copier **que** les chemins modifiés par D2a ;
-        l'ensemble des chemins gérés ne change pas (aucun ajout au manifeste), seul le manifeste est recalculé
-        (`Write-ProofManifest`) ; à l'étape 4, le manifeste final égale le manifeste de départ sauf les empreintes de ces chemins
-        et `commit`, les quatre `units.*.fingerprint` sont **égales** à celles de départ, et `rtk proxy git diff --no-index --numstat`
-        entre chaque fichier du clone et la publication neuve donne les mêmes nombres de lignes ajoutées/retirées que le commit D2a
-        sur le fichier source. Toute exception ou tout écart : arrêt, rien corrigé à la main, `BLOQUE` avec la sortie complète. La
-        sortie complète de la répétition et de l'exécution est conservée sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\D2b\`.
+        identiques, `data` différente (valeurs de 0 ter conservées). À l'étape 3, capturer le `numstat` du module du clone vers la
+        publication neuve avant copie, le comparer aux nombres issus du commit D2a, puis ne copier **que** les chemins modifiés par
+        D2a ; l'ensemble des chemins gérés ne change pas (aucun ajout au manifeste), seul le manifeste est recalculé
+        (`Write-ProofManifest`). À l'étape 4, le manifeste final égale le manifeste de départ sauf l'empreinte du module, `commit`
+        et `generatedAtUtc` régénéré par l'outil ; les quatre `units.*.fingerprint` sont **égales** à celles de départ. Vérifier
+        que les nombres capturés avant copie correspondent au commit D2a et que le module copié a l'empreinte logique `$new[$module]`.
+        Toute exception ou tout écart : arrêt,
+        rien corrigé à la main, `BLOQUE` avec la sortie complète.
      3. **Garde DEV, puis audit des déclencheurs — avant tout commit, push, PR ou fusion** (protocole GPT Sol du 2026-10-20,
         sous-étapes 3.1 à 3.6 ; l'option C du 2026-10-18 est historique). Dans cet ordre ; une vérification fausse ou invérifiable : ne rien
         commiter ni pousser, `BLOQUE`.
@@ -879,10 +893,11 @@ action impossible à réaliser avec les accès déjà ouverts.
             incompris ou un état illisible : arrêt, aucune modification de `queueStatus`, aucun commit/push/PR/merge.
          4. *Préconditions C9 et clone.* Florian a retenu le 2026-10-20 l'activation de l'auto-approbation après R0. Après le
             rejet de R0, il l'active lui-même et fournit une nouvelle capture avant D3 ; si l'activation échoue, D3 reste bloquée.
-            Dans `C:/src/shop42`, vérifier la branche et le diff prévus, exactement les deux fichiers préparés par D2b, les filtres et
-            les dix YAML contre l'inventaire, la garde `shop42-dev` et le fait que seul `Deploy_dev` écrit. Clone absent/inaccessible,
-            diff différent, garde non vérifiable ou choix C9 retiré : ne rien commiter ni pousser. Si l'activation C9 échoue après
-            R0, bloquer uniquement le lancement D3.
+            Dans `C:/Users/flori/RiderProjects/shop42-d2b-proof`, vérifier la branche et le diff prévus, exactement `.ifs/manifest.json`
+            et `.ifs/templates/scripts/IfsRelease.psm1` préparés par D2b, les filtres et les dix YAML contre l'inventaire, la garde
+            `shop42-dev` et le fait que seul `Deploy_dev` écrit. Vérifier aussi que le clone original reste propre sur `2875cf3`.
+            Clone absent/inaccessible, diff différent, garde non vérifiable ou choix C9 retiré : ne rien commiter ni pousser. Si
+            l'activation C9 échoue après R0, bloquer uniquement le lancement D3.
          5. *Suspension temporaire par Florian.* Après réussite des sous-étapes 3.1 à 3.4 et avant tout commit/push/PR/merge, passer
             `queueStatus` à `disabled` pour exactement ces huit définitions collatérales : les CI et releases de core/infra, data/infra,
             platform/infra et orders/apps/api. Ne modifier que `queueStatus`, relever les états initiaux et les nouvelles révisions ;
@@ -896,18 +911,26 @@ action impossible à réaliser avec les accès déjà ouverts.
             UI « Disable continuous integration » observé sur la définition 80 est la raison de ce lancement manuel ; le déclencheur
             de ressource de la release reste attendu après la réussite de N. Aucun YAML du clone n'est modifié pour résoudre les
             déclencheurs. Toute exécution autre que N/R0, toute file non vide ou toute écriture Azure avant approbation : arrêt, `BLOQUE`.
-     4. **Livraison limitée, seulement après vérification des sous-étapes 3.1 à 3.6.** Commit local, push de branche et PR par Luna ;
-        fusion par Florian ; lancement manuel unique du CI N sur le SHA fusionné par Florian, puis run de release automatique R0.
-        1. Commit dans Azure Repos (seuls les chemins modifiés + `.ifs/manifest.json`), corps : « Mise à jour ciblée, pas une
-           republication : <chemins> viennent de IFS <commit D2a> ; rien d'autre ne change ; units.* inchangées », push, PR vers `main`
-            (même procédure que #51/#52/#74). Luna fait le commit local, pousse sa branche et ouvre la PR ; Florian vérifie l'état
-            des dix définitions et effectue la fusion lui-même, car les écritures Azure DevOps restent à sa charge selon `AGENTS.md`.
-            Aucune autre branche ni autre PR.
+     4. **Livraison limitée, seulement après vérification des sous-étapes 3.1 à 3.6.** Le commit `2875cf3`, poussé avant cette garde,
+        reste un fait historique préservé. Aucun nouveau commit (même local) ni merge ne précède la confirmation des huit suspensions
+        par Florian. Ensuite, Luna crée le commit de preuve dans le clone indépendant, réconcilie
+        la branche distante existante sans réécrire son historique, pousse et ouvre la PR ; Florian fusionne ; il lance le CI N manuel
+        unique sur le SHA fusionné, puis observe le run automatique R0.
+        1. Après validation de 3.1 à 3.6, commiter dans le clone de preuve uniquement `.ifs/manifest.json` et
+           `.ifs/templates/scripts/IfsRelease.psm1`, corps : « Mise à jour ciblée, pas une republication : <chemins> viennent de IFS
+           <commit D2a> ; rien d'autre ne change ; units.* inchangées ». Conserver le commit de preuve et le clone comme justificatifs.
+           Dans le clone original, vérifier que `origin/fix/p08-keep-recalculated-preview` pointe toujours sur `2875cf3` et que l'arbre
+           est propre ; intégrer le commit de preuve par un merge `--no-ff`, avec `2875cf3` comme premier parent. En cas de conflit,
+           seuls `.ifs/manifest.json` et `.ifs/templates/scripts/IfsRelease.psm1` peuvent être résolus en prenant exactement leur
+           version du commit de preuve ; tout autre conflit impose l'arrêt. Vérifier que l'arbre du merge est identique à celui du
+           commit de preuve (hash d'arbre égal et arbre de travail propre). Cette relation rend le push de la branche originale
+           fast-forward : pousser sans `--force`, puis ouvrir une seule PR vers `main` (même procédure que #51/#52/#74). Florian
+           effectue la fusion lui-même, les écritures Azure DevOps restant à sa charge selon `AGENTS.md`. Aucune autre branche ni PR.
         2. Après la fusion, Florian vérifie que la tête de `main` est toujours le SHA de fusion, puis lance manuellement **une seule fois**
            la définition CI `orders/infra` (ID 80) sur `refs/heads/main`. Noter N. Vérifier dans le run que `sourceBranch` =
            `refs/heads/main`, `sourceVersion` = SHA de fusion et `reason` = `manual` ; un SHA différent, un autre run ou une
            file non vide impose l'arrêt `BLOQUE` sans relancer. Vérifier ensuite :
-           `rtk git -C C:/src/shop42 diff --stat <origin/main de départ> origin/main` ne liste que les chemins attendus ; CI N réussi ;
+           `rtk git -C C:/Users/flori/RiderProjects/shop42 diff --stat <origin/main de départ> origin/main` ne liste que les chemins attendus ; CI N réussi ;
            l'artefact `infra` de N contient `IfsRelease.psm1` de même empreinte logique que celui du clone, et `orders/infra/main.bicep` et
            `main.dev.bicepparam` de même SHA-256 que `inputSha256.template` et `inputSha256.parameters` des `metadata.json` D1b.
            Capturer : `Save-AdoRecordings.ps1 … -Scenario p8-d2b-ci-orders-run-<N>`.
