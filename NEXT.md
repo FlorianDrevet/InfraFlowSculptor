@@ -10,10 +10,10 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `BLOQUE` |
+| **Statut** | `A_FAIRE` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
-| **Verrou** | D2b.2 — échec du runner à l’étape 4 dû à la conversion locale de `generatedAtUtc` ; diagnostic Sol consigné, nettoyage puis reprise formelle requis |
+| **Verrou** | D2b.2 — runner corrigé selon Sol, artefacts temporaires nettoyés et vérifiés ; deux passes complètes à rejouer avec de nouveaux transcripts |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
 | **Dernière mise à jour** | 2026-10-20 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
@@ -111,8 +111,10 @@ au format local `10/20/2026 13:16:22`, alors que le manifeste réel conserve `20
 canoniques (index 12059 ; longueurs 12540/12541). Sol confirme en lecture seule que les 99 chemins/empreintes sauf le module, les
 quatre unités et le module copié correspondent à la publication. Il autorise uniquement le remplacement de
 `$expectedManifest.generatedAtUtc = [string]$after.generatedAtUtc` par `$expectedManifest.generatedAtUtc = $after.generatedAtUtc`.
-La tentative reste échouée et P-08 `BLOQUE` ; nettoyer les deux chemins par `Remove-TempCopy`, puis rétablir formellement `A_FAIRE`,
-passer `gate.py check` et recommencer les deux passes complètes avec de nouveaux transcripts.
+La tentative reste échouée. Le 2026-10-20T13:20:00Z, Luna a nettoyé les deux chemins exacts via `Remove-TempCopy` et confirmé leur
+absence ; transcript du nettoyage `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-attempt3-temp-cleanup-transcript.txt`, SHA-256
+`30AEC9B23A446ABE5E0454F03921AF2A1848B5EC615979AFABEFF7F549139E77`. Selon la délégation de Florian et l'arbitrage de Sol, P-08
+reprend formellement en `A_FAIRE` ; le `gate.py check` doit passer avant le rejeu complet des deux passes avec de nouveaux transcripts.
 
 Nouveau blocage d'authentification — l'essai de clone Git HTTPS avec le PAT fourni a été refusé par Azure Repos. Le clone original
 est resté propre ; son `origin/main` local vaut `3f5917588b83d11fc07d7f9838f5e895e037dd6d`, SHA également visible sur la page
@@ -167,8 +169,8 @@ et la [recette § 5](docs/plan/recettes/01-preuves.md#5-p8--livraison-applicativ
   Après l'autorisation de reprise, une deuxième exception est survenue à l'étape 0 parce que `ProofTools.psm1` n'était pas chargé ;
   transcript archivé et P-08 rebloqué. Sol a ensuite confirmé l'omission, autorisé l'import explicite et le rejeu complet, puis P-08 a
   été rétabli à `A_FAIRE`. La troisième répétition a passé les étapes 0 à 3, puis échoué sur l'équivalence finale du manifeste ; Sol a
-  localisé une conversion locale de `generatedAtUtc` dans le runner et autorisé un correctif d'une ligne. P-08 reste `BLOQUE` jusqu'au
-  nettoyage des artefacts temporaires, puis sera rétabli à `A_FAIRE` avant le rejeu intégral.
+  localisé une conversion locale de `generatedAtUtc` dans le runner et autorisé un correctif d'une ligne. Luna a ensuite nettoyé et
+  vérifié les deux copies temporaires ; P-08 revient à `A_FAIRE` sous cette autorisation, avant deux nouvelles passes complètes.
 
 **Prérequis D2b vérifiés le 2026-10-20 :** le clone original est accessible dans `C:/Users/flori/RiderProjects/shop42` ; sa branche
 locale et distante `fix/p08-keep-recalculated-preview` contient le commit de Florian `2875cf3` et l’arbre est propre. Le clone de preuve
@@ -177,7 +179,8 @@ branche prévue, arbre propre, sans upstream. Les contrôles locaux du clone son
 `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-local-verification.txt` ; l’inventaire YAML local des dix CI/releases est sous
 `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-yaml-trigger-inventory.txt`. Le diff du précédent rafraîchissement de manifeste a été
 archivé puis restauré ; les deux copies temporaires avaient été absentes au début du rejeu. Après la tentative du 2026-10-20T13:16:17Z,
-`ifs-shop42-rehearsal` et `ifs-shop42-fresh` contiennent des artefacts partiels, préservés jusqu'à l'arbitrage Sol ; le clone de preuve reste propre. L’audit Azure DevOps a confirmé les dix définitions
+`ifs-shop42-rehearsal` et `ifs-shop42-fresh` contenaient des artefacts partiels ; ils ont été supprimés par `Remove-TempCopy` et leur
+absence vérifiée à 2026-10-20T13:20:00Z. Le clone de preuve reste propre. L’audit Azure DevOps a confirmé les dix définitions
 en révision 9 et `queueStatus=enabled`, zéro run actif/en file, aucune PR pour la branche, et la garde `shop42-dev` conforme. Il a
 aussi révélé l’override CI décrit ci-dessus. Les huit définitions collatérales ne sont pas suspendues. Le rejeu peut commencer après
 l’intégration des amendements de Sol ; la livraison reste bloquée jusqu’à la suspension confirmée et aux autres contrôles de D2b.3.
@@ -191,10 +194,10 @@ dans les dix minutes après N, cette décision ne précise pas quand activer le 
 
 Prochaines actions :
 
-1. Les trois transcripts des tentatives échouées sont conservés avec leurs SHA-256. Sol a autorisé un correctif d'une ligne dans le
-   runner ; supprimer les deux copies temporaires uniquement par `Remove-TempCopy`, puis vérifier qu'elles sont absentes.
-2. Après nettoyage, rétablir formellement `A_FAIRE`, passer `gate.py check`, puis refaire entièrement répétition et exécution avec de
-   nouveaux transcripts distincts. Aucun changement du clone original ou du clone de preuve avant D2b.3.1–3.6.
+1. ✅ Les trois transcripts échoués et leurs SHA-256 sont conservés. Les deux copies temporaires ont été supprimées par `Remove-TempCopy`
+   et vérifiées absentes ; transcript de nettoyage archivé avec son SHA-256.
+2. P-08 est formellement rétabli à `A_FAIRE` selon Sol. Après `gate.py check` à 0, rejouer intégralement répétition et exécution avec
+   deux nouveaux transcripts distincts. Aucun changement du clone original ou du clone de preuve avant D2b.3.1–3.6.
 3. Après ces passes, Florian désactive exactement les huit définitions collatérales (`core` CI 74/release 76, `data` CI 77/release 79,
    `orders/apps/api` CI 83/release 85, `platform` CI 86/release 88) avec `queueStatus=disabled`, puis confirme les huit `disabled`,
    les deux définitions `orders/infra` (CI 80/release 82) toujours `enabled` et des files vides.
