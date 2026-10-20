@@ -72,6 +72,25 @@ Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
 
 ## Questions pour Claude
 
+**Réponse demandée par Florian à GPT Sol — arbitrage D2b.3 (2026-10-20).** Cette réponse remplace la recommandation C et la
+question D2b.3 conservées plus bas à titre d'historique. Choix retenu : garder la livraison sur `main` et suspendre
+temporairement les huit définitions collatérales. La voie branche seule est écartée : [DEC-101](docs/specs/03-decisions.md#dec-101--frontière-de-confiance-des-pipelines-et-capacités-des-connexions)
+et le contrôle de branche des service connections imposent `refs/heads/main`, y compris pour la branche du run CI lié
+([documentation Microsoft](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/approvals?view=azure-devops)).
+Avant tout commit/push/PR/merge, Florian doit relever les IDs, révisions, `queueStatus` initiaux et triggers des dix définitions
+(cinq CI et cinq releases), vérifier qu'aucun run n'est en cours ou en file, puis passer exactement les huit définitions
+collatérales à `disabled` : CI et release de core, data, platform et orders/apps/api. CI et release de orders/infra restent
+`enabled`. L'état est relu avant la livraison ; aucun changement YAML n'est prévu. `disabled` empêche les nouvelles mises en file,
+alors que `paused` les accepte ; les exécutions déjà en file ne démarrent pas ([API officielle](https://learn.microsoft.com/en-us/rest/api/azure/devops/build/definitions/update?view=azure-devops-rest-7.1)).
+Après l'essai D3 terminal, Florian restaure les huit valeurs initiales, vérifie les dix files et consigne les états. Le détail et
+les nouvelles conditions C2/C3 sont inscrits dans [P-08, étape 0 quinquies](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement).
+
+**État d'exécution après cet avis.** La décision de conception est prise selon la demande de Florian, mais l'étape ne peut pas
+reprendre : aucune écriture Azure DevOps n'a été effectuée ici (elles restent à la charge de l'utilisateur selon `AGENTS.md`),
+`C:/src/shop42` est absent de cet environnement, et C9 attend encore le choix de Florian entre un second approbateur humain et
+l'activation de l'auto-approbation après R0. Aucun commit, push, PR, merge, CI ou release D2b n'a eu lieu. Le statut `BLOQUE` et
+les lignes gérées par `gate.py` ne sont pas modifiés.
+
 **Arbitrage P-08 du 2026-10-18 (Claude) — D2b.3 : option C retenue.** Réponse à la question « D2b.3 » ; la question est résolue et
 retirée. Florian a confirmé C ; Luna, sous autorisation explicite de Florian, a configuré la garde via l'interface le 2026-10-18 (aucun pipeline, release, commit, push, PR ni fusion lancé).
 Options A (branche non fusionnée) et B (pipeline désactivé) écartées : A laisse `main` sans la mise à jour, B n'est pas vérifiable avant
@@ -129,7 +148,7 @@ Constats vérifiés dans `C:/src/shop42` (branche locale `fix/p08-keep-recalcula
 **D2a terminé (Luna, 2026-10-18).** Commit `bbf1d86` poussé sur `impl/preuves`. Pester complet : 122/122 ; `Test-ReferenceBicep.ps1`, `Test-ReferenceDeterminism.ps1` et `Test-ReferencePipelines.ps1` réussis ; manifeste cohérent sur 77 fichiers. Ces sorties établissent C1 pour D3.
 
 Prochaines actions :
-1. D2b : mise à jour locale de `C:/src/shop42` faite (branche `fix/p08-keep-recalculated-preview`, non commitée, non poussée). Nouvelle question à Claude : les filtres partagés déclencheraient aussi le CI app (push ACR) et quatre CI infra ; l'option C actuelle ne suffit pas. Ne rien commiter ni pousser avant arbitrage ; ne lancer aucun pipeline ni release.
+1. Reprendre D2b quand `C:/src/shop42` sera accessible dans l'environnement et après vérification par Florian des dix définitions, de l'absence de runs actifs/en file, de la désactivation des huit pipelines collatéraux et de la garde `shop42-dev`. Aucun commit/push/PR/merge avant ces preuves.
 2. Aucun lancement de release avant C1 à C9 vérifiées et consignées ici ; un seul essai manuel, distinct de R0.
 3. Garder #748 non diagnostiqué ; conserver le fail-closed et #738 comme preuve négative.
 4. Nettoyage Shop42 suspendu jusqu’à la réussite de P8 et des autres conditions de la procédure T.

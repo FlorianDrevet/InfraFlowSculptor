@@ -854,8 +854,9 @@ action impossible à réaliser avec les accès déjà ouverts.
         entre chaque fichier du clone et la publication neuve donne les mêmes nombres de lignes ajoutées/retirées que le commit D2a
         sur le fichier source. Toute exception ou tout écart : arrêt, rien corrigé à la main, `BLOQUE` avec la sortie complète. La
         sortie complète de la répétition et de l'exécution est conservée sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\D2b\`.
-     3. **Garde DEV, puis audit des déclencheurs — avant tout commit, push, PR ou fusion** (option C, arbitrage du 2026-10-18,
-        voir la sous-étape 5). Dans cet ordre ; une vérification fausse ou invérifiable : ne rien commiter ni pousser, `BLOQUE`.
+     3. **Garde DEV, puis audit des déclencheurs — avant tout commit, push, PR ou fusion** (protocole GPT Sol du 2026-10-20,
+        sous-étape 6 ; l'option C du 2026-10-18 est historique). Dans cet ordre ; une vérification fausse ou invérifiable : ne rien
+        commiter ni pousser, `BLOQUE`.
         1. *Garde présente.* L'environnement `shop42-dev` (ID 10, organisation `floriandrevet0332`, projet `shop42`) porte, sur sa
            page « Approvals and checks », un contrôle **Pre-check approvals** placé **avant** l'Exclusive Lock existant : approbateur
            `[shop42]\Shop42 Release Approvers` (un seul membre suffit), « Allow approvers to approve their own runs » **désactivé**,
@@ -877,11 +878,13 @@ action impossible à réaliser avec les accès déjà ouverts.
            par sa ressource pipeline sur ce CI, **à la condition que 1 et 2 soient vérifiés** (traité en 4.d). Tout autre
            déclencheur (pipeline d'application, autre CI qui se connecte à Azure, autre ressource pipeline, planification) : ne pas
            pousser, `BLOQUE`.
-     4. **Seulement si la sous-étape 3 est entièrement vérifiée** : commit, push, PR, fusion, CI N, puis run de release automatique R0.
+     4. **Seulement si les sous-étapes 3 et 6 sont entièrement vérifiées** : commit, push, PR, fusion par Florian, CI N, puis
+        run de release automatique R0.
         1. Commit dans Azure Repos (seuls les chemins modifiés + `.ifs/manifest.json`), corps : « Mise à jour ciblée, pas une
            republication : <chemins> viennent de IFS <commit D2a> ; rien d'autre ne change ; units.* inchangées », push, PR vers `main`
-           (même procédure que #51/#52/#74), fusion : Luna fait le commit/push, ouvre la PR et fusionne la branche, sous la délégation explicite
-           donnée par Florian pour poursuivre P-08. Aucune autre branche ni autre PR.
+           (même procédure que #51/#52/#74). Luna fait le commit/push de la branche et ouvre la PR ; Florian vérifie l'état des huit
+           définitions et effectue la fusion lui-même, car les écritures Azure DevOps restent à sa charge selon `AGENTS.md`. Aucune
+           autre branche ni autre PR.
         2. Attendre la fin du CI `orders/infra` déclenché (numéro noté N). Vérifier :
            `rtk git -C C:/src/shop42 diff --stat <origin/main de départ> origin/main` ne liste que les chemins attendus ; CI N réussi ;
            l'artefact `infra` de N contient `IfsRelease.psm1` de même empreinte logique que celui du clone, et `orders/infra/main.bicep` et
@@ -894,8 +897,8 @@ action impossible à réaliser avec les accès déjà ouverts.
            exception.
         4. **Traitement de R0 : bloqué puis rejeté, jamais approuvé.** `Preview_dev` de R0 peut s'exécuter (lecture seule) et publier
            `ifs-preview-dev`. `Deploy_dev` doit ensuite rester **en attente du Pre-check approvals**, sans démarrer ses étapes.
-           Sous la délégation explicite de Florian, Luna peut **rejeter** l'approbation de R0 dans l'interface, le run automatique connu
-           seulement ; **personne n'approuve R0, ni pour « voir »**, Luna jamais. Elle ne touche à aucun autre run. Consigner dans
+           Florian **rejette** l'approbation de R0 dans l'interface, le run automatique connu seulement ; **personne n'approuve R0,
+           ni pour « voir »**. Luna n'effectue aucune écriture Azure DevOps et ne touche à aucun autre run. Consigner dans
            `NEXT.md` : ID de R0, heure UTC de son apparition et du
            rejet, état final de chaque stage (`Preview_dev` terminé, `Deploy_dev` rejeté, `Deploy_prd` ignoré), preuve que
            `Deploy_dev` n'a jamais démarré (timeline : aucune tâche exécutée, pas d'artefact `ifs-report-dev`), capture
@@ -904,26 +907,62 @@ action impossible à réaliser avec les accès déjà ouverts.
            par erreur, ou un autre run de release apparaît (ID ≠ R0, en cours ou en file). Luna arrête et demande à Florian au lieu d'annuler
            le run en cause ; `BLOQUE` avec la timeline ; D3 est alors annulé tant que Claude n'a pas arbitré. L'état Azure est relevé
            par l'inventaire en lecture seule de C5.
-     5. **Arbitrage D2b.3 du 2026-10-18 — option C retenue.** Le verrou constaté à l'audit (la fusion de D2b déclenche `ci.yml` puis,
+     5. **Arbitrage D2b.3 du 2026-10-18 — option C retenue (historique, remplacé le 2026-10-20).** Le verrou constaté à l'audit (la fusion de D2b déclenche `ci.yml` puis,
         par sa ressource pipeline, `release.yml` avec une étape DEV alors non protégée) est levé par la garde de la sous-étape 3.1,
         configurée par Luna, sous autorisation explicite de Florian, via l'interface (aucun pipeline, release, commit, push, PR ni fusion n'avait eu lieu).
         Les options A (branche non fusionnée) et B (désactivation de la définition de pipeline) sont écartées : A laisse `main` sans
         la mise à jour, B repose sur un comportement non vérifiable avant d'agir. Ordre imposé : garde vérifiée → fusion → CI N →
         R0 bloqué et rejeté → D3. Le texte d'instructions du contrôle (« ne pas approuver la release automatique déclenchée par la
         fusion ») en est la consigne d'exécution côté interface.
+     6. **Avis GPT Sol demandé par Florian (2026-10-20) — protocole qui remplace l'option C pour les déclencheurs collatéraux.**
+        L'audit prouve que la garde shop42-dev seule ne neutralise pas les CIs et releases collatérales. La voie branche seule est
+        écartée : DEC-101 et les connexions installées limitent le contrôle de branche à refs/heads/main, y compris pour la branche
+        de l'artefact de pipeline lié. Aucun YAML du clone ne doit être modifié pour résoudre ce point.
+        1. **Avant la fenêtre de suspension**, Florian relève en lecture seule les dix définitions concernées : les cinq CI
+           (core/infra, data/infra, orders/infra, platform/infra, orders/apps/api) et leurs cinq releases. Pour chacune, noter
+           le nom, le chemin YAML, l'ID, la révision, le queueStatus initial, les triggers YAML et ceux configurés dans l'interface.
+           Relever aussi toute exécution en cours ou en file. Toute exécution en cours/en file, définition inattendue, trigger
+           non compris ou état illisible : arrêt, aucune modification de queueStatus, aucun commit/push/PR/merge.
+        2. **Désactivation temporaire par Florian, avant tout commit/push/PR/merge.** Avec son autorisation explicite et via l'interface
+           ou l'API Azure DevOps, passer queueStatus à disabled pour exactement ces huit définitions collatérales : les CI
+           core/infra, data/infra, platform/infra et orders/apps/api ; les releases correspondantes core/infra, data/infra,
+           platform/infra et orders/apps/api. Laisser orders/infra CI et release activés. Ne changer que queueStatus ; relever
+           l'état initial et la nouvelle révision de chaque définition. Ne pas utiliser paused : paused accepte les mises en file.
+           Avant toute livraison, une lecture de contrôle doit confirmer disabled sur les huit définitions, et queueStatus=enabled
+           sur les deux définitions orders/infra. Une différence ou une vérification impossible : arrêt. Un état disabled empêche
+           de nouvelles mises en file ; les exécutions déjà en file ne démarrent pas, raison pour laquelle la file doit être vide
+           avant la désactivation.
+        3. **Vérification du clone et de la garde.** Dans C:/src/shop42, confirmer que la branche et le diff sont ceux prévus,
+           exactement les deux fichiers préparés par D2b, et relire les filtres et les YAML des dix pipelines contre l'inventaire.
+           Vérifier la garde shop42-dev et que seul Deploy_dev écrit. Si le clone n'est pas accessible dans l'environnement courant,
+           si le diff diffère, ou si une CI/release collatérale n'est pas disabled, ne rien commiter ni pousser.
+        4. **Livraison limitée.** Seulement après les contrôles précédents : validations de PR sans connexion Azure, puis commit, push,
+           PR et fusion sur main selon la délégation déjà donnée pour P-08. Pendant cette fenêtre, seul le CI orders/infra N et
+           son run automatique de release R0 sont attendus. Toute CI/release différente de N/R0, tout pipeline collatéral mis en
+           file ou toute écriture Azure avant l'approbation : arrêt, ne pas annuler le run inattendu et ne pas poursuivre D3.
+           R0 reste bloqué à Deploy_dev, est rejeté par Florian, jamais approuvé, et n'est pas l'essai D3.
+        5. **C2 et C3 remplacent leurs définitions précédentes pour ce protocole.** C2 exige le diff D2b exact, la fusion prévue,
+           CI orders/infra N réussi, R0 traité comme ci-dessus (ou absence après dix minutes consignée), et les huit définitions
+           collatérales toujours disabled. C3 exige aucune exécution en cours ou en file, aucun run inattendu depuis la fusion,
+           au plus R0 terminé et rejeté avant toute mutation, et orders/infra CI/release toujours activés. Avant le lancement manuel
+           D3, refaire ces lectures ; aucune autre poussée ou CI orders/infra n'est autorisée jusqu'à la fin de l'essai.
+        6. **Restauration.** Après le run D3 terminal et seulement quand les dix pipelines n'ont aucune exécution en cours ou en file,
+           Florian rétablit les queueStatus initiaux des huit définitions suspendues et vérifie chaque résultat par lecture. Consigner
+           IDs, états avant/après, révisions, captures et absence de runs différés. Si une exécution inattendue existe ou si la
+           restauration n'est pas confirmable, maintenir les définitions collatérales désactivées et arrêter pour arbitrage.
+        7. C9 reste une condition séparée : avant de commencer la suspension, Florian confirme qu'il pourra appliquer après R0 l'une
+           des solutions déjà prévues (second approbateur humain, ou activation de l'auto-approbation après R0 avec nouvelle capture).
+           D3 ne démarre pas tant que cette solution n'est pas en place et vérifiée.
    - **D3 — conditions, puis essai unique.** Luna ne lance **aucune** release `orders` tant que **toutes** les conditions suivantes
      (C1 à C9) ne sont pas vérifiées, la même session, et consignées dans `NEXT.md` (ligne « Ressources Azure créées… », avec l'heure UTC).
      Une condition fausse ou invérifiable : ne rien lancer, `BLOQUE` avec la condition en cause.
      - **C1** D2a commitée et poussée, ses vérifications vertes (sortie citée).
-     - **C2** D2b terminée : conditions de la sous-étape 4 satisfaites, CI N réussi, et R0 traité selon 4.4 (ou absence de R0
-       consignée selon 4.3).
-     - **C3** Lecture seule des exécutions de `shop42` : **aucune exécution en cours ni en file, sans exception**, et **au plus un
-       run de release déjà terminé hors de l'essai : R0**, le run automatique connu de 4.3, dont l'ID et l'état sont consignés dans
-       `NEXT.md`, **rejeté avant mutation** (`Deploy_dev` jamais démarré, pas d'`ifs-report-dev`, `Deploy_prd` ignoré). Tout autre run
-       de release depuis la fusion (ID ≠ R0), tout R0 non terminal ou ayant écrit : arrêt. R0 ne compte pas comme l'essai unique.
-       `release.yml` d'`orders/infra` n'a pas d'autre déclencheur automatique que sa ressource pipeline sur le CI ; aucun push sur
-       `main` ni aucun CI `orders/infra` n'est prévu ou en attente jusqu'à la fin de l'essai (un nouveau CI relancerait ce
-       déclencheur) ; aucune livraison applicative prévue.
+     - **C2** D2b terminée selon le protocole GPT Sol : diff limité aux deux fichiers prévus, huit pipelines collatéraux `disabled`
+       (états enregistrés), fusion `main` effectuée, CI orders/infra N réussi, et R0 traité selon les règles D2b (ou absence de R0
+       consignée après dix minutes).
+     - **C3** Lecture seule : aucune exécution en cours ou en file parmi les dix définitions, aucun run inattendu depuis la fusion,
+       et au plus R0 terminé et rejeté avant mutation. Les huit définitions collatérales restent `disabled`; CI et release
+       orders/infra restent `enabled`. Aucun push ni nouveau CI orders/infra n'est autorisé jusqu'au terminal de l'essai D3.
      - **C4** État DEV inchangé : une passe du script D1b (même code, boucle ramenée à 1, `AZURE_CORE_ONLY_SHOW_ERRORS=true` dans le seul
        processus, artefact `infra` de N, dossier `D3-pre`) donne l'empreinte `77dc939ffd65b288a6534f5172191753ea05a06bb3d14bdad7d9626e112a87b1`.
        Un autre résultat : arrêt, Azure a changé sans mutation connue.
