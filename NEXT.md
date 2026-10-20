@@ -10,10 +10,10 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `BLOQUE` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
-| **Verrou** | D2b.2 — runner corrigé selon Sol, artefacts temporaires nettoyés et vérifiés ; deux passes complètes à rejouer avec de nouveaux transcripts |
+| **Verrou** | D2b.3.5 — les huit pipelines collatéraux sont encore `Enabled` ; Florian doit les désactiver et confirmer les états avant toute livraison Shop42 |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
 | **Dernière mise à jour** | 2026-10-20 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
@@ -180,11 +180,34 @@ branche prévue, arbre propre, sans upstream. Les contrôles locaux du clone son
 `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-yaml-trigger-inventory.txt`. Le diff du précédent rafraîchissement de manifeste a été
 archivé puis restauré ; les deux copies temporaires avaient été absentes au début du rejeu. Après la tentative du 2026-10-20T13:16:17Z,
 `ifs-shop42-rehearsal` et `ifs-shop42-fresh` contenaient des artefacts partiels ; ils ont été supprimés par `Remove-TempCopy` et leur
-absence vérifiée à 2026-10-20T13:20:00Z. Le clone de preuve reste propre. L’audit Azure DevOps a confirmé les dix définitions
-en révision 9 et `queueStatus=enabled`, zéro run actif/en file, aucune PR pour la branche, et la garde `shop42-dev` conforme. Il a
-aussi révélé l’override CI décrit ci-dessus. Les huit définitions collatérales ne sont pas suspendues. Le rejeu peut commencer après
-l’intégration des amendements de Sol ; la livraison reste bloquée jusqu’à la suspension confirmée et aux autres contrôles de D2b.3.
-Aucune écriture Azure DevOps n’a été faite par Luna.
+absence vérifiée à 2026-10-20T13:20:00Z.
+
+**Résultat du rejeu D2b.2 — 2026-10-20 :** répétition et exécution complètes terminées avec `PASS_OK`, IFS fixé au commit
+`893f2a3dda4d7c8461be9c93f208a9e84d317962`. Transcripts complets conservés dans `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/` :
+
+- `d2b-rehearsal-rerun-transcript.txt` — SHA-256 `F2FDF29815BE5061649519C352308562CEDFC2EF275395B27598C184E66CB40E`.
+- `d2b-execution-rerun-transcript.txt` — SHA-256 `39660364C48D244FD5DB9442822844F54CD628575A580AF8859738E1F40DC5A9`.
+- Runner employé `d2b-replay-runner.ps1` — SHA-256 `ACA244751B3B8C1F041D082FD985FA2C331E26B7579D168F06E432A74647A91A`.
+
+Les deux passes confirment la publication ciblée, les unités inchangées et l’égalité attendue du manifeste final. Les chemins
+temporaires `C:/Users/flori/AppData/Local/Temp/ifs-shop42-rehearsal` et `C:/Users/flori/AppData/Local/Temp/ifs-shop42-fresh`
+sont absents. Le clone original `shop42` reste propre sur `2875cf3cb3fbb0eef2c777dc6d4565d4b16612aa`. Le clone de preuve
+`shop42-d2b-proof`, basé sur `origin/main` `3f5917588b83d11fc07d7f9838f5e895e037dd6d`, ne contient que deux fichiers modifiés :
+`.ifs/manifest.json` et `.ifs/templates/scripts/IfsRelease.psm1` ; aucun commit n’y a été créé.
+
+**Contrôles D2b.3 en lecture seule — 2026-10-20 :** les dix réglages de traitement des nouvelles exécutions affichent `Enabled`
+dans Azure DevOps : IDs 74, 76, 77, 79, 80, 82, 83, 85, 86 et 88. Les deux `orders/infra` (80 et 82) sont dans l’état attendu ;
+les huit collatéraux (74, 76, 77, 79, 83, 85, 86 et 88) ne sont pas suspendus. Le filtre global `Queued` + `Running` affiche
+« No results found » ; l’onglet PR actives ne trouve aucune PR. `shop42-dev` porte `Pre-check approvals` en ordre 1 avant
+`Exclusive Lock` en ordre 2, avec `[shop42]\Shop42 Release Approvers`, délai 30 jours et auto-approbation décochée. Les YAML
+locaux confirment que `Preview_dev` est un job en lecture seule, que seul `Deploy_dev` appelle `Invoke-IfsInfraDeploy` sous
+`shop42-dev`, et que `Deploy_prd` dépend de `Deploy_dev`. Le dernier inventaire de révisions reste celui de l’audit précédent
+(révision 9) ; les nouvelles révisions devront être relevées après la suspension. Aucun réglage Azure DevOps n’a été modifié par Luna.
+
+**Blocage retenu avec GPT Sol :** P-08 reste `BLOQUE` avant D2b.3.5. Florian doit désactiver exactement les huit définitions
+collatérales, laisser 80 et 82 `Enabled`, puis confirmer les huit `Disabled`, les deux `Enabled` et les files vides. Aucun commit,
+push, PR ou merge dans Shop42 avant cette confirmation et les contrôles D2b.3.1 à 3.6. `gate.py` ne propose pas de commande `block` ;
+le statut et le motif de NEXT sont actualisés selon la décision explicite de Sol.
 
 Florian a choisi d'activer lui-même l'auto-approbation après R0 et fournira une nouvelle capture avant D3. Si R0 n'apparaît pas
 dans les dix minutes après N, cette décision ne précise pas quand activer le réglage : demander une confirmation distincte avant D3.
@@ -196,12 +219,13 @@ Prochaines actions :
 
 1. ✅ Les trois transcripts échoués et leurs SHA-256 sont conservés. Les deux copies temporaires ont été supprimées par `Remove-TempCopy`
    et vérifiées absentes ; transcript de nettoyage archivé avec son SHA-256.
-2. P-08 est formellement rétabli à `A_FAIRE` selon Sol. Après `gate.py check` à 0, rejouer intégralement répétition et exécution avec
-   deux nouveaux transcripts distincts. Aucun changement du clone original ou du clone de preuve avant D2b.3.1–3.6.
-3. Après ces passes, Florian désactive exactement les huit définitions collatérales (`core` CI 74/release 76, `data` CI 77/release 79,
-   `orders/apps/api` CI 83/release 85, `platform` CI 86/release 88) avec `queueStatus=disabled`, puis confirme les huit `disabled`,
-   les deux définitions `orders/infra` (CI 80/release 82) toujours `enabled` et des files vides.
-4. Après cette confirmation, Luna commite le résultat testé dans le clone de preuve, l’intègre par merge à la branche originale en
+2. ✅ D2b.2 est terminée : les transcripts `d2b-rehearsal-rerun-transcript.txt` et `d2b-execution-rerun-transcript.txt` finissent
+   tous deux par `PASS_OK` ; leurs SHA-256 et le HEAD IFS fixé sont consignés ci-dessus.
+3. ⛔ D2b.3.5 bloque la livraison : Florian désactive exactement les huit définitions collatérales (`core` CI 74/release 76,
+   `data` CI 77/release 79, `orders/apps/api` CI 83/release 85, `platform` CI 86/release 88) avec `queueStatus=disabled`.
+   Laisser `orders/infra` (CI 80/release 82) à `enabled`, puis confirmer les huit `disabled`, les deux `enabled` et des files vides.
+4. Après cette confirmation, Luna relit D2b.3.1–3.6 et, seulement si tous les contrôles passent, commite le résultat testé dans le
+   clone de preuve, l’intègre par merge à la branche originale en
    préservant `2875cf3` et en vérifiant l’identité de l’arbre, pousse sans force et ouvre la PR ; Florian fusionne, puis lance
    manuellement un seul N sur le SHA de fusion et rejette R0 avant toute tâche `Deploy_dev`.
 5. Le choix C9 est fait : Florian active lui-même l’auto-approbation après R0 et fournit une nouvelle capture avant D3.
