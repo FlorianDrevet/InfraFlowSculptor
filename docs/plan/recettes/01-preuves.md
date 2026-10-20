@@ -14,8 +14,9 @@
 > les contrôles de disponibilité 1 à 3 du § 0.3 ont réussi en lecture seule sur la souscription par défaut, qui correspond
 > au snapshot du 2026-10-08. Le budget de souscription préexistant reste à 200 EUR/mois ; le 2026-10-15, le coût réel
 > affiché était 0,4303 EUR et la prévision n'était pas retournée. Le recalcul Retail API donne un sous-total de 6,75 à
-> 30,17 EUR pour les postes chiffrés, mais les coûts annexes et l'usage des crédits gratuits restent à vérifier ; le
-> plafond et cette estimation doivent être explicitement confirmés avant de reprendre P-08. Aucune ressource n'a été
+> 30,17 EUR pour les postes chiffrés, mais les coûts annexes et l'usage des crédits gratuits restent à vérifier. Cette
+> exigence historique de plafond chiffré a été remplacée par la décision de Florian du 2026-10-17, décrite au § 0.1.
+> Aucune ressource n'a été
 > déployée.
 >
 > **Stratégie de coût ([DT-42](../../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure)) :** une seule
@@ -27,35 +28,34 @@
 
 ## 0. Verrou de coût et préflight bloquants
 
-### 0.1 Verrou de dépense (aucune commande Azure avant)
+### 0.1 Surveillance des coûts avant toute action sur les ressources Azure
 
-Ne lancez **aucune** commande Azure (ni création, ni déploiement, ni kit, ni préflight qui crée quoi que ce soit) tant que vous
-n'avez pas : (1) fixé un **plafond de dépense** en euros pour toute la recette ; (2) relu l'estimation du § 0.2
-**actualisée** (relire les tarifs publics du jour pour `francecentral`, dans la devise de votre contrat) ; (3) répondu
-« confirmé » à Claude et consigné dans [NEXT.md](../../../NEXT.md) (ligne « Plafond de dépense et estimation ») le plafond,
-la date et l'estimation. L'estimation North Europe du 2026-10-08 est historique et ne peut pas confirmer le coût France
-Central. Sans plafond et estimation France Central confirmés : statut `BLOQUE`. Un **budget Azure est une alerte différée**
-(données de coût en retard de
-plusieurs heures), **pas un coupe-circuit**. Le contrôle du 2026-10-08 a trouvé un budget mensuel préexistant de 200 EUR
-à l'échelle de la souscription, avec alerte à 80 % du coût réel et à 100 % prévisionnel. Ne pas créer de doublon ni
-modifier ce budget sans nouvelle demande. **Contrôle de coût et d'inventaire** : au démarrage et à la fin de
-chaque session, avant et après chaque déploiement ou run Azure significatif, puis après chaque nettoyage. Consigner l'heure
-UTC, le coût affiché et les IDs vérifiés dans [l'inventaire](../preuves/inventaires-azure.md). Vérifier dans
-*Cost Management → Cost analysis* le coût réel et la prévision disponible ; les données pouvant être retardées, ce contrôle
-n'est pas une surveillance continue ni une garantie de plafond. Pour l'inventaire, lister les ressources, piles, groupes et
-attributions de rôle de la souscription sans filtrer par nom ; comparer les IDs exacts au registre, en comparaison
-insensible à la casse. Une pause de plus de 24 h ne déclenche pas, à elle seule, la suppression du jeu : contrôler le réel
-et la prévision avant de reprendre, intégrer SQL, Log Analytics, stockage et ACR à l'estimation, et continuer uniquement si
-le plafond le permet. Si le seuil est atteint, suivre la procédure d'urgence de [l'inventaire Azure](../preuves/inventaires-azure.md).
+**Décision de Florian du 2026-10-17 :** aucun plafond personnel n'est fixé et la poursuite est autorisée sous contrôle des coûts.
+Cette décision remplace l'exigence historique de plafond numérique ; elle ne fait pas du budget Azure préexistant une limite ou un
+coupe-circuit et ne garantit pas une facture maximale. Avant toute commande qui crée, déploie ou modifie des ressources Azure,
+actualiser l'estimation complète du § 0.2 pour `francecentral` et la devise du contrat, relever le coût réel et la prévision
+disponible, puis consigner dans [NEXT.md](../../../NEXT.md) la date, les montants et la confirmation que Florian autorise toujours
+la poursuite sans plafond personnel. Sans ces données ou si Florian retire cette autorisation : aucune écriture sur les ressources.
+Les commandes de lecture nécessaires à l'estimation et au contrôle restent permises. Ne pas créer de budget supplémentaire ni
+modifier le budget préexistant sans nouvelle demande.
 
-Si le coût réel ou l'estimation disponible atteint le seuil confirmé dans `NEXT.md`, arrêter les nouveaux runs et lancer
-le nettoyage d'urgence décrit dans [l'inventaire Azure](../preuves/inventaires-azure.md) : supprimer uniquement les IDs
-créés par Luna, même si toutes les captures ne sont pas encore terminées. Un nom ou un préfixe seul ne prouve pas la
-propriété ; ne jamais exécuter `deleteAll` si une pile ou un groupe contient un élément absent de l'inventaire.
+**Contrôle de coût et d'inventaire :** au démarrage et à la fin de chaque session, avant et après chaque déploiement ou run Azure
+significatif, puis après chaque nettoyage. Consigner l'heure UTC, le coût affiché et les IDs vérifiés dans
+[l'inventaire](../preuves/inventaires-azure.md). Vérifier dans *Cost Management → Cost analysis* le coût réel et la prévision
+disponible ; les données peuvent avoir plusieurs heures de retard, ce contrôle n'est pas une surveillance continue. Pour
+l'inventaire, lister les ressources, piles, groupes et attributions de rôle de la souscription sans filtrer par nom ; comparer les
+IDs exacts au registre, insensiblement à la casse. Une pause de plus de 24 h ne déclenche pas à elle seule la suppression du jeu :
+actualiser les coûts avant de reprendre et inclure SQL, Log Analytics, stockage, ACR, services annexes et taxes dans l'estimation.
+
+Si Florian demande l'arrêt de la recette, arrêter les nouveaux runs et appliquer la procédure d'urgence de
+[l'inventaire Azure](../preuves/inventaires-azure.md) uniquement à ses IDs explicitement inventoriés comme créés par Luna, même si
+toutes les captures ne sont pas terminées. Un nom ou un préfixe seul ne prouve pas la propriété ; ne jamais exécuter `deleteAll` si
+une pile ou un groupe contient un élément absent de l'inventaire. Toute suppression reste une action de Florian conformément à
+`AGENTS.md`.
 
 ### 0.2 Estimation historique (tarifs Retail API `northeurope` vérifiés le 2026-10-08)
 
-Les tarifs unitaires ci-dessous proviennent de l'[API officielle Azure Retail Prices](https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices) et concernent **North Europe uniquement**, au 2026-10-08. Ils sont conservés comme historique et ne sont pas valables pour la décision France Central. Avant toute commande Azure, relire les tarifs de chaque service en `francecentral`, recalculer l'estimation complète et faire confirmer le plafond selon le § 0.1. Référence historique EUR : SQL General Purpose serverless Gen5 à 0,4683 €/vCore-heure, ACR Basic à 0,1466 €/jour, et ingestion Log Analytics à 2,4287 €/Go au-delà des 5 premiers Go gratuits par mois et par compte de facturation. L'estimation ne suppose pas que ce crédit Log Analytics reste disponible : l'usage préexistant du compte est inconnu. Les tarifs non USD de cette API restent des prix de référence ; vérifier la devise de facturation réelle avant de créer le budget.
+Les tarifs unitaires ci-dessous proviennent de l'[API officielle Azure Retail Prices](https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices) et concernent **North Europe uniquement**, au 2026-10-08. Ils sont conservés comme historique et ne sont pas valables pour la décision France Central. Avant toute commande qui modifie des ressources, relire les tarifs de chaque service en `francecentral`, recalculer l'estimation complète et confirmer la poursuite sans plafond personnel selon le § 0.1. Référence historique EUR : SQL General Purpose serverless Gen5 à 0,4683 €/vCore-heure, ACR Basic à 0,1466 €/jour, et ingestion Log Analytics à 2,4287 €/Go au-delà des 5 premiers Go gratuits par mois et par compte de facturation. L'estimation ne suppose pas que ce crédit Log Analytics reste disponible : l'usage préexistant du compte est inconnu. Les tarifs non USD de cette API restent des prix de référence ; vérifier la devise de facturation réelle avant de créer le budget.
 Le calcul ci-dessous ne couvre pas le stockage, les sauvegardes, le trafic sortant, les taxes ni les services annexes
 (Key Vault, stockage technique, registre de journaux d'activité) ; il ne constitue donc pas le total de la recette.
 
@@ -106,7 +106,7 @@ aucun repli vers une autre région, aucun changement de SKU, aucune création «
 | 2 | Fournisseurs enregistrés avec `France Central` | `az provider show -n Microsoft.App --query "resourceTypes[?resourceType=='managedEnvironments'].locations"` ; idem `Microsoft.Sql`/`servers`, `Microsoft.ContainerRegistry`/`registries`, `Microsoft.OperationalInsights`/`workspaces`, `Microsoft.Insights`/`components`, `Microsoft.KeyVault`/`vaults`, `Microsoft.Storage`/`storageAccounts`, `Microsoft.ManagedIdentity`/`userAssignedIdentities` ; enregistrer les fournisseurs manquants | une région absente |
 | 3 | SQL serverless `GP_S_Gen5_1` disponible | `az sql db list-editions --location francecentral --edition GeneralPurpose --service-objective GP_S_Gen5_1 --available -o table` | non disponible ou provisionnement restreint |
 | 4 | Zone redondante désactivée dans le clone | `Select-String -Path <clone>/data/infra/main.*.bicepparam -Pattern 'zoneRedundant'` et `Select-String -Path <clone>/orders/infra/main.*.bicepparam -Pattern 'zoneRedundant'` : chaque valeur doit être explicitement `false` (SQL dans `data`, environnement Container Apps dans `orders`) | une valeur absente ou `true` |
-| 5 | Offre SQL gratuite | (a) `bicep build` du clone profilé accepte `useFreeLimit`/`freeLimitExhaustionBehavior` avec `sql/server:0.22.0` ; (b) après franchissement du verrou de dépense, exécuter un What-If ARM avec le profil par défaut **sans** `-SqlFreeOffer` pour vérifier que l'API accepte aussi `freeLimitExhaustionBehavior` quand `useFreeLimit` est faux ; si l'offre gratuite est envisagée, exécuter un second What-If avec `-SqlFreeOffer` ; (c) le portail (*Create SQL database*, souscription et région cibles) propose l'offre gratuite ; (d) `az resource list --subscription <id> --resource-type Microsoft.Sql/servers/databases --query "[].{id:id,useFreeLimit:properties.useFreeLimit,behavior:properties.freeLimitExhaustionBehavior}" -o table` ne montre aucune base existante avec `useFreeLimit = true` ; (e) le **décalage** « une base » (schéma AVM) / « dix bases » (documentation) est noté : ne pas supposer plus d'**une** base gratuite, la base `prd` la reçoit | (a), (b) ou (c) échoue : omettre `-SqlFreeOffer`, refaire l'estimation et reconfirmer le plafond au § 0.1 avant tout déploiement ; (d) échoue : même arrêt et estimation sans offre |
+| 5 | Offre SQL gratuite | (a) `bicep build` du clone profilé accepte `useFreeLimit`/`freeLimitExhaustionBehavior` avec `sql/server:0.22.0` ; (b) après franchissement du contrôle de coût, exécuter un What-If ARM avec le profil par défaut **sans** `-SqlFreeOffer` pour vérifier que l'API accepte aussi `freeLimitExhaustionBehavior` quand `useFreeLimit` est faux ; si l'offre gratuite est envisagée, exécuter un second What-If avec `-SqlFreeOffer` ; (c) le portail (*Create SQL database*, souscription et région cibles) propose l'offre gratuite ; (d) `az resource list --subscription <id> --resource-type Microsoft.Sql/servers/databases --query "[].{id:id,useFreeLimit:properties.useFreeLimit,behavior:properties.freeLimitExhaustionBehavior}" -o table` ne montre aucune base existante avec `useFreeLimit = true` ; (e) le **décalage** « une base » (schéma AVM) / « dix bases » (documentation) est noté : ne pas supposer plus d'**une** base gratuite, la base `prd` la reçoit | (a), (b) ou (c) échoue : omettre `-SqlFreeOffer`, actualiser l'estimation et confirmer la poursuite sans plafond personnel au § 0.1 avant tout déploiement ; (d) échoue : même arrêt et estimation sans offre |
 | 6 | ACR Basic suffisant | taille de l'image témoin (`docker image ls`) ≪ 10 GiB ; un seul build/push par CI de P1, P8 ; limites Basic publiées (débit de lecture/écriture) relues dans la documentation du jour | limite dépassée : arrêt ; toute hausse de SKU exige une nouvelle décision et une estimation confirmée |
 | 7 | Plafond d'ingestion sans effet sur les assertions | le contrôle `logs` n'exécute que `print 1` ; vérifier au premier run P1 que `/health/dependencies` réussit | `logs` en erreur à cause du plafond |
 | 8 | Commande de passage `denyDelete` → `none` | `az stack sub create --help` (CLI 2.90.0) : le CLI met à jour une pile avec `create` ; il n'expose pas de commande `update` dédiée. Pour le nettoyage normal, répéter le dernier modèle, commit et paramètres déployés, puis comparer le What-If avant mise à jour. En urgence, ne pas mettre à jour la pile : utiliser seulement un opérateur déjà exclu du deny, sinon s'arrêter et signaler le verrou | le modèle exact ou les paramètres manquent, l'opérateur n'est pas exclu, ou le What-If annonce une modification de ressource |
@@ -168,7 +168,7 @@ Contrôles manuels, à appliquer chaque fois qu'une étape touche SQL ou l'API ;
 | Azure DevOps | Organisation, projet, dépôt Azure Repos et droits d'administrateur du projet. Créer le groupe de sécurité ShopNN Release Approvers avec les membres autorisés. |
 | Poste | Azure CLI connecté au bon tenant, extension azure-devops, PowerShell 7, Git, accès aux abonnements et au projet. `Save-AdoRecordings.ps1` requiert PowerShell 7.5+ pour conserver les timestamps JSON à l'identique. Installer sqlcmd seulement si vous préférez l'utiliser plutôt que l'éditeur de requête du portail. |
 | Code projet | Choisir un identifiant libre, par exemple shop42, puis le garder constant pour ce jeu de ressources. Les noms de ressources et le projet Azure DevOps doivent suivre le code publié. |
-| Budget | Verrou du [§ 0.1](#01-verrou-de-dépense-aucune-commande-azure-avant) franchi (plafond et estimation confirmés dans NEXT.md) ; préflight [§ 0.3](#03-préflight-bloquant-avant-toute-création) entièrement coché. |
+| Budget | Contrôle du [§ 0.1](#01-surveillance-des-coûts-avant-toute-action-sur-les-ressources-azure) effectué (autorisation sans plafond personnel et estimation actualisée consignées dans `NEXT.md`) ; préflight [§ 0.3](#03-préflight-bloquant-avant-toute-création) entièrement coché. |
 
 L'état doit être confirmé par vous dans [NEXT.md](../../../NEXT.md) avant la première exécution. L'organisation Azure DevOps
 se passe au script de capture comme son slug (par exemple contoso), pas comme une URL complète.
@@ -199,7 +199,7 @@ Vérifier que bin/, obj/, .vs/, .git/ et TestResults/ ne sont pas présents sous
 
 N'ajouter `-SqlFreeOffer` à la commande réelle qu'après réussite de toutes les vérifications du préflight 5 et recalcul
 de l'estimation. Sinon, laisser l'option absente : les bases restent en offre payante. Si l'offre échoue au What-If ou au
-portail, republier le profil sans `-SqlFreeOffer`, refaire l'estimation et reconfirmer le plafond avant tout déploiement.
+portail, republier le profil sans `-SqlFreeOffer`, refaire l'estimation et confirmer la poursuite sans plafond personnel avant tout déploiement.
 
 Pour le dépôt neuf, créer le commit initial et pousser main afin que le pipeline d'installation puisse le lire.
 Après l'installation du kit, faire passer les changements de preuve par des branches et pull requests vers main.
@@ -392,27 +392,31 @@ aucun run de release d'infrastructure n'est en attente ; #738 n'est pas relancé
 
 **Préalable ajouté par l'arbitrage du 2026-10-17 :** la nouvelle preuve positive ci-dessous attend la clôture du diagnostic
 P-08, étape 0 quater, et le protocole D2/D3 de l'[étape 0 quinquies](../01-preuves.md#p-08--exécution-des-preuves-accompagnement)
-(arbitrage du 2026-10-18). Aucun pipeline ou release n'est lancé pendant D1a/D1b. Les cinq aperçus sous l'identité personnelle
-ne diagnostiquent pas causalement le run #748 ; son What-If recalculé est irrécupérable : #748 reste **définitivement non
-diagnostiqué** et aucune récupération n'est tentée. Ne pas poursuivre les étapes 1 à 3 avant que les conditions C1 à C9 de D3
-soient vérifiées et consignées dans `NEXT.md`. Les étapes 1 à 3 ne s'exécutent qu'**une seule fois** (essai unique de D3) :
+(arbitrage du 2026-10-18, précisé le 2026-10-20). Aucun pipeline ou release n'est lancé pendant D1a/D1b. Les cinq aperçus sous
+l'identité personnelle ne diagnostiquent pas causalement le run #748 ; son What-If recalculé est irrécupérable : #748 reste
+**définitivement non diagnostiqué** et aucune récupération n'est tentée. Ne pas lancer l'essai manuel avant que C1 à C7 et C9 de D3
+soient vérifiées et consignées dans `NEXT.md`. C8 se vérifie après la publication de l'aperçu DEV de cet essai et avant l'approbation
+de `Deploy_dev`. Les étapes 1 à 3 ne s'exécutent qu'**une seule fois** (essai unique de D3) :
 elles utilisent le CI `orders/infra` N construit après la mise à jour D2b du clone (module qui conserve
 `ifs-preview-recalculated.json`) et non l'artefact du CI #746. Si le DEV diverge de nouveau, l'essai s'arrête (cas b de D3) :
 ni relance, ni approbation de PRD, P8 reste KO.
 
-**Garde DEV et run automatique R0 (arbitrage du 2026-10-18, option C).** L'environnement `shop42-dev` porte un contrôle
-*Pre-check approvals* (groupe `Shop42 Release Approvers`, un membre suffit, auto-approbation désactivée, 30 jours) placé avant
-l'Exclusive Lock : **aucune écriture DEV sans approbation humaine**. Luna, sous autorisation explicite de Florian, a configuré ce
-check via l'interface le 2026-10-18 ; la capture de la page et de la fiche est visible dans la session (aucune capture locale
-enregistrée). Sous la délégation explicite donnée par Florian pour poursuivre P-08, Luna fait le commit/push, ouvre la PR et fusionne
-la mise à jour D2b (étape 0 ci-dessous) ; cette fusion déclenche le CI N, puis un run de release automatique **R0** par la ressource
-pipeline : son aperçu DEV peut s'exécuter, `Deploy_dev` reste bloqué, et Luna peut **rejeter R0, le run automatique connu, sans
-jamais l'approuver**. R0 est consigné (ID, état) dans `NEXT.md`, **n'est pas l'essai unique** et n'est ni réapprouvé ni rejoué ;
-aucun autre run n'est touché. Si un run inattendu apparaît, Luna s'arrête et demande à Florian au lieu de l'annuler. Seul le run
-lancé à la main à l'étape 1 est l'essai unique. *Limite C9 :* le groupe `Shop42 Release Approvers` n'a qu'un membre (Florian DREVET)
-et l'auto-approbation est désactivée : Florian ne pourra pas approuver le run D3 qu'il aura lancé lui-même. L'étape 1 ne démarre pas
-tant que l'utilisateur n'a pas choisi une solution de séparation des approbations ; Luna n'active pas l'auto-approbation et n'ajoute
-personne au groupe.
+**Garde DEV et run automatique R0 (protocole D2b du 2026-10-20).** L'environnement `shop42-dev` porte un contrôle
+*Pre-check approvals* (groupe `Shop42 Release Approvers`, un membre suffit, auto-approbation désactivée, 30 jours) avant l'Exclusive
+Lock : **aucune écriture DEV sans approbation humaine**. Florian a configuré ce contrôle le 2026-10-18 ; la capture de la page et de
+la fiche est visible dans cette session (aucune capture locale enregistrée). Avant tout commit/push/PR/merge, Florian relève les dix
+définitions CI/release, vérifie les files vides, puis désactive les huit définitions collatérales (core, data, platform et
+orders/apps/api) avec `queueStatus=disabled`. Les deux définitions orders/infra restent activées. Si un run est en cours/en file ou
+si un état est illisible, la livraison ne commence pas. Le détail des relevés, vérifications, rôles et restauration est dans
+[P-08, étape 0 quinquies](../01-preuves.md#p-08--exécution-des-preuves-accompagnement). Luna commite localement, pousse sa branche
+et ouvre la PR ; Florian fusionne. La fusion déclenche le CI N, puis un run de release automatique **R0** par ressource pipeline :
+son aperçu DEV peut s'exécuter, `Deploy_dev` reste en attente, puis Florian rejette la demande d'approbation du seul R0 identifié
+avant toute tâche de déploiement. Personne n'approuve R0 et aucun autre run n'est touché. R0 est consigné dans `NEXT.md`, **n'est
+pas l'essai unique** et n'est ni réapprouvé ni rejoué. Seul le run manuel de l'étape 1 est l'essai unique. *C9 :* le groupe n'a qu'un
+membre (Florian DREVET). La capture initiale montre l'auto-approbation désactivée pour empêcher l'approbation de R0. Florian a
+choisi de l'activer lui-même après le rejet de R0 ; la nouvelle capture avant D3 doit montrer ce réglage activé. Si R0 n'apparaît
+pas dans les dix minutes suivant N, ne pas activer ce réglage ni lancer D3 sans confirmation distincte de Florian. Si l'activation
+échoue, C9 n'est pas satisfaite et D3 reste bloquée ; Luna ne modifie ni groupe ni réglage.
 
 0. **Préalable : clone à jour.** `main` d'Azure Repos contient la mise à jour de `IfsRelease.psm1`, du schéma
    `ifs-report.v2.schema.json` et du manifeste, faite par l'[étape 0 ter de P-08](../01-preuves.md#p-08--exécution-des-preuves-accompagnement)
@@ -428,7 +432,7 @@ personne au groupe.
    atteint `main` par la fusion de la branche `fix/p08-keep-recalculated-preview`, **après** vérification de la garde DEV
    (D2b.3) ; la fusion produit le CI N puis le run automatique R0, rejeté sans approbation (D2b.4).
 1. Déclencher à la main une **nouvelle** release orders/infra/pipelines/release.yml (identifiant ≠ R0) sur le CI N de D3 (version
-   explicite), après la livraison de D2, **et seulement une fois C1 à C9 consignées et R0 rejeté avant mutation**. `Deploy_dev`
+   explicite), après la livraison de D2, **et seulement une fois C1 à C7 et C9 consignées et R0 rejeté avant mutation**. `Deploy_dev`
    attend le Pre-check approvals : vous ne l'approuvez qu'après avoir relu l'aperçu DEV (C8 : 0 création, 0 recréation, 0 suppression,
    0 révocation, 0 opération en attente). DEV s'applique ensuite (étape 3 de D3), puis PRD. Quand l'aperçu prd
    est publié et attend une approbation, noter D2 et l'empreinte de l'aperçu (`preview.fingerprint`), et capturer le run
@@ -626,8 +630,8 @@ par jeu, dès la dernière preuve qui en dépend ([DT-42](../../technique/01-dec
 **Porte (tout doit être vrai, sinon ne rien supprimer)** : (1) une capture `Save-AdoRecordings.ps1` et une ligne dans
 resultats.md existent pour chaque scénario qui dépend des piles ou ressources précises à supprimer ; les scénarios encore
 à exécuter mais indépendants de ces ressources ne bloquent pas leur nettoyage ; (2) un **KO ou une preuve incomplète**
-suspend le nettoyage normal et vous décidez, avec le coût de maintien du § 0.2, de rejouer ou non ; en cas de seuil de coût
-atteint, appliquer la procédure d'urgence de l'inventaire ;
+   suspend le nettoyage normal et vous décidez, avec le coût de maintien du § 0.2, de rejouer ou non ; si vous retirez l'autorisation
+   de poursuivre, arrêter les nouveaux runs et décider de l'arrêt d'urgence selon la procédure de l'inventaire ;
 (3) l'inventaire de référence avant création et les IDs exacts créés par Luna sont conservés hors Azure dans
 [inventaires-azure.md](../preuves/inventaires-azure.md) ; vous avez aussi noté les ressources détachées lues dans `ifs-report-prd`,
 et les Object IDs des identités `id-ifs-deploy-shopNN-*` et `id-ifs-app-shopNN-*` (rapport du kit) ;
@@ -688,4 +692,4 @@ et la porte de la procédure T ; après, la suppression n'attend pas R-03. Le ja
 À R-03 ne subsistent que les preuves Azure DevOps et resultats.md.
 
 Temps indicatifs hors files d'attente et délais de propagation. La recette n'a pas de durée maximale : le coût dépend de
-la durée de vie des ressources, bornée par le plafond du [§ 0.1](#01-verrou-de-dépense-aucune-commande-azure-avant).
+la durée de vie des ressources et doit rester sous le contrôle régulier du [§ 0.1](#01-surveillance-des-coûts-avant-toute-action-sur-les-ressources-azure).
