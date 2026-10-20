@@ -10,10 +10,10 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `BLOQUE` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
-| **Verrou** | D2b.2 — répétition du 2026-10-20 interrompue avant publication par une précondition `origin/main` superflue dans le clone temporaire ; transcript archivé, rejeu complet requis |
+| **Verrou** | D2b.2 — répétition du 2026-10-20 interrompue à l’étape 0 (`ProofTools` non chargé) ; transcript archivé, nouvel arbitrage Sol requis |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
 | **Dernière mise à jour** | 2026-10-20 — Luna |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
@@ -92,6 +92,13 @@ et un arbre propre ; seul `origin/main` manque, ce qui est normal dans ce clone 
 `origin/main` du clone de preuve reste obligatoire. Pour reprendre, après le commit de blocage, Luna transcrit cette décision du
 propriétaire en passant explicitement le statut `BLOQUE` à `A_FAIRE` ; `gate.py` n'a pas de commande pour cette transition.
 
+**Nouvelle exception du 2026-10-20T13:14:20Z :** après correction de la précondition précédente, le rejeu s'est arrêté à l'étape 0
+par `CommandNotFoundException` : `Assert-ProofManifestWorkingTree` n'était pas disponible, car le runner n'avait pas importé
+`tools/proofs/ProofTools.psm1`. Aucune publication neuve ni modification du clone de preuve n'a eu lieu. Transcript complet archivé
+sous `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-rehearsal-attempt2-proofmanifest-module-not-imported-20261020T131420Z-transcript.txt`,
+SHA-256 `C0E40FB93D3A4B05D24EA845FBC492DBC6517EAEC0F0650A13B930C34F99D955`. Sol doit arbitrer la correction de chargement du module
+et autoriser une éventuelle nouvelle tentative ; jusque-là P-08 reste `BLOQUE`.
+
 Nouveau blocage d'authentification — l'essai de clone Git HTTPS avec le PAT fourni a été refusé par Azure Repos. Le clone original
 est resté propre ; son `origin/main` local vaut `3f5917588b83d11fc07d7f9838f5e895e037dd6d`, SHA également visible sur la page
 Azure DevOps `shop42` dans le navigateur. Sur décision de GPT Sol du 2026-10-20, D2b.2 peut utiliser un clone indépendant
@@ -142,6 +149,8 @@ et la [recette § 5](docs/plan/recettes/01-preuves.md#5-p8--livraison-applicativ
   temporaire ; `origin/main` reste obligatoire pour le clone de preuve. La répétition conserve les assertions `HEAD`, branche et arbre
   propre, et doit repartir après une transition formelle vers `A_FAIRE`. Les commits, merge, push et PR restent interdits jusqu’à la fin
   de D2b.3.1–3.6. `gate.py` n'a ni commande `unblock` ni commande `start` ; `resume` reste réservé à `EN_ATTENTE_DE_RECETTE`.
+  Après l'autorisation de reprise, une deuxième exception est survenue à l'étape 0 parce que `ProofTools.psm1` n'était pas chargé ;
+  transcript archivé, P-08 rebloqué et arbitrage Sol demandé avant tout autre rejeu.
 
 **Prérequis D2b vérifiés le 2026-10-20 :** le clone original est accessible dans `C:/Users/flori/RiderProjects/shop42` ; sa branche
 locale et distante `fix/p08-keep-recalculated-preview` contient le commit de Florian `2875cf3` et l’arbre est propre. Le clone de preuve
@@ -149,8 +158,8 @@ est créé à `C:/Users/flori/RiderProjects/shop42-d2b-proof`, avec HEAD et `ori
 branche prévue, arbre propre, sans upstream. Les contrôles locaux du clone sont consignés sous
 `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-local-verification.txt` ; l’inventaire YAML local des dix CI/releases est sous
 `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-yaml-trigger-inventory.txt`. Le diff du précédent rafraîchissement de manifeste a été
-archivé puis restauré ; avant la tentative du 2026-10-20T13:07:43Z, les copies temporaires étaient absentes. Après cette tentative,
-`ifs-shop42-rehearsal` existe encore et `ifs-shop42-fresh` est absent ; nettoyer le premier avec `Remove-TempCopy`. L’audit Azure DevOps a confirmé les dix définitions
+archivé puis restauré ; avant chaque tentative, les deux copies temporaires étaient absentes. Après la tentative du 2026-10-20T13:14:20Z,
+`ifs-shop42-rehearsal` existe encore et `ifs-shop42-fresh` est absent ; le clone de preuve reste propre. L’audit Azure DevOps a confirmé les dix définitions
 en révision 9 et `queueStatus=enabled`, zéro run actif/en file, aucune PR pour la branche, et la garde `shop42-dev` conforme. Il a
 aussi révélé l’override CI décrit ci-dessus. Les huit définitions collatérales ne sont pas suspendues. Le rejeu peut commencer après
 l’intégration des amendements de Sol ; la livraison reste bloquée jusqu’à la suspension confirmée et aux autres contrôles de D2b.3.
@@ -164,11 +173,12 @@ dans les dix minutes après N, cette décision ne précise pas quand activer le 
 
 Prochaines actions :
 
-1. Le transcript échoué est archivé avec son SHA-256. Nettoyer seulement `C:/Users/flori/AppData/Local/Temp/ifs-shop42-rehearsal`
-   avec le garde-fou `Remove-TempCopy`, puis vérifier l’absence de `ifs-shop42-rehearsal` et `ifs-shop42-fresh`.
-2. Après transition formelle de `BLOQUE` à `A_FAIRE` et réussite de `gate.py check`, retirer du runner la vérification `origin/main`
-   uniquement pour le clone temporaire. Rejouer entièrement répétition puis exécution réelle avec l’IFS fixé, deux transcripts complets
-   distincts et les nettoyages prescrits. Aucune écriture dans le clone original à `2875cf3` ; aucun commit Shop42 avant D2b.3.1–3.6.
+1. Les deux transcripts des tentatives échouées sont conservés avec leurs SHA-256. La copie temporaire `ifs-shop42-rehearsal` issue de
+   la deuxième tentative reste présente ; la supprimer uniquement avec `Remove-TempCopy` après décision de Sol, puis vérifier l'absence
+   des deux chemins temporaires.
+2. Attendre l'arbitrage de Sol sur le chargement de `ProofTools.psm1`. Si Sol autorise le correctif, rétablir formellement P-08 en
+   `A_FAIRE`, vérifier `gate.py check`, charger le module explicitement, puis refaire entièrement les deux passes avec des transcripts
+   distincts. Aucun changement du clone original à `2875cf3` ni commit Shop42 avant D2b.3.1–3.6.
 3. Après ces passes, Florian désactive exactement les huit définitions collatérales (`core` CI 74/release 76, `data` CI 77/release 79,
    `orders/apps/api` CI 83/release 85, `platform` CI 86/release 88) avec `queueStatus=disabled`, puis confirme les huit `disabled`,
    les deux définitions `orders/infra` (CI 80/release 82) toujours `enabled` et des files vides.
