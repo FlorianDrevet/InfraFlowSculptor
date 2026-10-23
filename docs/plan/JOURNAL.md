@@ -46,3 +46,6 @@
 | 2026-10-17 10:01 | Luna | `P-08` reprise sur résultats de recette transmis par l'utilisateur |  |
 | 2026-10-17 21:02 | Luna | `P-08` attend une recette de l'utilisateur |  |
 | 2026-10-18 00:00 | Luna | `P-08` reprise sur résultats de recette transmis par l'utilisateur |  |
+| 2026-10-23 22:41 | Codex | `P-08` blocage résolu | docs/plan/revues/P-08-resolution.md |
+| 2026-10-23 23:54 | Codex | `P-08` blocage résolu | docs/plan/revues/P-08-autonomie-et-c5.md |
+| 2026-10-24 00:08 | Codex | `P-08` blocage confirmé | docs/plan/revues/P-08-C8-D3-run-761.md |

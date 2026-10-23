@@ -34,3 +34,4 @@
 | 2026-10-18 | Luna | P-08 D1b — cinq aperçus personnels identiques, rôles Reader limités consignés, #748 toujours non diagnostiqué ; D2/D3 en attente de définition Claude. |
 | 2026-10-18 | Luna | P-08 D2a — capture de l’aperçu recalculé en cas de divergence sans toucher à l’aperçu approuvé ; tests Pester ciblés et validations Bicep, déterminisme et pipelines verts. |
 | 2026-10-18 | Luna | P-08 D2b — répétition et clone local validés ; audit des triggers bloque le push avant Azure Repos ; C9 et choix utilisateur A/B/C consignés. |
+| 2026-10-23 | Codex | Workflow — recettes exécutées par Codex, auto-revue des verrous, preuve de résolution des blocages et coûts vérifiés avant les écritures Azure. |

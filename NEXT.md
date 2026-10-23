@@ -13,11 +13,11 @@
 | **Statut** | `BLOQUE` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
-| **Verrou** | D2b.3.5 — les huit pipelines collatéraux sont encore `Enabled` ; Florian doit les désactiver et confirmer les états avant toute livraison Shop42 |
+| **Verrou** | aucun |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
-| **Dernière mise à jour** | 2026-10-20 — Luna |
-Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
-résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante en attente de résolution).
+| **Dernière mise à jour** | 2026-10-24 — Codex (blocage confirmé) |
+Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
+Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
 ## Décisions à confirmer avant leur étape
 
@@ -51,26 +51,31 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 | Élément | État | Depuis |
 |---|---|---|
 | Abonnements Azure de test (preuves) | Souscription `fc4fa56f-e4e7-41e9-8a0d-559fcd27b827`, tenant `c833b396-517c-465d-bcce-b79702eaf932` ; `francecentral` et les fournisseurs/SKU requis disponibles ; utilisateur connecté Owner au scope souscription et User Access Administrator au scope tenant ; même souscription pour dev/prd/shared | 2026-10-15 |
-| Décision de coût et estimation des preuves ([contrôle](docs/plan/recettes/01-preuves.md#01-surveillance-des-coûts-avant-toute-action-sur-les-ressources-azure)) | Florian ne fixe **aucun plafond personnel** et autorise la poursuite sous contrôle des coûts (2026-10-17). Au contrôle Cost Management du 2026-10-17T10:36Z : 84,648182 EUR réels MTD ; prévision REST de 87,427283 EUR du 18 au 31/10, soit 172,075465 EUR projetés. L’API du budget préexistant de 200 EUR/mois indique toutefois 235,765571 EUR prévus et 0,430301 EUR dépensés ; cette divergence est conservée. Ce budget est une alerte, pas un coupe-circuit. Relever le coût réel, la prévision et l’estimation France Central à nouveau avant toute action Azure significative | 2026-10-17 |
-| Ressources Azure créées pour les preuves ([inventaire](docs/plan/preuves/inventaires-azure.md)) | Shop42 en France Central. Après #748 : 163 ressources, 26 groupes, 7 piles, 57 rôles et 7 budgets ; aucun ID ajouté ou retiré par rapport au préflight juste avant le run. D2 reste connue saine après #740 ; #748 n’a pas atteint PRD. P8 est KO et le nettoyage suspendu. IDs exacts hors dépôt dans `%LOCALAPPDATA%\InfraFlowSculptor\P08\after-infra-748-20261017T103510Z.json` | 2026-10-17 |
-| Organisation / projet Azure DevOps de test | Organisation `floriandrevet0332`, projet privé `shop42` et dépôt `shop42`. PR #74 fusionnée ; CI infra orders #746 réussi. La release infra #748 est arrêtée en DEV avec `FailedBeforeMutation` après divergence entre aperçu et recalcul sous verrou ; PRD ignorée. Aucune release applicative n’est intervenue entre les deux aperçus. Le cas négatif #738 reste conservé ; décisions Entra et groupes restent en place. Garde `shop42-dev` relue : *Pre-check approvals* (`Shop42 Release Approvers`, auto-approbation désactivée) avant l'Exclusive Lock. Le 2026-10-20, les dix définitions sont en révision 9 et `queueStatus=enabled` ; aucune exécution active/en file et aucune PR pour `fix/p08-keep-recalculated-preview`. L'override UI désactive CI, dont le CI `orders/infra` requis pour D2b ; le protocole prévoit maintenant un N manuel après fusion. Le clone original `C:/Users/flori/RiderProjects/shop42` et sa branche distante restent propres à `2875cf3`, basé sur `origin/main` `3f59175`. Sol a arbitré un rejeu dans le clone indépendant `C:/Users/flori/RiderProjects/shop42-d2b-proof`, à créer depuis ce `origin/main`, puis une réconciliation par merge sans réécrire la branche. L'ancienne actualisation de `.ifs/manifest.json` a été restaurée ; son diff est archivé dans `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-prior-attempt-manifest-diff.patch`. Le transcript complet de 09:35 s'arrête sur `Prepared branch manifest metadata differs from rehearsal` ; le résumé de 09:41 ne remplace pas les deux sorties complètes exigées. Les deux chemins temporaires `ifs-shop42-rehearsal` et `ifs-shop42-fresh` ont été supprimés et vérifiés absents. Aucune écriture Azure DevOps par Luna | 2026-10-20 |
+| Décision de coût et estimation des preuves ([contrôle](docs/plan/recettes/01-preuves.md#01-surveillance-des-coûts-avant-toute-action-sur-les-ressources-azure)) | Florian autorise l’autonomie sous réserve de ne pas créer de surcoût important (2026-10-23). ActualCost au 2026-10-23T21:42:22Z : 120,79 EUR HT réels MTD. Dernière prévision réussie au 20:50Z : 40,89 EUR restants, 161,68 EUR fin octobre. L’estimation D3 est de 6,50 EUR HT ; projection mensuelle 168,18 EUR HT, sous l’alerte de 200 EUR. La prévision a répondu HTTP 429 au rafraîchissement de 21:42Z ; l’estimation n’est pas un plafond garanti, le trafic utilisateur continu est exclu et l’ingestion Log Analytics peut dépasser l’hypothèse | 2026-10-23 |
+| Ressources Azure créées pour les preuves ([inventaire](docs/plan/preuves/inventaires-azure.md)) | Shop42 en France Central. Inventaire actuel : 163 ressources, 26 groupes, 7 piles, 59 rôles et 7 budgets. Comparaison d’IDs avec la référence reconstruite depuis l’après-#748 : seuls un certificat VPD ajouté et le site statique Sainte-Fly retiré diffèrent hors Shop42 ; les IDs Shop42 correspondent, sans création/suppression. Les deux rôles en plus sont les accès D1b. D2 reste connue saine après #740 ; #748 n’a pas atteint PRD. P8 KO et nettoyage suspendu. Relevé complet hors dépôt : `%LOCALAPPDATA%\InfraFlowSculptor\P08\p08-c5-azure-inventory-20261023.json` | 2026-10-23 |
+| Organisation / projet Azure DevOps de test | Organisation `floriandrevet0332`, projet privé `shop42`. PR #75 fusionnée sur `main` au SHA `492dfa0df7f9c22f182f1fec443f90c041ed823d` ; N #759 a réussi sur ce SHA. R0 #760 et D3 unique #761 sont terminés sans tâche de déploiement Azure. #761 est `canceled` après C8 KO : `Preview_dev` réussi, `Deploy_dev` annulé avant son démarrage, PRD ignoré. Le contrôle DEV #138 a retrouvé `requesterCannotBeApprover=true`. Les files 74/76/77/79/83/85/86/88 sont réactivées (révision 11), 80/82 restent actives ; aucune exécution active ou en attente. | 2026-10-24 |
 | Droits Azure utilisés pour D1b | `Storage Blob Data Reader` au conteneur `ifs-operations` du compte `stifsshop42dev` et `Key Vault Reader` au coffre `kv-shop42-main-dev`, attribués à l’identité personnelle pour les lectures D1b. Les deux attributions restent en place ; aucune valeur de secret n’a été lue | 2026-10-17 |
 | Groupes Entra (`sg-shop42-sql-admins`) et Azure DevOps (« Shop42 Release Approvers ») | Créés dans le tenant fourni ; Florian DREVET est membre des deux groupes | 2026-10-15 |
+| Résultat D3 — vérification C1–C9 | C1/C2 satisfaites : D2a livrée, PR #75 et N #759 au SHA attendu ; R0 #760 annulé avant écriture. C3 : aucune exécution active/en attente après D3. C4 : préflight `77dc939f…a87b1`. C5 : coûts et inventaire documentés ci-dessus. C6 : digest D2 conservé. C7 : aucune approbation, car C8 échoue. C8 KO sur essai unique #761 : `resources.pipelines.ci.pipeline.id=759`, SHA `492dfa0df7f9c22f182f1fec443f90c041ed823d`, artefact empreinte `ee62376499db448e67a4f5ead36900a08bb93e78dea469c53c1966bb0a7d35d2`, une opération `data-access` `Started` et une écriture prévue. `Deploy_dev` annulé avant démarrage ; PRD ignoré ; aucune écriture Azure. C9 restaurée (`requesterCannotBeApprover=true`), groupe et contrôle conservés. Aucune seconde tentative ; P-08 bloqué, nettoyage suspendu. [Preuve détaillée](docs/plan/revues/P-08-C8-D3-run-761.md). | 2026-10-23 |
 | Inscriptions Entra d'IFS (`dev`) | — | — |
 | Protection de la branche `main` sur GitHub | À activer par vous dans *Settings → Branches* | 2026-10-06 |
 | Secret de dépôt GitHub Actions `IFS_E2E_PASSWORD` | Configuré (valeur masquée) | 2026-10-06 |
 
-## Tests manuels en attente de vous
+## Recettes autonomes en attente de Codex
 
 - S-02 — [ouvrir `src/backend/InfraFlowSculptor.slnx` dans Rider](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) : vérifier les cinq projets et l'absence de références à `Web.Template.CQRS`.
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 - S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
 - S-17 — sur un clone neuf, suivre [README — Démarrer](README.md#démarrer-windows) jusqu'à « Bonjour Alice Martin ». Les prérequis passent ; le démarrage du clone reste à vérifier quand les ports fixes 4200, 8080, 5257 et 3000 seront libres, car l'AppHost de travail reste actif.
-- P-08 — P1, P9, P3a et P3b sont OK. P8 reste KO : #738 est la preuve négative conservée ; #740 est incomplet ; #748 a échoué en `FailedBeforeMutation` et reste non diagnostiqué. D1a, D1b et D2a sont terminés. Le détail de #748 est dans [`diagnostic-p8-748.md`](docs/plan/preuves/diagnostic-p8-748.md) ; les captures D1b restent hors dépôt sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\D1b\20261017T215336Z\`. D2b attend les préalables externes listés ci-dessous. Pour D3, C1–C7 et C9 précèdent le lancement ; C8 se vérifie après `Preview_dev` et avant approbation. Le nettoyage Shop42 reste suspendu.
-Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
-[`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.
+Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md), puis retire la ligne.
 
-## Questions pour Claude
+## Points ouverts et historique des décisions
+
+**Autorisation d'autonomie, 2026-10-23 :** Florian demande à Codex d'exécuter lui-même toutes les phases de tests, recettes,
+validation et auto-revue, sans attente de Claude ou d'un modèle supérieur. Pour P-08, il autorise aussi les actions du projet
+Azure DevOps de test `shop42` décrites dans l'amendement de [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement)
+(états des dix pipelines, N/R0, PR/fusion, C9 et D3). Les critères techniques, le refus de R0, le fail-closed et l'essai unique
+restent obligatoires. Aucun déploiement facturable ne partira sans coût réel, prévision et estimation complète vérifiables.
 
 **Décision active — P-08 / D2b :** Florian a délégué à GPT Sol une autorité d’arbitrage équivalente à Claude. Sol confirme que le résumé
 PASS ne remplace pas les sorties complètes : le transcript de 09:35 s’arrête sur `Prepared branch manifest metadata differs from
@@ -133,28 +138,27 @@ l’override UI remplace le déclencheur CI YAML ([Build Azure Repos Git reposit
 Les dix définitions n’avaient aucun run actif ou en file ; aucune PR n’existe pour `fix/p08-keep-recalculated-preview`. La garde
 `shop42-dev` a été relue et correspond au plan. Aucune définition n’a été suspendue et aucune écriture Azure DevOps n’a été faite.
 
-La définition 80 conserve son override UI désactivant CI ; aucun réglage ADO ne sera modifié pour le contourner. La suspension des
-huit définitions collatérales reste obligatoire avant la livraison. Après fusion, Florian vérifiera que `main` correspond toujours
-au SHA de fusion, lancera N une seule fois sur `refs/heads/main`, puis vérifiera dans le run `sourceVersion`, `sourceBranch` et
-`reason=manual`. La réussite de N devrait déclencher R0 par la ressource pipeline ([déclencheurs de pipeline](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/pipeline-triggers?view=azure-devops)) ;
-aucune release ne sera lancée manuellement pour remplacer R0. En cas d’écart, d’échec ou d’absence de R0 après dix minutes, ne pas
-relancer N, ne rien déclencher et suivre l’arrêt `BLOQUE` prévu.
-
+La définition 80 conserve son override UI désactivant CI ; les huit définitions collatérales ont été suspendues avant la livraison.
+La PR #75 est fusionnée sur `main` au SHA `492dfa0df7f9c22f182f1fec443f90c041ed823d`. Le CI N #759 a réussi une seule fois,
+`reason=manual` sur ce SHA ; la ressource pipeline a déclenché R0 #760 automatiquement selon l’interface Azure DevOps.
+`Preview_dev` a réussi, puis l’approbation a été annulée avant toute tâche `Deploy_dev`, faute de pouvoir la rejeter avec l’auteur
+unique bloqué. Aucun N ou R0 n’est relancé ; la suite D3 est suspendue jusqu’à résolution de cet écart et du contrôle C5.
 Le protocole actif est détaillé dans [P-08, étape 0 quinquies](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement)
 et la [recette § 5](docs/plan/recettes/01-preuves.md#5-p8--livraison-applicative-pendant-lattente-dinfrastructure).
 
 - **Déclencheurs D2b :** livraison sur `main`. Avant le commit/push/PR/merge, Florian relève les dix définitions CI/releases et leurs
   files, puis désactive exactement les huit définitions collatérales (`core`, `data`, `platform`, `orders/apps/api`) avec
   `queueStatus=disabled`. Les deux définitions `orders/infra` restent `enabled`. Aucun YAML du clone n'est changé pour cela.
-- **Acteurs :** Luna prépare le commit local, pousse sa branche et ouvre la PR. Florian effectue la fusion, lance manuellement une
-  seule fois N sur le SHA fusionné, puis rejette la demande d'approbation du seul R0 connu avant toute tâche `Deploy_dev`. Luna
-  n'effectue aucune écriture Azure DevOps.
-- **D3 :** C1–C7 et C9 sont des conditions avant le lancement. C8 se vérifie sur l'aperçu de l'essai unique, après `Preview_dev` et
-  avant l'approbation de `Deploy_dev`. Pour satisfaire C9, Florian a choisi d'activer lui-même l'auto-approbation après R0 et de
-  fournir une nouvelle capture avant D3.
-- **Coût :** la décision de Florian du 2026-10-17 est de ne fixer aucun plafond personnel et de poursuivre sous surveillance.
-  L'estimation France Central et le coût réel/prévision du 2026-10-17 restent historiques ; les actualiser et consigner une nouvelle
-  confirmation avant toute action Azure significative. Le budget préexistant de 200 EUR/mois reste une alerte, pas un coupe-circuit.
+- **Acteurs :** Codex a préparé la preuve, poussé la branche, créé et fusionné la PR #75 après réussite des contrôles #754–#758.
+  Codex a lancé N #759 une fois, puis a arrêté R0 #760 avant toute tâche `Deploy_dev` après le refus d’Azure de rejeter
+  l’approbation avec l’unique approbateur bloqué. L’état final de l’approbation est `canceled`, pas `rejected`.
+- **D3 :** C1–C7 et C9 restent des conditions préalables ; C8 se vérifie après `Preview_dev` et avant `Deploy_dev`. C9 est
+  désactivée. D3 ne démarre pas tant que la recette ne définit pas si R0 annulé avant mutation satisfait l’intention de son rejet
+  et que l’estimation C5 ne permet pas d’exclure un surcoût important.
+- **Coût :** le 2026-10-23, Florian a demandé à Codex d’éviter tout surcoût important. Le relevé du 2026-10-23T20:50Z indique
+  120,79 EUR réels et 161,68 EUR prévus pour octobre ; l’estimation C5 reste incomplète. Le budget de 200 EUR/mois est une alerte,
+  pas un coupe-circuit ; aucune écriture de ressource Azure ne part sans estimation complète.
+
 - **Historique du statut :** après l’exception du transcript, P-08 est passé à `BLOQUE`. Florian a délégué l’arbitrage à GPT Sol, qui
   a autorisé le clone indépendant et le merge par identité d’arbre ; les amendements ciblés D2b.1/.2/.4 consignent cette méthode.
   La répétition du 2026-10-20T13:07:43Z a échoué avant publication : le clone temporaire possède le HEAD, la branche et l'arbre propres
@@ -195,22 +199,43 @@ sont absents. Le clone original `shop42` reste propre sur `2875cf3cb3fbb0eef2c77
 `shop42-d2b-proof`, basé sur `origin/main` `3f5917588b83d11fc07d7f9838f5e895e037dd6d`, ne contient que deux fichiers modifiés :
 `.ifs/manifest.json` et `.ifs/templates/scripts/IfsRelease.psm1` ; aucun commit n’y a été créé.
 
-**Contrôles D2b.3 en lecture seule — 2026-10-20 :** les dix réglages de traitement des nouvelles exécutions affichent `Enabled`
-dans Azure DevOps : IDs 74, 76, 77, 79, 80, 82, 83, 85, 86 et 88. Les deux `orders/infra` (80 et 82) sont dans l’état attendu ;
-les huit collatéraux (74, 76, 77, 79, 83, 85, 86 et 88) ne sont pas suspendus. Le filtre global `Queued` + `Running` affiche
-« No results found » ; l’onglet PR actives ne trouve aucune PR. `shop42-dev` porte `Pre-check approvals` en ordre 1 avant
-`Exclusive Lock` en ordre 2, avec `[shop42]\Shop42 Release Approvers`, délai 30 jours et auto-approbation décochée. Les YAML
-locaux confirment que `Preview_dev` est un job en lecture seule, que seul `Deploy_dev` appelle `Invoke-IfsInfraDeploy` sous
-`shop42-dev`, et que `Deploy_prd` dépend de `Deploy_dev`. Le dernier inventaire de révisions reste celui de l’audit précédent
-(révision 9) ; les nouvelles révisions devront être relevées après la suspension. Aucun réglage Azure DevOps n’a été modifié par Luna.
+**Contrôles D2b.3 initiaux — 2026-10-20 :** la garde `shop42-dev` avait `Pre-check approvals` en ordre 1 avant `Exclusive Lock`
+en ordre 2, groupe `[shop42]\Shop42 Release Approvers`, délai 30 jours et auto-approbation décochée. Les YAML locaux confirment
+que `Preview_dev` est en lecture seule, que seul `Deploy_dev` écrit sous `shop42-dev`, et que `Deploy_prd` dépend de `Deploy_dev`.
 
-**Blocage retenu avec GPT Sol :** P-08 reste `BLOQUE` avant D2b.3.5. Florian doit désactiver exactement les huit définitions
-collatérales, laisser 80 et 82 `Enabled`, puis confirmer les huit `Disabled`, les deux `Enabled` et les files vides. Aucun commit,
-push, PR ou merge dans Shop42 avant cette confirmation et les contrôles D2b.3.1 à 3.6. `gate.py` ne propose pas de commande `block` ;
-le statut et le motif de NEXT sont actualisés selon la décision explicite de Sol.
+**Résultat D2b.3.5 — 2026-10-23 20:30 UTC :** Codex a changé uniquement `queueStatus` dans l’interface Azure DevOps. Les huit
+définitions initialement `enabled` révision 9 sont maintenant `disabled` révision 10 : 74, 76, 77, 79, 83, 85, 86 et 88. Les
+deux `orders/infra` 80/82 restent `enabled` révision 9. Les cinq pipelines PR 75/78/81/84/87 et les définitions hors périmètre
+73/89 restent inchangés. Lecture CLI après changement : aucune exécution `inProgress`, `notStarted` ou `postponed`, aucune PR active.
+Les cinq CI YAML ciblent `main` avec des filtres `.ifs/**`; les cinq releases ont `trigger: none` et attendent leur CI sur `main`.
+Les cinq PR YAML n’ont pas de déclencheur YAML ; les Build Validations bloquantes 9–13 sur `main` ciblent les définitions
+75/78/81/84/87, avec `/.ifs/templates/**` dans leurs filtres. Ces YAML PR ne contiennent pas de tâche ni de connexion Azure.
+Les définitions 73/89 ont `trigger: none`, `pr: none`. L’override UI du CI 80 désactive son déclenchement automatique sur `main` ;
+la release 82 garde son déclencheur de ressource CI sur `main`.
+La garde `shop42-dev` est toujours en ordre 1/2 avec le même groupe et le délai 30 jours ; le groupe contient seulement Florian,
+et l’auto-approbation est toujours décochée. L’état est prouvé dans `docs/plan/revues/P-08-resolution.md`.
 
-Florian a choisi d'activer lui-même l'auto-approbation après R0 et fournira une nouvelle capture avant D3. Si R0 n'apparaît pas
-dans les dix minutes après N, cette décision ne précise pas quand activer le réglage : demander une confirmation distincte avant D3.
+**Auto-revue D2b.3.1–3.6 — 2026-10-23 20:50 UTC :** verdict `VALIDÉ` pour la livraison D2b. Détails dans
+[`P-08-D2b-autovalidation.md`](docs/plan/revues/P-08-D2b-autovalidation.md) ; C5 et C8 restent à vérifier avant toute écriture D3.
+
+Le fetch Git authentifié a réussi ; avant livraison, `origin/main` était `3f5917588b83d11fc07d7f9838f5e895e037dd6d` et la
+branche distante `fix/p08-keep-recalculated-preview` était à `2875cf3cb3fbb0eef2c777dc6d4565d4b16612aa`. Le commit de preuve
+`a5f8197bbe15494b60c52d777f98c2903d162966` a été intégré par le merge `9e686db86d3501512d70a4ab4e9136da78589e52`
+(premier parent `2875cf3`, arbre identique), puis poussé sans force. La PR #75 est fusionnée ; `main` vaut
+`492dfa0df7f9c22f182f1fec443f90c041ed823d`.
+
+
+**Coûts au 2026-10-23T20:50Z :** Cost Management API : 120,79 EUR réels sur la souscription et 161,68 EUR prévus à la fin du mois
+(40,89 EUR restant prévus) ; groupes de ressources Shop42 : 6,32 EUR réels. La prévision API avait ses données réelles jusqu'au 21/10 ;
+le calcul prend le réel quotidien jusqu'au 23/10 et la prévision du 24 au 31/10 pour éviter le double comptage. Azure Pipelines affiche 440/1800 minutes hébergées
+consommées dans le quota gratuit. Le sous-total historique de la recette (6,75–30,17 EUR) n’inclut pas encore stockage, sauvegardes,
+Key Vault, compte technique, trafic sortant, taxes et dépassements Log Analytics/Container Apps. Aucune ressource Azure n’a été
+écrite ; avant D3, Codex doit compléter l’estimation et appliquer la décision du 2026-10-23 sur le surcoût non important.
+
+**Délégation C9 — 2026-10-23 :** C9 reste désactivée tant que D3 est suspendue. L’approbation de R0 a été créée avec Florian dans
+`blockedApprovers` ; le changement temporaire de C9 n’a pas modifié cette demande et a été restauré à l’état désactivé.
+
+
 
 **D2a terminé (Luna, 2026-10-18).** Commit `bbf1d86` poussé sur `impl/preuves`. Pester : 122/122 ;
 `Test-ReferenceBicep.ps1`, `Test-ReferenceDeterminism.ps1` et `Test-ReferencePipelines.ps1` réussis ; manifeste cohérent sur 77 fichiers.
@@ -221,14 +246,14 @@ Prochaines actions :
    et vérifiées absentes ; transcript de nettoyage archivé avec son SHA-256.
 2. ✅ D2b.2 est terminée : les transcripts `d2b-rehearsal-rerun-transcript.txt` et `d2b-execution-rerun-transcript.txt` finissent
    tous deux par `PASS_OK` ; leurs SHA-256 et le HEAD IFS fixé sont consignés ci-dessus.
-3. ⛔ D2b.3.5 bloque la livraison : Florian désactive exactement les huit définitions collatérales (`core` CI 74/release 76,
-   `data` CI 77/release 79, `orders/apps/api` CI 83/release 85, `platform` CI 86/release 88) avec `queueStatus=disabled`.
-   Laisser `orders/infra` (CI 80/release 82) à `enabled`, puis confirmer les huit `disabled`, les deux `enabled` et des files vides.
-4. Après cette confirmation, Luna relit D2b.3.1–3.6 et, seulement si tous les contrôles passent, commite le résultat testé dans le
-   clone de preuve, l’intègre par merge à la branche originale en
-   préservant `2875cf3` et en vérifiant l’identité de l’arbre, pousse sans force et ouvre la PR ; Florian fusionne, puis lance
-   manuellement un seul N sur le SHA de fusion et rejette R0 avant toute tâche `Deploy_dev`.
-5. Le choix C9 est fait : Florian active lui-même l’auto-approbation après R0 et fournit une nouvelle capture avant D3.
-6. Avant l'essai D3, vérifier C1–C7 et C9 ; après publication de `Preview_dev`, Florian vérifie C8 avant d'approuver `Deploy_dev`.
+3. ✅ D2b.3.5 : huit définitions collatérales `disabled` (révision 10), 80/82 `enabled` (révision 9), queues et PR actives vides ;
+   contrôles détaillés dans `docs/plan/revues/P-08-resolution.md`.
+4. ✅ Commit de preuve `a5f8197`, merge local `9e686db`, arbre identique, push fast-forward et PR #75 fusionnée. Les cinq validations
+   #754–#758 ont réussi sur le SHA PR `60b5b0f81be1cbc36a9f3071780116b8528b03b4` ; le commit de merge est `492dfa0d…`.
+5. ✅ N #759 a réussi une fois sur le SHA de fusion. R0 #760 a réussi `Preview_dev`, puis a été annulé avant toute tâche
+   `Deploy_dev` ; l’approbation est `canceled`, car Azure a refusé `rejected` (`ApprovalBlockedException`) pour l’auteur unique.
+   C9 a été brièvement activée puis restaurée à `false`. Les étapes PRD ont été ignorées et aucune ressource n’a été modifiée.
+6. ⛔ D3 suspendue jusqu’à décision sur l’équivalence entre R0 annulé et R0 rejeté, et jusqu’à estimation complète de C5. Ne pas
+   activer C9 ni lancer D3 avant résolution.
 7. Garder #748 non diagnostiqué, conserver le fail-closed et #738 comme preuve négative. Le nettoyage Shop42 reste suspendu jusqu'à
    la réussite de P8 et des autres conditions de la procédure T.

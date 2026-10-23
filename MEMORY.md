@@ -38,7 +38,7 @@
 
 ## Repères
 
-1. Lire `NEXT.md` avant tout ; `python tools/plan/gate.py check` avant une étape.
+1. Lire `NEXT.md` avant tout ; `python tools/plan/gate.py check` avant une étape. Codex exécute les recettes et auto-valide les verrous.
 2. Un seul moteur de calcul (`InfraFlowSculptor.Engine`), pur ; le frontend ne calcule rien.
 3. La sortie de référence (`reference/`) fait foi pour les émetteurs.
 4. Chaque route a son test d'isolation (EXG-01).
@@ -57,4 +57,7 @@
 | Démarrer l'application locale | `cd src/backend; aspire run` |
 | Mettre à jour le graphe de code, sans LLM | `python -m graphify update .` (à la racine) |
 | Étape terminée | `python tools/plan/gate.py done <ID>` |
+| Auto-valider un verrou après vérification | `python tools/plan/gate.py auto-review <R-nn>` |
+| Lever un blocage résolu et consigné | `python tools/plan/gate.py unblock <ID> <preuve>` |
+| Reprendre après une recette exécutée par Codex | `python tools/plan/gate.py resume <ID>` |
 | Réexporter maquette / Strata | `python tools/design/export_design.py maquette|strata …` (voir `docs/design/README.md`) |

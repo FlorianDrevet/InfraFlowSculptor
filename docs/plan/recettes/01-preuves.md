@@ -30,12 +30,12 @@
 
 ### 0.1 Surveillance des coûts avant toute action sur les ressources Azure
 
-**Décision de Florian du 2026-10-17 :** aucun plafond personnel n'est fixé et la poursuite est autorisée sous contrôle des coûts.
-Cette décision remplace l'exigence historique de plafond numérique ; elle ne fait pas du budget Azure préexistant une limite ou un
-coupe-circuit et ne garantit pas une facture maximale. Avant toute commande qui crée, déploie ou modifie des ressources Azure,
-actualiser l'estimation complète du § 0.2 pour `francecentral` et la devise du contrat, relever le coût réel et la prévision
-disponible, puis consigner dans [NEXT.md](../../../NEXT.md) la date, les montants et la confirmation que Florian autorise toujours
-la poursuite sans plafond personnel. Sans ces données ou si Florian retire cette autorisation : aucune écriture sur les ressources.
+**Autorisation de Florian du 2026-10-23 :** Codex exécute les recettes de façon autonome tant que le surcoût total n'est pas
+important. Avant toute commande qui crée, déploie ou modifie des ressources Azure, actualiser l'estimation complète du § 0.2 pour
+`francecentral` et la devise du contrat, relever le coût réel et la prévision disponible, puis consigner les montants dans
+[NEXT.md](../../../NEXT.md). Si les coûts ne sont pas lisibles, si l'estimation reste incomplète ou si le surcoût peut être important,
+ne faire aucune écriture sur les ressources et demander à Florian un plafond précis. Le budget préexistant n'est ni une limite ni un
+coupe-circuit.
 Les commandes de lecture nécessaires à l'estimation et au contrôle restent permises. Ne pas créer de budget supplémentaire ni
 modifier le budget préexistant sans nouvelle demande.
 
@@ -48,10 +48,9 @@ IDs exacts au registre, insensiblement à la casse. Une pause de plus de 24 h ne
 actualiser les coûts avant de reprendre et inclure SQL, Log Analytics, stockage, ACR, services annexes et taxes dans l'estimation.
 
 Si Florian demande l'arrêt de la recette, arrêter les nouveaux runs et appliquer la procédure d'urgence de
-[l'inventaire Azure](../preuves/inventaires-azure.md) uniquement à ses IDs explicitement inventoriés comme créés par Luna, même si
+[l'inventaire Azure](../preuves/inventaires-azure.md) uniquement aux IDs explicitement inventoriés comme créés par Codex, même si
 toutes les captures ne sont pas terminées. Un nom ou un préfixe seul ne prouve pas la propriété ; ne jamais exécuter `deleteAll` si
-une pile ou un groupe contient un élément absent de l'inventaire. Toute suppression reste une action de Florian conformément à
-`AGENTS.md`.
+une pile ou un groupe contient un élément absent de l'inventaire. Codex effectue le nettoyage autorisé par la recette.
 
 ### 0.2 Estimation historique (tarifs Retail API `northeurope` vérifiés le 2026-10-08)
 
@@ -401,27 +400,36 @@ elles utilisent le CI `orders/infra` N construit après la mise à jour D2b du c
 `ifs-preview-recalculated.json`) et non l'artefact du CI #746. Si le DEV diverge de nouveau, l'essai s'arrête (cas b de D3) :
 ni relance, ni approbation de PRD, P8 reste KO.
 
+**Amendement d'exécution du 2026-10-23.** Florian autorise Codex à exécuter lui-même cette recette et les opérations Azure
+DevOps du périmètre Shop42 indiquées dans P-08, y compris les approbations de déploiement après vérification des critères.
+Cette autorisation remplace les acteurs humains cités ci-dessous ; elle ne retire pas les contrôles C1–C9, le contrôle C8
+avant toute écriture DEV, l'absence d'approbation de R0, l'essai unique ni les règles de coût et d'inventaire. Si Azure DevOps
+refuse le rejet explicite de R0 parce que l'unique approbateur est bloqué, Codex peut l'annuler après vérification de la timeline :
+aucune tâche de `Deploy_dev` n'a démarré et `Deploy_prd` est ignoré. Le résultat ADO reste `canceled`, jamais `rejected`.
+
 **Garde DEV, CI manuel N et run automatique R0 (protocole D2b du 2026-10-20, arbitrage GPT Sol confirmé par Florian).**
 L'environnement `shop42-dev` porte un contrôle
 *Pre-check approvals* (groupe `Shop42 Release Approvers`, un membre suffit, auto-approbation désactivée, 30 jours) avant l'Exclusive
-Lock : **aucune écriture DEV sans approbation humaine**. Florian a configuré ce contrôle le 2026-10-18 ; la capture de la page et de
-la fiche est visible dans cette session (aucune capture locale enregistrée). Avant tout commit/push/PR/merge, Florian relève les dix
+Lock : **aucune écriture DEV sans approbation**. Florian a configuré ce contrôle le 2026-10-18 ; la capture de la page et de
+la fiche est visible dans cette session (aucune capture locale enregistrée). Avant tout commit/push/PR/merge, Codex relève les dix
 définitions CI/release, vérifie les files vides, puis désactive les huit définitions collatérales (core, data, platform et
 orders/apps/api) avec `queueStatus=disabled`. Les deux définitions orders/infra restent activées. Si un run est en cours/en file ou
 si un état est illisible, la livraison ne commence pas. Le détail des relevés, vérifications, rôles et restauration est dans
-[P-08, étape 0 quinquies](../01-preuves.md#p-08--exécution-des-preuves-accompagnement). Luna commite localement, pousse sa branche
-et ouvre la PR ; Florian fusionne. Comme l'override UI « Disable continuous integration » désactive le CI YAML `orders/infra`, la
-fusion ne déclenche pas N. Florian vérifie que `main` est toujours au SHA de fusion, puis lance manuellement une seule fois le CI
+[P-08, étape 0 quinquies](../01-preuves.md#p-08--exécution-des-preuves-accompagnement). Codex commite localement, pousse sa branche
+et ouvre la PR ; Codex fusionne. Comme l'override UI « Disable continuous integration » désactive le CI YAML `orders/infra`, la
+fusion ne déclenche pas N. Codex vérifie que `main` est toujours au SHA de fusion, puis lance manuellement une seule fois le CI
 `orders/infra` (ID 80) sur `refs/heads/main`. Le run doit indiquer `sourceVersion` égal au SHA de fusion et `reason` = `manual` ;
 un autre SHA, un run inattendu ou une file non vide impose l'arrêt, sans relance. La réussite de N doit ensuite déclencher un run
 de release automatique **R0** par ressource pipeline :
-son aperçu DEV peut s'exécuter, `Deploy_dev` reste en attente, puis Florian rejette la demande d'approbation du seul R0 identifié
-avant toute tâche de déploiement. Personne n'approuve R0 et aucun autre run n'est touché. R0 est consigné dans `NEXT.md`, **n'est
+son aperçu DEV peut s'exécuter, `Deploy_dev` reste en attente, puis Codex rejette la demande d'approbation du seul R0 identifié
+avant toute tâche de déploiement. Si ADO refuse le rejet avec `ApprovalBlockedException`, Codex annule R0 uniquement après avoir
+vérifié la timeline sans tâche de déploiement ; aucun autre run n'est touché. R0 est consigné dans `NEXT.md`, **n'est
 pas l'essai unique** et n'est ni réapprouvé ni rejoué. Seul le run manuel de l'étape 1 est l'essai unique. *C9 :* le groupe n'a qu'un
 membre (Florian DREVET). La capture initiale montre l'auto-approbation désactivée pour empêcher l'approbation de R0. Florian a
-choisi de l'activer lui-même après le rejet de R0 ; la nouvelle capture avant D3 doit montrer ce réglage activé. Si R0 n'apparaît
-pas dans les dix minutes suivant N, ne pas activer ce réglage ni lancer D3 sans confirmation distincte de Florian. Si l'activation
-échoue, C9 n'est pas satisfaite et D3 reste bloquée ; Luna ne modifie ni groupe ni réglage.
+choisi de l'activer après le rejet de R0 ; Codex active temporairement ce réglage et vérifie son état avant D3. Si R0 n'apparaît
+pas dans les dix minutes suivant N, Codex vérifie les files, active temporairement ce réglage et poursuit D3 sous son autorisation
+du 2026-10-23. Si l'activation
+échoue, C9 n'est pas satisfaite et D3 reste bloquée ; Codex ne modifie pas le groupe.
 
 0. **Préalable : clone à jour.** `main` d'Azure Repos contient la mise à jour de `IfsRelease.psm1`, du schéma
    `ifs-report.v2.schema.json` et du manifeste, faite par l'[étape 0 ter de P-08](../01-preuves.md#p-08--exécution-des-preuves-accompagnement)
@@ -435,19 +443,24 @@ pas dans les dix minutes suivant N, ne pas activer ce réglage ni lancer D3 sans
    l'arbre entier. Vérifier avant le run : `git -C C:/src/shop42 diff --stat 91c022e origin/main` (après `git -C C:/src/shop42 fetch origin`) ne liste que `.ifs/manifest.json`,
    `IfsRelease.psm1` et le schéma v2, et le rapport du run porte `schema` = `ifs-report/v2`. *Mise à jour D2b (2026-10-18) :* elle
    atteint `main` par la fusion de la branche `fix/p08-keep-recalculated-preview`, **après** vérification de la garde DEV
-   (D2b.3) ; Florian lance ensuite une fois le CI N sur le SHA fusionné, puis sa réussite doit produire le run automatique R0,
+   (D2b.3) ; Codex lance ensuite une fois le CI N sur le SHA fusionné, puis sa réussite doit produire le run automatique R0,
    rejeté sans approbation (D2b.4).
-1. Déclencher à la main une **nouvelle** release orders/infra/pipelines/release.yml (identifiant ≠ R0) sur le CI N de D3 (version
-   explicite), après la livraison de D2, **et seulement une fois C1 à C7 et C9 consignées et R0 rejeté avant mutation**. `Deploy_dev`
-   attend le Pre-check approvals : vous ne l'approuvez qu'après avoir relu l'aperçu DEV (C8 : 0 création, 0 recréation, 0 suppression,
-   0 révocation, 0 opération en attente). DEV s'applique ensuite (étape 3 de D3), puis PRD. Quand l'aperçu prd
+1. Codex déclenche à la main une **nouvelle** release orders/infra/pipelines/release.yml (identifiant ≠ R0) sur le CI N de D3 en
+   sélectionnant le run exact dans le sélecteur de ressources ; avant de lancer, la ligne doit montrer `main` et le SHA de fusion.
+   Après mise en file, `resources.pipelines.ci.pipeline.id` et le commit source doivent confirmer le run N. Si l'un diffère,
+   annuler avant toute tâche d'écriture. Le lancement a lieu après la livraison de D2, **et seulement une fois C1 à C7 et C9
+   consignées et R0 rejeté ou annulé avant mutation**. `Deploy_dev`
+   attend le Pre-check approvals : Codex ne l'approuve qu'après avoir relu l'aperçu DEV (C8 : 0 création, 0 recréation, 0 suppression,
+   0 révocation, 0 opération en attente). Si C8 est faux, Codex annule le run avant toute tâche de déploiement. DEV s'applique
+   ensuite (étape 3 de D3), puis PRD. Quand l'aperçu prd
    est publié et attend une approbation, noter D2 et l'empreinte de l'aperçu (`preview.fingerprint`), et capturer le run
    (p8-infra-preview-d2-run-<id>). `manifestFingerprint` est une empreinte d'un **autre domaine de hachage** : ne pas la
    noter comme empreinte d'aperçu ni la comparer à `preview.fingerprint` ([DT-43](../../technique/01-decisions.md#dt-43--empreinte-dapercu-approuvée-liée-à-lempreinte-appliquée)).
 2. **Ne lancer aucune release applicative** (ni CI avec nouvelle image, ni orders/apps/api/pipelines/release.yml) entre
    la publication de cet aperçu et son approbation. Si une livraison applicative survient malgré tout, le run est un
    nouveau cas négatif : ne pas l'approuver pour forcer le résultat, le consigner et repartir d'un nouvel aperçu.
-3. Approuver le stage prd de cette release d'infrastructure. Vérifier dans ifs-report-prd que l'image D2 est conservée
+3. Codex approuve le stage prd de cette release d'infrastructure après avoir vérifié l'aperçu et l'absence de run concurrent.
+   Vérifier dans ifs-report-prd que l'image D2 est conservée
    (pas de retour à D1) et que `approvedPreviewFingerprint` du rapport (schéma v2) est égal à `preview.fingerprint` de
    l'aperçu approuvé. Ne pas comparer `manifestFingerprint` à `preview.fingerprint` : ce sont deux domaines de hachage
    distincts, jamais égaux. Vérifier /health sur D2. Capturer le run final (p8-infra-result-d2-run-<id>).
@@ -691,7 +704,7 @@ Noms des piles (une par composant et cible, `unit` des `release.<cible>.json`) :
 
 Après chaque preuve, ajouter une ligne dans resultats.md : P1, P9, P3a, P3b, P8, P2, P4, P5 ou P7, date, OK/KO,
 liens/captures anonymisés, remarque. Pour chaque KO, conserver le message et les artefacts ; ne pas corriger une
-question de conception sans la revue Claude.
+   question de conception sans un arbitrage précis de Florian.
 
 Ne pas arrêter les conteneurs Aspire locaux. Ne supprimer aucune ressource Azure **avant** la dernière preuve qui en dépend
 et la porte de la procédure T ; après, la suppression n'attend pas R-03. Le jalon 0 redéploie depuis des abonnements vides.

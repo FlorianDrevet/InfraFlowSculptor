@@ -446,15 +446,25 @@ Owner sur les abonnements, administrateur de projet Azure DevOps, groupe Entra c
 | **Dépend de** | P-07 |
 | **Commit** | `fix(reference): <correction>` (une par défaut constaté), puis `docs(preuves): résultats` |
 
-🎯 **Objectif.** Après le feu vert de l'utilisateur du 2026-10-07, Luna exécute les préflights, les preuves, les captures
-Azure DevOps et leur consignation. Luna corrige les défauts **d'exécution** ; une question de conception reste soumise à
-la revue Claude. Une intervention de l'utilisateur n'est demandée que si une étape exige son authentification ou une
-action impossible à réaliser avec les accès déjà ouverts.
+🎯 **Objectif.** Après l'autorisation de Florian du 2026-10-23, Codex exécute les préflights, les preuves, les captures,
+les recettes et les auto-revues. Aucun verdict de Claude, d'un modèle plus élevé ou d'une personne n'est attendu.
+
+**Amendement d'autorité du 2026-10-23.** Pour cette étape et ses recettes, les acteurs mentionnés ci-dessous sont remplacés
+par Codex : il peut lire et modifier les réglages du projet Azure DevOps de test `shop42`, suspendre temporairement les huit
+définitions listées en D2b.3.5, lancer N une seule fois, traiter R0, ouvrir/fusionner la PR et approuver D3 uniquement après
+avoir vérifié C8. Pour C9, Codex active temporairement l'auto-approbation sur `shop42-dev`, puis la rétablit après D3 ; il
+n'approuve jamais R0 et ne retire pas le contrôle `Pre-check approvals`. Il restaure aussi les huit états initiaux des
+définitions après le run terminal. Les affirmations, états attendus, fail-closed, interdiction de relance, absence de
+diagnostic de #748 et périmètre `shop42` restent inchangés. Avant toute écriture Azure facturable, Codex relève le coût réel,
+la prévision et l'estimation complète ; il ne lance aucune écriture de ressources si le coût est illisible, non chiffré ou
+important. L'annulation de R0 est acceptée comme issue sûre équivalente au rejet uniquement si Azure refuse le rejet à cause de
+l'unique approbateur bloqué et si sa timeline prouve que `Deploy_dev` n'a démarré aucune tâche d'écriture et que PRD a été ignorée.
+Cette équivalence ne transforme pas l'état ADO `canceled` en `rejected`.
 
 🔧 **À faire.**
 0. **Profil de coût des preuves** ([DT-42](../technique/01-decisions.md#dt-42--coût-des-preuves-éphémères-azure),
    [reference-pilote § 1.6](reference-pilote.md#16-profil-de-coût-des-preuves)), **hors ligne et avant la recette** (à
-   faire quand l'utilisateur relance P-08 par `gate.py resume P-08` ; ne pas toucher au statut autrement) :
+   faire quand Codex reprend P-08 par `gate.py resume P-08` après vérification du blocage) :
    1. Aligner sur `francecentral` tous les champs de région des ressources Azure dans `reference/pilot/bicep-azdo/**`,
       y compris le `--location` des What-If d'installation, les paramètres Bicep, les fichiers de release, les overlays
       de révision, les fixtures et les tests qui les affirment. Les objets Azure DevOps et Entra sans région restent
@@ -751,7 +761,7 @@ action impossible à réaliser avec les accès déjà ouverts.
       empreinte P8 autre que celles du tableau, écart P8 non additif, écart de la publication neuve autre que les quatre
       connus de l'étape 2, `units.*.fingerprint` différente de l'ancien manifeste après l'étape 3, `commit` lu par un pipeline,
       mauvais `-SqlFreeOffer`). La dérogation ne s'étend pas :
-      on n'ajoute pas de chemin ni d'empreinte au tableau sans nouvel arbitrage de Claude.
+      on n'ajoute pas de chemin ni d'empreinte au tableau sans accord spécifique de Florian, car cela modifierait le périmètre.
    3. **Pousser dans Azure Repos, pas dans le dépôt IFS.** Dans `C:/src/shop42`, branche `fix/p08-approved-preview-fingerprint` :
       `rtk git -C C:/src/shop42 add .ifs/manifest.json .ifs/templates/scripts/IfsRelease.psm1 .ifs/templates/schemas/ifs-report.v2.schema.json`
       (ces trois chemins seulement), commit `rtk git -C C:/src/shop42 commit -m "fix(ifs): ifs-report/v2 avec l'empreinte d'aperçu approuvée (IFS <7 premiers caractères de $ref.commit>)"`
@@ -782,7 +792,7 @@ action impossible à réaliser avec les accès déjà ouverts.
      type de changement ou delta de propriété) et `NonConcluant` (entrée absente, illisible ou schéma/contexte incompatible).
      `generatedAt` est consigné, mais ne participe pas à l'égalité. Les tests utilisent uniquement des fixtures synthétiques
      et couvrent les trois verdicts. Commit D1a : `feat(preuves): diagnostic What-If hors ligne`.
-   - **D1b — utilisateur, lecture seule.** Depuis l'artefact `infra` de la CI #746, répéter cinq aperçus DEV avec le même
+   - **D1b — Codex, lecture seule.** Depuis l'artefact `infra` de la CI #746, répéter cinq aperçus DEV avec le même
      template et les mêmes paramètres en appelant `Invoke-IfsPreview` dans la portée du module chargé. Le contrôle
      `servicePrincipalId` est dans le wrapper AzureCLI, hors de cette fonction ; ne pas définir ni simuler cette variable.
      Marquer chaque sortie `identity: personal-az-cli` et `servicePrincipalId: absent` : ces passes mesurent seulement la
@@ -790,12 +800,12 @@ action impossible à réaliser avec les accès déjà ouverts.
      versions d'outils, contexte et SHA-256 ; les sorties brutes restent hors du dépôt et sont vérifiées avant partage.
      Aucun pipeline, approbation, déploiement ou autre mutation.
    - **Sortie D1a.** Le protocole exact D1b et les résultats d'audit sont dans `diagnostic-p8-748.md`. Après D1a, mettre
-     `NEXT.md` à `EN_ATTENTE_DE_RECETTE`. Quand l'utilisateur fournit les captures D1b, exécuter
+     `NEXT.md` à `EN_ATTENTE_DE_RECETTE`, puis Codex exécute D1b et ses captures. Exécuter ensuite
      `python tools/plan/gate.py resume P-08`, comparer hors ligne, puis consigner le diagnostic en distinguant le #748
      (non diagnostiqué si son What-If recalculé manque) de la reproductibilité mesurée sous l'identité personnelle.
    - **Suite.** Garder P-08 `EN_COURS` après `resume`. D2 et D3 sont détaillés à l'étape 0 quinquies ci-dessous ; conserver
-     le contrôle fail-closed. Il n'y a pas de revue intermédiaire via `gate.py` : la revue de Claude
-     intervient au verrou final R-03 après P-08.
+     le contrôle fail-closed. Il n'y a pas de verrou intermédiaire via `gate.py` : l'auto-revue Codex intervient au verrou
+     final R-03 après P-08.
 0 quinquies. **D2 et D3 : instrumenter la divergence, puis un essai unique** (arbitrage Claude du 2026-10-18). Dans cette étape,
    « D2a », « D2b » et « D3 » sont des phases du diagnostic ; l'« image D2 » reste l'image applicative livrée par #739.
    - **Décision sur #748 : option 1.** Le run #748 reste **définitivement non diagnostiqué** : son What-If recalculé n'a été écrit
@@ -810,7 +820,7 @@ action impossible à réaliser avec les accès déjà ouverts.
    - **Objectif.** Obtenir la preuve positive de P8 (empreinte approuvée = empreinte appliquée, [DT-43](../technique/01-decisions.md#dt-43--empreinte-dapercu-approuvée-liée-à-lempreinte-appliquée))
      par **un seul** nouvel essai de release `orders`, rendu diagnostiquable : si la divergence se reproduit, le What-If recalculé
      est conservé et comparé. Le contrôle fail-closed n'est ni assoupli ni contourné.
-   - **D2a — Luna, hors ligne, test d'abord.** Un test rouge par comportement, puis l'implémentation minimale. Fichiers, sans autre
+   - **D2a — Codex, hors ligne, test d'abord.** Un test rouge par comportement, puis l'implémentation minimale. Fichiers, sans autre
      (hors la tâche de publication d'artefact ci-dessous) : `reference/pilot/bicep-azdo/.ifs/templates/scripts/IfsRelease.psm1`
      (`Invoke-IfsInfraDeploy`), `reference/release-module/tests/IfsRelease.Tests.ps1`, `reference/pilot/manifest.example.json`
      (recalculé par `reference/tools/Update-ManifestExample.ps1`).
@@ -833,7 +843,7 @@ action impossible à réaliser avec les accès déjà ouverts.
      4. Vérification : Pester complet (`reference/release-module/tests`), PSScriptAnalyzer, `Test-Reference*.ps1`, build Bicep
         inchangés et verts ; `git status --porcelain` limité aux fichiers listés ci-dessus. Commit
         `fix(reference): conserver l'aperçu recalculé lors d'une divergence`, pied `Étape: P-08`, puis push de `impl/preuves`.
-   - **D2b — Luna, mise à jour ciblée sur un clone de preuve indépendant, puis réconciliation avec `C:/Users/flori/RiderProjects/shop42` (même méthode que l'étape 0 ter, arbitrage GPT Sol du 2026-10-20).**
+   - **D2b — Codex, mise à jour ciblée sur un clone de preuve indépendant, puis réconciliation avec `C:/Users/flori/RiderProjects/shop42` (même méthode que l'étape 0 ter, arbitrage GPT Sol du 2026-10-20).**
      *Pourquoi* : les releases utilisent le module **embarqué dans l'artefact `infra` de leur CI**, pas le dépôt ; la correction n'agit
      qu'après un nouveau CI `orders/infra` construit depuis un `main` qui la contient. Périmètre : `shop42` uniquement.
      1. Préalables : D2a commitée et poussée ; sources `reference/pilot/bicep-azdo samples/witness-app` propres. Préserver le clone
@@ -884,9 +894,9 @@ action impossible à réaliser avec les accès déjà ouverts.
            page « Approvals and checks », un contrôle **Pre-check approvals** placé **avant** l'Exclusive Lock existant : approbateur
            `[shop42]\Shop42 Release Approvers` (un seul membre suffit), « Allow approvers to approve their own runs » **désactivé**,
            délai 30 jours. Luna, sous autorisation explicite de Florian, a configuré le check via l'interface le 2026-10-18 (14:43 UTC) ;
-           la capture de la page et de la fiche est visible dans cette session (aucune capture locale enregistrée). Luna la cite et, si
-           elle peut lire l'état en lecture seule, le recoupe ; hors cette configuration autorisée, elle ne crée, ne modifie et ne
-           supprime jamais ce contrôle. Si la capture est indisponible, est antérieure à une modification de l'environnement connue ou
+           la capture de la page et de la fiche est visible dans cette session (aucune capture locale enregistrée). Codex relève l'état
+           actuel dans Azure DevOps et le recoupe avec cette capture ; il ne crée, ne modifie ni ne supprime ce contrôle. Si la capture
+           est indisponible, est antérieure à une modification de l'environnement connue ou
            diffère de cette description : arrêt.
         2. *Seul `Deploy_dev` écrit.* Lecture hors ligne de `.ifs/templates/infra-target-stages.yml` et de
            `orders/infra/pipelines/release.yml` **dans le clone mis à jour** : (a) `Preview_dev` est un `job` ordinaire, sans
@@ -895,19 +905,20 @@ action impossible à réaliser avec les accès déjà ouverts.
            `Invoke-IfsInfraDeploy.ps1` (donc la seule qui écrit dans Azure) ; (c) aucun autre fichier de `.ifs/templates/` ni de
            `orders/` n'appelle `Invoke-IfsInfraDeploy`, `stack sub create` ou `az deployment` en écriture pour la cible dev ;
            (d) `Deploy_prd` dépend de `Deploy_dev` (un rejet de `Deploy_dev` ne laisse donc pas PRD s'exécuter). Un écart : arrêt.
-         3. *Inventaire des définitions.* Florian relève en lecture seule les dix définitions : les cinq CI
+         3. *Inventaire des définitions.* Codex relève en lecture seule les dix définitions CI/release : les cinq CI
             (core/infra, data/infra, orders/infra, platform/infra, orders/apps/api) et leurs cinq releases. Pour chacune, noter le nom,
             le chemin YAML, l'ID, la révision, le `queueStatus` initial et les déclencheurs YAML et configurés dans l'interface.
             Relever les exécutions en cours et en file. Une exécution en cours/en file, une définition inattendue, un déclencheur
             incompris ou un état illisible : arrêt, aucune modification de `queueStatus`, aucun commit/push/PR/merge.
-         4. *Préconditions C9 et clone.* Florian a retenu le 2026-10-20 l'activation de l'auto-approbation après R0. Après le
-            rejet de R0, il l'active lui-même et fournit une nouvelle capture avant D3 ; si l'activation échoue, D3 reste bloquée.
+         4. *Préconditions C9 et clone.* Florian a retenu le 2026-10-20 l'activation de l'auto-approbation après R0, puis a
+            autorisé Codex à l'activer temporairement après le rejet de R0 et à vérifier le réglage avant D3 ; si l'activation
+            échoue, D3 reste bloquée.
             Dans `C:/Users/flori/RiderProjects/shop42-d2b-proof`, vérifier la branche et le diff prévus, exactement `.ifs/manifest.json`
             et `.ifs/templates/scripts/IfsRelease.psm1` préparés par D2b, les filtres et les dix YAML contre l'inventaire, la garde
             `shop42-dev` et le fait que seul `Deploy_dev` écrit. Vérifier aussi que le clone original reste propre sur `2875cf3`.
             Clone absent/inaccessible, diff différent, garde non vérifiable ou choix C9 retiré : ne rien commiter ni pousser. Si
             l'activation C9 échoue après R0, bloquer uniquement le lancement D3.
-         5. *Suspension temporaire par Florian.* Après réussite des sous-étapes 3.1 à 3.4 et avant tout commit/push/PR/merge, passer
+         5. *Suspension temporaire par Codex.* Après réussite des sous-étapes 3.1 à 3.4 et avant tout commit/push/PR/merge, passer
             `queueStatus` à `disabled` pour exactement ces huit définitions collatérales : les CI et releases de core/infra, data/infra,
             platform/infra et orders/apps/api. Ne modifier que `queueStatus`, relever les états initiaux et les nouvelles révisions ;
             ne pas utiliser `paused`, qui accepte les mises en file. Laisser les deux définitions orders/infra à `enabled`. Une lecture
@@ -916,14 +927,14 @@ action impossible à réaliser avec les accès déjà ouverts.
          6. *Portée des déclencheurs pendant la fenêtre.* Les dix définitions peuvent avoir des déclencheurs supplémentaires : ils
             sont tous consignés et compris, mais aucune définition collatérale ne doit pouvoir démarrer, car les huit sont `disabled`.
             Après la suspension, seuls la validation de PR sans connexion Azure (P-04), le CI `orders/infra` N lancé manuellement
-            une fois par Florian après la fusion sur le SHA de fusion, puis son unique release automatique R0 sont attendus. L'override
+            une fois par Codex après la fusion sur le SHA de fusion, puis son unique release automatique R0 sont attendus. L'override
             UI « Disable continuous integration » observé sur la définition 80 est la raison de ce lancement manuel ; le déclencheur
             de ressource de la release reste attendu après la réussite de N. Aucun YAML du clone n'est modifié pour résoudre les
             déclencheurs. Toute exécution autre que N/R0, toute file non vide ou toute écriture Azure avant approbation : arrêt, `BLOQUE`.
      4. **Livraison limitée, seulement après vérification des sous-étapes 3.1 à 3.6 et de l'accès Git en lecture seule.** Le commit `2875cf3`, poussé avant cette garde,
-        reste un fait historique préservé. Aucun nouveau commit (même local) ni merge ne précède la confirmation des huit suspensions
-        par Florian. Ensuite, Luna crée le commit de preuve dans le clone indépendant, réconcilie
-        la branche distante existante sans réécrire son historique, pousse et ouvre la PR ; Florian fusionne ; il lance le CI N manuel
+        reste un fait historique préservé. Aucun nouveau commit (même local) ni merge ne précède la vérification des huit suspensions
+        par Codex. Ensuite, Codex crée le commit de preuve dans le clone indépendant, réconcilie
+        la branche distante existante sans réécrire son historique, pousse et ouvre la PR ; Codex fusionne ; il lance le CI N manuel
         unique sur le SHA fusionné, puis observe le run automatique R0.
         1. Après validation de 3.1 à 3.6, commiter dans le clone de preuve uniquement `.ifs/manifest.json` et
            `.ifs/templates/scripts/IfsRelease.psm1`, corps : « Mise à jour ciblée, pas une republication : <chemins> viennent de IFS
@@ -933,9 +944,9 @@ action impossible à réaliser avec les accès déjà ouverts.
            seuls `.ifs/manifest.json` et `.ifs/templates/scripts/IfsRelease.psm1` peuvent être résolus en prenant exactement leur
            version du commit de preuve ; tout autre conflit impose l'arrêt. Vérifier que l'arbre du merge est identique à celui du
            commit de preuve (hash d'arbre égal et arbre de travail propre). Cette relation rend le push de la branche originale
-           fast-forward : pousser sans `--force`, puis ouvrir une seule PR vers `main` (même procédure que #51/#52/#74). Florian
-           effectue la fusion lui-même, les écritures Azure DevOps restant à sa charge selon `AGENTS.md`. Aucune autre branche ni PR.
-        2. Après la fusion, Florian vérifie que la tête de `main` est toujours le SHA de fusion, puis lance manuellement **une seule fois**
+           fast-forward : pousser sans `--force`, puis ouvrir une seule PR vers `main` (même procédure que #51/#52/#74). Codex
+           effectue la fusion dans le périmètre autorisé par Florian. Aucune autre branche ni PR.
+        2. Après la fusion, Codex vérifie que la tête de `main` est toujours le SHA de fusion, puis lance manuellement **une seule fois**
            la définition CI `orders/infra` (ID 80) sur `refs/heads/main`. Noter N. Vérifier dans le run que `sourceBranch` =
            `refs/heads/main`, `sourceVersion` = SHA de fusion et `reason` = `manual` ; un SHA différent, un autre run ou une
            file non vide impose l'arrêt `BLOQUE` sans relancer. Vérifier ensuite :
@@ -944,29 +955,32 @@ action impossible à réaliser avec les accès déjà ouverts.
            `main.dev.bicepparam` de même SHA-256 que `inputSha256.template` et `inputSha256.parameters` des `metadata.json` D1b.
            Capturer : `Save-AdoRecordings.ps1 … -Scenario p8-d2b-ci-orders-run-<N>`.
         3. **Run de release automatique R0 (attendu).** La fin réussie de N déclenche `release.yml` par sa ressource pipeline. Ce run,
-           noté **R0**, n'est **pas** l'essai unique de D3, ne compte pour aucune des conditions C1 à C9 et ne sert à aucune preuve.
+            noté **R0**, n'est **pas** l'essai unique de D3, ne compte pour aucune des conditions C1 à C9 et ne sert à aucune preuve.
            Aucune release n'est lancée à la main pour le remplacer. Si R0 n'apparaît pas dans les 10 minutes qui suivent la fin de N :
-           le consigner tel quel (aucun R0, trigger de ressource non observé) et ne rien déclencher ; C3 s'applique alors sans
-           exception. Le choix C9 de Florian prévoit une activation après R0 : en l'absence de R0, ne pas activer le réglage ni
-           lancer D3 sans confirmation distincte de Florian.
-        4. **Traitement de R0 : bloqué puis rejeté, jamais approuvé.** `Preview_dev` de R0 peut s'exécuter (lecture seule) et publier
-           `ifs-preview-dev`. `Deploy_dev` doit ensuite rester **en attente du Pre-check approvals**, sans démarrer ses étapes.
-           Florian **rejette** l'approbation de R0 dans l'interface, le run automatique connu seulement ; **personne n'approuve R0,
-           ni pour « voir »**. Luna n'effectue aucune écriture Azure DevOps et ne touche à aucun autre run. Consigner dans
-           `NEXT.md` : ID de R0, heure UTC de son apparition et du
-           rejet, état final de chaque stage (`Preview_dev` terminé, `Deploy_dev` rejeté, `Deploy_prd` ignoré), preuve que
+             le consigner tel quel (aucun R0, trigger de ressource non observé) et ne rien déclencher pendant ces dix minutes ; C3
+             s'applique alors sans exception. L'autorisation de Florian du 2026-10-23 remplace la confirmation manuelle : si aucun R0
+             n'apparaît, Codex vérifie que les files sont vides, active temporairement l'auto-approbation et peut poursuivre D3.
+         4. **Traitement de R0 : bloqué puis rejeté ou annulé, jamais approuvé.** `Preview_dev` de R0 peut s'exécuter (lecture seule) et publier
+            `ifs-preview-dev`. `Deploy_dev` doit ensuite rester **en attente du Pre-check approvals**, sans démarrer ses étapes.
+             Codex **rejette** l'approbation de R0 dans l'interface, le run automatique connu seulement ; **personne n'approuve R0,
+             ni pour « voir »**. Si Azure DevOps refuse le rejet parce que l'unique approbateur est bloqué, Codex annule R0 après
+             vérification de la timeline sans tâche d'écriture. Codex ne touche à aucun autre run. Consigner dans
+            `NEXT.md` : ID de R0, heure UTC de son apparition et du
+            rejet ou de l'annulation, état final de chaque stage (`Preview_dev` terminé, `Deploy_dev` rejeté ou annulé avant tâche,
+            `Deploy_prd` ignoré), preuve que
            `Deploy_dev` n'a jamais démarré (timeline : aucune tâche exécutée, pas d'artefact `ifs-report-dev`), capture
-           (`p8-d2b-release-auto-run-<R0>`) et le fait que R0 n'est pas l'essai D3.
+            (`p8-d2b-release-auto-run-<R0>`) et le fait que R0 n'est pas l'essai D3. L'état Azure DevOps reste littéralement
+            `canceled` si le run est annulé ; il n'est pas requalifié comme `rejected`.
         5. **Arrêt immédiat si la garde ne tient pas** : `Deploy_dev` démarre ou exécute une tâche sans approbation, R0 est approuvé
-           par erreur, ou un autre run de release apparaît (ID ≠ R0, en cours ou en file). Luna arrête et demande à Florian au lieu d'annuler
-           le run en cause ; `BLOQUE` avec la timeline ; D3 ne reprend qu'après une nouvelle décision de conception consignée. L'état Azure est relevé
-           par l'inventaire en lecture seule de C5.
+           par erreur, ou un autre run de release apparaît (ID ≠ R0, en cours ou en file). Codex arrête les lancements ; si le run a
+           commencé une mutation, l'arrête par le mécanisme prévu par Azure DevOps ; `BLOQUE` avec la timeline. D3 ne reprend qu'après
+           vérification de l'état et consignation de la résolution. L'état Azure est relevé par l'inventaire en lecture seule de C5.
       5. **Arbitrage du 2026-10-18 — option C (historique, remplacée le 2026-10-20).** La garde `shop42-dev` reste en place et
          empêche une écriture DEV sans approbation ; elle ne neutralise ni les CI ni les déclencheurs collatéraux. La voie branche
          seule est écartée par DEC-101 et les connexions installées. Le protocole actif est l'inventaire et la suspension temporaire
          des huit définitions de la sous-étape 3 ; aucun YAML du clone n'est changé pour résoudre les déclencheurs.
-      6. **Restauration.** Après le run D3 terminal et seulement quand les dix pipelines n'ont aucune exécution en cours ou en file,
-         Florian rétablit les `queueStatus` initiaux des huit définitions suspendues et vérifie chaque résultat par lecture.
+         6. **Restauration.** Après le run D3 terminal et seulement quand les dix pipelines n'ont aucune exécution en cours ou en file,
+            Codex rétablit les `queueStatus` initiaux des huit définitions suspendues et vérifie chaque résultat par lecture.
          Consigner IDs, états avant/après, révisions, captures et absence de runs différés. Si une exécution inattendue existe ou si
          la restauration n'est pas confirmable, maintenir les définitions collatérales désactivées et arrêter pour arbitrage.
    - **D3 — conditions, puis essai unique.** Vérifier et consigner **C1 à C7 et C9 avant le lancement** dans `NEXT.md` (ligne
@@ -974,57 +988,67 @@ action impossible à réaliser avec les accès déjà ouverts.
      de `Deploy_dev`** ; C3 (absence de run concurrent) est relue avant le lancement et au point d'approbation. Toute condition fausse
      ou invérifiable : ne pas lancer/ne pas approuver, `BLOQUE` avec la condition en cause.
      - **C1** D2a commitée et poussée, ses vérifications vertes (sortie citée).
-     - **C2** D2b terminée selon le protocole : diff limité aux deux fichiers prévus, huit pipelines collatéraux `disabled`
-        (états initiaux et nouvelles révisions consignés), fusion `main` effectuée par Florian, CI orders/infra N lancé manuellement
-        une fois par Florian sur le SHA de fusion et réussi, et R0 rejeté par Florian selon les règles D2b (ou absence de R0 consignée
-        après dix minutes).
-     - **C3** Lecture seule : aucune exécution en cours ou en file parmi les dix définitions, aucun run inattendu depuis la fusion,
-        et au plus R0 terminé et rejeté par Florian avant mutation. Les huit définitions collatérales restent `disabled`; CI et release
+       - **C2** D2b terminée selon le protocole : diff limité aux deux fichiers prévus, huit pipelines collatéraux `disabled`
+          (états initiaux et nouvelles révisions consignés), fusion `main` effectuée par Codex, CI orders/infra N lancé manuellement
+          une fois par Codex sur le SHA de fusion et réussi, et R0 rejeté avant mutation ou annulé avant toute tâche d'écriture avec
+          refus d'API et timeline consignés (ou absence de R0 consignée après dix minutes).
+      - **C3** Lecture seule : aucune exécution en cours ou en file parmi les dix définitions, aucun run inattendu depuis la fusion,
+          et au plus R0 terminé par rejet ou annulation sûre avant mutation. Les huit définitions collatérales restent `disabled`; CI et release
         orders/infra restent `enabled`. Aucun push ni nouveau CI orders/infra n'est autorisé jusqu'au terminal de l'essai D3.
-     - **C4** État DEV inchangé : une passe du script D1b (même code, boucle ramenée à 1, `AZURE_CORE_ONLY_SHOW_ERRORS=true` dans le seul
-       processus, artefact `infra` de N, dossier `D3-pre`) donne l'empreinte `77dc939ffd65b288a6534f5172191753ea05a06bb3d14bdad7d9626e112a87b1`.
-       Un autre résultat : arrêt, Azure a changé sans mutation connue.
-     - **C5** Inventaire en lecture seule égal à celui d'après #748 (163 ressources, 26 groupes, 7 piles, 57 rôles, 7 budgets, mêmes
-       IDs, comparaison insensible à la casse) ; coût réel et prévision du jour relevés dans l'inventaire ; l'absence de plafond
-       personnel décidée le 2026-10-17 est rappelée. Tout écart d'inventaire : arrêt.
+      - **C4** État DEV inchangé : une passe du script D1b (même code, boucle ramenée à 1, `AZURE_CORE_ONLY_SHOW_ERRORS=true` dans le seul
+        processus, artefact `infra` de N, dossier `D3-pre`) donne l'empreinte `77dc939ffd65b288a6534f5172191753ea05a06bb3d14bdad7d9626e112a87b1`.
+        Un autre résultat : arrêt, Azure a changé sans mutation connue. Cette passe locale ne remplace pas l'aperçu publié du run ni C8.
+      - **C5** Inventaire en lecture seule et comparaison exacte des IDs avec le relevé de référence reconstitué depuis le snapshot
+        post-#748 et Resource Graph. Les totaux actuels sont 163 ressources, 26 groupes, 7 piles, 59 rôles et 7 budgets. Les deux
+        rôles en plus sont les accès D1b documentés. Les seules différences d'ID hors Shop42 sont le certificat VPD ajouté et le
+        site statique Sainte-Fly retiré ; les IDs Shop42 restent exactement ceux de référence, sans création ni suppression depuis
+        #748. Coûts vérifiés en lecture seule : ActualCost MTD 120,79 EUR au 2026-10-23T21:42Z ; la dernière prévision réussie,
+        au 2026-10-23T20:50Z, estime 40,89 EUR restants et 161,68 EUR fin octobre. L'estimation D3, réutilisant les ressources et
+        l'image existantes pour un essai d'une heure, est 6,50 EUR HT selon les hypothèses détaillées dans
+        `docs/plan/revues/P-08-autonomie-et-c5.md` ; projection mensuelle 168,18 EUR HT, sous l'alerte de 200 EUR. L'API de
+        prévision a répondu HTTP 429 au dernier rafraîchissement ; cette valeur est la dernière lecture réussie, pas un plafond
+        garanti. Tout écart Shop42, coût non lisible ou estimation d'un surcoût important : arrêt avant écriture de ressources.
      - **C6** Image applicative DEV et PRD = image D2 (digests consignés avant l'essai).
-     - **C7** L'utilisateur, membre de « Shop42 Release Approvers », est disponible pour les approbations (Luna n'approuve jamais) :
-       P-08 passe `EN_ATTENTE_DE_RECETTE` dès l'aperçu DEV publié, avec la consigne d'approbation ci-dessous.
-     - **C8** Après la publication de `Preview_dev` de l'essai unique et avant d'approuver `Deploy_dev`, ses effets sont : 0 création,
-       0 recréation, 0 suppression, 0 révocation, 0 opération en attente (le détail est relu par Florian). Sinon : ne pas approuver,
+       - **C7** Codex est autorisé à approuver les seuls runs D3 après vérification de C8 ; R0 reste toujours rejeté ou annulé avant
+         mutation, et aucune autre approbation n'est effectuée.
+      - **C8** Après la publication de `Preview_dev` de l'essai unique et avant d'approuver `Deploy_dev`, ses effets sont : 0 création,
+         0 recréation, 0 suppression, 0 révocation, 0 opération en attente (le détail est relu par Codex). Sinon : ne pas approuver,
        consigner, arrêt. C8 n'est pas une précondition au lancement : elle dépend de l'aperçu produit par ce run.
-     - **C9** (ajoutée le 2026-10-18) Une **approbation humaine précède toute écriture Azure du stage DEV** de l'essai. L'étape DEV du
-       kit n'est pas protégée par défaut ([recette § 2](recettes/01-preuves.md#2-p1--première-installation-et-application-témoin) :
-       seule PRD est approuvée) ; sans cette garde, la release pourrait commencer l'application avant que Florian puisse examiner C8
-       et décider de l'approbation. Vérifié par lecture hors ligne de `infra-release.yml` (toute écriture Azure du stage DEV est dans un job de
+      - **C9** (ajoutée le 2026-10-18) Le contrôle **Pre-check approvals** précède toute écriture Azure du stage DEV de l'essai.
+        L'étape DEV du kit n'est pas protégée par défaut ([recette § 2](recettes/01-preuves.md#2-p1--première-installation-et-application-témoin) :
+        seule PRD est approuvée) ; sans cette garde, la release pourrait commencer l'application avant que C8 soit vérifié.
+        Vérifié par lecture hors ligne de `infra-release.yml` (toute écriture Azure du stage DEV est dans un job de
        déploiement lié à l'environnement `shop42-dev`, l'aperçu n'écrit rien) **et** par la capture de la page de contrôles de cet
-       environnement, visible dans la session. Mise en place : Luna, sous autorisation explicite de Florian, a configuré le check via
-       l'interface le 2026-10-18 à 14:43 UTC ; hors cette configuration autorisée, Luna ne modifie
-       jamais un environnement ni un contrôle Azure DevOps. *Point d'attention :* le groupe « Shop42 Release Approvers » ne comporte qu'**un
+        environnement, visible dans la session. Mise en place historique : Luna, sous autorisation explicite de Florian, a configuré le check via
+        l'interface le 2026-10-18 à 14:43 UTC. *Point d'attention :* le groupe « Shop42 Release Approvers » ne comporte qu'**un
        membre, Florian DREVET** (constaté en lecture seule dans Project Settings > Permissions > Shop42 Release Approvers > Members).
        La capture initiale montre « Allow approvers to approve their own runs » désactivé, ce qui empêche l'approbation de R0.
-       Si R0 apparaît, Florian le rejettera sans approbation, puis activera lui-même ce réglage avant D3 et fournira une nouvelle
-       capture. Si R0 n'apparaît pas dans les dix minutes suivant N, le choix « après R0 » ne précise pas quand l'activer : ne pas
-       modifier le réglage ni lancer D3 sans confirmation distincte de Florian. Avant le lancement D3, vérifier que le check
-       **Pre-check approvals** reste en place avant l'Exclusive Lock, que le groupe est inchangé et que le réglage d'auto-approbation
-       est activé. **D3 ne démarre pas** tant que ces conditions ne sont pas vérifiées. Luna
-       n'active pas l'auto-approbation et n'ajoute personne au groupe. Si Florian ne peut pas appliquer ou vérifier ce réglage, ne
-       rien lancer (`BLOQUE`). Les instructions du contrôle restent vraies : aucune approbation de R0 ; pour D3, approbation seulement
-       après relecture de C8.
+         Si R0 apparaît, Codex le rejette sans approbation ou, en cas de refus ADO avec timeline sûre, l'annule avant mutation ; il
+         active ensuite temporairement ce réglage avant D3 et en vérifie l'état. Si R0 n'apparaît pas dans les dix minutes suivant N,
+         C2 permet de consigner son absence, puis Codex vérifie les files, active temporairement l'auto-approbation et poursuit.
+         Avant le lancement D3, vérifier que le check **Pre-check approvals** reste en place avant l'Exclusive Lock, que le groupe
+         est inchangé et que le réglage d'auto-approbation est activé temporairement. **D3 ne démarre pas** tant que ces conditions
+         ne sont pas vérifiées. Codex n'ajoute personne au groupe. Les instructions du contrôle restent vraies : aucune approbation
+         de R0 ; pour D3, approbation seulement après relecture de C8. Après l'état terminal de D3, rétablir
+         `requesterCannotBeApprover=true` et vérifier la restauration.
 
      **Essai unique** (le déploiement DEV modifiera réellement DEV : c'est le contenu normal de la release `orders`, le même que celui
      de l'aperçu #748). Ordre :
-     0. Cet essai est **distinct de R0** (run automatique rejeté, sous-étape D2b.4.4) : R0 n'est ni réapprouvé, ni relancé, ni compté.
+      0. Cet essai est **distinct de R0** (run automatique rejeté ou annulé avant mutation, sous-étape D2b.4.4) : R0 n'est ni réapprouvé, ni relancé, ni compté.
         L'essai unique est le premier et seul run de release lancé à la main après la vérification de C1 à C7 et C9.
-     1. Lancer à la main `orders/infra/pipelines/release.yml` en fixant la ressource de CI sur **N** (version explicite). Si l'interface ne
-        permet pas de fixer N : `BLOQUE`. Noter l'identifiant de run R (≠ R0) et l'heure.
+      1. Lancer à la main `orders/infra/pipelines/release.yml` avec le sélecteur de version de ressource et choisir le run CI
+         **N #759**. Avant de lancer, vérifier dans la ligne sélectionnée `main` et le SHA
+         `492dfa0df7f9c22f182f1fec443f90c041ed823d`. Après mise en file, vérifier dans `resources.pipelines.ci.pipeline.id`
+         que la ressource est bien le run #759 et que son commit source est identique. Si l'un de ces signaux diffère ou
+         n'est pas lisible, annuler avant toute tâche de déploiement, consigner l'écart et bloquer. Noter l'identifiant de run R
+         (≠ R0) et l'heure.
      2. Aperçu DEV publié, `Deploy_dev` en attente du Pre-check approvals : capturer (`p8-d3-preview-dev-run-<R>`), vérifier C8.
-        **Consigne d'approbation à l'utilisateur** : approuver `Deploy_dev` seulement si C8 est vrai et si aucune autre exécution n'a
-        démarré ; sinon rejeter et prévenir. Luna n'approuve jamais.
+         Codex approuve `Deploy_dev` seulement si C8 est vrai et si aucune autre exécution n'a démarré ; sinon il annule R avant
+         toute tâche de déploiement et consigne le blocage. L'auto-approbation n'autorise jamais à contourner C8.
      3. Résultat DEV, trois cas exclusifs :
         a. `Succeeded` : vérifier dans `ifs-report-dev` (`ifs-report/v2`) `approvedPreviewFingerprint` = `fingerprint` de l'aperçu publié.
            Passer à PRD : même procédure (aperçu PRD capturé, mêmes effets exigés qu'en C8, aucune livraison applicative entre aperçu
-           et approbation), approbation par l'utilisateur, puis dans `ifs-report-prd` égalité des empreintes approuvée/appliquée, image D2
+            et approbation), approbation par Codex après vérification des effets et de l'absence d'exécution concurrente, puis dans `ifs-report-prd` égalité des empreintes approuvée/appliquée, image D2
            conservée, `/health` = 200. Capturer `p8-d3-result-dev-run-<R>` et `p8-d3-result-prd-run-<R>`. Seul ce cas permet de consigner
            P8 **OK** dans `resultats.md`.
         b. `FailedBeforeMutation` par divergence d'empreinte : **arrêt**. Ne pas approuver PRD, ne pas relancer, ne rien forcer. Télécharger
@@ -1034,33 +1058,32 @@ action impossible à réaliser avec les accès déjà ouverts.
         c. Toute autre issue (échec d'une étape, rapport `v1`, fichier de rapport absent, approbation expirée) : arrêt, capture, constat.
      4. Dans les cas a et b, comparer ensuite l'aperçu publié de R à la passe `D3-pre` (identité personnelle) ; consigner le verdict comme
         **observation**, jamais comme cause. Refaire le contrôle de coût et d'inventaire, puis capturer l'état final.
-     5. **Pas de second essai.** Après b ou c, `BLOQUE` avec question à Claude (verdict de comparaison, captures). Une nouvelle release
-        exige une nouvelle décision de Claude. Le nettoyage de `shop42` reste suspendu jusqu'à la réussite de P8 (cas a) et des autres
+      5. **Pas de second essai.** Après b ou c, `BLOQUE` avec le verdict de comparaison et les captures. Une nouvelle release exige
+         une nouvelle décision de Florian. Le nettoyage de `shop42` reste suspendu jusqu'à la réussite de P8 (cas a) et des autres
         conditions de la procédure T.
-1. Avant toute commande qui crée, déploie ou modifie des ressources Azure, appliquer la décision de Florian du 2026-10-17 :
-   aucun plafond personnel n'est fixé et la poursuite est autorisée sous contrôle des coûts. Cette décision remplace l'exigence
-   d'un plafond numérique ; elle ne transforme pas le budget préexistant en coupe-circuit. Avant chaque action Azure significative,
-   actualiser dans `NEXT.md` le coût réel, la prévision disponible et l'estimation complète France Central, puis confirmer avec
-   Florian que l'autorisation de poursuivre reste valable. Maintenir l'inventaire de référence et les contrôles au début/à la fin
-   de chaque session, avant/après chaque action significative et après chaque nettoyage. Si les données ne sont pas disponibles ou si
-   Florian retire son autorisation, ne pas créer ni déployer de ressources. Une fois ce contrôle effectué, exécuter la
+ 1. Avant toute commande qui crée, déploie ou modifie des ressources Azure, appliquer l'autorisation de Florian du 2026-10-23 :
+    Codex avance sous réserve que le surcoût total ne soit pas important. Avant chaque action Azure significative, actualiser dans
+    `NEXT.md` le coût réel, la prévision disponible et l'estimation complète France Central. Si le coût est illisible, si l'estimation
+    complète est incomplète ou si le surcoût peut être important, ne pas créer ni déployer de ressources et demander à Florian un
+    plafond explicite. Maintenir l'inventaire de référence et les contrôles au début/à la fin de chaque session, avant/après chaque
+    action significative et après chaque nettoyage. Une fois ce contrôle effectué, exécuter la
    recette dans l'ordre P1, P9, P3, P8, P2, P4, P5, P7, avec un seul jeu Azure à la fois. Après chaque run, capturer les
    réponses Azure DevOps (étape 3 bis de P-07) et consigner son résultat. `P-08` reste `EN_COURS` jusqu'au dernier
-   nettoyage ; ne pas demander à l'utilisateur de rejouer les preuves déjà exécutées par Luna.
+    nettoyage ; ne pas demander à Florian de rejouer les preuves déjà exécutées par Codex.
 2. Pour chaque KO observé pendant la recette (journal du run, message) : si la cause est une erreur de mise en œuvre de la sortie
    de référence (le comportement attendu est clair dans la spec et le plan), corriger, ajouter le test Pester
    qui l'aurait détectée, commiter `fix(reference): …` ; si la cause est une question de conception, ne rien
-   corriger : question pour Claude.
+    corriger : question précise pour Florian, sans déléguer la décision à un autre modèle.
 3. Consigner chaque résultat exécuté dans `docs/plan/preuves/resultats.md`.
 4. **Coût et propriété** : vérifier et consigner le coût au démarrage et à la fin de chaque session, avant et après chaque
    déploiement ou run Azure significatif, puis après chaque nettoyage. Si Florian retire son autorisation, arrêter les nouveaux runs
-   et appliquer, sur sa demande, la procédure d'urgence aux seuls IDs créés par Luna consignés dans
+    et appliquer la procédure d'urgence aux seuls IDs créés par Codex consignés dans
    [`inventaires-azure.md`](preuves/inventaires-azure.md) ; ne jamais supprimer une ressource préexistante.
 
 ✅ **Vérification automatique.** Après chaque correction : `Test-Reference*.ps1` et Pester verts.
 
-🧪 **Test de recette.** Luna déroule [`recettes/01-preuves.md`](recettes/01-preuves.md) en entier ; l'utilisateur intervient
-uniquement si une étape requiert son authentification ou une action réellement manuelle.
+🧪 **Test de recette.** Codex déroule [`recettes/01-preuves.md`](recettes/01-preuves.md) en entier et consigne chaque résultat ;
+seules une authentification indisponible, une décision de conception ou un coût important non plafonné peuvent nécessiter Florian.
 
 🧠 **Mémoire.** `08-runtime-and-orchestration.md` : ce que les preuves ont appris (limites du what-if des piles,
 délais de propagation RBAC observés, temps de chaque release).
@@ -1074,12 +1097,13 @@ le jalon 0 redéploie depuis des abonnements vides. Les preuves Azure DevOps et 
 
 **Périmètre** : `P-07`, `P-08`, et les résultats de `docs/plan/preuves/resultats.md`.
 
-**Claude** : analyse chaque KO, décide des changements de conception (nouvelles `DT-nn`, corrections de la sortie
-de référence en tâches `R-03-Cn`), décide du sort de `IFS_TEST_ABORT_AFTER` dans la sortie générée, met à jour le
+**Codex** : analyse chaque KO, corrige les défauts de mise en œuvre démontrés par les tests et consigne les décisions ouvertes ;
+les changements de conception (nouvelles `DT-nn`) qui ne sont pas couverts par le plan sont soumis à Florian. Codex décide du
+sort de `IFS_TEST_ABORT_AFTER` dans la sortie générée, met à jour le
 statut des preuves dans [04 § 7.2](../specs/04-perimetre-et-lots.md) (« prototypée » si la preuve est passée sur la
 sortie écrite à la main ; « vérifiée » viendra quand IFS la générera, au jalon 0), puis vérifie que le jalon 0
 reste exécutable tel qu'écrit.
 
-**Recette utilisateur** : [`recettes/01-preuves.md`](recettes/01-preuves.md) complète.
+**Auto-recette Codex** : [`recettes/01-preuves.md`](recettes/01-preuves.md) complète.
 
-**Après approbation** : vous fusionnez ; branche suivante `impl/j0-acces`.
+**Après auto-validation** : Codex fusionne la PR autorisée ; branche suivante `impl/j0-acces`.

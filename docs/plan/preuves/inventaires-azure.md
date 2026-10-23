@@ -61,6 +61,15 @@ le commit source, les paramètres sans secret, la liste des principaux exclus de
 les ressources et de tous les groupes gérés. Pour les attributions de rôle, conserver leur ID d'attribution exact, pas
 seulement le principal ou le rôle.
 
+## Relevé C5 du 2026-10-23
+
+Le contrôle Resource Graph terminé à `2026-10-23T21:36:30Z` contient 163 ressources, 26 groupes, 7 piles, 59 rôles et
+7 budgets. L'inventaire complet hors dépôt et les IDs exacts sont dans
+`%LOCALAPPDATA%\InfraFlowSculptor\P08\p08-c5-azure-inventory-20261023.json`. La comparaison avec la référence reconstituée
+montre deux écarts hors Shop42 : un certificat ajouté dans `rg-vpd-dev` et le site statique Sainte-Fly retiré dans
+`rg-sainte-fly`. Les IDs Shop42 n'ont pas changé par création ou suppression ; les deux rôles ajoutés après la baseline sont
+les accès de lecture D1b. Aucun changement de ressource Shop42 n'est attribué à R0.
+
 ## Journal des contrôles de coût
 
 Contrôler *Cost Management → Cost analysis* au démarrage et à la fin de chaque session, avant et après chaque déploiement ou
@@ -71,6 +80,7 @@ la procédure d'urgence ci-dessous.
 
 | Date UTC | Étape / opération | Coût réel affiché | Prévision affichée | Plafond confirmé | IDs contrôlés | Décision / action |
 |---|---|---:|---:|---:|---|---|
+| 2026-10-23T21:42:22Z | P-08 C5 avant l'unique essai D3 | 120,792393 EUR (ActualCost Query MTD) | Dernière prévision réussie à 20:50Z : 161,68 EUR fin octobre, dont 40,89 EUR du 24 au 31/10. Le rafraîchissement Forecast API à 21:42Z a répondu HTTP 429 | Budget préexistant de 200 EUR/mois, alerte uniquement | Relevé d'IDs C5 ci-dessus ; aucun changement de ressource Azure | Estimation D3 : 6,4952 EUR HT (7,79424 EUR avec le scénario illustratif de taxe 20 %), projection 168,1752 EUR HT pour octobre. Ressources existantes et image D2 réutilisées ; hypothèses et limites détaillées dans `docs/plan/revues/P-08-autonomie-et-c5.md`. Aucun budget n'a été créé ou modifié. |
 | 2026-10-08 | Préflight P-08 initial | 0,4303 EUR | Non retournée par la commande budget | 200 EUR/mois | Snapshot local du 2026-10-08 | Aucun déploiement ; arrêt sur la restriction SQL en North Europe |
 | 2026-10-15T09:10Z | Préflight P-08 France Central, lecture seule | 0,430301 EUR | Non retournée | 200 EUR/mois préexistant, confirmation de l'estimation France Central en attente | Souscription CLI par défaut, identique au snapshot privé | Région, fournisseurs, SKU et budget consultés ; aucun changement Azure |
 | 2026-10-15 | P-08, coût et noms avant déploiement | 70,840618 EUR (API Usage) ; objet budget : 0,430301 EUR | 174,675911 EUR (API Forecast) ; objet budget : 235,765571 EUR | 200 EUR/mois | Snapshot exact du 2026-10-15T12:29:09Z ; aucun ID nouveau | Vues de coût incohérentes ; ajout du sous-total pilote haut de 30,17 EUR porte Usage/Forecast à 204,85 EUR et le calcul du budget à 265,94 EUR, hors frais annexes. Arrêt avant toute écriture Azure ; aucune ressource créée par Luna |
@@ -81,6 +91,7 @@ la procédure d'urgence ci-dessous.
 | 2026-10-16T19:36Z | P-08 après API release #734 DEV, avant l’approbation PRD | 78,723647 EUR (Cost Management ActualCost, MTD) | 110,391181 EUR restant à prévoir du 16 au 31 octobre ; projection calculée 189,114828 EUR | Aucun plafond personnel fixé ; budget préexistant de 200 EUR/mois inchangé | Snapshot après-run-734-DEV de 19:39:06Z : 163 ressources, 26 groupes, 7 piles, 57 rôles, 7 budgets ; aucun ID ajouté ou retiré depuis #730 | Contrôle effectué après le déploiement DEV et avant l’approbation PRD. Aucun budget n’a été créé ou modifié. |
 | 2026-10-16T19:44Z | P-08 après API release #734 DEV/PRD | 78,723647 EUR (Cost Management ActualCost, MTD) | 110,391181 EUR restant à prévoir du 16 au 31 octobre ; projection calculée 189,114828 EUR | Aucun plafond personnel fixé ; budget préexistant de 200 EUR/mois inchangé | Snapshot après-run-734-PRD de 19:45:38Z : 163 ressources, 26 groupes, 7 piles, 57 rôles, 7 budgets ; aucun ID ajouté ou retiré depuis le contrôle DEV | Contrôle effectué après le déploiement PRD. Les valeurs de coût n’ont pas changé depuis 19:36Z ; aucun budget n’a été créé ou modifié. |
 | 2026-10-16T22:37Z | P-08 après API #739 et échec du run infra #738 | 80,945803 EUR (Cost Management ActualCost, MTD) | 106,655714 EUR prévus du 17 au 31 octobre ; projection calculée 187,601517 EUR | Aucun plafond personnel fixé ; budget préexistant de 200 EUR/mois inchangé | Snapshot après-run-738 de 22:35:49Z : 163 ressources, 26 groupes, 7 piles, 57 rôles, 7 budgets ; aucun ID ajouté ou retiré depuis le snapshot après API #737 | Cost Management actualisé après les déploiements ; aucun budget n’a été créé ou modifié. La prévision est conservée hors dépôt avec le snapshot d’inventaire. |
+| 2026-10-23T20:50Z | P-08 D2b avant publication, Cost Management en lecture seule | 120,79 EUR (ActualCost MTD, données quotidiennes jusqu'au 23/10) | 161,68 EUR prévus sur octobre ; 40,89 EUR du 24 au 31/10 | Aucun plafond personnel fixé ; budget préexistant de 200 EUR/mois inchangé | Aucun nouvel ID créé ou supprimé par Codex ; l’inventaire de référence post-#748 n’a pas été relu dans cette opération | Cost Management Query et Forecast API ; les prévisions du 22–23/10 ont été remplacées par le réel quotidien pour éviter le double comptage. Aucune écriture de ressource Azure. |
 
 ## Nettoyage d'urgence si le seuil de coût est atteint
 
