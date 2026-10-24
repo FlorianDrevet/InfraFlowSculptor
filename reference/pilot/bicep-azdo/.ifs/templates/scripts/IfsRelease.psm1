@@ -6,7 +6,7 @@ $script:IfsSchemaDirectory = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..
 $script:IfsSqlConnectionTimeoutSeconds = 120
 $script:IfsSqlRetryDelaySeconds = 10
 $script:IfsSqlRetryDeadlineMinutes = 10
-$script:IfsSqlTransientConnectionPattern = '(?i)connection timeout expired|timeout period elapsed during the post-login phase|pre-login handshake|error (?:number )?(?:40613|40197|40501|10928|10929)\b'
+$script:IfsSqlTransientConnectionPattern = '(?i)connection timeout expired|timeout period elapsed during the post-login phase|pre-login handshake|database [^\r\n]+ is not currently available|please retry the connection later|error (?:number )?(?:40613|40197|40501|10928|10929)\b'
 
 function Invoke-IfsAz {
     [CmdletBinding()]
