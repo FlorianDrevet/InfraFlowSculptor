@@ -1079,6 +1079,51 @@ Describe "Déploiement de pile et application" {
         }
     }
 
+    It "retente un délai transitoire de connexion SQL avec un délai de connexion borné" {
+        $global:IFS_SQL_CALLS = [System.Collections.Generic.List[object]]::new()
+        $global:IFS_AZ_HANDLER = {
+            param($Arguments)
+            $global:LASTEXITCODE = 0
+            $command = $Arguments -join ' '
+            if ($command -match '^sql server show') { return '{"resourceGroup":"rg-shop-orders-main-dev"}' }
+            if ($command -match '^sql server firewall-rule list') { return '[]' }
+            if ($command -match '^containerapp show') { return '{"principalId":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}' }
+            if ($command -match '^ad sp show') { return '11111111-2222-3333-4444-555555555555' }
+            if ($command -match '^account get-access-token') { return '{"accessToken":"test-token"}' }
+            return '{}'
+        }
+        Mock Install-Module -ModuleName IfsRelease { }
+        Mock Import-Module -ModuleName IfsRelease { }
+        Mock Start-Sleep -ModuleName IfsRelease { }
+        function global:Invoke-Sqlcmd {
+            [CmdletBinding()]
+            param(
+                [string] $ServerInstance,
+                [string] $Database,
+                [string] $AccessToken,
+                [string] $InputFile,
+                [string[]] $Variable,
+                [int] $ConnectionTimeout
+            )
+            $global:IFS_SQL_CALLS.Add([pscustomobject]@{ ConnectionTimeout = $ConnectionTimeout })
+            if ($global:IFS_SQL_CALLS.Count -eq 1) {
+                throw [System.TimeoutException]::new('Connection Timeout Expired during the post-login phase.')
+            }
+        }
+
+        try {
+            Invoke-IfsDataAccess -ReleaseData $script:orderData -SqlScript (Join-Path $script:repoRoot "reference/pilot/bicep-azdo/orders/infra/scripts/data-access.sql") -RunId "test-run" | Out-Null
+
+            $global:IFS_SQL_CALLS.Count | Should -Be 2
+            @($global:IFS_SQL_CALLS | ForEach-Object ConnectionTimeout | Select-Object -Unique) | Should -Be @(120)
+            Should -Invoke Start-Sleep -ModuleName IfsRelease -Times 1 -Exactly
+        }
+        finally {
+            Remove-Item Function:global:Invoke-Sqlcmd -ErrorAction SilentlyContinue
+            Remove-Variable IFS_SQL_CALLS -Scope Global -ErrorAction SilentlyContinue
+        }
+    }
+
     It "transmet le groupe de ressources à Azure CLI pour accéder au serveur SQL" {
         $global:IFS_AZ_HANDLER = {
             param($Arguments)
@@ -1106,7 +1151,8 @@ Describe "Déploiement de pile et application" {
                 [string] $Database,
                 [string] $AccessToken,
                 [string] $InputFile,
-                [string[]] $Variable
+                [string[]] $Variable,
+                [int] $ConnectionTimeout
             )
         }
 
@@ -1155,7 +1201,8 @@ Describe "Déploiement de pile et application" {
                 [string] $Database,
                 [string] $AccessToken,
                 [string] $InputFile,
-                [string[]] $Variable
+                [string[]] $Variable,
+                [int] $ConnectionTimeout
             )
         }
 

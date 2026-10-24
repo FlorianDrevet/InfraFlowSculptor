@@ -3,6 +3,10 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $script:IfsSchemaDirectory = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../schemas'))
+$script:IfsSqlConnectionTimeoutSeconds = 120
+$script:IfsSqlRetryDelaySeconds = 10
+$script:IfsSqlRetryDeadlineMinutes = 10
+$script:IfsSqlTransientConnectionPattern = '(?i)connection timeout expired|timeout period elapsed during the post-login phase|pre-login handshake|error (?:number )?(?:40613|40197|40501|10928|10929)\b'
 
 function Invoke-IfsAz {
     [CmdletBinding()]
@@ -1041,6 +1045,11 @@ function Test-IfsSqlPermissionPropagationError {
     return $Message -match '(?i)permission was denied|permission.*not.*granted|not able to access the database|principal.*not found|does not have permission|error 33134|error 916|error 4060'
 }
 
+function Test-IfsSqlTransientConnectionError {
+    param([Parameter(Mandatory)][string] $Message)
+    return $Message -match $script:IfsSqlTransientConnectionPattern
+}
+
 function Get-IfsSqlPrincipal {
     param([Parameter(Mandatory)][object] $Access, [Parameter(Mandatory)][string] $SubscriptionId)
     $clientId = ''
@@ -1076,7 +1085,8 @@ function Invoke-IfsDataAccess {
     Applique les accès SQL des identités sortantes du composant.
     .DESCRIPTION
     Ouvre une règle temporaire si l'exposition est restreinte, utilise un jeton SQL Azure CLI et exécute le script
-    data-access.sql avec le module SqlServer épinglé. La règle temporaire est supprimée dans finally.
+    data-access.sql avec le module SqlServer épinglé. Les erreurs de connexion SQL transitoires et de propagation
+    des permissions sont retentées pendant dix minutes. La règle temporaire est supprimée dans finally.
     #>
     [CmdletBinding()]
     param(
@@ -1135,20 +1145,39 @@ function Invoke-IfsDataAccess {
             $tokenResult = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments @('account', 'get-access-token', '--resource', 'https://database.windows.net/', '--output', 'json')).Text
             $token = [string](Get-IfsValue $tokenResult 'accessToken')
             if ([string]::IsNullOrWhiteSpace($token)) { throw 'Azure CLI n''a pas fourni de jeton SQL.' }
-            $deadline = [DateTime]::UtcNow.AddMinutes(10)
-            do {
+            $deadline = [DateTime]::UtcNow.AddMinutes($script:IfsSqlRetryDeadlineMinutes)
+            $sqlSucceeded = $false
+            $lastRetryMessage = ''
+            $lastRetryWasPermissionPropagation = $false
+            while (-not $sqlSucceeded) {
+                $remainingSeconds = [int][Math]::Ceiling(($deadline - [DateTime]::UtcNow).TotalSeconds)
+                if ($remainingSeconds -le 0) {
+                    if ($lastRetryWasPermissionPropagation) { throw ('Propagation des droits SQL non terminée après dix minutes : {0}' -f $lastRetryMessage) }
+                    if ($lastRetryMessage) { throw ('Connexion SQL transitoire non rétablie après dix minutes : {0}' -f $lastRetryMessage) }
+                    throw 'Le délai de dix minutes pour établir la connexion SQL est dépassé.'
+                }
+                $connectionTimeoutSeconds = [Math]::Min($script:IfsSqlConnectionTimeoutSeconds, $remainingSeconds)
                 try {
                     Invoke-Sqlcmd -ServerInstance $access.server -Database $access.database -AccessToken $token -InputFile $scriptPath -Variable @(
                         ('PrincipalName={0}' -f $principal.Name), ('ClientId={0}' -f $principal.ClientId), ('Roles={0}' -f $principal.Roles)
-                    ) -ErrorAction Stop | Out-Null
-                    break
+                    ) -ConnectionTimeout $connectionTimeoutSeconds -ErrorAction Stop | Out-Null
+                    $sqlSucceeded = $true
                 }
                 catch {
-                    if (-not (Test-IfsSqlPermissionPropagationError $_.Exception.Message)) { throw }
-                    if ([DateTime]::UtcNow -ge $deadline) { throw ('Propagation des droits SQL non terminée après dix minutes : {0}' -f $_.Exception.Message) }
-                    Start-Sleep -Seconds 10
+                    $message = [string]$_.Exception.Message
+                    $permissionPropagation = Test-IfsSqlPermissionPropagationError $message
+                    $transientConnection = Test-IfsSqlTransientConnectionError $message
+                    if (-not $permissionPropagation -and -not $transientConnection) { throw }
+                    $lastRetryMessage = $message
+                    $lastRetryWasPermissionPropagation = $permissionPropagation
+                    $remainingSeconds = [int][Math]::Ceiling(($deadline - [DateTime]::UtcNow).TotalSeconds)
+                    if ($remainingSeconds -le 0) {
+                        if ($permissionPropagation) { throw ('Propagation des droits SQL non terminée après dix minutes : {0}' -f $message) }
+                        throw ('Connexion SQL transitoire non rétablie après dix minutes : {0}' -f $message)
+                    }
+                    Start-Sleep -Seconds ([Math]::Min($script:IfsSqlRetryDelaySeconds, $remainingSeconds))
                 }
-            } while ([DateTime]::UtcNow -lt $deadline)
+            }
         }
     }
     finally {

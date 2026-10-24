@@ -103,7 +103,7 @@
     },
     {
       "path": ".ifs/templates/scripts/IfsRelease.psm1",
-      "sha256": "6bd4af2db52c3d2aa0595d7d00aac1404f90ce8192a0d72086bc8f5634ca1949"
+      "sha256": "0fe2f50f60479e6b6a8473fead4c67c972e8c70988e6c6c9199880bac3fa9771"
     },
     {
       "path": ".ifs/templates/scripts/Install-IfsTrivy.ps1",
