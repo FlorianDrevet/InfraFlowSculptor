@@ -11,11 +11,15 @@ parameters:
 - name: secretWrites
   type: object
   default: []
+- name: recoveryMode
+  type: string
+  default: standard
 
 stages:
 - stage: Preview_${{ parameters.target.name }}
   displayName: Aperçu ${{ parameters.target.name }}
   dependsOn: ${{ parameters.target.dependsOn }}
+  condition: and(succeeded(), eq('${{ parameters.recoveryMode }}', 'standard'))
   variables:
   - ${{ if gt(length(parameters.secretWrites), 0) }}:
     - group: ifs-${{ parameters.project }}-${{ parameters.target.name }}
@@ -56,6 +60,7 @@ stages:
 - stage: Deploy_${{ parameters.target.name }}
   displayName: Déploiement ${{ parameters.target.name }}
   dependsOn: Preview_${{ parameters.target.name }}
+  condition: and(succeeded(), eq('${{ parameters.recoveryMode }}', 'standard'))
   lockBehavior: sequential
   variables:
   - ${{ if gt(length(parameters.secretWrites), 0) }}:

@@ -58,16 +58,20 @@
       "sha256": "7c21570f8d26d46720258303690cb9197fa26af965de85c4d0469dea3a72ad20"
     },
     {
+      "path": ".ifs/templates/infra-data-access-recovery.yml",
+      "sha256": "f6665de822c0751fce1c4930dd6dce689e8a4a8d901c06bb2157f7317964720e"
+    },
+    {
       "path": ".ifs/templates/infra-pr.yml",
       "sha256": "54af46640e0347b4d1d2daf50628c027cf73cf16a787519b14fc2b8656dc83b3"
     },
     {
       "path": ".ifs/templates/infra-release.yml",
-      "sha256": "c91e44f902bda10bc062441a3488e64edcc80d3726e50843315e65b950d008ec"
+      "sha256": "dc23e1568461fecae09bec69809a9dd5c074a6b3bd33119f9c68672f69add4e4"
     },
     {
       "path": ".ifs/templates/infra-target-stages.yml",
-      "sha256": "891d4143a02ec40f1af98cd8516fd8973e60f00948d7f827477b6e862b1eaa00"
+      "sha256": "d1857b35e473bb2837ef34f09ab2fcf685162921c43fe83561e9a24cab326d98"
     },
     {
       "path": ".ifs/templates/schemas/ifs-app-report.schema.json",
@@ -103,7 +107,7 @@
     },
     {
       "path": ".ifs/templates/scripts/IfsRelease.psm1",
-      "sha256": "0fe2f50f60479e6b6a8473fead4c67c972e8c70988e6c6c9199880bac3fa9771"
+      "sha256": "9dce38cc77509c72a40902cb3a65a6d7a87370ed61a6adba8d3e77566cb35a21"
     },
     {
       "path": ".ifs/templates/scripts/Install-IfsTrivy.ps1",
@@ -112,6 +116,10 @@
     {
       "path": ".ifs/templates/scripts/Invoke-IfsAppDeploy.ps1",
       "sha256": "5f127b6c6d8773ffa484b4127f31a7b156d0d5e9300670ac17f1b1b8213eee14"
+    },
+    {
+      "path": ".ifs/templates/scripts/Invoke-IfsDataAccessRecovery.ps1",
+      "sha256": "39c3831d55bc07fc1ac93514f0830864d2b55d88f866fec82eb6c73290c34309"
     },
     {
       "path": ".ifs/templates/scripts/Invoke-IfsInfraDeploy.ps1",
@@ -251,7 +259,7 @@
     },
     {
       "path": "orders/infra/pipelines/release.yml",
-      "sha256": "f6cab6c542dfa84659205e32b2db35fec4d776330014cef8c6f9bd124a5770f6"
+      "sha256": "cdc04bbb97a26d3875904675e114e6c899d19977fba070e1b1fbf9254fda591b"
     },
     {
       "path": "orders/infra/registry-role-assignment.bicep",

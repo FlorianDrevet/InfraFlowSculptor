@@ -1,0 +1,61 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+parameters:
+- name: project
+  type: string
+- name: component
+  type: string
+- name: recoveryMode
+  type: string
+  default: standard
+- name: recoveryOperationId
+  type: string
+  default: ''
+- name: recoveryRevision
+  type: string
+  default: '0'
+- name: recoveryCommit
+  type: string
+  default: ''
+
+stages:
+- stage: RecoverDataAccessPrd
+  displayName: Reprise ciblée de l'accès SQL PRD
+  dependsOn: []
+  condition: and(eq('${{ parameters.recoveryMode }}', 'recover-prd-762'), eq('${{ parameters.project }}', 'shop42'), eq('${{ parameters.component }}', 'orders'))
+  lockBehavior: sequential
+  jobs:
+  - deployment: RecoverDataAccessPrd
+    displayName: Vérifier et reprendre l'opération journalisée
+    environment: shop42-prd
+    pool:
+      vmImage: ubuntu-latest
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: ci
+            artifact: infra
+          - pwsh: |
+              $ErrorActionPreference = 'Stop'
+              New-Item -ItemType Directory -Path "$(Pipeline.Workspace)/ifs-recovery" -Force | Out-Null
+            displayName: Préparer le rapport de reprise
+          - task: AzureCLI@2
+            displayName: Reprendre une opération data-access précise sous identité PRD
+            inputs:
+              azureSubscription: ifs-shop42-prd
+              scriptType: pscore
+              scriptLocation: scriptPath
+              scriptPath: $(Pipeline.Workspace)/ci/infra/.ifs/templates/scripts/Invoke-IfsDataAccessRecovery.ps1
+              arguments: >
+                -ReleasePath "$(Pipeline.Workspace)/ci/infra/${{ parameters.component }}/infra/release.prd.json"
+                -OperationId '${{ parameters.recoveryOperationId }}'
+                -ExpectedRevision ${{ parameters.recoveryRevision }}
+                -ExpectedCommit '${{ parameters.recoveryCommit }}'
+                -SqlScript "$(Pipeline.Workspace)/ci/infra/${{ parameters.component }}/infra/scripts/data-access.sql"
+                -RunId '$(Build.BuildId)'
+                -OutputPath "$(Pipeline.Workspace)/ifs-recovery/ifs-data-access-recovery.json"
+              addSpnToEnvironment: true
+          - publish: $(Pipeline.Workspace)/ifs-recovery
+            artifact: ifs-recovery-prd
+            condition: always()
+            displayName: Publier la preuve de reprise

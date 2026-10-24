@@ -283,6 +283,13 @@ Describe "Journal d'opérations" {
         ($global:IFS_AZ_CALLS | ForEach-Object { $_ -join " " } | Where-Object { $_ -match "upload|lease" }) | Should -BeNullOrEmpty
     }
 
+    It "refuse de créer le conteneur ou le journal en mode reprise existante" {
+        { Open-IfsOperationJournal -ReleaseData $script:orderData -RequireExisting -WaitTimeoutSeconds 1 } |
+            Should -Throw "*journal attendu pour la reprise est absent*"
+        ($global:IFS_AZ_CALLS | ForEach-Object { $_ -join " " } | Where-Object { $_ -match "storage container create|storage blob upload|storage blob lease acquire" }) |
+            Should -BeNullOrEmpty
+    }
+
     It "refuse un journal existant qui ne respecte pas son schéma" {
         $global:IFS_JOURNAL = [pscustomobject]@{
             schema = "ifs-operation-journal/v1"; unit = "ifs-shop-orders-dev"; target = "unknown"; operations = @()
@@ -423,6 +430,168 @@ Describe "Journal d'opérations" {
         @($global:IFS_REPLAY_SQL_DEPENDENCIES | ForEach-Object { $_.resources } | ForEach-Object { $_.id }) | Should -Contain $expectedServer
         $operation.state | Should -Be "Done"
         Should -Invoke Invoke-IfsDataAccess -ModuleName IfsRelease -Times 1 -Exactly
+    }
+
+    Describe "Reprise ciblée d'un accès SQL PRD" {
+        BeforeEach {
+            $global:IFS_RECOVERY_SQL_CALLS = @()
+            $global:IFS_RECOVERY_SQL_FAILURE = $false
+            $access = [pscustomobject]@{
+                server = "sql-shop42-orders-prd.database.windows.net"
+                database = "sqldb-shop42-orders-prd"
+                principal = [pscustomobject]@{
+                    resourceId = "/subscriptions/test/resourceGroups/rg-shop42-orders-prd/providers/Microsoft.App/containerApps/ca-shop42-api-prd"
+                    kind = "systemAssigned"
+                }
+                level = "ReadWrite"
+                exposure = "Public"
+            }
+            $script:recoveryObjectId = "{0}/{1}/{2}" -f $access.server, $access.database, $access.principal.resourceId
+            $operationKey = "ifs-shop42-orders-prd|prd|data-access|$($script:recoveryObjectId)"
+            $script:recoveryOperationId = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($operationKey))).ToLowerInvariant()
+            $script:recoveryCompletionCommit = "b" * 40
+            $operation = [pscustomobject]@{
+                id = $script:recoveryOperationId
+                revision = 2
+                commit = "893f2a3dda4d7c8461be9c93f208a9e84d317962"
+                kind = "data-access"
+                objectId = $script:recoveryObjectId
+                state = "Started"
+                createdAt = [DateTime]::UtcNow.ToString("o")
+                updatedAt = [DateTime]::UtcNow.ToString("o")
+                note = $null
+                details = [pscustomobject]@{
+                    server = $access.server
+                    database = $access.database
+                    principal = [pscustomobject]@{ resourceId = $access.principal.resourceId; kind = $access.principal.kind }
+                    level = $access.level
+                    exposure = $access.exposure
+                }
+            }
+            $global:IFS_RECOVERY_CONTEXT = [pscustomobject]@{
+                Journal = [pscustomobject]@{
+                    schema = "ifs-operation-journal/v1"
+                    unit = "ifs-shop42-orders-prd"
+                    target = "prd"
+                    operations = @($operation)
+                }
+                Account = "stifsshop42prd"
+                Container = "ifs-operations"
+                Blob = "ifs-shop42-orders-prd.json"
+                LeaseId = "test"
+                RenewalFailureFile = $null
+            }
+            $script:recoveryRelease = [pscustomobject]@{
+                project = "shop42"
+                component = "orders"
+                target = "prd"
+                unit = "ifs-shop42-orders-prd"
+                protected = $true
+                subscriptionId = "test-subscription"
+                dataAccess = @($access)
+                dependencies = @()
+            }
+            Mock Open-IfsOperationJournal -ModuleName IfsRelease {
+                param($ReleaseData, $WaitTimeoutSeconds, $PollIntervalSeconds, $RequireExisting)
+                $global:IFS_RECOVERY_REQUIRE_EXISTING = [bool]$RequireExisting
+                $global:IFS_RECOVERY_CONTEXT
+            }
+            Mock Close-IfsOperationJournal -ModuleName IfsRelease { }
+            Mock Save-IfsJournalBlob -ModuleName IfsRelease { }
+            Mock Invoke-IfsDataAccess -ModuleName IfsRelease {
+                param($ReleaseData, $SqlScript, $RunId, $SkipStaleFirewallCleanup)
+                $global:IFS_RECOVERY_SQL_CALLS += @([pscustomobject]@{ ReleaseData = $ReleaseData; SqlScript = $SqlScript; RunId = $RunId; SkipStaleFirewallCleanup = [bool]$SkipStaleFirewallCleanup })
+                if ($global:IFS_RECOVERY_SQL_FAILURE) { throw "SQL indisponible" }
+                return [pscustomobject]@{ temporaryFirewallRules = @(); cleanedFirewallRules = @() }
+            }
+        }
+
+        It "ne reprend que l'opération attendue puis la marque Done" {
+            $result = Invoke-IfsDataAccessRecovery -ReleaseData $script:recoveryRelease -OperationId $script:recoveryOperationId -ExpectedRevision 2 -ExpectedCommit "893f2a3dda4d7c8461be9c93f208a9e84d317962" -CompletionCommit $script:recoveryCompletionCommit -SqlScript "data-access.sql" -RunId "recovery-762"
+
+            $global:IFS_RECOVERY_CONTEXT.Journal.operations[0].state | Should -Be "Done"
+            $global:IFS_RECOVERY_CONTEXT.Journal.operations[0].commit | Should -Be $script:recoveryCompletionCommit
+            $global:IFS_RECOVERY_SQL_CALLS.Count | Should -Be 1
+            @($global:IFS_RECOVERY_SQL_CALLS[0].ReleaseData.dataAccess).Count | Should -Be 1
+            $global:IFS_RECOVERY_SQL_CALLS[0].RunId | Should -Be "recovery-762"
+            $global:IFS_RECOVERY_SQL_CALLS[0].SkipStaleFirewallCleanup | Should -BeTrue
+            $global:IFS_RECOVERY_REQUIRE_EXISTING | Should -BeTrue
+            $result.operationId | Should -Be $script:recoveryOperationId
+            $result.commit | Should -Be $script:recoveryCompletionCommit
+            Should -Invoke Close-IfsOperationJournal -ModuleName IfsRelease -Times 1 -Exactly
+
+            InModuleScope IfsRelease -Parameters @{
+                ContextValue = $global:IFS_RECOVERY_CONTEXT
+                ObjectIdValue = $script:recoveryObjectId
+                DetailsValue = $global:IFS_RECOVERY_CONTEXT.Journal.operations[0].details
+                CompletionCommitValue = $script:recoveryCompletionCommit
+            } {
+                $replayed = Add-IfsOperation -Context $ContextValue -Revision 2 -Commit $CompletionCommitValue -Kind "data-access" -ObjectId $ObjectIdValue -Details $DetailsValue
+                $replayed.state | Should -Be "Done"
+            }
+        }
+
+        It "refuse toute autre opération en attente sans exécuter SQL" {
+            $other = [pscustomobject]@{ id = "2" * 64; state = "ToDo"; kind = "secret-write"; objectId = "kv/secret" }
+            $global:IFS_RECOVERY_CONTEXT.Journal.operations += $other
+
+            { Invoke-IfsDataAccessRecovery -ReleaseData $script:recoveryRelease -OperationId $script:recoveryOperationId -ExpectedRevision 2 -ExpectedCommit "893f2a3dda4d7c8461be9c93f208a9e84d317962" -CompletionCommit $script:recoveryCompletionCommit -SqlScript "data-access.sql" -RunId "recovery-762" } |
+                Should -Throw "*une seule opération en attente*"
+            $global:IFS_RECOVERY_SQL_CALLS | Should -BeNullOrEmpty
+            $global:IFS_RECOVERY_CONTEXT.Journal.operations[0].state | Should -Be "Started"
+        }
+
+        It "refuse un identifiant d'opération différent" {
+            { Invoke-IfsDataAccessRecovery -ReleaseData $script:recoveryRelease -OperationId ("2" * 64) -ExpectedRevision 2 -ExpectedCommit "893f2a3dda4d7c8461be9c93f208a9e84d317962" -CompletionCommit $script:recoveryCompletionCommit -SqlScript "data-access.sql" -RunId "recovery-762" } |
+                Should -Throw "*identifiant, la révision et au commit autorisés*"
+            $global:IFS_RECOVERY_SQL_CALLS | Should -BeNullOrEmpty
+            $global:IFS_RECOVERY_CONTEXT.Journal.operations[0].state | Should -Be "Started"
+        }
+
+        It "refuse un commit source différent de celui de l'opération" {
+            { Invoke-IfsDataAccessRecovery -ReleaseData $script:recoveryRelease -OperationId $script:recoveryOperationId -ExpectedRevision 2 -ExpectedCommit "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" -CompletionCommit $script:recoveryCompletionCommit -SqlScript "data-access.sql" -RunId "recovery-762" } |
+                Should -Throw "*identifiant, la révision et au commit autorisés*"
+            $global:IFS_RECOVERY_SQL_CALLS | Should -BeNullOrEmpty
+            $global:IFS_RECOVERY_CONTEXT.Journal.operations[0].state | Should -Be "Started"
+        }
+
+        It "refuse un manifeste d'accès qui ne correspond plus au détail journalisé" {
+            $script:recoveryRelease.dataAccess[0].level = "ReadOnly"
+
+            { Invoke-IfsDataAccessRecovery -ReleaseData $script:recoveryRelease -OperationId $script:recoveryOperationId -ExpectedRevision 2 -ExpectedCommit "893f2a3dda4d7c8461be9c93f208a9e84d317962" -CompletionCommit $script:recoveryCompletionCommit -SqlScript "data-access.sql" -RunId "recovery-762" } |
+                Should -Throw "*ne correspond plus à la release*"
+            $global:IFS_RECOVERY_SQL_CALLS | Should -BeNullOrEmpty
+            $global:IFS_RECOVERY_CONTEXT.Journal.operations[0].state | Should -Be "Started"
+        }
+
+        It "garde l'opération Started si l'exécution SQL échoue" {
+            $global:IFS_RECOVERY_SQL_FAILURE = $true
+
+            { Invoke-IfsDataAccessRecovery -ReleaseData $script:recoveryRelease -OperationId $script:recoveryOperationId -ExpectedRevision 2 -ExpectedCommit "893f2a3dda4d7c8461be9c93f208a9e84d317962" -CompletionCommit $script:recoveryCompletionCommit -SqlScript "data-access.sql" -RunId "recovery-762" } |
+                Should -Throw "*SQL indisponible*"
+            $global:IFS_RECOVERY_CONTEXT.Journal.operations[0].state | Should -Be "Started"
+            $global:IFS_RECOVERY_CONTEXT.Journal.operations[0].commit | Should -Be "893f2a3dda4d7c8461be9c93f208a9e84d317962"
+            Should -Invoke Close-IfsOperationJournal -ModuleName IfsRelease -Times 1 -Exactly
+        }
+
+        It "refuse une exposition restreinte qui demanderait une règle de pare-feu" {
+            $script:recoveryRelease.dataAccess[0].exposure = "Restricted"
+            $global:IFS_RECOVERY_CONTEXT.Journal.operations[0].details.exposure = "Restricted"
+
+            { Invoke-IfsDataAccessRecovery -ReleaseData $script:recoveryRelease -OperationId $script:recoveryOperationId -ExpectedRevision 2 -ExpectedCommit "893f2a3dda4d7c8461be9c93f208a9e84d317962" -CompletionCommit $script:recoveryCompletionCommit -SqlScript "data-access.sql" -RunId "recovery-762" } |
+                Should -Throw "*n'autorise pas de mutation de règle de pare-feu*"
+            $global:IFS_RECOVERY_SQL_CALLS | Should -BeNullOrEmpty
+            $global:IFS_RECOVERY_CONTEXT.Journal.operations[0].state | Should -Be "Started"
+        }
+
+        It "refuse une cible autre que PRD avant de prendre le bail" {
+            $script:recoveryRelease.target = "dev"
+
+            { Invoke-IfsDataAccessRecovery -ReleaseData $script:recoveryRelease -OperationId $script:recoveryOperationId -ExpectedRevision 2 -ExpectedCommit "893f2a3dda4d7c8461be9c93f208a9e84d317962" -CompletionCommit $script:recoveryCompletionCommit -SqlScript "data-access.sql" -RunId "recovery-762" } |
+                Should -Throw "*cible PRD protégée*"
+            $global:IFS_RECOVERY_SQL_CALLS | Should -BeNullOrEmpty
+            Should -Not -Invoke Open-IfsOperationJournal -ModuleName IfsRelease
+        }
     }
 
     It "marque un objet absent comme terminé avec la note prévue" {

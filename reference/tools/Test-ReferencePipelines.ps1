@@ -111,9 +111,9 @@ function Test-LocalReference {
 }
 
 $yamlFiles = @(Get-ChildItem -LiteralPath $pipelineRoot -Filter '*.yml' -File -Recurse -Force | Sort-Object FullName)
-if ($yamlFiles.Count -ne 24) { throw "24 fichiers YAML sont attendus après P-05 ; trouvé : $($yamlFiles.Count)." }
+if ($yamlFiles.Count -ne 25) { throw "25 fichiers YAML sont attendus après P-08 ; trouvé : $($yamlFiles.Count)." }
 $expectedFiles = @(
-    '.ifs/templates/infra-pr.yml', '.ifs/templates/infra-ci.yml', '.ifs/templates/infra-release.yml', '.ifs/templates/infra-target-stages.yml',
+    '.ifs/templates/infra-pr.yml', '.ifs/templates/infra-ci.yml', '.ifs/templates/infra-release.yml', '.ifs/templates/infra-target-stages.yml', '.ifs/templates/infra-data-access-recovery.yml',
     '.ifs/templates/app-pr.yml', '.ifs/templates/app-ci.yml', '.ifs/templates/app-release.yml', '.ifs/templates/app-target-stage.yml',
     'core/infra/pipelines/pr.yml', 'core/infra/pipelines/ci.yml', 'core/infra/pipelines/release.yml',
     'data/infra/pipelines/pr.yml', 'data/infra/pipelines/ci.yml', 'data/infra/pipelines/release.yml',
@@ -212,6 +212,22 @@ if ($stageTemplate.stages[1].jobs[0].environment -ne '${{ parameters.project }}-
 if ($stageTemplate.stages[1].lockBehavior -ne 'sequential') { throw 'Le stage Deploy doit conserver le verrou séquentiel de la cible.' }
 if ([regex]::Matches((Get-Content -LiteralPath (Join-Path $pipelineRoot '.ifs/templates/infra-target-stages.yml') -Raw), '(?m)^\s+- group: ifs-').Count -ne 2) {
     throw 'Le groupe de variables doit être lié aux stages Preview et Deploy des seuls composants écrivains.'
+}
+
+$ordersReleasePipelineText = Get-Content -LiteralPath (Join-Path $pipelineRoot 'orders/infra/pipelines/release.yml') -Raw
+$infraReleaseTemplateText = Get-Content -LiteralPath (Join-Path $pipelineRoot '.ifs/templates/infra-release.yml') -Raw
+$infraRecoveryTemplateText = Get-Content -LiteralPath (Join-Path $pipelineRoot '.ifs/templates/infra-data-access-recovery.yml') -Raw
+if ($ordersReleasePipelineText -notmatch '(?ms)name:\s*recoveryMode\s+displayName:.*?type:\s*string\s+default:\s*standard\s+values:\s*\r?\n\s*- standard\s*\r?\n\s*- recover-prd-762' -or
+    $ordersReleasePipelineText -notmatch "(?m)^\s+recoveryMode:\s*\$\{\{ parameters\.recoveryMode \}\}\s*$") {
+    throw 'La reprise Shop42 doit rester désactivée en mode standard et choisir le mode ciblé explicitement.'
+}
+if ($infraRecoveryTemplateText -notmatch "(?m)^\s+condition:\s*and\(eq\('\$\{\{ parameters\.recoveryMode \}\}', 'recover-prd-762'\), eq\('\$\{\{ parameters\.project \}\}', 'shop42'\), eq\('\$\{\{ parameters\.component \}\}', 'orders'\)\)\s*$" -or
+    (Get-Content -LiteralPath (Join-Path $pipelineRoot '.ifs/templates/infra-target-stages.yml') -Raw) -notmatch "(?m)^\s+condition:\s*and\(succeeded\(\), eq\('\$\{\{ parameters\.recoveryMode \}\}', 'standard'\)\)\s*$" -or
+    $infraRecoveryTemplateText -notmatch '(?m)^\s+environment:\s*shop42-prd\s*$' -or
+    $infraRecoveryTemplateText -notmatch '(?m)^\s+azureSubscription:\s*ifs-shop42-prd\s*$' -or
+    $infraRecoveryTemplateText -notmatch '(?m)^\s+lockBehavior:\s*sequential\s*$' -or
+    $infraRecoveryTemplateText -notmatch '(?m)Invoke-IfsDataAccessRecovery\.ps1') {
+    throw 'La reprise doit être un stage manuel PRD, protégé par l''environnement, la connexion et le verrou PRD.'
 }
 
 Remove-Item -LiteralPath $templateSchemaPath -Force

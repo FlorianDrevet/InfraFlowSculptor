@@ -13,6 +13,18 @@ parameters:
 - name: targets
   type: object
   default: []
+- name: recoveryMode
+  type: string
+  default: standard
+- name: recoveryOperationId
+  type: string
+  default: ''
+- name: recoveryRevision
+  type: string
+  default: '0'
+- name: recoveryCommit
+  type: string
+  default: ''
 
 stages:
 - ${{ each target in parameters.targets }}:
@@ -22,4 +34,13 @@ stages:
       component: ${{ parameters.component }}
       defaultBranch: ${{ parameters.defaultBranch }}
       secretWrites: ${{ parameters.secretWrites }}
+      recoveryMode: ${{ parameters.recoveryMode }}
       target: ${{ target }}
+- template: /.ifs/templates/infra-data-access-recovery.yml
+  parameters:
+    project: ${{ parameters.project }}
+    component: ${{ parameters.component }}
+    recoveryMode: ${{ parameters.recoveryMode }}
+    recoveryOperationId: ${{ parameters.recoveryOperationId }}
+    recoveryRevision: ${{ parameters.recoveryRevision }}
+    recoveryCommit: ${{ parameters.recoveryCommit }}

@@ -319,18 +319,26 @@ function Open-IfsOperationJournal {
     param(
         [Parameter(Mandatory)][object] $ReleaseData,
         [ValidateRange(0, 600)][int] $WaitTimeoutSeconds = 600,
-        [ValidateRange(1, 30)][int] $PollIntervalSeconds = 5
+        [ValidateRange(1, 30)][int] $PollIntervalSeconds = 5,
+        [switch] $RequireExisting
     )
     $coordinates = Get-IfsStorageCoordinate $ReleaseData
-    [void](Invoke-IfsAz -Arguments @('storage', 'container', 'create', '--account-name', $coordinates.Account, '--name', $coordinates.Container, '--auth-mode', 'login', '--public-access', 'off', '--output', 'none') -AllowFailure)
-    if (-not (Test-IfsBlobExistence $coordinates)) {
-        $initial = [pscustomobject]@{ schema = 'ifs-operation-journal/v1'; unit = $ReleaseData.unit; target = $ReleaseData.target; operations = @() }
-        $temporaryFile = Join-Path ([IO.Path]::GetTempPath()) ('ifs-journal-init-{0}.json' -f [guid]::NewGuid().ToString('N'))
-        try {
-            [IO.File]::WriteAllText($temporaryFile, (ConvertTo-Json $initial -Depth 20), [Text.UTF8Encoding]::new($false))
-            [void](Invoke-IfsAz -Arguments @('storage', 'blob', 'upload', '--account-name', $coordinates.Account, '--container-name', $coordinates.Container, '--name', $coordinates.Blob, '--file', $temporaryFile, '--overwrite', 'false', '--auth-mode', 'login', '--output', 'none') -AllowFailure)
+    if ($RequireExisting) {
+        if (-not (Test-IfsBlobExistence $coordinates)) {
+            throw 'Le journal attendu pour la reprise est absent ; aucun conteneur ou blob n''a été créé.'
         }
-        finally { Remove-Item -LiteralPath $temporaryFile -Force -ErrorAction SilentlyContinue }
+    }
+    else {
+        [void](Invoke-IfsAz -Arguments @('storage', 'container', 'create', '--account-name', $coordinates.Account, '--name', $coordinates.Container, '--auth-mode', 'login', '--public-access', 'off', '--output', 'none') -AllowFailure)
+        if (-not (Test-IfsBlobExistence $coordinates)) {
+            $initial = [pscustomobject]@{ schema = 'ifs-operation-journal/v1'; unit = $ReleaseData.unit; target = $ReleaseData.target; operations = @() }
+            $temporaryFile = Join-Path ([IO.Path]::GetTempPath()) ('ifs-journal-init-{0}.json' -f [guid]::NewGuid().ToString('N'))
+            try {
+                [IO.File]::WriteAllText($temporaryFile, (ConvertTo-Json $initial -Depth 20), [Text.UTF8Encoding]::new($false))
+                [void](Invoke-IfsAz -Arguments @('storage', 'blob', 'upload', '--account-name', $coordinates.Account, '--container-name', $coordinates.Container, '--name', $coordinates.Blob, '--file', $temporaryFile, '--overwrite', 'false', '--auth-mode', 'login', '--output', 'none') -AllowFailure)
+            }
+            finally { Remove-Item -LiteralPath $temporaryFile -Force -ErrorAction SilentlyContinue }
+        }
     }
     $deadline = [DateTime]::UtcNow.AddSeconds($WaitTimeoutSeconds)
     $leaseId = $null
@@ -846,6 +854,96 @@ function Set-IfsOperationState {
     return $operation
 }
 
+function Invoke-IfsDataAccessRecovery {
+    <#
+    .SYNOPSIS
+    Reprend une seule opération data-access PRD sous le bail exclusif du journal.
+    .DESCRIPTION
+    Refuse tout journal différent, toute opération différente ou tout détail d'accès qui ne correspond plus
+    exactement à la release courante. L'opération reste Started si SQL échoue.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][object] $ReleaseData,
+        [Parameter(Mandatory)][ValidatePattern('^[0-9a-f]{64}$')][string] $OperationId,
+        [Parameter(Mandatory)][ValidateRange(1, 2147483647)][int] $ExpectedRevision,
+        [Parameter(Mandatory)][ValidatePattern('^[0-9a-f]{40}$')][string] $ExpectedCommit,
+        [Parameter(Mandatory)][ValidatePattern('^[0-9a-f]{40}$')][string] $CompletionCommit,
+        [Parameter(Mandatory)][string] $SqlScript,
+        [Parameter(Mandatory)][string] $RunId
+    )
+
+    if ([string]$ReleaseData.target -cne 'prd' -or -not [bool]$ReleaseData.protected) {
+        throw 'La reprise data-access exige une cible PRD protégée.'
+    }
+    if ([string]$ReleaseData.project -cne 'shop42' -or [string]$ReleaseData.component -cne 'orders' -or
+        [string]$ReleaseData.unit -cne 'ifs-shop42-orders-prd') {
+        throw 'La reprise ciblée est réservée à l''unité orders PRD de Shop42.'
+    }
+
+    $context = $null
+    try {
+        $context = Open-IfsOperationJournal -ReleaseData $ReleaseData -RequireExisting
+        if ([string]$context.Journal.schema -cne 'ifs-operation-journal/v1' -or
+            [string]$context.Journal.unit -cne [string]$ReleaseData.unit -or
+            [string]$context.Journal.target -cne 'prd') {
+            throw 'Le journal verrouillé ne correspond pas à l''unité PRD de la release.'
+        }
+
+        $pending = @(Get-IfsPendingOperation -Journal $context.Journal)
+        if ($pending.Count -ne 1) { throw 'La reprise exige une seule opération en attente dans le journal.' }
+        $operation = $pending[0]
+        if ([string]$operation.id -cne $OperationId -or
+            [string]$operation.kind -cne 'data-access' -or
+            [string]$operation.state -cne 'Started' -or
+            [int]$operation.revision -ne $ExpectedRevision -or
+            [string]$operation.commit -cne $ExpectedCommit) {
+            throw 'L''opération en attente ne correspond pas à l''identifiant, la révision et au commit autorisés.'
+        }
+
+        $matchingAccesses = @($ReleaseData.dataAccess | Where-Object {
+            ('{0}/{1}/{2}' -f $_.server, $_.database, $_.principal.resourceId) -ceq [string]$operation.objectId
+        })
+        if ($matchingAccesses.Count -ne 1) { throw 'L''opération ne correspond pas à un accès SQL unique de la release.' }
+        $access = $matchingAccesses[0]
+        if ([string]$access.exposure -cne 'Public') { throw 'La reprise ciblée n''autorise pas de mutation de règle de pare-feu.' }
+        $details = $operation.details
+        $detailMatches =
+            [string](Get-IfsValue $details 'server' '') -ceq [string]$access.server -and
+            [string](Get-IfsValue $details 'database' '') -ceq [string]$access.database -and
+            [string](Get-IfsValue $details 'level' '') -ceq [string]$access.level -and
+            [string](Get-IfsValue $details 'exposure' '') -ceq [string]$access.exposure -and
+            [string](Get-IfsValue (Get-IfsValue $details 'principal' $null) 'resourceId' '') -ceq [string]$access.principal.resourceId -and
+            [string](Get-IfsValue (Get-IfsValue $details 'principal' $null) 'kind' '') -ceq [string]$access.principal.kind
+        if (-not $detailMatches) { throw 'Le détail de l''opération ne correspond plus à la release PRD courante.' }
+
+        $oneAccess = [pscustomobject]@{
+            dataAccess = @($access)
+            dependencies = @($ReleaseData.dependencies)
+            subscriptionId = $ReleaseData.subscriptionId
+        }
+        $dataResult = Invoke-IfsDataAccess -ReleaseData $oneAccess -SqlScript $SqlScript -RunId $RunId -SkipStaleFirewallCleanup
+        $operation.commit = $CompletionCommit
+        [void](Set-IfsOperationState -Context $context -OperationId $operation.id -State 'Done')
+        return [pscustomobject]@{
+            result = 'Succeeded'
+            operationId = [string]$operation.id
+            project = [string]$ReleaseData.project
+            component = [string]$ReleaseData.component
+            unit = [string]$ReleaseData.unit
+            target = [string]$ReleaseData.target
+            revision = [int]$operation.revision
+            expectedCommit = $ExpectedCommit
+            commit = [string]$operation.commit
+            temporaryFirewallRules = @($dataResult.temporaryFirewallRules)
+            cleanedFirewallRules = @($dataResult.cleanedFirewallRules)
+        }
+    }
+    finally {
+        if ($null -ne $context) { Close-IfsOperationJournal -Context $context }
+    }
+}
+
 function Invoke-IfsPendingOperation {
     param(
         [Parameter(Mandatory)][object] $Context,
@@ -1092,7 +1190,8 @@ function Invoke-IfsDataAccess {
     param(
         [Parameter(Mandatory)][object] $ReleaseData,
         [string] $SqlScript = '',
-        [Parameter(Mandatory)][string] $RunId
+        [Parameter(Mandatory)][string] $RunId,
+        [switch] $SkipStaleFirewallCleanup
     )
     $scriptPath = (Resolve-Path -LiteralPath $SqlScript).Path
     $version = Get-IfsSqlModuleVersion
@@ -1124,13 +1223,15 @@ function Invoke-IfsDataAccess {
             $server = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments @('sql', 'server', 'show', '--name', $serverName, '--resource-group', $resourceGroup, '--subscription', $ReleaseData.subscriptionId, '--output', 'json')).Text
             $resourceGroup = [string](Get-IfsValue $server 'resourceGroup')
             if ([string]::IsNullOrWhiteSpace($resourceGroup)) { throw ('Groupe de ressources SQL absent pour {0}.' -f $serverName) }
-            $rules = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments @('sql', 'server', 'firewall-rule', 'list', '--server', $serverName, '--resource-group', $resourceGroup, '--subscription', $ReleaseData.subscriptionId, '--output', 'json')).Text
-            foreach ($rule in $rules | Where-Object { $_.name -like 'ifs-temp-*' }) {
-                $ruleId = '/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Sql/servers/{2}/firewallRules/{3}' -f $ReleaseData.subscriptionId, $resourceGroup, $serverName, $rule.name
-                $created = Get-IfsTemporaryFirewallRuleCreatedAt -Rule $rule -ResourceId $ruleId
-                if ($created -and ([DateTimeOffset]::UtcNow - $created.ToUniversalTime()).TotalHours -gt 2) {
-                    [void](Invoke-IfsAz -Arguments @('sql', 'server', 'firewall-rule', 'delete', '--server', $serverName, '--resource-group', $resourceGroup, '--name', $rule.name, '--subscription', $ReleaseData.subscriptionId, '--yes', '--output', 'none'))
-                    $cleaned.Add([string]$rule.name)
+            if (-not $SkipStaleFirewallCleanup) {
+                $rules = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments @('sql', 'server', 'firewall-rule', 'list', '--server', $serverName, '--resource-group', $resourceGroup, '--subscription', $ReleaseData.subscriptionId, '--output', 'json')).Text
+                foreach ($rule in $rules | Where-Object { $_.name -like 'ifs-temp-*' }) {
+                    $ruleId = '/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Sql/servers/{2}/firewallRules/{3}' -f $ReleaseData.subscriptionId, $resourceGroup, $serverName, $rule.name
+                    $created = Get-IfsTemporaryFirewallRuleCreatedAt -Rule $rule -ResourceId $ruleId
+                    if ($created -and ([DateTimeOffset]::UtcNow - $created.ToUniversalTime()).TotalHours -gt 2) {
+                        [void](Invoke-IfsAz -Arguments @('sql', 'server', 'firewall-rule', 'delete', '--server', $serverName, '--resource-group', $resourceGroup, '--name', $rule.name, '--subscription', $ReleaseData.subscriptionId, '--yes', '--output', 'none'))
+                        $cleaned.Add([string]$rule.name)
+                    }
                 }
             }
             $firewall = $null
@@ -1495,7 +1596,7 @@ Export-ModuleMember -Function @(
     'Get-IfsPendingOperation', 'Test-IfsDependency', 'Test-IfsSecretVariable', 'Test-IfsSecretReference',
     'Get-IfsManagedIdentity',
     'Invoke-IfsPreview', 'Get-IfsEffectFingerprint', 'Read-IfsAppOwnedState', 'Add-IfsOperation',
-    'Set-IfsOperationState', 'Invoke-IfsStackDeployment', 'Invoke-IfsRevocation', 'Invoke-IfsSecretWrite',
+    'Set-IfsOperationState', 'Invoke-IfsDataAccessRecovery', 'Invoke-IfsStackDeployment', 'Invoke-IfsRevocation', 'Invoke-IfsSecretWrite',
     'Invoke-IfsDataAccess', 'Write-IfsReleaseReport', 'Invoke-IfsInfraPreview', 'Invoke-IfsInfraDeploy',
     'Invoke-IfsAppDeploy', 'Test-IfsReleaseData'
 )
