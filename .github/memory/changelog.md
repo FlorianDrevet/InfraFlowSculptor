@@ -36,3 +36,5 @@
 | 2026-10-18 | Luna | P-08 D2b — répétition et clone local validés ; audit des triggers bloque le push avant Azure Repos ; C9 et choix utilisateur A/B/C consignés. |
 | 2026-10-23 | Codex | Workflow — recettes exécutées par Codex, auto-revue des verrous, preuve de résolution des blocages et coûts vérifiés avant les écritures Azure. |
 | 2026-10-24 | Codex | P-08 — reprise bornée des timeouts SQL post-login et constat du chemin de reprise PRD à préciser. |
+| 2026-10-24 | Codex | P-08 — mécanisme de reprise PRD protégé, lié à l’opération #762 exacte, ajouté à la référence et auto-revu ; publication et exécution restent à faire. |
+| 2026-10-24 | Codex | P-08 — empêche le réarmement du journal après reprise lorsque le commit du manifeste évolue ; 132 tests, Bicep, YAML, déterminisme et analyse statique validés. Cost/C5 actualisés et huit pipelines collatéraux suspendus pour la publication. |
