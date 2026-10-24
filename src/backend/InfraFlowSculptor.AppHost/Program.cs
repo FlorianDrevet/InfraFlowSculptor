@@ -46,15 +46,19 @@ var blobs = storage.AddBlobs(ResourceNames.Blobs);
 
 var serviceBus = builder
     .AddAzureServiceBus(ResourceNames.ServiceBus)
-    .RunAsEmulator(emulator => emulator
+    .RunAsEmulator(emulator =>
+    {
         // Aspire applies this lifetime to the emulator and its SQL sidecar.
-        .WithLifetime(containerLifetime)
-        // The emulator waits for SQL before seeding its entities.
-        .WithEnvironment("SQL_WAIT_INTERVAL", "15")
-        .WithConfiguration(configuration =>
+        emulator.WithLifetime(containerLifetime);
+
+        // A cold SQL sidecar can outlast the emulator's short startup retry window in tests.
+        // Keep the normal local interval short, but let test containers wait longer for SQL.
+        emulator.WithEnvironment("SQL_WAIT_INTERVAL", isTesting ? "60" : "15");
+        emulator.WithConfiguration(configuration =>
         {
             configuration["UserConfig"]!["Namespaces"]![0]!["Name"] = "sbemulatorns";
-        }));
+        });
+    });
 
 foreach (var queueName in new[]
 {

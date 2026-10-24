@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://infraflowsculptor.example/schemas/release-data.schema.json",
+  "title": "IFS release data v1",
+  "description": "Données non secrètes nécessaires à une release d’un composant et d’une cible.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "project",
+    "component",
+    "target",
+    "unit",
+    "subscriptionId",
+    "location",
+    "protected",
+    "deploymentIdentityObjectId",
+    "dependencies",
+    "secretWrites",
+    "secretReferences",
+    "appOwnedState",
+    "dataAccess",
+    "accessObjectTypes",
+    "restartOnSecretChange"
+  ],
+  "properties": {
+    "schema": {
+      "const": "ifs-release/v1"
+    },
+    "project": {
+      "type": "string",
+      "minLength": 1
+    },
+    "component": {
+      "enum": ["core", "data", "platform", "orders"]
+    },
+    "target": {
+      "enum": ["dev", "prd", "shared"]
+    },
+    "unit": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subscriptionId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Abonnement cible, ou marqueur documenté tant que les valeurs du pilote ne sont pas configurées."
+    },
+    "location": {
+      "type": "string",
+      "minLength": 1
+    },
+    "protected": {
+      "type": "boolean"
+    },
+    "deploymentIdentityObjectId": {
+      "type": ["string", "null"],
+      "format": "uuid"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/dependency"
+      }
+    },
+    "secretWrites": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/secretWrite"
+      }
+    },
+    "secretReferences": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/secretReference"
+      }
+    },
+    "appOwnedState": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/appOwnedState"
+      }
+    },
+    "dataAccess": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/dataAccess"
+      }
+    },
+    "accessObjectTypes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["Microsoft.Authorization/roleAssignments", "Microsoft.Insights/diagnosticSettings"]
+      }
+    },
+    "restartOnSecretChange": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "$defs": {
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["component", "resources"],
+      "properties": {
+        "component": {
+          "enum": ["core", "data", "platform", "orders"]
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "secretWrite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["variable", "vault", "secret", "source"],
+      "properties": {
+        "variable": {
+          "type": "string",
+          "minLength": 1
+        },
+        "vault": {
+          "type": "string",
+          "minLength": 1
+        },
+        "secret": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "enum": ["pipeline", "generated"]
+        }
+      }
+    },
+    "secretReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vault", "secret", "writer"],
+      "properties": {
+        "vault": {
+          "type": "string",
+          "minLength": 1
+        },
+        "secret": {
+          "type": "string",
+          "minLength": 1
+        },
+        "writer": {
+          "enum": ["core", "data", "platform", "orders"]
+        }
+      }
+    },
+    "appOwnedState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resourceId", "parameter", "kind", "bootstrapImage"],
+      "properties": {
+        "resourceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parameter": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": ["containerAppImage"]
+        },
+        "bootstrapImage": {
+          "type": "string",
+          "pattern": "@sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "dataAccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["server", "database", "principal", "level", "exposure"],
+      "properties": {
+        "server": {
+          "type": "string",
+          "minLength": 1
+        },
+        "database": {
+          "type": "string",
+          "minLength": 1
+        },
+        "principal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["resourceId", "kind"],
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "kind": {
+              "enum": ["systemAssigned", "userAssigned"]
+            }
+          }
+        },
+        "level": {
+          "enum": ["Read", "ReadWrite", "Schema"]
+        },
+        "exposure": {
+          "enum": ["Public", "Restricted"]
+        }
+      }
+    }
+  }
+}

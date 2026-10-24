@@ -1,18 +1,20 @@
 # 06 — Agents, skills et verrous
 
 ## Répartition
-Claude (Opus) conçoit et relit ; Luna (Codex) exécute. Consignes : `CLAUDE.md`, `AGENTS.md`.
+Les specs, décisions, plan et maquettes portent la conception. Luna (Codex) exécute les étapes, recettes et auto-revues sans
+attendre Claude ou un modèle plus élevé. Si le plan ne suffit pas pour un choix de conception, Luna demande ce point à Florian.
+Consignes : `AGENTS.md`.
 
 ## Cycle
 `NEXT.md` → `gate.py check` → étape → commit `Étape: ID` → `gate.py done ID` → … → verrou 🔒 `R-nn` :
-`R-nn-demande.md` (Luna) → `gate.py request` → revue de Claude `R-nn-revue.md` (`Verdict : APPROUVÉ|CORRECTIONS`)
-→ `gate.py approve|reject`. Pendant une revue, `gate.py check` renvoie 3 et le crochet `pre-commit` refuse le code.
+Codex exécute les recettes, relit les changements, crée `R-nn-autovalidation.md` puis lance `gate.py auto-review`.
+`gate.py check` ne bloque pas une recette ou auto-revue en cours ; un blocage réel exige une preuve et `gate.py unblock`.
 
 ## Skills
 | Qui | Skill |
 |---|---|
-| Luna | `executer-etape`, `demander-revue`, `appliquer-corrections` (`.agents/skills/`) |
-| Claude | `revue-verrou`, `detailler-jalon`, `exporter-design`, `consolider-memoire` (`.claude/skills/`) |
+| Luna | `executer-etape` (`.agents/skills/`) |
+| Claude | Skills historiques de conception ; aucune revue n'est requise pour avancer |
 | Tous | `tdd-workflow`, `cqrs-feature`, `xunit-testing`, `angular-strata`, `memory-management` (`.github/skills/`) |
 
 ## Règles d'architecture vérifiées par tests

@@ -9,15 +9,15 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`P-01`](docs/plan/01-preuves.md#p-01--application-témoin) — Application témoin |
+| **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
 | **Statut** | `BLOQUE` |
-| **Dernière étape terminée** | [`R-01`](docs/plan/00-socle.md#-r-01--revue-du-socle) — Revue du socle (approuvée) |
-| **Étape suivante** | `P-02` — Bicep du projet pilote, écrit à la main |
+| **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
+| **Étape suivante** | `R-03` — Revue des preuves |
 | **Verrou** | aucun |
-| **Branche** | `impl/socle` (créée depuis `origin/main` à S-01) |
-| **Dernière mise à jour** | 2026-10-06 — Luna (question de conception P-01) |
-Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (🔒 Luna s'arrête) · `EN_ATTENTE_DE_RECETTE` (Luna attend vos
-résultats) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (question ci-dessous).
+| **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
+| **Dernière mise à jour** | 2026-10-24 — Codex (reprise P-08 en cours) |
+Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
+Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
 ## Décisions à confirmer avant leur étape
 
@@ -50,22 +50,226 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 
 | Élément | État | Depuis |
 |---|---|---|
-| Abonnements Azure de test (preuves) | — | — |
-| Organisation / projet Azure DevOps de test | — | — |
-| Groupes Entra (`sg-shop-sql-admins`) et Azure DevOps (« Shop Release Approvers ») | — | — |
+| Abonnements Azure de test (preuves) | Souscription `fc4fa56f-e4e7-41e9-8a0d-559fcd27b827`, tenant `c833b396-517c-465d-bcce-b79702eaf932` ; `francecentral` et les fournisseurs/SKU requis disponibles ; utilisateur connecté Owner au scope souscription et User Access Administrator au scope tenant ; même souscription pour dev/prd/shared | 2026-10-15 |
+| Décision de coût et estimation des preuves ([contrôle](docs/plan/recettes/01-preuves.md#01-surveillance-des-coûts-avant-toute-action-sur-les-ressources-azure)) | Relevés Cost Management à 2026-10-24T17:33Z : ActualCost MTD 130,364070 EUR HT ; Forecast du 24 au 31/10 42,458633 EUR ; projection 172,822704 EUR. Après reprise SQL estimée à 0,5739 EUR, D3 complète à 6,4952 EUR et réserve de 2 Go de logs à 4,8574 EUR : 184,749204 EUR projetés, soit 15,250796 EUR sous l’alerte de 200 EUR. Données de facturation susceptibles de retard ; estimation non plafonnante. Aucun nouvel essai Azure n’a été lancé ; actualiser avant l’écriture SQL. | 2026-10-24 |
+| Ressources Azure créées pour les preuves ([inventaire](docs/plan/preuves/inventaires-azure.md)) | C5 rafraîchi à 2026-10-24T17:34Z : 164 ressources, 26 groupes, 7 piles, 59 rôles, 7 budgets ; 21 IDs Shop42. Comparaison au snapshot après #762 : zéro différence d’ID dans les ressources, groupes, piles, rôles et budgets. Snapshot exact hors dépôt : %LOCALAPPDATA%/InfraFlowSculptor/P08/p08-c5-azure-inventory-20261024-1734.json. | 2026-10-24 |
+| Organisation / projet Azure DevOps de test | Organisation floriandrevet0332, projet privé shop42. PR #75 fusionnée sur main au SHA 492dfa0df7f9c22f182f1fec443f90c041ed823d ; N #759 a réussi sur ce SHA. R0 #760 et D3 #761 sont annulés avant écriture. L’unique release manuelle D3 #762, créée le 2026-10-24T08:45:37Z, consomme CI #759 et le SHA attendu ; elle s’est terminée en échec à 09:04:45Z. Deploy_dev a réussi. Preview_prd a passé C8 ; Deploy_prd a échoué après application partielle. C3 à 17:50:54Z : aucune exécution active/en file ni PR active. Les huit files collatérales 74/76/77/79/83/85/86/88 sont suspendues (révision 12) ; orders/infra CI 80 et release 82 restent activées (révision 9). Le clone de preuve local est préparé avec six fichiers de référence et le manifeste recalculé ; pas encore commit/push/PR. Snapshot hors dépôt : %LOCALAPPDATA%/InfraFlowSculptor/P08/recovery-20261024T174003Z/ado-control-before-publish.json. | 2026-10-24 |
+| Droits Azure utilisés pour D1b | `Storage Blob Data Reader` au conteneur `ifs-operations` du compte `stifsshop42dev` et `Key Vault Reader` au coffre `kv-shop42-main-dev`, attribués à l’identité personnelle pour les lectures D1b. Les deux attributions restent en place ; aucune valeur de secret n’a été lue | 2026-10-17 |
+| Groupes Entra (`sg-shop42-sql-admins`) et Azure DevOps (« Shop42 Release Approvers ») | Créés dans le tenant fourni ; Florian DREVET est membre des deux groupes | 2026-10-15 |
+| Résultat D3 — vérification C1–C9 | C1/C2 satisfaites : D2a livrée, PR #75 et N #759 au SHA attendu ; R0 #760 annulé avant écriture. C3 final : aucune exécution en cours ou en file parmi les dix définitions. C4 : préflight D3-pre 77dc939f…a87b1. C5 : relevé final ci-dessus, 21 IDs Shop42 identiques. C6 : l’image PRD reste D2, digest sha256:4af4e78a6a7d90facd49f513593b9f5018513c7dfb1bd724984ca36d064fee7f, /health=200. C7 : #762 était l’unique D3 alors autorisé, ressource CI #759 et commit exacts. C8 DEV et PRD passent avant approbation : pendingOperations=0, created=0, modified=5, recreated=0, detachedOrDeleted=0, revokedAccess=0 ; dataWrites=1 et appOwnedState=1 sont informatifs. Le rapport DEV est Succeeded. Le rapport PRD est PartiallyApplied après un délai SQL post-login ; data-access reste Started. C9 DEV est restaurée après le terminal. La consigne de continuation ci-dessous autorise la reprise ciblée PRD préparée, puis au plus un D3 si C8 repasse. [Preuve détaillée](docs/plan/revues/P-08-C8-analyse-20261024.md). | 2026-10-24 |
 | Inscriptions Entra d'IFS (`dev`) | — | — |
 | Protection de la branche `main` sur GitHub | À activer par vous dans *Settings → Branches* | 2026-10-06 |
 | Secret de dépôt GitHub Actions `IFS_E2E_PASSWORD` | Configuré (valeur masquée) | 2026-10-06 |
 
-## Tests manuels en attente de vous
+## Recettes autonomes en attente de Codex
 
 - S-02 — [ouvrir `src/backend/InfraFlowSculptor.slnx` dans Rider](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) : vérifier les cinq projets et l'absence de références à `Web.Template.CQRS`.
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 - S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
 - S-17 — sur un clone neuf, suivre [README — Démarrer](README.md#démarrer-windows) jusqu'à « Bonjour Alice Martin ». Les prérequis passent ; le démarrage du clone reste à vérifier quand les ports fixes 4200, 8080, 5257 et 3000 seront libres, car l'AppHost de travail reste actif.
-Chaque étape terminée ajoute ici son 🧪 ; vous consignez le résultat dans
-[`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md) puis retirez la ligne.
+Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md), puis retire la ligne.
 
-## Questions pour Claude
+## Points ouverts et historique des décisions
 
-- **P-01 — identité SQL du témoin (sécurité / P9)** : `docs/plan/01-preuves.md` demande `Authentication=Active Directory Default` et le qualifie d'identité système (ligne 47), puis exige `ManagedIdentityCredential()` sans identifiant client pour SQL tandis que les autres SDK utilisent `AZURE_CLIENT_ID` (lignes 50–51). `Active Directory Default` repose sur `DefaultAzureCredential`, dont l'identifiant managé par défaut vient de `AZURE_CLIENT_ID` ; SqlClient interdit aussi de combiner `AccessTokenCallback` avec `Authentication`. Sources : [Microsoft Learn — authentification SqlClient](https://learn.microsoft.com/en-us/sql/connect/ado-net/sql/azure-active-directory-authentication?view=sql-server-ver17) et [Microsoft Learn — ManagedIdentityClientId](https://learn.microsoft.com/dotnet/api/azure.identity.defaultazurecredentialoptions.managedidentityclientid?view=azure-dotnet). La revue de Claude Sonnet 5.5 recommande `Authentication=Active Directory Managed Identity` sans `User Id` comme option minimale ; l'autre option est un `AccessTokenCallback` avec `ManagedIdentityCredential(ManagedIdentityId.SystemAssigned)` et sans mot-clé `Authentication`. Claude doit choisir le contrat et mettre à jour P-01 ainsi que DT-33, puis remettre le statut à `A_FAIRE`.
+**Autorisation d'autonomie, 2026-10-23 :** Florian demande à Codex d'exécuter lui-même toutes les phases de tests, recettes,
+validation et auto-revue, sans attente de Claude ou d'un modèle supérieur. Pour P-08, il autorise aussi les actions du projet
+Azure DevOps de test `shop42` décrites dans l'amendement de [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement)
+(états des dix définitions, N/R0, PR/fusion, C9 et D3). Les critères C1–C9, le refus de R0 et le fail-closed restent obligatoires. La décision de poursuite du 2026-10-24 autorise une seule nouvelle release D3 après résolution de C8, uniquement si C8 passe. Aucun déploiement facturable ne partira sans coût réel, prévision et estimation complète vérifiables.
+
+**Décision de poursuite P-08, 2026-10-24 :** Florian demande à Codex de choisir la voie pertinente et d’avancer sur le plan.
+Le critère C8 est conservé tel qu’écrit : il porte sur zéro création, recréation, suppression, révocation et opération en attente.
+Le champ dataWrites affiché par l’aperçu n’est pas un critère C8. #761 échoue à C8 parce qu’une opération data-access
+est encore Started. Son déploiement a été annulé avant toute tâche d’écriture.
+
+La décision de poursuite du 2026-10-24 autorise une reprise idempotente ciblée de l’opération data-access, puis une seule
+release manuelle D3 supplémentaire si C8 passe. La reprise pourrait réveiller la base DEV et nécessite donc un relevé récent
+des coûts avant toute écriture. Avant cette release, Codex rafraîchit C1–C7 et C9 et confirme par lecture seule que le journal
+est terminé et que le préflight ne prévoit plus d’opération en attente. L’aperçu publié doit ensuite satisfaire C8 avant toute
+approbation. Si une condition échoue ou est illisible, annuler avant les tâches de déploiement ; aucune tentative supplémentaire
+n’est autorisée après celle-ci. Cette autorisation a été consommée par la reprise DEV puis l’essai unique #762 ; C8 est passé en DEV et PRD, mais PRD est PartiallyApplied après un délai SQL post-login. P-08 reste BLOQUÉ et aucune reprise PRD n’est autorisée sans nouvelle décision.
+
+**Nouvelle consigne de continuation P-08, 2026-10-24 :** après le résultat #762, Florian demande de choisir une solution, de résoudre les blocages et de poursuivre le plan aussi loin que possible. Cette décision remplace l’arrêt précédent pour la reprise PRD et autorise, si tous les contrôles et le coût le permettent, une reprise ciblée puis au plus un nouvel essai D3 après passage de C8. Le fail-closed C8, le refus de R0 et l’arrêt après cet essai restent obligatoires.
+
+**Solution retenue — reprise PRD ciblée :** le pipeline existant `orders/infra` reçoit un mode manuel `recover-prd-762`, désactivé en mode `standard`. La reprise tourne sous la connexion `ifs-shop42-prd`, dans l’environnement protégé `shop42-prd`, avec verrou séquentiel et contrôle de souscription. Elle accepte seulement l’opération `36ab5a2dfdd9b34f84098f22274bb4a6c35c85fb62493d585df6fab21ba2a71f`, révision 2, commit `893f2a3dda4d7c8461be9c93f208a9e84d317962`, dans le journal `ifs-shop42-orders-prd`. Elle exige une unique opération pending, son état `Started`, la correspondance intégrale du détail data-access avec l’artefact PRD et l’exposition `Public`. Elle exécute le seul script SQL idempotent ; aucune modification de pare-feu, pile ARM, révocation ou écriture de secret n’est permise. Après succès SQL seulement, l’opération est marquée `Done` sous le bail.
+
+**Travaux locaux terminés :** le code de reprise et ses tests sont dans le commit `b57c1e9` de `impl/preuves`. La garde exige le manifeste `shop42`, révision 2, filiation `p3-role` et son commit valide. Après SQL réussi, le journal enregistre ce commit courant avec `Done`, afin que l’ajout ultérieur de l’opération par le déploiement ne la réarme pas ; un échec conserve l’ancien commit et `Started`. Suite complète : 132 tests Pester réussis ; tous les Bicep valides et sans avertissement ; 25 YAML valides ; déterminisme 79 fichiers ; PSScriptAnalyzer sans erreur ; lint du plan réussi. La publication fraîche a été comparée au clone ; six fichiers permis sont appliqués localement, le manifeste révisé reste à committer. Restent le push source et la PR Shop42, N/R0, la reprise, les contrôles C1–C9 après reprise et l’unique D3 conditionnel. Rafraîchir coût et inventaire avant l’écriture SQL ; arrêter avant mutation si une donnée manque ou si le coût estimé devient important. `gate.py check` conserve `BLOQUE` tant que le journal PRD est `Started`.
+
+**Décision active — P-08 / D2b :** Florian a délégué à GPT Sol une autorité d’arbitrage équivalente à Claude. Sol confirme que le résumé
+PASS ne remplace pas les sorties complètes : le transcript de 09:35 s’arrête sur `Prepared branch manifest metadata differs from
+rehearsal` et `d2b-local-verification.txt` n’est qu’un résumé après rafraîchissement. L’échec initial reste conservé comme preuve.
+Son arbitrage du 2026-10-20 autorise un amendement ciblé de D2b.1/.2/.4 : rejouer dans le clone indépendant
+`C:/Users/flori/RiderProjects/shop42-d2b-proof`, créé sur `origin/main` `3f59175`, avec la répétition sous `$TEMP/ifs-shop42-rehearsal` ;
+préserver le clone original et sa branche `2875cf3`, puis réconcilier le résultat testé par merge et identité de tout l’arbre, sans
+réécrire l’historique distant. L’IFS est fixé à `893f2a3dda4d7c8461be9c93f208a9e84d317962` pendant les deux passes. Les assertions
+D2b.2 restent intactes et toute nouvelle exception impose `BLOQUE`. Aucun commit, merge ou push nouveau avant la validation de toutes
+les sous-étapes D2b.3.1 à 3.6, y compris la confirmation par Florian des huit suspensions et des files vides. La décision précédente
+sur le CI N manuel après fusion et l’observation du R0 reste en vigueur.
+
+**Nouvelle exception et arbitrage Sol — 2026-10-20 :** la répétition a interrompu le runner avant publication sur `git rev-parse
+origin/main` dans le clone temporaire. La sortie complète a été renommée sans modification et archivée sous
+`%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-rehearsal-precondition-failure-20261020T130743Z-transcript.txt` (SHA-256
+`91BD51AF4D30FA9F5C152D7FEC6DB598A0852F8FBEB58050146BBC812F6515FA`). La répétition a bien `HEAD=3f5917588…`, la branche attendue
+et un arbre propre ; seul `origin/main` manque, ce qui est normal dans ce clone temporaire. Sol confirme que l'exception impose
+`BLOQUE`, mais autorise un rejeu complet après suppression de cette exigence superflue pour le clone temporaire. La vérification
+`origin/main` du clone de preuve reste obligatoire. Pour reprendre, après le commit de blocage, Luna transcrit cette décision du
+propriétaire en passant explicitement le statut `BLOQUE` à `A_FAIRE` ; `gate.py` n'a pas de commande pour cette transition.
+
+**Nouvelle exception du 2026-10-20T13:14:20Z :** après correction de la précondition précédente, le rejeu s'est arrêté à l'étape 0
+par `CommandNotFoundException` : `Assert-ProofManifestWorkingTree` n'était pas disponible, car le runner n'avait pas importé
+`tools/proofs/ProofTools.psm1`. Aucune publication neuve ni modification du clone de preuve n'a eu lieu. Transcript complet archivé
+sous `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-rehearsal-attempt2-proofmanifest-module-not-imported-20261020T131420Z-transcript.txt`,
+SHA-256 `C0E40FB93D3A4B05D24EA845FBC492DBC6517EAEC0F0650A13B930C34F99D955`. Sol confirme que c'est une omission du runner et
+autorise à importer explicitement `tools/proofs/ProofTools.psm1` avant l'étape 0, conformément au bloc 0 ter.2. Sous la délégation de
+Florian, P-08 reprend en `A_FAIRE` après le commit de cette décision et `gate.py check` ; nettoyer d'abord la copie temporaire restante,
+puis refaire les deux passes intégralement avec de nouveaux transcripts. Toute nouvelle exception rebloque immédiatement P-08.
+
+**Nouvelle exception du 2026-10-20T13:16:17Z :** la répétition a passé les étapes 0 à 3 puis échoué à l'étape 4 sur l'assertion
+« Le manifeste final diffère du manifeste initial hors module, commit et generatedAtUtc. » Le transcript complet est archivé sous
+`%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-rehearsal-attempt3-final-manifest-mismatch-20261020T131617Z-transcript.txt`,
+SHA-256 `791FE392BAEFBA26543C6B316AF691A3D1508C9DF545011CA254197030A1966B`. Aucun changement n'a atteint le clone de preuve ou le
+clone original ; les deux répertoires temporaires contiennent des artefacts partiels et sont laissés intacts. Sol a diagnostiqué en
+lecture seule une erreur du runner : `ConvertFrom-Json` conserve `generatedAtUtc` comme `DateTime`, puis le cast `[string]` le convertit
+au format local `10/20/2026 13:16:22`, alors que le manifeste réel conserve `2026-10-20T13:16:22Z`. C'est le premier écart des JSON
+canoniques (index 12059 ; longueurs 12540/12541). Sol confirme en lecture seule que les 99 chemins/empreintes sauf le module, les
+quatre unités et le module copié correspondent à la publication. Il autorise uniquement le remplacement de
+`$expectedManifest.generatedAtUtc = [string]$after.generatedAtUtc` par `$expectedManifest.generatedAtUtc = $after.generatedAtUtc`.
+La tentative reste échouée. Le 2026-10-20T13:20:00Z, Luna a nettoyé les deux chemins exacts via `Remove-TempCopy` et confirmé leur
+absence ; transcript du nettoyage `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-attempt3-temp-cleanup-transcript.txt`, SHA-256
+`30AEC9B23A446ABE5E0454F03921AF2A1848B5EC615979AFABEFF7F549139E77`. Selon la délégation de Florian et l'arbitrage de Sol, P-08
+reprend formellement en `A_FAIRE` ; le `gate.py check` doit passer avant le rejeu complet des deux passes avec de nouveaux transcripts.
+
+Nouveau blocage d'authentification — l'essai de clone Git HTTPS avec le PAT fourni a été refusé par Azure Repos. Le clone original
+est resté propre ; son `origin/main` local vaut `3f5917588b83d11fc07d7f9838f5e895e037dd6d`, SHA également visible sur la page
+Azure DevOps `shop42` dans le navigateur. Sur décision de GPT Sol du 2026-10-20, D2b.2 peut utiliser un clone indépendant
+`--no-hardlinks` depuis le clone original, récupérer localement cette ref, conserver l'URL ADO en `origin` et la recouper avec la
+lecture navigateur ; ce repli ne sera pas présenté comme un `fetch origin` réseau. La preuve est conservée dans
+`%LOCALAPPDATA%\InfraFlowSculptor\P08\D2b\d2b-git-auth-fallback-evidence.txt`. Un accès Git valide reste obligatoire avant D2b.4 ;
+aucun PAT neuf ne sera créé sans consentement spécifique.
+
+L’interface Azure DevOps a été vérifiée en lecture seule le 2026-10-20 pour les dix définitions.
+Elles sont toutes en révision 9 avec `queueStatus=enabled`. Pour les dix définitions, l’option UI « Override the YAML
+continuous integration trigger from here » est cochée et « Disable continuous integration » est sélectionné ; aucun déclencheur
+planifié ni de fin de build n’est configuré. En particulier, CI `orders/infra` (ID 80) a aussi `trigger: main` dans son YAML, mais
+l’override UI désactive ce déclencheur : la fusion ne produira pas le run N automatique exigé par D2b.4. Microsoft documente que
+l’override UI remplace le déclencheur CI YAML ([Build Azure Repos Git repositories](https://learn.microsoft.com/en-us/azure/devops/pipelines/repos/azure-repos-git?view=azure-devops)).
+Les dix définitions n’avaient aucun run actif ou en file ; aucune PR n’existe pour `fix/p08-keep-recalculated-preview`. La garde
+`shop42-dev` a été relue et correspond au plan. Aucune définition n’a été suspendue et aucune écriture Azure DevOps n’a été faite.
+
+La définition 80 conserve son override UI désactivant CI ; les huit définitions collatérales ont été suspendues avant la livraison.
+La PR #75 est fusionnée sur `main` au SHA `492dfa0df7f9c22f182f1fec443f90c041ed823d`. Le CI N #759 a réussi une seule fois,
+`reason=manual` sur ce SHA ; la ressource pipeline a déclenché R0 #760 automatiquement selon l’interface Azure DevOps.
+`Preview_dev` a réussi, puis l’approbation a été annulée avant toute tâche `Deploy_dev`, faute de pouvoir la rejeter avec l’auteur
+unique bloqué. Aucun N ou R0 n’est relancé ; la suite D3 est suspendue jusqu’à résolution de cet écart et du contrôle C5.
+Le protocole actif est détaillé dans [P-08, étape 0 quinquies](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement)
+et la [recette § 5](docs/plan/recettes/01-preuves.md#5-p8--livraison-applicative-pendant-lattente-dinfrastructure).
+
+- **Déclencheurs D2b :** livraison sur `main`. Avant le commit/push/PR/merge, Florian relève les dix définitions CI/releases et leurs
+  files, puis désactive exactement les huit définitions collatérales (`core`, `data`, `platform`, `orders/apps/api`) avec
+  `queueStatus=disabled`. Les deux définitions `orders/infra` restent `enabled`. Aucun YAML du clone n'est changé pour cela.
+- **Acteurs :** Codex a préparé la preuve, poussé la branche, créé et fusionné la PR #75 après réussite des contrôles #754–#758.
+  Codex a lancé N #759 une fois, puis a arrêté R0 #760 avant toute tâche `Deploy_dev` après le refus d’Azure de rejeter
+  l’approbation avec l’unique approbateur bloqué. L’état final de l’approbation est `canceled`, pas `rejected`.
+- **D3 :** C1–C7 et C9 restent des conditions préalables ; C8 se vérifie après `Preview_dev` et avant `Deploy_dev`. C9 est
+  désactivée. D3 ne démarre pas tant que la recette ne définit pas si R0 annulé avant mutation satisfait l’intention de son rejet
+  et que l’estimation C5 ne permet pas d’exclure un surcoût important.
+- **Coût :** le 2026-10-23, Florian a demandé à Codex d’éviter tout surcoût important. Le relevé du 2026-10-23T20:50Z indique
+  120,79 EUR réels et 161,68 EUR prévus pour octobre ; l’estimation C5 reste incomplète. Le budget de 200 EUR/mois est une alerte,
+  pas un coupe-circuit ; aucune écriture de ressource Azure ne part sans estimation complète.
+
+- **Historique du statut :** après l’exception du transcript, P-08 est passé à `BLOQUE`. Florian a délégué l’arbitrage à GPT Sol, qui
+  a autorisé le clone indépendant et le merge par identité d’arbre ; les amendements ciblés D2b.1/.2/.4 consignent cette méthode.
+  La répétition du 2026-10-20T13:07:43Z a échoué avant publication : le clone temporaire possède le HEAD, la branche et l'arbre propres
+  attendus, mais pas `origin/main`, car il a été cloné depuis le clone de preuve local. Le runner ajoutait à tort cette exigence à la
+  répétition ; `git rev-parse origin/main` a échoué avant toute publication. Transcript complet archivé sous
+  `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-rehearsal-precondition-failure-20261020T130743Z-transcript.txt`, SHA-256
+  `91BD51AF4D30FA9F5C152D7FEC6DB598A0852F8FBEB58050146BBC812F6515FA`. Aucun changement n'a été publié dans le clone de preuve.
+  L'exception remet P-08 à `BLOQUE`. Sol autorise un nouveau rejeu complet après retrait de cette seule vérification pour le clone
+  temporaire ; `origin/main` reste obligatoire pour le clone de preuve. La répétition conserve les assertions `HEAD`, branche et arbre
+  propre, et doit repartir après une transition formelle vers `A_FAIRE`. Les commits, merge, push et PR restent interdits jusqu’à la fin
+  de D2b.3.1–3.6. `gate.py` n'a ni commande `unblock` ni commande `start` ; `resume` reste réservé à `EN_ATTENTE_DE_RECETTE`.
+  Après l'autorisation de reprise, une deuxième exception est survenue à l'étape 0 parce que `ProofTools.psm1` n'était pas chargé ;
+  transcript archivé et P-08 rebloqué. Sol a ensuite confirmé l'omission, autorisé l'import explicite et le rejeu complet, puis P-08 a
+  été rétabli à `A_FAIRE`. La troisième répétition a passé les étapes 0 à 3, puis échoué sur l'équivalence finale du manifeste ; Sol a
+  localisé une conversion locale de `generatedAtUtc` dans le runner et autorisé un correctif d'une ligne. Luna a ensuite nettoyé et
+  vérifié les deux copies temporaires ; P-08 revient à `A_FAIRE` sous cette autorisation, avant deux nouvelles passes complètes.
+
+**Prérequis D2b vérifiés le 2026-10-20 :** le clone original est accessible dans `C:/Users/flori/RiderProjects/shop42` ; sa branche
+locale et distante `fix/p08-keep-recalculated-preview` contient le commit de Florian `2875cf3` et l’arbre est propre. Le clone de preuve
+est créé à `C:/Users/flori/RiderProjects/shop42-d2b-proof`, avec HEAD et `origin/main` égaux à `3f5917588b83d11fc07d7f9838f5e895e037dd6d`,
+branche prévue, arbre propre, sans upstream. Les contrôles locaux du clone sont consignés sous
+`%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-local-verification.txt` ; l’inventaire YAML local des dix CI/releases est sous
+`%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/d2b-yaml-trigger-inventory.txt`. Le diff du précédent rafraîchissement de manifeste a été
+archivé puis restauré ; les deux copies temporaires avaient été absentes au début du rejeu. Après la tentative du 2026-10-20T13:16:17Z,
+`ifs-shop42-rehearsal` et `ifs-shop42-fresh` contenaient des artefacts partiels ; ils ont été supprimés par `Remove-TempCopy` et leur
+absence vérifiée à 2026-10-20T13:20:00Z.
+
+**Résultat du rejeu D2b.2 — 2026-10-20 :** répétition et exécution complètes terminées avec `PASS_OK`, IFS fixé au commit
+`893f2a3dda4d7c8461be9c93f208a9e84d317962`. Transcripts complets conservés dans `%LOCALAPPDATA%/InfraFlowSculptor/P08/D2b/` :
+
+- `d2b-rehearsal-rerun-transcript.txt` — SHA-256 `F2FDF29815BE5061649519C352308562CEDFC2EF275395B27598C184E66CB40E`.
+- `d2b-execution-rerun-transcript.txt` — SHA-256 `39660364C48D244FD5DB9442822844F54CD628575A580AF8859738E1F40DC5A9`.
+- Runner employé `d2b-replay-runner.ps1` — SHA-256 `ACA244751B3B8C1F041D082FD985FA2C331E26B7579D168F06E432A74647A91A`.
+
+Les deux passes confirment la publication ciblée, les unités inchangées et l’égalité attendue du manifeste final. Les chemins
+temporaires `C:/Users/flori/AppData/Local/Temp/ifs-shop42-rehearsal` et `C:/Users/flori/AppData/Local/Temp/ifs-shop42-fresh`
+sont absents. Le clone original `shop42` reste propre sur `2875cf3cb3fbb0eef2c777dc6d4565d4b16612aa`. Le clone de preuve
+`shop42-d2b-proof`, basé sur `origin/main` `3f5917588b83d11fc07d7f9838f5e895e037dd6d`, ne contient que deux fichiers modifiés :
+`.ifs/manifest.json` et `.ifs/templates/scripts/IfsRelease.psm1` ; aucun commit n’y a été créé.
+
+**Contrôles D2b.3 initiaux — 2026-10-20 :** la garde `shop42-dev` avait `Pre-check approvals` en ordre 1 avant `Exclusive Lock`
+en ordre 2, groupe `[shop42]\Shop42 Release Approvers`, délai 30 jours et auto-approbation décochée. Les YAML locaux confirment
+que `Preview_dev` est en lecture seule, que seul `Deploy_dev` écrit sous `shop42-dev`, et que `Deploy_prd` dépend de `Deploy_dev`.
+
+**Résultat D2b.3.5 — 2026-10-23 20:30 UTC :** Codex a changé uniquement `queueStatus` dans l’interface Azure DevOps. Les huit
+définitions initialement `enabled` révision 9 sont maintenant `disabled` révision 10 : 74, 76, 77, 79, 83, 85, 86 et 88. Les
+deux `orders/infra` 80/82 restent `enabled` révision 9. Les cinq pipelines PR 75/78/81/84/87 et les définitions hors périmètre
+73/89 restent inchangés. Lecture CLI après changement : aucune exécution `inProgress`, `notStarted` ou `postponed`, aucune PR active.
+Les cinq CI YAML ciblent `main` avec des filtres `.ifs/**`; les cinq releases ont `trigger: none` et attendent leur CI sur `main`.
+Les cinq PR YAML n’ont pas de déclencheur YAML ; les Build Validations bloquantes 9–13 sur `main` ciblent les définitions
+75/78/81/84/87, avec `/.ifs/templates/**` dans leurs filtres. Ces YAML PR ne contiennent pas de tâche ni de connexion Azure.
+Les définitions 73/89 ont `trigger: none`, `pr: none`. L’override UI du CI 80 désactive son déclenchement automatique sur `main` ;
+la release 82 garde son déclencheur de ressource CI sur `main`.
+La garde `shop42-dev` est toujours en ordre 1/2 avec le même groupe et le délai 30 jours ; le groupe contient seulement Florian,
+et l’auto-approbation est toujours décochée. L’état est prouvé dans `docs/plan/revues/P-08-resolution.md`.
+
+**Auto-revue D2b.3.1–3.6 — 2026-10-23 20:50 UTC :** verdict `VALIDÉ` pour la livraison D2b. Détails dans
+[`P-08-D2b-autovalidation.md`](docs/plan/revues/P-08-D2b-autovalidation.md) ; C5 et C8 restent à vérifier avant toute écriture D3.
+
+Le fetch Git authentifié a réussi ; avant livraison, `origin/main` était `3f5917588b83d11fc07d7f9838f5e895e037dd6d` et la
+branche distante `fix/p08-keep-recalculated-preview` était à `2875cf3cb3fbb0eef2c777dc6d4565d4b16612aa`. Le commit de preuve
+`a5f8197bbe15494b60c52d777f98c2903d162966` a été intégré par le merge `9e686db86d3501512d70a4ab4e9136da78589e52`
+(premier parent `2875cf3`, arbre identique), puis poussé sans force. La PR #75 est fusionnée ; `main` vaut
+`492dfa0df7f9c22f182f1fec443f90c041ed823d`.
+
+
+**Coûts au 2026-10-23T20:50Z :** Cost Management API : 120,79 EUR réels sur la souscription et 161,68 EUR prévus à la fin du mois
+(40,89 EUR restant prévus) ; groupes de ressources Shop42 : 6,32 EUR réels. La prévision API avait ses données réelles jusqu'au 21/10 ;
+le calcul prend le réel quotidien jusqu'au 23/10 et la prévision du 24 au 31/10 pour éviter le double comptage. Azure Pipelines affiche 440/1800 minutes hébergées
+consommées dans le quota gratuit. Le sous-total historique de la recette (6,75–30,17 EUR) n’inclut pas encore stockage, sauvegardes,
+Key Vault, compte technique, trafic sortant, taxes et dépassements Log Analytics/Container Apps. Aucune ressource Azure n’a été
+écrite ; avant D3, Codex doit compléter l’estimation et appliquer la décision du 2026-10-23 sur le surcoût non important.
+
+**Délégation C9 — 2026-10-23 :** C9 reste désactivée tant que D3 est suspendue. L’approbation de R0 a été créée avec Florian dans
+`blockedApprovers` ; le changement temporaire de C9 n’a pas modifié cette demande et a été restauré à l’état désactivé.
+
+
+
+**D2a terminé (Luna, 2026-10-18).** Commit `bbf1d86` poussé sur `impl/preuves`. Pester : 122/122 ;
+`Test-ReferenceBicep.ps1`, `Test-ReferenceDeterminism.ps1` et `Test-ReferencePipelines.ps1` réussis ; manifeste cohérent sur 77 fichiers.
+
+Prochaines actions :
+
+1. ✅ Les trois transcripts échoués et leurs SHA-256 sont conservés. Les deux copies temporaires ont été supprimées par `Remove-TempCopy`
+   et vérifiées absentes ; transcript de nettoyage archivé avec son SHA-256.
+2. ✅ D2b.2 est terminée : les transcripts `d2b-rehearsal-rerun-transcript.txt` et `d2b-execution-rerun-transcript.txt` finissent
+   tous deux par `PASS_OK` ; leurs SHA-256 et le HEAD IFS fixé sont consignés ci-dessus.
+3. ✅ D2b.3.5 : huit définitions collatérales `disabled` (révision 10), 80/82 `enabled` (révision 9), queues et PR actives vides ;
+   contrôles détaillés dans `docs/plan/revues/P-08-resolution.md`.
+4. ✅ Commit de preuve `a5f8197`, merge local `9e686db`, arbre identique, push fast-forward et PR #75 fusionnée. Les cinq validations
+   #754–#758 ont réussi sur le SHA PR `60b5b0f81be1cbc36a9f3071780116b8528b03b4` ; le commit de merge est `492dfa0d…`.
+5. ✅ N #759 a réussi une fois sur le SHA de fusion. R0 #760 a réussi `Preview_dev`, puis a été annulé avant toute tâche
+   `Deploy_dev` ; l’approbation est `canceled`, car Azure a refusé `rejected` (`ApprovalBlockedException`) pour l’auteur unique.
+   C9 a été brièvement activée puis restaurée à `false`. Les étapes PRD ont été ignorées et aucune ressource n’a été modifiée.
+6. ⛔ D3 #762 a terminé DEV avec succès et PRD en PartiallyApplied après un timeout SQL post-login ; l’opération data-access PRD est confirmée Started dans le rapport. Le correctif client SQL est dans le commit local 5db5a76 et non dans l’artefact CI #759. La nouvelle consigne de Florian a sélectionné le mode recovery-only décrit ci-dessus ; le code local est implémenté et auto-revu, mais n’est pas encore publié ni exécuté. P-08 reste BLOQUÉ jusqu’aux contrôles externes et à la preuve finale.
+7. Garder #748 non diagnostiqué, conserver le fail-closed et #738 comme preuve négative. Le nettoyage Shop42 reste suspendu jusqu'à
+   la réussite de P8 et des autres conditions de la procédure T.

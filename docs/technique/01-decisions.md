@@ -50,6 +50,8 @@ l'utilisateur peut les inverser avant l'étape qui les applique ; le plan indiqu
 | [DT-39](#dt-39--journalisation-et-diagnostics-sont-des-dépendances-de-création) | Journalisation et diagnostics : dépendances de création (écart de spec) | Décidée |
 | [DT-40](#dt-40--ordre-des-comportements-du-médiateur) | Ordre des comportements du médiateur | Décidée |
 | [DT-41](#dt-41--build-en-mode-code-au-jalon-2) | Build en mode Code au jalon 2 (écart de spec) | Décidée |
+| [DT-42](#dt-42--coût-des-preuves-éphémères-azure) | Coût des preuves éphémères Azure (France Central, profil minimal, suppression par projet) | ⚖️ Stratégie approuvée ; estimation France Central à confirmer avant Azure |
+| [DT-43](#dt-43--empreinte-dapercu-approuvée-liée-à-lempreinte-appliquée) | Empreinte d'aperçu approuvée liée à l'empreinte appliquée (`approvedPreviewFingerprint`) | Décidée |
 
 ---
 
@@ -121,6 +123,7 @@ Les versions vivent dans `src/backend/Directory.Packages.props`, `src/frontend/i
 | `Microsoft.Identity.Web` | `4.14.2` |
 | `Scalar.AspNetCore` | dernière `2.x` |
 | `Azure.Identity` | `1.21.0` |
+| `Microsoft.Data.SqlClient` (application témoin seulement, [DT-33](#dt-33--identité-managée-partout--chaîne-de-connexion-seulement-en-local)) | dernière `6.x` stable |
 | `Azure.Storage.Blobs` | `12.27.0` |
 | `Azure.Messaging.ServiceBus` | dernière `7.x` |
 | `Azure.Security.KeyVault.Secrets` | dernière `4.x` |
@@ -588,6 +591,17 @@ singleton (`IfsAzureCredential`) partagé par tous les clients.
 ([DEC-23](../specs/03-decisions.md)) et clé privée de l'application GitHub (jalon 1), stockés dans Key Vault et lus par
 identité managée.
 
+**Exception SQL de l'application témoin** (précision du 2026-10-06, Claude, question P-01 ; P9). La règle ci-dessus
+(`AZURE_CLIENT_ID`) vaut pour IFS et pour les clients Azure SDK du témoin (Log Analytics, App Configuration, Service
+Bus). Pour **SQL**, le témoin doit prouver l'identité **système** alors que la Container App porte aussi l'identité
+affectée `id api` : il utilise `Microsoft.Data.SqlClient` avec `Authentication=Active Directory Managed Identity` et
+**sans `User Id`** (sans `User Id`, SqlClient demande le jeton de l'identité système). Écartés : `Active Directory
+Default` (passe par `DefaultAzureCredential`, dont l'identité managée par défaut vient de `AZURE_CLIENT_ID` → mauvaise
+identité) et `AccessTokenCallback` avec `ManagedIdentityCredential(ManagedIdentityId.SystemAssigned)` (plus de code
+pour le même effet, et SqlClient interdit de le combiner avec `Authentication`). Cette exception ne s'applique pas à
+IFS (PostgreSQL passe par Npgsql, ligne du tableau ci-dessus). `Microsoft.Data.SqlClient` est épinglé en
+[DT-03](#dt-03--versions-épinglées), uniquement pour `samples/witness-app/`.
+
 **Vérifications** : `AzureConnectionResolverTests` (chaîne présente → mode chaîne ; absente + point de terminaison →
 identité managée ; chaîne vide = absente ; aucune → erreur explicite) ; test d'architecture (aucun `new
 BlobServiceClient(`, `new ServiceBusClient(`, `new SecretClient(`, `new EmailClient(` hors de
@@ -664,3 +678,120 @@ forme de l'objet. Les validateurs ne contrôlent que la forme de la requête ; i
 Décidée (2026-10-04), **écart de spec signalé**. [04 § 2.1](../specs/04-perimetre-et-lots.md) place « build conteneur et
 code » au jalon 1, mais les onze types du jalon 1 sont des conteneurs : les profils de build Code arrivent avec Web App et
 Function App (J2-01). Claude propose l'amendement de 04 § 2.1 avec celui de RG-CMP-05 ([DT-39](#dt-39--journalisation-et-diagnostics-sont-des-dépendances-de-création)) au verrou R-03.
+
+### DT-42 — Coût des preuves éphémères Azure
+
+⚖️ **Stratégie approuvée** initialement par l'utilisateur le 2026-10-07 : North Europe, profil minimal, vérifications
+régulières des coûts et suppression limitée aux ressources créées par Luna. Après le blocage du préflight SQL en North
+Europe, l'utilisateur a demandé le 2026-10-15 de déployer toutes les ressources Azure régionales des preuves en France
+Central (`francecentral`), West Europe étant indisponible. Cette consigne remplace North Europe comme région unique du
+pilote. L'estimation tarifaire North Europe est historique : **actualiser l'estimation France Central et faire confirmer
+le plafond avant toute commande Azure**. Complète [DT-29](#dt-29--projet-pilote-de-référence) et s'aligne sur
+[DT-27](#dt-27--hébergement-dans-azure-france-central). Aucune preuve P1–P9, assertion ou résultat attendu ne change ;
+la région change et l'estimation doit être recalculée pour celle-ci.
+
+1. **Région unique `francecentral`** pour les trois cibles du pilote et toutes les ressources Azure régionales, y compris
+   les groupes de ressources et les emplacements de déploiement. Les objets Azure DevOps et Entra sans propriété de région
+   restent inchangés. Un préflight bloquant vérifie l'accès de la souscription, les emplacements des fournisseurs, le SKU
+   et l'offre SQL ; si un contrôle échoue, on **s'arrête** sans repli vers une autre région ni changement de SKU.
+2. **Une seule souscription** (dev = prd = shared) et un code projet isolé par jeu (`shop42`, `shop43`, `shop44`). Aucune
+   preuve n'exige deux souscriptions ; les jeux sont déployés **l'un après l'autre**, jamais en parallèle.
+3. **Profil de coût des preuves** ([reference-pilote § 1.6](../plan/reference-pilote.md#16-profil-de-coût-des-preuves)) :
+   ACR `Basic` ; SQL serverless `GP_S_Gen5_1`, `minCapacity` 0,5, pause automatique, zone redondante **explicitement
+   désactivée** (le module AVM `sql/server:0.22.0` la met à `true` si elle est omise) ; Container Apps min 0 / max 1,
+   environnement non redondant ; Application Insights 90 j ; Log Analytics **inchangé** (dev 30 j, prd 90 j : P3b exige
+   90 → 120 → 90) avec un plafond d'ingestion quotidien.
+4. **Offre SQL gratuite** pour **prd seulement** (`useFreeLimit`, `freeLimitExhaustionBehavior = AutoPause`) seulement si le préflight confirme
+   l'éligibilité **et** la compatibilité du module. Le schéma AVM local la décrit « une base par souscription », la
+   documentation Microsoft « dix bases » : décalage **non tranché**, jamais promis. Sinon : serverless payant, estimation
+   recalculée et **nouvelle confirmation** ; jamais de poursuite silencieuse.
+5. **Application du profil** : la sortie `reference/pilot/` reste la vérité des émetteurs du jalon 0 (le catalogue du pilote
+   ne porte pas `autoPauseDelay`, `minCapacity`, `useFreeLimit`, `zoneRedundant` de base, plafond d'ingestion) ; elle est
+   alignée sur `francecentral` en P-08. Le profil de coût est appliqué **à la publication** (`Publish-PilotReference.ps1`,
+   comme la table des noms) et la chaîne de révisions est rejouée sur un clone ainsi profilé.
+6. **Suppression au plus tôt** : un jeu Azure est supprimé dès sa dernière preuve dépendante (shop42 après P8 ; shop43 :
+   `orders`, `data`, `platform` et l'identité détachée après P4, `core` et le kit après P5 ; shop44 après P7), à condition
+   que ses captures Azure DevOps soient enregistrées et ses résultats consignés. Les preuves Azure DevOps et
+   `resultats.md` restent jusqu'à R-03. Détail : [recette § 10](../plan/recettes/01-preuves.md#10-supprimer-les-ressources-azure-et-consigner-les-résultats).
+7. **Verrou de dépense** : aucune commande Azure tant que l'utilisateur n'a pas confirmé un **plafond** et l'**estimation
+   actualisée** ([recette § 0](../plan/recettes/01-preuves.md#0-verrou-de-coût-et-préflight-bloquants)). Un budget Azure est
+   une alerte retardée, pas un coupe-circuit : le plafond est tenu par la durée de vie courte des ressources et les
+   contrôles de fin de session, pas par Azure.
+8. **Non prouvé depuis le dépôt** (préflights bloquants, rien n'est supposé) : accès de la souscription à `francecentral` et
+   emplacements autorisés des fournisseurs ; disponibilité effective du SKU SQL serverless `GP_S_Gen5_1` pour cette
+   souscription (la [disponibilité régionale SQL](https://learn.microsoft.com/en-us/azure/azure-sql/database/region-availability?view=azuresql)
+   publiée ne remplace pas ce contrôle) ; commande exacte de passage `denyDelete` → `none` d'une pile existante ; liste
+   exacte des IDs gérés par chaque pile au moment du nettoyage ; éligibilité à l'offre gratuite ; limites ACR Basic
+   face à l'image témoin ; plafond d'ingestion sans effet sur `/health/dependencies`.
+9. **Inventaire avant/après création** ([inventaires](../plan/preuves/inventaires-azure.md)) : capturer les ressources déjà présentes dans les portées ciblées, puis consigner chaque ID, groupe et pile créé par Luna. Au nettoyage, ne supprimer que ces IDs ; `deleteAll` n'est permis que si tous les éléments gérés par la pile sont dans cet inventaire.
+
+### DT-43 — Empreinte d'aperçu approuvée liée à l'empreinte appliquée
+
+Décidée (2026-10-17, Claude, arbitrage A sur P-08 après le run #740). Elle précise le contrôle de fraîcheur de la release
+d'infrastructure ; elle ne remplace aucune décision antérieure.
+
+**Constat.** Le run #740 (release orders PRD après D2) a réussi : D2 conservée, `/health` = 200. La preuve est pourtant
+**incomplète** : le rapport `ifs-report` ne porte que `manifestFingerprint`, alors que l'aperçu approuvé porte
+`preview.fingerprint`. Ce sont deux empreintes **de domaines de hachage distincts** ; rien dans le rapport ne permet de
+vérifier que l'aperçu approuvé est celui qui a été appliqué.
+
+**Décision.**
+
+1. **Deux domaines de hachage, distincts et inchangés.** `preview.fingerprint` (empreinte de l'aperçu : ce que l'approbateur
+   a relu) et `manifestFingerprint` (empreinte du manifeste) ne sont ni égalisées, ni dérivées l'une de l'autre, ni comparées
+   entre elles. Le calcul et la valeur de `manifestFingerprint` **ne changent pas**.
+2. **Champ obligatoire `approvedPreviewFingerprint`** dans le rapport `ifs-report` v2 : copie **littérale** de
+   `preview.fingerprint` de l'aperçu approuvé, sans recalcul ni transformation. Source : `$approved`, lu par
+   `Invoke-IfsInfraDeploy` depuis `-PreviewPath` ; transmis à `Write-IfsReleaseReport` par un nouveau paramètre obligatoire
+   `-ApprovedPreviewFingerprint`. Le schéma v2 l'exige (`^[a-f0-9]{64}$`). Aucune valeur par défaut ni de repli : si l'aperçu
+   approuvé n'a pas d'empreinte valide, l'écriture du rapport échoue.
+3. **Le contrôle fail-closed existe déjà ; il est conservé tel quel.** `Invoke-IfsInfraDeploy` recalcule l'aperçu dans son
+   `try` (`Invoke-IfsPreview`, donc `Get-IfsEffectFingerprint`, même algorithme que la publication), **avant**
+   `Open-IfsOperationJournal` et donc avant toute mutation, puis compare `current.fingerprint` à `approved.fingerprint`. En
+   cas d'écart il lève « Les effets ont changé depuis l'aperçu approuvé ; relancez la release pour une nouvelle
+   approbation. » et le rapport est `FailedBeforeMutation` (cas #738). **Ni second recalcul, ni seconde comparaison, ni
+   nouveau code d'erreur, ni changement de ce message.**
+4. **Quels rapports portent le champ.** L'aperçu approuvé est lu **avant** l'entrée dans le `try`. Tout rapport écrit par le
+   `finally` de `Invoke-IfsInfraDeploy` porte donc `approvedPreviewFingerprint`, quel que soit `result`, y compris
+   `FailedBeforeMutation` (écart d'empreinte, révision plus récente détectée par `Test-IfsNewerManifest`, échec du recalcul de
+   l'aperçu). Un échec **avant** le `try` (lecture des données de release, contrôles de paramètres, lecture du manifeste ou
+   de l'aperçu approuvé) n'écrit **aucun** rapport aujourd'hui : cette règle ne change pas, aucun rapport ni valeur de
+   remplacement n'est créé pour ces cas. Le journal d'un rapport `FailedBeforeMutation` n'est **pas** forcément vide (il peut
+   contenir des opérations antérieures) : l'invariant est « aucune opération passée à `Started` ou `Done` par ce run ».
+5. **Version du schéma : v1 conservé, v2 ajouté.** Un champ obligatoire rend invalides les rapports v1 déjà produits ; v1 n'est
+   donc pas modifié.
+   - **v1 conservé, octet pour octet :** `reference/pilot/bicep-azdo/.ifs/templates/schemas/ifs-report.schema.json`
+     (`schema` = `ifs-report/v1`) et sa copie `reference/release-module/schemas/ifs-report.schema.json`.
+   - **v2 ajouté :** `reference/pilot/bicep-azdo/.ifs/templates/schemas/ifs-report.v2.schema.json` = copie de v1 avec :
+     titre « … v2 », `$id` `https://infraflowsculptor.example/schemas/ifs-report.v2.schema.json`, `schema` = `ifs-report/v2`,
+     `approvedPreviewFingerprint` (chaîne, `^[a-f0-9]{64}$`) ajouté à `required` et à `properties`, `additionalProperties:
+     false` conservé, `$defs.operationJournal` inchangé. **Pas de seconde copie v2** dans `reference/release-module/schemas/`
+     (le fichier du clone est celui que le code exécute) ; si un contrôle `Test-Reference*.ps1` en exige une, question pour
+     Claude plutôt qu'un choix de Luna.
+   - **Émetteur :** `Write-IfsReleaseReport` (`reference/pilot/bicep-azdo/.ifs/templates/scripts/IfsRelease.psm1`) n'émet plus
+     que `ifs-report/v2` et valide contre `ifs-report.v2.schema.json` ; le module ne lit plus de rapport `ifs-report`, il n'y a
+     donc pas de sélection par version dans le code.
+6. **Captures existantes : ni migration ni chargeur.** Tous les artefacts `ifs-report` déjà conservés sous
+   `src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/AzureDevOps/Recordings/` (dont #738 et #740) sont des documents v1,
+   jamais réécrits. `tools/proofs/AdoRecordingsTransport.psm1` télécharge les artefacts tels quels et aucun chargeur de
+   rapport v1/v2 n'existe dans le dépôt : les tests lisent les rapports par `ConvertFrom-Json`. On **n'en crée pas** (aucun
+   consommateur réel ne le demande). Le minimum qui garantit la lecture des captures v1 est un test Pester (étape 0 bis de
+   P-08) qui valide chaque artefact `ifs-report` existant contre le schéma v1 conservé. #739 est une release applicative : son
+   rapport est `ifs-app-report/v1`, hors périmètre de cette décision. Si un consommateur réel de rapports apparaît plus tard,
+   question pour Claude.
+7. **Vérification de recette.** L'égalité « approuvée = appliquée » se vérifie dans un rapport v2 par
+   `approvedPreviewFingerprint == preview.fingerprint` ; jamais par `manifestFingerprint == preview.fingerprint`
+   ([recette § 5](../plan/recettes/01-preuves.md#5-p8--livraison-applicative-pendant-lattente-dinfrastructure)).
+
+**Écartés.** Unifier les deux domaines de hachage (change `manifestFingerprint`, invalide les manifestes et captures
+existants, mélange deux sémantiques) ; comparer `manifestFingerprint` à `preview.fingerprint` (valeurs de domaines
+différents, jamais égales) ; ajouter le champ en option dans v1 (la preuve resterait optionnelle, donc contournable) ; un
+second recalcul et un code d'erreur `PreviewFingerprintMismatch` (doublon du contrôle existant, change le message des
+captures #738) ; un chargeur ou une migration des captures (aucun consommateur réel).
+
+**Révision du 2026-10-17 (même jour, avant toute mise en œuvre).** Après vérification de `IfsRelease.psm1`, les points 3 à 6
+ont été corrigés **en place**, sans nouvelle DT : la décision n'était pas commitée ni appliquée. Retirés : le second recalcul
+avec `PreviewFingerprintMismatch`, le « journal d'opérations vide » et l'obligation de faire lire v1 et v2 par un chargeur.
+
+**Portée.** Mise en œuvre dans P-08 (test contrat d'abord) : [01-preuves § P-08](../plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement).
+Aucune autre décision (DT-42 comprise) ni preuve P1–P9 ne change ; le cas négatif #738 reste un résultat attendu.

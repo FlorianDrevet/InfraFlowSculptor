@@ -1,0 +1,6 @@
+{
+  "revision": 5,
+  "lineage": "revisioned",
+  "baseLineages": ["revisioned"],
+  "purpose": "P-07 criterion 10: another orders configuration change after target lag"
+}

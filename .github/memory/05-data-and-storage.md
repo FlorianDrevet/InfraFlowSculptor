@@ -25,3 +25,10 @@
 - Génération d'une migration : `dotnet ef migrations add <Nom> -p src/backend/InfraFlowSculptor.Infrastructure
   -s src/backend/InfraFlowSculptor.Api -o Persistence/Migrations`; la fabrique de conception emploie une chaîne
   locale factice.
+
+## Pilote Azure SQL — P-02 (2026-10-06)
+
+- Le module AVM `sql/server` 0.22.0 accepte la création de bases via `databases`; la base pilote reste donc dans le module, avec son SKU explicite.
+- Le module SQL ne prend pas de paramètre de diagnostic pour le serveur lui-même. `server-diagnostics.bicep`, ciblé sur le groupe de ressources, configure l’extension `Microsoft.Insights/diagnosticSettings`; les diagnostics de la base sont transmis au module SQL.
+- L’accès applicatif orders utilise l’identité système de la Container App. `data-access.sql` crée un principal Entra avec le SID dérivé du ClientId, marque les principaux IFS par la propriété `ifs-managed` et refuse d’adopter un principal existant sans marqueur. `data-access-remove.sql` retire uniquement les rôles pris en charge et supprime seulement un principal marqué qui ne possède aucun objet.
+- Les scripts et manifestes sont vérifiés hors ligne; aucun abonnement, groupe Entra ou serveur SQL Azure n’a été utilisé pour cette étape.

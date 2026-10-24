@@ -22,4 +22,19 @@
 | 2026-10-06 | Luna | S-15 — workflow CI pour backend, acceptation Docker, frontend, audit des dépendances et E2E Aspire; OpenAPI/client Angular vérifiés contre les artefacts commis; rapports TRX/JUnit, couverture, Playwright et journaux publiés; badge CI ajouté. Le build AppHost en `Development` a révélé une validation DI incompatible avec l'hôte temporaire `GetDocument`, limitée à ce générateur; build Release et 14 tests API passent. |
 | 2026-10-06 | Luna | S-16 — observabilité et diagnostic du Service Bus local : télémétrie, traces et logs structurés, classification prudente de la fermeture `AcceptSession`, build et CI verts. |
 | 2026-10-06 | Luna | S-17 — mémoire alignée sur le code, graphe Graphify AST généré sans LLM et section « Démarrer » ajoutée au README. Prérequis et contrôles automatiques verts ; la recette clone neuf reste partielle tant que l'AppHost actif occupe les ports fixes. |
+| 2026-10-06 | Luna | P-01 — application témoin .NET 10, contrôles de dépendances à identité managée, schéma SQL, image non-root et tests. |
+| 2026-10-06 | Luna | S-08 — le fixture d'acceptation tolère les notifications API DCP périmées lorsque `/health` répond; budget Service Bus élargi pour le sidecar SQL à froid. |
 | 2026-10-06 | Luna | S-15 — le job Playwright injecte le secret d'Actions dans le royaume Keycloak jetable pour activer les quatre scénarios authentifiés. |
+| 2026-10-06 | Luna | Documentation — ajout d'un REX débutant Keycloak/Aspire, relié depuis l'index technique et la mémoire auth/build. |
+| 2026-10-15 | Luna | P-08 — région France Central décidée ; préflight de disponibilité 1–3 réussi en lecture seule, tarifs actualisés et budget consulté ; confirmation du plafond/estimation encore requise. |
+| 2026-10-15 | Luna | P-08 — plafond et sous-total confirmés ; sortie pilote et overlays alignés sur France Central, manifeste recalculé, contrôles de déterminisme et Bicep réussis, 69 tests Pester verts. |
+| 2026-10-15 | Luna | P-08 — CI GitHub corrigée (8/8 checks), projet privé Azure DevOps `shop42`, groupes Entra/Azure DevOps et dépôt de référence préparés. Préflight coûts : projections contradictoires et supérieures au plafond de 200 EUR/mois ; aucune ressource Azure créée, étape en attente de réconciliation des coûts. |
+| 2026-10-17 | Luna | P-08 — mémoire actualisée après les runs #739/#738 et l’arbitrage Claude option B ; #738 reste la preuve négative, le parcours positif et le nettoyage Shop42 restent en attente. |
+| 2026-10-17 | Luna | P-08 D1a — diagnostic #748, comparateur What-If hors ligne testé et protocole D1b ; attente des cinq aperçus DEV personnels, sans changement au fail-closed. |
+| 2026-10-18 | Luna | P-08 D1b — cinq aperçus personnels identiques, rôles Reader limités consignés, #748 toujours non diagnostiqué ; D2/D3 en attente de définition Claude. |
+| 2026-10-18 | Luna | P-08 D2a — capture de l’aperçu recalculé en cas de divergence sans toucher à l’aperçu approuvé ; tests Pester ciblés et validations Bicep, déterminisme et pipelines verts. |
+| 2026-10-18 | Luna | P-08 D2b — répétition et clone local validés ; audit des triggers bloque le push avant Azure Repos ; C9 et choix utilisateur A/B/C consignés. |
+| 2026-10-23 | Codex | Workflow — recettes exécutées par Codex, auto-revue des verrous, preuve de résolution des blocages et coûts vérifiés avant les écritures Azure. |
+| 2026-10-24 | Codex | P-08 — reprise bornée des timeouts SQL post-login et constat du chemin de reprise PRD à préciser. |
+| 2026-10-24 | Codex | P-08 — mécanisme de reprise PRD protégé, lié à l’opération #762 exacte, ajouté à la référence et auto-revu ; publication et exécution restent à faire. |
+| 2026-10-24 | Codex | P-08 — empêche le réarmement du journal après reprise lorsque le commit du manifeste évolue ; 132 tests, Bicep, YAML, déterminisme et analyse statique validés. Cost/C5 actualisés et huit pipelines collatéraux suspendus pour la publication. |

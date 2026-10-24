@@ -16,6 +16,7 @@
     <PackageReference Include="Aspire.Hosting.Redis" />
     <PackageReference Include="Aspire.Hosting.Keycloak" />
     <PackageReference Include="CommunityToolkit.Aspire.Hosting.MailPit" />
+    <PackageReference Include="MessagePack" />
     <PackageReference Include="Aspire.Hosting.JavaScript" />
     <PackageReference Include="AzureKeyVaultEmulator.Aspire.Hosting" />
   </ItemGroup>

@@ -1,0 +1,50 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+name: $(Date:yyyyMMdd).$(Rev:r)
+trigger: none
+parameters:
+- name: recoveryMode
+  displayName: Mode de lancement
+  type: string
+  default: standard
+  values:
+  - standard
+  - recover-prd-762
+- name: recoveryOperationId
+  displayName: Identifiant exact de l'opération PRD #762
+  type: string
+  default: 36ab5a2dfdd9b34f84098f22274bb4a6c35c85fb62493d585df6fab21ba2a71f
+- name: recoveryRevision
+  displayName: Révision de l'opération PRD #762
+  type: string
+  default: '2'
+- name: recoveryCommit
+  displayName: Commit de l'opération PRD #762
+  type: string
+  default: 893f2a3dda4d7c8461be9c93f208a9e84d317962
+resources:
+  pipelines:
+  - pipeline: ci
+    source: 'shop · orders · infra · CI'
+    trigger:
+      branches:
+        include:
+        - main
+extends:
+  template: /.ifs/templates/infra-release.yml
+  parameters:
+    project: shop
+    component: orders
+    defaultBranch: main
+    secretWrites: []
+    recoveryMode: ${{ parameters.recoveryMode }}
+    recoveryOperationId: ${{ parameters.recoveryOperationId }}
+    recoveryRevision: ${{ parameters.recoveryRevision }}
+    recoveryCommit: ${{ parameters.recoveryCommit }}
+    targets:
+    - name: dev
+      protected: false
+      dependsOn: []
+    - name: prd
+      protected: true
+      dependsOn:
+      - Deploy_dev

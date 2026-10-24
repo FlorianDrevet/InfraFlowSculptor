@@ -11,5 +11,6 @@ description: "Use for any executable code change in InfraFlowSculptor. Mandatory
 3. **Refactoriser** : sans changer le comportement, tests verts.
 4. **Vérifier** : suite complète de la surface touchée, build sans avertissement.
 
-Exception temporaire : une ligne dans `.github/test-debt.md` (étape, code non couvert, raison, étape qui solde) ; Claude
-l'accepte ou la refuse en revue. Pas de test « théâtral » qui ne vérifie aucun invariant.
+Une dette de test ne permet pas de déclarer une étape complète : consigne-la avec l'étape qui la soldera et traite-la avant
+la livraison de la fonctionnalité concernée. L'auto-revue Codex vérifie les résultats et les écarts ; aucun verdict externe
+n'est attendu. Pas de test « théâtral » qui ne vérifie aucun invariant.
