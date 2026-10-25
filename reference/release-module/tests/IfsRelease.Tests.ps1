@@ -671,12 +671,14 @@ Describe "Journal d'opérations" {
             Journal = [pscustomobject]@{ schema = "ifs-operation-journal/v1"; unit = "ifs-shop-orders-dev"; target = "dev"; operations = @() }
             Account = "stifsshopdev"; Container = "ifs-operations"; Blob = "ifs-shop-orders-dev.json"; LeaseId = "test"; RenewalFailureFile = $null
         }
-        Invoke-IfsRevocation -Context $context -ReleaseData $script:orderData -Revision 4 -Commit "rev4" -ObjectIds @("/subscriptions/test/providers/Microsoft.Authorization/roleAssignments/old") | Out-Null
+        $roleAssignmentId = "/subscriptions/test/resourceGroups/rg-test/providers/Microsoft.OperationalInsights/workspaces/log-test/providers/Microsoft.Authorization/roleAssignments/old"
+        Invoke-IfsRevocation -Context $context -ReleaseData $script:orderData -Revision 4 -Commit "rev4" -ObjectIds @($roleAssignmentId) | Out-Null
         $calls = @($global:IFS_AZ_CALLS | ForEach-Object { $_ -join " " })
         $firstUpload = ($calls | Select-String "storage blob upload" | Select-Object -First 1).LineNumber
-        $firstDelete = ($calls | Select-String "resource delete" | Select-Object -First 1).LineNumber
+        $firstDelete = ($calls | Select-String "role assignment delete" | Select-Object -First 1).LineNumber
         $firstUpload | Should -BeGreaterThan 0
         $firstUpload | Should -BeLessThan $firstDelete
+        ($calls | Where-Object { $_ -match "resource delete" }) | Should -BeNullOrEmpty
         $context.Journal.operations[0].state | Should -Be "Done"
     }
 

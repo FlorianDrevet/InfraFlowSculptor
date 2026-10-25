@@ -3,6 +3,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $script:IfsSchemaDirectory = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../schemas'))
+$script:IfsRoleAssignmentResourceType = 'Microsoft.Authorization/roleAssignments'
 $script:IfsSqlConnectionTimeoutSeconds = 120
 $script:IfsSqlRetryDelaySeconds = 10
 $script:IfsSqlRetryDeadlineMinutes = 10
@@ -1111,7 +1112,13 @@ function Invoke-IfsRevocation {
             continue
         }
         if ($operation.state -eq 'ToDo') { [void](Set-IfsOperationState -Context $Context -OperationId $operation.id -State 'Started') }
-        [void](Invoke-IfsAz -Arguments @('resource', 'delete', '--ids', $objectId, '--output', 'none'))
+        $deleteArguments = if ($objectId -match ('(?i)/providers/{0}/[^/]+$' -f [regex]::Escape($script:IfsRoleAssignmentResourceType))) {
+            @('role', 'assignment', 'delete', '--ids', $objectId, '--output', 'none')
+        }
+        else {
+            @('resource', 'delete', '--ids', $objectId, '--output', 'none')
+        }
+        [void](Invoke-IfsAz -Arguments $deleteArguments)
         [void](Set-IfsOperationState -Context $Context -OperationId $operation.id -State 'Done' -ObjectExists $true)
         $deleted.Add($objectId)
     }
