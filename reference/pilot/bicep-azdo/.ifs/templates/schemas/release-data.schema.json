@@ -94,6 +94,15 @@
         "enum": ["Microsoft.Authorization/roleAssignments", "Microsoft.Insights/diagnosticSettings"]
       }
     },
+    "explicitAccessRevocations": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "Accès à révoquer sur des IDs exacts lorsque What-If ne peut pas résoudre leur retrait du modèle.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "restartOnSecretChange": {
       "type": "array",
       "items": {

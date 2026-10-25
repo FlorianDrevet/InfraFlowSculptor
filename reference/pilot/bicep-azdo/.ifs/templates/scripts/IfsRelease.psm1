@@ -698,6 +698,27 @@ function Invoke-IfsPreview {
             $revoked.Add([pscustomobject]@{ resourceId = $resourceId; changeType = 'Detach' })
         }
     }
+    $completedRevocations = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($operation in @(Get-IfsValue $journal 'operations' @())) {
+        if ((Get-IfsValue $operation 'kind' '') -eq 'revoke' -and (Get-IfsValue $operation 'state' '') -eq 'Done') {
+            [void]$completedRevocations.Add([string](Get-IfsValue $operation 'objectId' ''))
+        }
+    }
+    foreach ($resourceId in @(Get-IfsValue $ReleaseData 'explicitAccessRevocations' @())) {
+        $resourceId = [string]$resourceId
+        if ([string]::IsNullOrWhiteSpace($resourceId)) { throw 'Une révocation explicite doit contenir un identifiant de ressource.' }
+        $subscriptionPrefix = '/subscriptions/{0}/' -f [string]$ReleaseData.subscriptionId
+        if (-not $resourceId.StartsWith($subscriptionPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Une cible de révocation explicite doit appartenir à la souscription de la release.'
+        }
+        $resourceAccessType = @($accessTypes | Where-Object { $resourceId -match ('(?i)/{0}/' -f [regex]::Escape([string]$_)) } | Select-Object -First 1)
+        if ($resourceAccessType.Count -eq 0) { throw 'Une cible de révocation explicite doit utiliser un type accessObjectTypes autorisé.' }
+        if ($desiredResourceIds.Contains($resourceId)) { throw 'Une cible de révocation explicite est toujours présente dans le modèle courant.' }
+        if ($completedRevocations.Contains($resourceId)) { continue }
+        if (-not @($revoked | Where-Object { $_.resourceId -ieq $resourceId }).Count) {
+            $revoked.Add([pscustomobject]@{ resourceId = $resourceId; changeType = 'Explicit' })
+        }
+    }
     $detachedResources = @($removedIds | Where-Object {
         $resourceId = $_
         @($accessTypes | Where-Object { $resourceId -match ('(?i)/{0}/' -f [regex]::Escape([string]$_)) }).Count -eq 0

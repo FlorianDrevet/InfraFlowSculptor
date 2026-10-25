@@ -274,6 +274,71 @@ Describe "Aperçu et empreinte" {
         ($preview.revokedAccess | ForEach-Object resourceId) | Should -Not -Contain $roleId
         $preview.limitations | Should -Contain "What-If ne résout pas certains identifiants d’accès ; leur absence ne déclenche pas une révocation implicite."
     }
+
+    It "inclut une révocation explicitement demandée malgré un identifiant What-If non résolu" {
+        $roleId = "/subscriptions/$($script:orderData.subscriptionId)/resourceGroups/core/providers/Microsoft.KeyVault/vaults/kv/providers/Microsoft.Authorization/roleAssignments/current"
+        $symbolicRoleId = "[extensionResourceId('/subscriptions/$($script:orderData.subscriptionId)/resourceGroups/core/providers/Microsoft.KeyVault/vaults/kv', 'Microsoft.Authorization/roleAssignments', guid(...))]"
+        $data = ConvertFrom-Json -InputObject (ConvertTo-Json -InputObject $script:orderData -Depth 50) -AsHashtable -Depth 50
+        $data.explicitAccessRevocations = @($roleId)
+        $releasePath = Join-Path $script:tempRoot "release-explicit-revocation.json"
+        Set-Content -LiteralPath $releasePath -Value (ConvertTo-Json -InputObject $data -Depth 50) -NoNewline
+        $releaseData = Read-IfsReleaseData -Path $releasePath
+        $global:IFS_STACK = @{ resources = @(@{ id = $roleId }) } | ConvertTo-Json -Depth 20 -Compress
+        $global:IFS_WHATIF = @{ changes = @(@{ resourceId = $symbolicRoleId; changeType = "Unsupported" }) } | ConvertTo-Json -Depth 20 -Compress
+
+        $preview = Invoke-IfsPreview -ReleaseData $releaseData -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -OutputDirectory $script:tempRoot
+
+        ($preview.revokedAccess | ForEach-Object resourceId) | Should -Contain $roleId
+        ($preview.revokedAccess | Where-Object resourceId -EQ $roleId).changeType | Should -Be "Explicit"
+        ($global:IFS_AZ_CALLS | ForEach-Object { $_ -join " " } | Where-Object { $_ -match "lease|upload|resource delete" }) | Should -BeNullOrEmpty
+    }
+
+    It "refuse une cible de révocation explicite hors de la souscription de la release" {
+        $data = ConvertFrom-Json -InputObject (ConvertTo-Json -InputObject $script:orderData -Depth 50) -AsHashtable -Depth 50
+        $data.explicitAccessRevocations = @("/subscriptions/other/resourceGroups/core/providers/Microsoft.Authorization/roleAssignments/removed")
+        $releasePath = Join-Path $script:tempRoot "release-cross-subscription-revocation.json"
+        Set-Content -LiteralPath $releasePath -Value (ConvertTo-Json -InputObject $data -Depth 50) -NoNewline
+        $releaseData = Read-IfsReleaseData -Path $releasePath
+
+        { Invoke-IfsPreview -ReleaseData $releaseData -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -OutputDirectory $script:tempRoot } |
+            Should -Throw "Une cible de révocation explicite doit appartenir à la souscription de la release."
+    }
+
+    It "refuse une cible de révocation explicite toujours présente dans le modèle" {
+        $roleId = "/subscriptions/$($script:orderData.subscriptionId)/resourceGroups/core/providers/Microsoft.Authorization/roleAssignments/current"
+        $data = ConvertFrom-Json -InputObject (ConvertTo-Json -InputObject $script:orderData -Depth 50) -AsHashtable -Depth 50
+        $data.explicitAccessRevocations = @($roleId)
+        $releasePath = Join-Path $script:tempRoot "release-desired-revocation.json"
+        Set-Content -LiteralPath $releasePath -Value (ConvertTo-Json -InputObject $data -Depth 50) -NoNewline
+        $releaseData = Read-IfsReleaseData -Path $releasePath
+        $global:IFS_STACK = @{ resources = @(@{ id = $roleId }) } | ConvertTo-Json -Depth 20 -Compress
+        $global:IFS_WHATIF = @{ changes = @(@{ resourceId = $roleId; changeType = "NoChange" }) } | ConvertTo-Json -Depth 20 -Compress
+
+        { Invoke-IfsPreview -ReleaseData $releaseData -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -OutputDirectory $script:tempRoot } |
+            Should -Throw "Une cible de révocation explicite est toujours présente dans le modèle courant."
+    }
+
+    It "omet une révocation explicite déjà terminée au journal" {
+        $roleId = "/subscriptions/$($script:orderData.subscriptionId)/resourceGroups/core/providers/Microsoft.KeyVault/vaults/kv/providers/Microsoft.Authorization/roleAssignments/current"
+        $data = ConvertFrom-Json -InputObject (ConvertTo-Json -InputObject $script:orderData -Depth 50) -AsHashtable -Depth 50
+        $data.explicitAccessRevocations = @($roleId)
+        $releasePath = Join-Path $script:tempRoot "release-completed-revocation.json"
+        Set-Content -LiteralPath $releasePath -Value (ConvertTo-Json -InputObject $data -Depth 50) -NoNewline
+        $releaseData = Read-IfsReleaseData -Path $releasePath
+        $global:IFS_JOURNAL = @{
+            schema = "ifs-operation-journal/v1"
+            unit = $releaseData.unit
+            target = $releaseData.target
+            operations = @(@{ id = ("a" * 64); revision = 1; commit = "rev1"; kind = "revoke"; objectId = $roleId; state = "Done"; createdAt = [DateTime]::UtcNow.ToString("o"); updatedAt = [DateTime]::UtcNow.ToString("o") })
+        }
+        $global:IFS_STACK = @{ resources = @(@{ id = $roleId }) } | ConvertTo-Json -Depth 20 -Compress
+        $symbolicRoleId = "[extensionResourceId('/subscriptions/$($script:orderData.subscriptionId)/resourceGroups/core/providers/Microsoft.KeyVault/vaults/kv', 'Microsoft.Authorization/roleAssignments', guid(...))]"
+        $global:IFS_WHATIF = @{ changes = @(@{ resourceId = $symbolicRoleId; changeType = "Unsupported" }) } | ConvertTo-Json -Depth 20 -Compress
+
+        $preview = Invoke-IfsPreview -ReleaseData $releaseData -TemplateFile $script:templatePath -ParameterFile $script:parameterPath -OutputDirectory $script:tempRoot
+
+        ($preview.revokedAccess | ForEach-Object resourceId) | Should -Not -Contain $roleId
+    }
 }
 
 Describe "Journal d'opérations" {
