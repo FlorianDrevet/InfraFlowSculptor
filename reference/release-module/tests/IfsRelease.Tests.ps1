@@ -685,11 +685,12 @@ Describe "Journal d'opérations" {
     It "rejoue une révocation T02 avant une nouvelle écriture de secret" {
         $env:IFS_RELEASE_TEST_SECRET = "new-value"
         $secret = [pscustomobject]@{ source = "pipeline"; variable = "IFS_RELEASE_TEST_SECRET"; vault = "kv-test"; secret = "token" }
+        $roleAssignmentId = "/subscriptions/test/resourceGroups/rg-test/providers/Microsoft.OperationalInsights/workspaces/log-test/providers/Microsoft.Authorization/roleAssignments/old"
         $now = [DateTime]::UtcNow.ToString("o")
         $journal = [pscustomobject]@{
             schema = "ifs-operation-journal/v1"; unit = "ifs-shop-orders-dev"; target = "dev"
             operations = @(
-                [pscustomobject]@{ id = ("a" * 64); revision = 3; commit = "rev3"; kind = "revoke"; objectId = "/role/old"; state = "ToDo"; createdAt = $now; updatedAt = $now; note = $null; details = $null },
+                [pscustomobject]@{ id = ("a" * 64); revision = 3; commit = "rev3"; kind = "revoke"; objectId = $roleAssignmentId; state = "ToDo"; createdAt = $now; updatedAt = $now; note = $null; details = $null },
                 [pscustomobject]@{ id = ("b" * 64); revision = 4; commit = "rev4"; kind = "secret-write"; objectId = "kv-test/token"; state = "ToDo"; createdAt = $now; updatedAt = $now; note = $null; details = [pscustomobject]@{ write = $secret; phase = "preDeploy" } }
             )
         }
@@ -704,10 +705,11 @@ Describe "Journal d'opérations" {
         }
         finally { Remove-Item Env:IFS_RELEASE_TEST_SECRET -ErrorAction SilentlyContinue }
         $calls = @($global:IFS_AZ_CALLS | ForEach-Object { $_ -join " " })
-        $deleteLine = ($calls | Select-String "resource delete" | Select-Object -First 1).LineNumber
+        $deleteLine = ($calls | Select-String "role assignment delete" | Select-Object -First 1).LineNumber
         $secretSetLine = ($calls | Select-String "keyvault secret set" | Select-Object -First 1).LineNumber
         $deleteLine | Should -BeGreaterThan 0
         $deleteLine | Should -BeLessThan $secretSetLine
+        ($calls | Where-Object { $_ -match "resource delete" }) | Should -BeNullOrEmpty
         $context.Journal.operations[0].revision | Should -Be 3
         $context.Journal.operations[0].state | Should -Be "Done"
     }

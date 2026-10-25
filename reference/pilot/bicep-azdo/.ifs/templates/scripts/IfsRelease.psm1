@@ -967,6 +967,14 @@ function Invoke-IfsDataAccessRecovery {
     }
 }
 
+function Get-IfsAccessDeleteArguments {
+    param([Parameter(Mandatory)][string] $ObjectId)
+    if ($ObjectId -match ('(?i)/providers/{0}/[^/]+$' -f [regex]::Escape($script:IfsRoleAssignmentResourceType))) {
+        return @('role', 'assignment', 'delete', '--ids', $ObjectId, '--output', 'none')
+    }
+    return @('resource', 'delete', '--ids', $ObjectId, '--output', 'none')
+}
+
 function Invoke-IfsPendingOperation {
     param(
         [Parameter(Mandatory)][object] $Context,
@@ -995,7 +1003,7 @@ function Invoke-IfsPendingOperation {
                 continue
             }
             if ($operation.state -eq 'ToDo') { [void](Set-IfsOperationState -Context $Context -OperationId $operation.id -State 'Started') }
-            [void](Invoke-IfsAz -Arguments @('resource', 'delete', '--ids', $operation.objectId, '--output', 'none'))
+            [void](Invoke-IfsAz -Arguments (Get-IfsAccessDeleteArguments -ObjectId ([string]$operation.objectId)))
             [void](Set-IfsOperationState -Context $Context -OperationId $operation.id -State 'Done' -ObjectExists $true)
             $summary.revokedAccess.Add([string]$operation.objectId)
             continue
@@ -1112,13 +1120,7 @@ function Invoke-IfsRevocation {
             continue
         }
         if ($operation.state -eq 'ToDo') { [void](Set-IfsOperationState -Context $Context -OperationId $operation.id -State 'Started') }
-        $deleteArguments = if ($objectId -match ('(?i)/providers/{0}/[^/]+$' -f [regex]::Escape($script:IfsRoleAssignmentResourceType))) {
-            @('role', 'assignment', 'delete', '--ids', $objectId, '--output', 'none')
-        }
-        else {
-            @('resource', 'delete', '--ids', $objectId, '--output', 'none')
-        }
-        [void](Invoke-IfsAz -Arguments $deleteArguments)
+        [void](Invoke-IfsAz -Arguments (Get-IfsAccessDeleteArguments -ObjectId $objectId))
         [void](Set-IfsOperationState -Context $Context -OperationId $operation.id -State 'Done' -ObjectExists $true)
         $deleted.Add($objectId)
     }
