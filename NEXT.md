@@ -10,12 +10,12 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `EN_COURS` |
+| **Statut** | `BLOQUE` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
 | **Verrou** | aucun |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
-| **Dernière mise à jour** | 2026-10-25 — Codex (nettoyage P-08 terminé, C5 final rafraîchi) |
+| **Dernière mise à jour** | 2026-10-25 — Codex (blocage confirmé) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
@@ -72,6 +72,10 @@ Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suiv
 ## Points ouverts et historique des décisions
 
 **État courant au 2026-10-25 :** le parcours `shop42` (P1, P9, P3, P8) et son nettoyage Azure sont achevés ; C5 à 00:11:18Z est identique à 00:06:45Z (143 ressources, 19 groupes, 0 pile, 38 rôles, 7 budgets), C3 est vide et le coût conservateur est 188,927764 EUR. P2/P4/P5 (`shop43`) et P7 (`shop44`) n’ont pas encore été exécutées et aucune capture correspondante n’existe. Avant de poursuivre, la procédure T § 7 demande le 2026-10-26 de vérifier qu’aucune ligne de coût ne court après la suppression de `shop42`. Les prochains jeux exigent ensuite un coût réel/prévision et une estimation complète fraîche ; les prix détaillés de la recette excluent encore stockage/sauvegardes, dépassement éventuel Container Apps, trafic et taxes. Toute nouvelle écriture reste suspendue tant que l’estimation complète ne respecte pas l’autorisation de coût de Florian.
+
+### P-08 — portée d’accès requise pour les preuves restantes
+
+La recette complète demande P2/P4/P5 dans `shop43` puis P7 dans `shop44` ([recette complète](docs/plan/recettes/01-preuves.md)). Aucune capture ou ligne de résultat pour ces preuves n’existe. La portée autorisée dans les consignes de cette session couvre le projet Azure DevOps de test `shop42` et ses dépôts associés ; elle ne couvre pas `shop43` ni `shop44`. P-08 est donc bloquée avant toute création ou modification dans ces jeux. Point ouvert : Florian autorise-t-il explicitement les opérations de preuve sur les projets/dépôts et ressources de test `shop43` et `shop44`, ou fournit-il les preuves existantes à examiner en lecture seule ? Le contrôle Cost Analysis J+1 de `shop42` reste séparément dû le 2026-10-26.
 
 ### P-08 — suite du nettoyage des piles
 
@@ -300,4 +304,4 @@ Prochaines actions :
 6. ✅ Reprise ciblée PRD #778 réussie : le journal marque Done l’opération data-access #762 après succès SQL, avec commit de complétion 3533c9c.
 7. ✅ D3 #780 réussi en DEV/PRD sur le CI #776 et le SHA main exact ; C8 passe avant approbation, les empreintes des aperçus correspondent aux empreintes approuvées des rapports et C9 est restaurée.
 8. ✅ Nettoyage Azure T de `shop42` achevé : sept piles supprimées, C5 final 143/19/0/38/7 inchangé au rafraîchissement 00:11:18Z ; coût conservateur 188,927764 EUR. Les écarts What-If sont consignés.
-9. ⏳ Le contrôle Cost Analysis J+1 de `shop42` reste dû le 2026-10-26. Ensuite, poursuivre P2/P4/P5 avec un jeu isolé `shop43`, puis P7 avec `shop44`, en actualisant coût et estimation complète avant chaque écriture. Garder #748 non diagnostiqué et #738 comme preuve négative.
+9. ⏳ Le contrôle Cost Analysis J+1 de `shop42` reste dû le 2026-10-26. P-08 est aussi bloquée en attente d’autorisation pour P2/P4/P5 dans `shop43` et P7 dans `shop44` (ou de preuves existantes à examiner en lecture seule). Ne lancer aucune écriture hors `shop42` avant la réponse de Florian ; après résolution, actualiser coût et estimation complète avant chaque écriture. Garder #748 non diagnostiqué et #738 comme preuve négative.

@@ -41,5 +41,4 @@
 | 2026-10-24 | Codex | P-08 — récupération PRD #778 réussie après correction du retry SQL ; préflight C4, inventaire C5, santé C6 et contrôle C3/C9 actualisés avant le D3 conditionnel. |
 | 2026-10-24 | Codex | P-08 — blocage #762 levé par preuve et gate.py ; préflight final avant D3 rafraîchi, C3/C5/C9 et coût confirmés, compilation `previewRun` sans run créée. Le D3 unique reste conditionné à C8. |
 | 2026-10-24 | Codex | P-08 — D3 #780 réussi en DEV/PRD avec C8 valide ; nettoyage suspendu après What-If exact `orders-prd` prévoyant cinq modifications. Coûts et C5 actualisés ; blocage consigné pour arbitrage. |
-| 2026-10-25 | Codex | P-08 — nettoyage des sept piles terminé, C5 final stable à 143/19/0/38/7, C3 vide et coût conservateur à 188,927764 EUR ; écarts What-If explicitement conservés pour R-03. |
-| 2026-10-25 | Codex | P-08 — sept piles Shop42 supprimées ; C5, C3 et coût final consignés. P2/P4/P5/P7 et le contrôle Cost Analysis du lendemain restent requis avant la clôture. |
+| 2026-10-25 | Codex | P-08 — nettoyage Shop42 confirmé (C5/C3/coût) ; P2/P4/P5 et P7 restent hors portée autorisée, et le contrôle Cost Analysis J+1 est dû le 2026-10-26. |

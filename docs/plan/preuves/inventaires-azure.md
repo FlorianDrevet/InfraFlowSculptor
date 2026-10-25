@@ -185,4 +185,6 @@ réserve précédente de 17,527800 EUR, le scénario conservateur est 188,927764
 non plafonnante de 200 EUR.
 
 La procédure T § 7 exige encore le contrôle *Cost Analysis* du lendemain pour vérifier qu’aucune ligne ne court. Il est
-prévu le 2026-10-26 et n’a pas encore été exécuté ; P-08 reste `EN_COURS` jusqu’à cette vérification.
+prévu le 2026-10-26 et n’a pas encore été exécuté. Le gate a réouvert P-08 avant R-03 ; l’étape est maintenant bloquée
+par l’autorisation manquante pour `shop43`/`shop44`, consignée dans
+[`P-08-blocage-scope-20261025.md`](../revues/P-08-blocage-scope-20261025.md).

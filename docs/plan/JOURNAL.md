@@ -56,3 +56,4 @@
 | 2026-10-25 01:23 | Codex | `P-08` : Cost Management actualisé après deux 429 ; préflight final `platform-shared` complet, `deleteAll` prêt. | docs/plan/revues/P-08-nettoyage-suite-20261024.md |
 | 2026-10-25 02:11 | Codex | `P-08` : nettoyage des sept piles achevé ; C5 final rafraîchi, C3 vide, scénario de coût sous l’alerte. Prêt pour commit puis auto-revue R-03. | docs/plan/revues/P-08-nettoyage-suite-20261024.md |
 | 2026-10-25 02:13 | Codex | `P-08` : nettoyage Azure Shop42 achevé, C5/C3 et coût final vérifiés ; contrôle Cost Analysis du 2026-10-26 encore dû selon T § 7. | docs/plan/revues/P-08-nettoyage-suite-20261024.md |
+| 2026-10-25 02:29 | Codex | `P-08` blocage confirmé | docs/plan/revues/P-08-blocage-scope-20261025.md |
