@@ -55,3 +55,4 @@
 | 2026-10-25 01:21 | Codex | `P-08` : `data-prd` supprimée ; protection `platform-shared` retirée. `deleteAll` attend le rafraîchissement Cost Management après HTTP 429. | docs/plan/revues/P-08-nettoyage-suite-20261024.md |
 | 2026-10-25 01:23 | Codex | `P-08` : Cost Management actualisé après deux 429 ; préflight final `platform-shared` complet, `deleteAll` prêt. | docs/plan/revues/P-08-nettoyage-suite-20261024.md |
 | 2026-10-25 02:11 | Codex | `P-08` : nettoyage des sept piles achevé ; C5 final rafraîchi, C3 vide, scénario de coût sous l’alerte. Prêt pour commit puis auto-revue R-03. | docs/plan/revues/P-08-nettoyage-suite-20261024.md |
+| 2026-10-25 02:15 | Codex | `P-08` terminée | commit `b0aeebd` |
