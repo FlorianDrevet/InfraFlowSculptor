@@ -41,4 +41,4 @@
 | 2026-10-24 | Codex | P-08 — récupération PRD #778 réussie après correction du retry SQL ; préflight C4, inventaire C5, santé C6 et contrôle C3/C9 actualisés avant le D3 conditionnel. |
 | 2026-10-24 | Codex | P-08 — blocage #762 levé par preuve et gate.py ; préflight final avant D3 rafraîchi, C3/C5/C9 et coût confirmés, compilation `previewRun` sans run créée. Le D3 unique reste conditionné à C8. |
 | 2026-10-24 | Codex | P-08 — D3 #780 réussi en DEV/PRD avec C8 valide ; nettoyage suspendu après What-If exact `orders-prd` prévoyant cinq modifications. Coûts et C5 actualisés ; blocage consigné pour arbitrage. |
-| 2026-10-25 | Codex | P-08 — nettoyage Shop42 confirmé (C5/C3/coût) ; P2/P4/P5 et P7 restent hors portée autorisée, et le contrôle Cost Analysis J+1 est dû le 2026-10-26. |
+| 2026-10-25 | Codex | P-08 — nettoyage Shop42 confirmé (C5/C3/coût) ; Florian autorise explicitement shop43 et shop44, les projets et dépôts sont préparés, et le contrôle Cost Analysis J+1 reste dû le 2026-10-26 avant toute écriture Azure facturable. |
