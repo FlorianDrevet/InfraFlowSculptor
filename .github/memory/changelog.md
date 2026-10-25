@@ -38,3 +38,7 @@
 | 2026-10-24 | Codex | P-08 — reprise bornée des timeouts SQL post-login et constat du chemin de reprise PRD à préciser. |
 | 2026-10-24 | Codex | P-08 — mécanisme de reprise PRD protégé, lié à l’opération #762 exacte, ajouté à la référence et auto-revu ; publication et exécution restent à faire. |
 | 2026-10-24 | Codex | P-08 — empêche le réarmement du journal après reprise lorsque le commit du manifeste évolue ; 132 tests, Bicep, YAML, déterminisme et analyse statique validés. Cost/C5 actualisés et huit pipelines collatéraux suspendus pour la publication. |
+| 2026-10-24 | Codex | P-08 — récupération PRD #778 réussie après correction du retry SQL ; préflight C4, inventaire C5, santé C6 et contrôle C3/C9 actualisés avant le D3 conditionnel. |
+| 2026-10-24 | Codex | P-08 — blocage #762 levé par preuve et gate.py ; préflight final avant D3 rafraîchi, C3/C5/C9 et coût confirmés, compilation `previewRun` sans run créée. Le D3 unique reste conditionné à C8. |
+| 2026-10-24 | Codex | P-08 — D3 #780 réussi en DEV/PRD avec C8 valide ; nettoyage suspendu après What-If exact `orders-prd` prévoyant cinq modifications. Coûts et C5 actualisés ; blocage consigné pour arbitrage. |
+| 2026-10-25 | Codex | P-08 — nettoyage des sept piles terminé, C5 final stable à 143/19/0/38/7, C3 vide et coût conservateur à 188,927764 EUR ; écarts What-If explicitement conservés pour R-03. |

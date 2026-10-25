@@ -49,3 +49,9 @@
 | 2026-10-23 22:41 | Codex | `P-08` blocage résolu | docs/plan/revues/P-08-resolution.md |
 | 2026-10-23 23:54 | Codex | `P-08` blocage résolu | docs/plan/revues/P-08-autonomie-et-c5.md |
 | 2026-10-24 00:08 | Codex | `P-08` blocage confirmé | docs/plan/revues/P-08-C8-D3-run-761.md |
+| 2026-10-24 20:59 | Codex | `P-08` blocage résolu | docs/plan/revues/P-08-reprise-autovalidation-20261024.md |
+| 2026-10-24 22:36 | Codex | `P-08` blocage confirmé | docs/plan/revues/P-08-blocage-nettoyage-20261024.md |
+| 2026-10-25 00:07 | Codex | `P-08` blocage résolu | docs/plan/revues/P-08-nettoyage-suite-20261024.md |
+| 2026-10-25 01:21 | Codex | `P-08` : `data-prd` supprimée ; protection `platform-shared` retirée. `deleteAll` attend le rafraîchissement Cost Management après HTTP 429. | docs/plan/revues/P-08-nettoyage-suite-20261024.md |
+| 2026-10-25 01:23 | Codex | `P-08` : Cost Management actualisé après deux 429 ; préflight final `platform-shared` complet, `deleteAll` prêt. | docs/plan/revues/P-08-nettoyage-suite-20261024.md |
+| 2026-10-25 02:11 | Codex | `P-08` : nettoyage des sept piles achevé ; C5 final rafraîchi, C3 vide, scénario de coût sous l’alerte. Prêt pour commit puis auto-revue R-03. | docs/plan/revues/P-08-nettoyage-suite-20261024.md |

@@ -10,12 +10,12 @@
 | | |
 |---|---|
 | **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `BLOQUE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
 | **Étape suivante** | `R-03` — Revue des preuves |
 | **Verrou** | aucun |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
-| **Dernière mise à jour** | 2026-10-24 — Codex (reprise P-08 en cours) |
+| **Dernière mise à jour** | 2026-10-25 — Codex (nettoyage P-08 terminé, C5 final rafraîchi) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
@@ -51,12 +51,12 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 | Élément | État | Depuis |
 |---|---|---|
 | Abonnements Azure de test (preuves) | Souscription `fc4fa56f-e4e7-41e9-8a0d-559fcd27b827`, tenant `c833b396-517c-465d-bcce-b79702eaf932` ; `francecentral` et les fournisseurs/SKU requis disponibles ; utilisateur connecté Owner au scope souscription et User Access Administrator au scope tenant ; même souscription pour dev/prd/shared | 2026-10-15 |
-| Décision de coût et estimation des preuves ([contrôle](docs/plan/recettes/01-preuves.md#01-surveillance-des-coûts-avant-toute-action-sur-les-ressources-azure)) | Relevés Cost Management à 2026-10-24T17:33Z : ActualCost MTD 130,364070 EUR HT ; Forecast du 24 au 31/10 42,458633 EUR ; projection 172,822704 EUR. Après reprise SQL estimée à 0,5739 EUR, D3 complète à 6,4952 EUR et réserve de 2 Go de logs à 4,8574 EUR : 184,749204 EUR projetés, soit 15,250796 EUR sous l’alerte de 200 EUR. Données de facturation susceptibles de retard ; estimation non plafonnante. Aucun nouvel essai Azure n’a été lancé ; actualiser avant l’écriture SQL. | 2026-10-24 |
-| Ressources Azure créées pour les preuves ([inventaire](docs/plan/preuves/inventaires-azure.md)) | C5 rafraîchi à 2026-10-24T17:34Z : 164 ressources, 26 groupes, 7 piles, 59 rôles, 7 budgets ; 21 IDs Shop42. Comparaison au snapshot après #762 : zéro différence d’ID dans les ressources, groupes, piles, rôles et budgets. Snapshot exact hors dépôt : %LOCALAPPDATA%/InfraFlowSculptor/P08/p08-c5-azure-inventory-20261024-1734.json. | 2026-10-24 |
-| Organisation / projet Azure DevOps de test | Organisation floriandrevet0332, projet privé shop42. PR #75 fusionnée sur main au SHA 492dfa0df7f9c22f182f1fec443f90c041ed823d ; N #759 a réussi sur ce SHA. R0 #760 et D3 #761 sont annulés avant écriture. L’unique release manuelle D3 #762, créée le 2026-10-24T08:45:37Z, consomme CI #759 et le SHA attendu ; elle s’est terminée en échec à 09:04:45Z. Deploy_dev a réussi. Preview_prd a passé C8 ; Deploy_prd a échoué après application partielle. C3 à 17:50:54Z : aucune exécution active/en file ni PR active. Les huit files collatérales 74/76/77/79/83/85/86/88 sont suspendues (révision 12) ; orders/infra CI 80 et release 82 restent activées (révision 9). Le clone de preuve local est préparé avec six fichiers de référence et le manifeste recalculé ; pas encore commit/push/PR. Snapshot hors dépôt : %LOCALAPPDATA%/InfraFlowSculptor/P08/recovery-20261024T174003Z/ado-control-before-publish.json. | 2026-10-24 |
+| Décision de coût et estimation des preuves ([contrôle](docs/plan/recettes/01-preuves.md#01-surveillance-des-coûts-avant-toute-action-sur-les-ressources-azure)) | ActualCost relu après `core-prd` à 00:07:01Z : 133,281523 EUR HT MTD. Forecast restant du 25 au 31/10 : 38,118441 EUR ; projection 171,399964 EUR. Avec la réserve de 17,527800 EUR (2 Go de logs inclus), estimation conservatrice 188,927764 EUR, soit 11,072236 EUR sous l’alerte non plafonnante de 200 EUR. Réponses : `%LOCALAPPDATA%/InfraFlowSculptor/P08/core-prd-reconcile/p08-cost-actual-after-delete-20261025T000701Z.json` et `p08-cost-forecast-after-delete-20261025T000701Z.json`. | 2026-10-25 |
+| Ressources Azure créées pour les preuves ([inventaire](docs/plan/preuves/inventaires-azure.md)) | Les sept piles éphémères (`orders-dev/prd`, `data-dev/prd`, `platform-shared`, `core-dev/prd`) sont supprimées. C5 après `core-prd` à 00:06:45Z : 143 ressources, 19 groupes, 0 pile, 38 rôles et 7 budgets ; deltas exacts −4 ressources, −1 groupe, −1 pile, −3 rôles, 0 budget, aucun ajout. Rafraîchissement C5 à 00:11:18Z : cinq collections identiques. Preuve : `%LOCALAPPDATA%/InfraFlowSculptor/P08/final-c5-refresh-20261025T001110Z/c5-final.json`. | 2026-10-25 |
+| Organisation / projet Azure DevOps de test | PR #77 fusionnée sur `main` au SHA `1abacadd605c0ca6c342ac305ff083be680d56c4` ; N #776 réussi, R0 #777 annulé avant écriture, reprise ciblée #778 réussie, D3 #779 échoué avant tâches et unique D3 corrigé #780 réussi en DEV/PRD. C3 post-nettoyage à 00:06:45Z : aucune build active/en file, release active ou PR active ; 17 définitions, 9 activées et 8 désactivées ; 80/82 activées et C9 restaurée à `requesterCannotBeApprover=true`. Capture hors dépôt : `%LOCALAPPDATA%/InfraFlowSculptor/P08/core-prd-reconcile/c3-after-delete-20261025T000645Z.json`. | 2026-10-25 |
 | Droits Azure utilisés pour D1b | `Storage Blob Data Reader` au conteneur `ifs-operations` du compte `stifsshop42dev` et `Key Vault Reader` au coffre `kv-shop42-main-dev`, attribués à l’identité personnelle pour les lectures D1b. Les deux attributions restent en place ; aucune valeur de secret n’a été lue | 2026-10-17 |
 | Groupes Entra (`sg-shop42-sql-admins`) et Azure DevOps (« Shop42 Release Approvers ») | Créés dans le tenant fourni ; Florian DREVET est membre des deux groupes | 2026-10-15 |
-| Résultat D3 — vérification C1–C9 | C1/C2 satisfaites : D2a livrée, PR #75 et N #759 au SHA attendu ; R0 #760 annulé avant écriture. C3 final : aucune exécution en cours ou en file parmi les dix définitions. C4 : préflight D3-pre 77dc939f…a87b1. C5 : relevé final ci-dessus, 21 IDs Shop42 identiques. C6 : l’image PRD reste D2, digest sha256:4af4e78a6a7d90facd49f513593b9f5018513c7dfb1bd724984ca36d064fee7f, /health=200. C7 : #762 était l’unique D3 alors autorisé, ressource CI #759 et commit exacts. C8 DEV et PRD passent avant approbation : pendingOperations=0, created=0, modified=5, recreated=0, detachedOrDeleted=0, revokedAccess=0 ; dataWrites=1 et appOwnedState=1 sont informatifs. Le rapport DEV est Succeeded. Le rapport PRD est PartiallyApplied après un délai SQL post-login ; data-access reste Started. C9 DEV est restaurée après le terminal. La consigne de continuation ci-dessous autorise la reprise ciblée PRD préparée, puis au plus un D3 si C8 repasse. [Preuve détaillée](docs/plan/revues/P-08-C8-analyse-20261024.md). | 2026-10-24 |
+| Résultat D3 — vérification C1–C9 | D3 #780 est terminé avec succès sur le CI #776 et le SHA main exact. Les aperçus DEV/PRD ont zéro opération pending, création, recréation, détachement/suppression ou révocation ; `modified=5` et `dataWrites=1` sont hors des prédicats C8. Les rapports `ifs-report/v2` DEV/PRD sont `Succeeded`, révision 2, commit `3533c9c…`, erreur vide ; leurs empreintes approuvées correspondent aux empreintes des aperçus publiés, sans détachement, révocation ou pare-feu temporaire. C3 après run : aucune exécution active/en file ni PR active ; C9 restaurée à `true`. C5 conserve les cinq collections d’IDs et les 21 IDs Shop42 suivis. C6 après run confirme les apps DEV/PRD Running, saines et HTTP 200 sur le digest D2. Captures #779–#780 dans `src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/AzureDevOps/Recordings/` ; rapports et préflight C5/C6 hors dépôt sous `%LOCALAPPDATA%/InfraFlowSculptor/P08/D3-report-*-run780/`, `c5-after-D3-run780-20261024T195132Z.json` et `c6-after-D3-run780-20261024T195239Z.json`. [Analyse C8 et reprise](docs/plan/revues/P-08-C8-analyse-20261024.md). | 2026-10-24 |
 | Inscriptions Entra d'IFS (`dev`) | — | — |
 | Protection de la branche `main` sur GitHub | À activer par vous dans *Settings → Branches* | 2026-10-06 |
 | Secret de dépôt GitHub Actions `IFS_E2E_PASSWORD` | Configuré (valeur masquée) | 2026-10-06 |
@@ -70,6 +70,28 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md), puis retire la ligne.
 
 ## Points ouverts et historique des décisions
+
+**État courant au 2026-10-25 :** le D3 #780 et le nettoyage T sont achevés. Les sept piles éphémères sont absentes ; le C5 final a été relu deux fois sans différence, C3 est vide et le scénario de coût conservateur reste sous l’alerte existante. Les écarts What-If (ordres PRD, ACR partagé et valeurs par défaut des piles core) sont conservés comme écarts, sans être qualifiés de conformes. Aucun point bloquant P-08 ne reste ouvert ; l’étape doit être consignée puis le verrou R-03 auto-revu.
+
+### P-08 — suite du nettoyage des piles
+
+Le blocage documenté au préflight de 20:38Z est historique ; la consigne de continuation de Florian du 2026-10-25
+autorise à résoudre les blocages et à poursuivre la recette. La réconciliation ciblée `ifs-shop42-orders-prd-261024215yke9`
+a réussi, `orders-dev` a été supprimé et `ifs-shop42-orders-prd-26102421h5csw` a terminé avec
+`denySettings.mode = none`.
+
+Le What-If exact conserve 5 `Modify`, 2 `NoChange` et 3 `Unsupported`. La divergence `Dedicated`/`null` des diagnostics
+reste connue et n’est pas présentée comme résolue ; la mise à jour de pile a été appliquée sous la consigne de continuation,
+puis contrôlée : 10 IDs présents, zéro ressource en échec, application Healthy/HTTP 200, C3 sans exécution active et C5 sans
+changement de collections. C’est un écart à la garde What-If de la procédure T, consigné pour l’auto-revue.
+
+Les suppressions `orders-dev`, `orders-prd`, `data-dev` et `data-prd` sont terminées. Le `deleteAll` de `ifs-shop42-data-prd` a fini à 23:07:29Z avec le code 0 ; son C5 confirme exactement −3 ressources, −1 groupe et −1 pile, sans changement des rôles/budgets ni ajout. Le C5 frais avant `platform-shared` (23:15:21Z) est identique sur les cinq collections : 152 ressources, 22 groupes, 3 piles, 49 rôles et 7 budgets. C3 à 23:10:25Z est sans build actif/en file, release active ou PR active.
+
+Le préflight initial de `platform-shared` (23:15:59Z) a confirmé la pile `succeeded`, `denyDelete`, 3 IDs gérés et zéro échec. Le groupe contient uniquement le registre ACR ; le groupe, le registre, la pile et les quatre rôles de portée groupe/registre sont attribués à Luna et absents de la baseline. Le What-If exact annonce 1 `Modify`, 2 `NoChange`, 1 `NoEffect`, aucune création/suppression et aucun `Unsupported`. La différence ACR sur `encryption.status=disabled` et `roleAssignmentMode=LegacyRegistryPermissions` correspond aux valeurs live omises du modèle ; le modèle propose déjà `networkRuleBypassAllowedForTasks=false`, comme l’état live. Cet écart reste déclaré, le What-If n’est pas qualifié de propre. Le modèle exact a été réappliqué à 23:18:33Z ; l’update a fini à 23:19:57Z, état `succeeded`, `denySettings.mode=none`, 3 IDs gérés, zéro échec, actions `detach` et `resourcesWithoutDeleteSupport=fail` conservées. Le What-If après update garde la même empreinte et les mêmes écarts ; l’ACR live a conservé ses valeurs. Le C5 après update (23:20:39Z) confirme les cinq collections inchangées à 152/22/3/49/7. C3 à 23:20:38Z est vide. Après deux réponses HTTP 429, ActualCost a réussi à 23:23:09Z à 133,281523 EUR MTD ; Forecast réussi à 23:20:31Z : 38,511544 EUR. Projection conservatrice avec réserve : 189,320867 EUR, sous l’alerte non plafonnante de 200 EUR. Le préflight final `%LOCALAPPDATA%/InfraFlowSculptor/P08/platform-shared-before-delete-final-20261024T232341Z.json` passe ; le `deleteAll` est prêt.
+
+Preuves : [`P-08-nettoyage-suite-20261024.md`](docs/plan/revues/P-08-nettoyage-suite-20261024.md) ; snapshot historique du
+blocage : [`P-08-blocage-nettoyage-20261024.md`](docs/plan/revues/P-08-blocage-nettoyage-20261024.md) ; préflight complet
+hors dépôt : `%LOCALAPPDATA%\InfraFlowSculptor\P08\shop42-cleanup-preflight-20261024T2002Z.json`.
 
 **Autorisation d'autonomie, 2026-10-23 :** Florian demande à Codex d'exécuter lui-même toutes les phases de tests, recettes,
 validation et auto-revue, sans attente de Claude ou d'un modèle supérieur. Pour P-08, il autorise aussi les actions du projet
@@ -92,7 +114,7 @@ n’est autorisée après celle-ci. Cette autorisation a été consommée par la
 
 **Solution retenue — reprise PRD ciblée :** le pipeline existant `orders/infra` reçoit un mode manuel `recover-prd-762`, désactivé en mode `standard`. La reprise tourne sous la connexion `ifs-shop42-prd`, dans l’environnement protégé `shop42-prd`, avec verrou séquentiel et contrôle de souscription. Elle accepte seulement l’opération `36ab5a2dfdd9b34f84098f22274bb4a6c35c85fb62493d585df6fab21ba2a71f`, révision 2, commit `893f2a3dda4d7c8461be9c93f208a9e84d317962`, dans le journal `ifs-shop42-orders-prd`. Elle exige une unique opération pending, son état `Started`, la correspondance intégrale du détail data-access avec l’artefact PRD et l’exposition `Public`. Elle exécute le seul script SQL idempotent ; aucune modification de pare-feu, pile ARM, révocation ou écriture de secret n’est permise. Après succès SQL seulement, l’opération est marquée `Done` sous le bail.
 
-**Travaux locaux terminés :** le code de reprise et ses tests sont dans le commit `b57c1e9` de `impl/preuves`. La garde exige le manifeste `shop42`, révision 2, filiation `p3-role` et son commit valide. Après SQL réussi, le journal enregistre ce commit courant avec `Done`, afin que l’ajout ultérieur de l’opération par le déploiement ne la réarme pas ; un échec conserve l’ancien commit et `Started`. Suite complète : 132 tests Pester réussis ; tous les Bicep valides et sans avertissement ; 25 YAML valides ; déterminisme 79 fichiers ; PSScriptAnalyzer sans erreur ; lint du plan réussi. La publication fraîche a été comparée au clone ; six fichiers permis sont appliqués localement, le manifeste révisé reste à committer. Restent le push source et la PR Shop42, N/R0, la reprise, les contrôles C1–C9 après reprise et l’unique D3 conditionnel. Rafraîchir coût et inventaire avant l’écriture SQL ; arrêter avant mutation si une donnée manque ou si le coût estimé devient important. `gate.py check` conserve `BLOQUE` tant que le journal PRD est `Started`.
+**État historique de P-08 au préflight 2026-10-24T20:38Z :** PR #77 est fusionnée au SHA `1abacadd` ; N #776 a réussi, R0 #777 a été annulé avant écriture, la reprise PRD #778 a terminé l’opération exacte et le D3 unique #780 a réussi en DEV/PRD. C8 passe sur les deux aperçus ; les rapports sont `Succeeded`, C3 est vide, C9 est restaurée et C5 conserve les IDs suivis. Le préflight de nettoyage a révélé cinq modifications ; leur suite et l’écart What-If sont consignés dans la note de nettoyage liée ci-dessus.
 
 **Décision active — P-08 / D2b :** Florian a délégué à GPT Sol une autorité d’arbitrage équivalente à Claude. Sol confirme que le résumé
 PASS ne remplace pas les sorties complètes : le transcript de 09:35 s’arrête sur `Prepared branch manifest metadata differs from
@@ -169,12 +191,17 @@ et la [recette § 5](docs/plan/recettes/01-preuves.md#5-p8--livraison-applicativ
 - **Acteurs :** Codex a préparé la preuve, poussé la branche, créé et fusionné la PR #75 après réussite des contrôles #754–#758.
   Codex a lancé N #759 une fois, puis a arrêté R0 #760 avant toute tâche `Deploy_dev` après le refus d’Azure de rejeter
   l’approbation avec l’unique approbateur bloqué. L’état final de l’approbation est `canceled`, pas `rejected`.
-- **D3 :** C1–C7 et C9 restent des conditions préalables ; C8 se vérifie après `Preview_dev` et avant `Deploy_dev`. C9 est
-  désactivée. D3 ne démarre pas tant que la recette ne définit pas si R0 annulé avant mutation satisfait l’intention de son rejet
-  et que l’estimation C5 ne permet pas d’exclure un surcoût important.
-- **Coût :** le 2026-10-23, Florian a demandé à Codex d’éviter tout surcoût important. Le relevé du 2026-10-23T20:50Z indique
-  120,79 EUR réels et 161,68 EUR prévus pour octobre ; l’estimation C5 reste incomplète. Le budget de 200 EUR/mois est une alerte,
-  pas un coupe-circuit ; aucune écriture de ressource Azure ne part sans estimation complète.
+- **D3 — état au 2026-10-24T19:01:57Z :** #778 a résolu l’opération Started ; C1–C7 et C9 sont documentées dans la ligne de résultat ci-dessus.
+  C3 vient d’être relu : 0 run actif/en file parmi 100, 0 PR active ; pipelines collatéraux 74/76/77/79/83/85/86/88 `disabled` révision 12,
+  orders/infra 80/82 `enabled` révision 9. C8 reste à lire sur `Preview_dev` et `Preview_prd` avant leurs approbations. Le check Approval 138
+  et ExclusiveLock 87 sont présents ; le groupe d’approbation est inchangé et `requesterCannotBeApprover=true`. Une seule D3 est autorisée,
+  sur la ressource CI #776 et le SHA main `1abacadd605c0ca6c342ac305ff083be680d56c4`. Le réglage C9 sera basculé temporairement juste avant
+  le lancement puis restauré à la fin du run ; aucune seconde tentative ne sera faite.
+- **Coût :** relevé disponible avant D3 : ActualCost MTD 131,724309 EUR HT (18:42:56Z), Forecast restant 41,098486 EUR (18:50:29Z),
+  projection 172,822795 EUR. Scénario conservateur incluant #770, #778, un D3 complet et 2 Go de logs : 185,323195 EUR HT, soit 14,676805 EUR
+  sous l’alerte préexistante de 200 EUR. Les données de facturation peuvent être retardées ; ce montant n’est pas un plafond garanti.
+  Une nouvelle lecture le 19:00Z a été limitée par Cost Management (HTTP 429) ; aucun coût ni aucune estimation n’est inventé, et aucun
+  déploiement facturable n’est lancé tant qu’une lecture fraîche n’est pas obtenue.
 
 - **Historique du statut :** après l’exception du transcript, P-08 est passé à `BLOQUE`. Florian a délégué l’arbitrage à GPT Sol, qui
   a autorisé le clone indépendant et le merge par identité d’arbre ; les amendements ciblés D2b.1/.2/.4 consignent cette méthode.
@@ -270,6 +297,7 @@ Prochaines actions :
 5. ✅ N #759 a réussi une fois sur le SHA de fusion. R0 #760 a réussi `Preview_dev`, puis a été annulé avant toute tâche
    `Deploy_dev` ; l’approbation est `canceled`, car Azure a refusé `rejected` (`ApprovalBlockedException`) pour l’auteur unique.
    C9 a été brièvement activée puis restaurée à `false`. Les étapes PRD ont été ignorées et aucune ressource n’a été modifiée.
-6. ⛔ D3 #762 a terminé DEV avec succès et PRD en PartiallyApplied après un timeout SQL post-login ; l’opération data-access PRD est confirmée Started dans le rapport. Le correctif client SQL est dans le commit local 5db5a76 et non dans l’artefact CI #759. La nouvelle consigne de Florian a sélectionné le mode recovery-only décrit ci-dessus ; le code local est implémenté et auto-revu, mais n’est pas encore publié ni exécuté. P-08 reste BLOQUÉ jusqu’aux contrôles externes et à la preuve finale.
-7. Garder #748 non diagnostiqué, conserver le fail-closed et #738 comme preuve négative. Le nettoyage Shop42 reste suspendu jusqu'à
-   la réussite de P8 et des autres conditions de la procédure T.
+6. ✅ Reprise ciblée PRD #778 réussie : le journal marque Done l’opération data-access #762 après succès SQL, avec commit de complétion 3533c9c.
+7. ✅ D3 #780 réussi en DEV/PRD sur le CI #776 et le SHA main exact ; C8 passe avant approbation, les empreintes des aperçus correspondent aux empreintes approuvées des rapports et C9 est restaurée.
+8. ✅ Nettoyage T achevé le 2026-10-25 : les sept piles éphémères sont supprimées ; C5 final rafraîchi à 00:11:18Z = 143 ressources, 19 groupes, 0 pile, 38 rôles, 7 budgets, sans différence avec l’après-suppression. C3 est vide ; coût conservateur 188,927764 EUR, sous l’alerte. Les écarts What-If restent documentés dans `docs/plan/revues/P-08-nettoyage-suite-20261024.md`.
+9. ▶ Commiter P-08 avec le message du plan, exécuter `gate.py done P-08`, puis effectuer et consigner l’auto-revue R-03. Garder #748 non diagnostiqué et #738 comme preuve négative.
