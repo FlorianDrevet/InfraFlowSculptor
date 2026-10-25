@@ -67,11 +67,11 @@
     },
     {
       "path": ".ifs/templates/infra-release.yml",
-      "sha256": "dc23e1568461fecae09bec69809a9dd5c074a6b3bd33119f9c68672f69add4e4"
+      "sha256": "b8aec3ef21f7064677af033153f7e27770233e355ad98f1174c838a10c157529"
     },
     {
       "path": ".ifs/templates/infra-target-stages.yml",
-      "sha256": "d1857b35e473bb2837ef34f09ab2fcf685162921c43fe83561e9a24cab326d98"
+      "sha256": "ba6124eef1d15e410b5424bafef9dce95724b3d2edb78fe71b4df324e6953421"
     },
     {
       "path": ".ifs/templates/schemas/ifs-app-report.schema.json",
@@ -107,7 +107,7 @@
     },
     {
       "path": ".ifs/templates/scripts/IfsRelease.psm1",
-      "sha256": "9dce38cc77509c72a40902cb3a65a6d7a87370ed61a6adba8d3e77566cb35a21"
+      "sha256": "9c724dcc36730e0b376ca1e46a9b3a240b9ddc08df6f2cc56bd34b420ae136a1"
     },
     {
       "path": ".ifs/templates/scripts/Install-IfsTrivy.ps1",
@@ -259,7 +259,7 @@
     },
     {
       "path": "orders/infra/pipelines/release.yml",
-      "sha256": "cdc04bbb97a26d3875904675e114e6c899d19977fba070e1b1fbf9254fda591b"
+      "sha256": "bf9726876a79b22a9bd01f91522afd0b7aa0a4c5dfd1e2fe7ba3a6291b3eaff9"
     },
     {
       "path": "orders/infra/registry-role-assignment.bicep",

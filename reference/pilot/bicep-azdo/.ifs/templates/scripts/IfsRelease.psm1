@@ -6,6 +6,7 @@ $script:IfsSchemaDirectory = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..
 $script:IfsSqlConnectionTimeoutSeconds = 120
 $script:IfsSqlRetryDelaySeconds = 10
 $script:IfsSqlRetryDeadlineMinutes = 10
+$script:IfsSqlSystemAssignedClientIdEnvironmentVariable = 'IFS_SQL_SYSTEM_ASSIGNED_CLIENT_ID'
 $script:IfsSqlTransientConnectionPattern = '(?i)connection timeout expired|timeout period elapsed during the post-login phase|pre-login handshake|database [^\r\n]+ is not currently available|please retry the connection later|error (?:number )?(?:40613|40197|40501|10928|10929)\b'
 
 function Invoke-IfsAz {
@@ -1158,7 +1159,13 @@ function Get-IfsSqlPrincipal {
         if ($principalId -notmatch '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') {
             throw ('L''Object ID de l''identite SQL {0} n''est pas un GUID valide.' -f $Access.principal.resourceId)
         }
-        $clientId = (Invoke-IfsAz -Arguments @('ad', 'sp', 'show', '--id', $principalId, '--query', 'appId', '--output', 'tsv')).Text.Trim()
+        $clientId = [string][Environment]::GetEnvironmentVariable($script:IfsSqlSystemAssignedClientIdEnvironmentVariable)
+        if ([string]::IsNullOrWhiteSpace($clientId)) {
+            $clientId = (Invoke-IfsAz -Arguments @('ad', 'sp', 'show', '--id', $principalId, '--query', 'appId', '--output', 'tsv')).Text.Trim()
+        }
+        else {
+            $clientId = $clientId.Trim()
+        }
     }
     else {
         $identity = ConvertFrom-IfsJson (Invoke-IfsAz -Arguments @('identity', 'show', '--ids', $Access.principal.resourceId, '--subscription', $SubscriptionId, '--output', 'json')).Text

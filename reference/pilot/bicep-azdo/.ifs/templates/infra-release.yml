@@ -34,13 +34,15 @@ stages:
       component: ${{ parameters.component }}
       defaultBranch: ${{ parameters.defaultBranch }}
       secretWrites: ${{ parameters.secretWrites }}
+      systemAssignedSqlClientId: ${{ coalesce(target.systemAssignedSqlClientId, '') }}
       recoveryMode: ${{ parameters.recoveryMode }}
       target: ${{ target }}
-- template: /.ifs/templates/infra-data-access-recovery.yml
-  parameters:
-    project: ${{ parameters.project }}
-    component: ${{ parameters.component }}
-    recoveryMode: ${{ parameters.recoveryMode }}
-    recoveryOperationId: ${{ parameters.recoveryOperationId }}
-    recoveryRevision: ${{ parameters.recoveryRevision }}
-    recoveryCommit: ${{ parameters.recoveryCommit }}
+- ${{ if eq(parameters.project, 'shop42') }}:
+  - template: /.ifs/templates/infra-data-access-recovery.yml
+    parameters:
+      project: ${{ parameters.project }}
+      component: ${{ parameters.component }}
+      recoveryMode: ${{ parameters.recoveryMode }}
+      recoveryOperationId: ${{ parameters.recoveryOperationId }}
+      recoveryRevision: ${{ parameters.recoveryRevision }}
+      recoveryCommit: ${{ parameters.recoveryCommit }}

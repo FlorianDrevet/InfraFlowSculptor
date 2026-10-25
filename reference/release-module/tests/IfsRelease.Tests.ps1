@@ -1248,6 +1248,67 @@ Describe "Déploiement de pile et application" {
         }
     }
 
+    It "utilise le Client ID système fourni explicitement sans interroger Entra" {
+        $applicationClientId = '11111111-2222-3333-4444-555555555555'
+        $principalObjectId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+        $previousClientId = $env:IFS_SQL_SYSTEM_ASSIGNED_CLIENT_ID
+        $global:IFS_SQL_SYSTEM_IDENTITY = ConvertTo-Json -InputObject @{
+            principalId = $principalObjectId
+            type = 'SystemAssigned'
+        } -Compress
+        $global:IFS_AZ_HANDLER = {
+            param($Arguments)
+            $global:LASTEXITCODE = 0
+            $command = $Arguments -join ' '
+            if ($command -match '^containerapp show') { return $global:IFS_SQL_SYSTEM_IDENTITY }
+            if ($command -match '^ad sp show') {
+                $global:LASTEXITCODE = 1
+                return 'ERROR: Insufficient privileges to complete the operation.'
+            }
+            return '{}'
+        }
+        $env:IFS_SQL_SYSTEM_ASSIGNED_CLIENT_ID = $applicationClientId
+        $access = [pscustomobject]@{
+            principal = [pscustomobject]@{
+                kind = 'systemAssigned'
+                resourceId = '/subscriptions/test/resourceGroups/rg/providers/Microsoft.App/containerApps/orders-api'
+            }
+            level = 'Read'
+        }
+
+        try {
+            $principal = InModuleScope IfsRelease -Parameters @{ AccessValue = $access } {
+                Get-IfsSqlPrincipal -Access $AccessValue -SubscriptionId 'test'
+            }
+
+            $principal.ClientId | Should -BeExactly $applicationClientId
+            @($global:IFS_AZ_CALLS | Where-Object { ($_ -join ' ') -match '^ad sp show ' }).Count | Should -Be 0
+        }
+        finally {
+            if ($null -eq $previousClientId) {
+                Remove-Item Env:IFS_SQL_SYSTEM_ASSIGNED_CLIENT_ID -ErrorAction SilentlyContinue
+            }
+            else {
+                $env:IFS_SQL_SYSTEM_ASSIGNED_CLIENT_ID = $previousClientId
+            }
+            Remove-Variable IFS_SQL_SYSTEM_IDENTITY -Scope Global -ErrorAction SilentlyContinue
+        }
+    }
+
+    It "transmet les Client IDs SQL système par cible au déploiement Orders" {
+        $ordersRelease = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/orders/infra/pipelines/release.yml') -Raw
+        $infraRelease = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/.ifs/templates/infra-release.yml') -Raw
+        $targetStages = Get-Content -LiteralPath (Join-Path $script:repoRoot 'reference/pilot/bicep-azdo/.ifs/templates/infra-target-stages.yml') -Raw
+
+        $ordersRelease | Should -Match '(?m)^- name: systemAssignedSqlClientIdDev$'
+        $ordersRelease | Should -Match '(?m)^- name: systemAssignedSqlClientIdPrd$'
+        $ordersRelease | Should -Match 'systemAssignedSqlClientId: \$\{\{ parameters\.systemAssignedSqlClientIdDev \}\}'
+        $ordersRelease | Should -Match 'systemAssignedSqlClientId: \$\{\{ parameters\.systemAssignedSqlClientIdPrd \}\}'
+        $infraRelease | Should -Match 'systemAssignedSqlClientId: \$\{\{ coalesce\(target\.systemAssignedSqlClientId, ''''\) \}\}'
+        $targetStages | Should -Match '(?m)^- name: systemAssignedSqlClientId$'
+        $targetStages | Should -Match 'IFS_SQL_SYSTEM_ASSIGNED_CLIENT_ID: \$\{\{ parameters\.systemAssignedSqlClientId \}\}'
+    }
+
     It "retente un délai transitoire de connexion SQL avec un délai de connexion borné" {
         $global:IFS_SQL_CALLS = [System.Collections.Generic.List[object]]::new()
         $global:IFS_AZ_HANDLER = {

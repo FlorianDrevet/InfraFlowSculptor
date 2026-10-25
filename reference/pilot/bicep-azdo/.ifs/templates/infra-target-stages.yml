@@ -11,6 +11,9 @@ parameters:
 - name: secretWrites
   type: object
   default: []
+- name: systemAssignedSqlClientId
+  type: string
+  default: ''
 - name: recoveryMode
   type: string
   default: standard
@@ -108,6 +111,7 @@ stages:
             env:
               ${{ each secretWrite in parameters.secretWrites }}:
                 ${{ secretWrite.name }}: ${{ secretWrite.value }}
+              IFS_SQL_SYSTEM_ASSIGNED_CLIENT_ID: ${{ parameters.systemAssignedSqlClientId }}
               IFS_BUILD_ID: $(Build.BuildId)
           - publish: $(Pipeline.Workspace)/ifs-reports
             artifact: ifs-report-${{ parameters.target.name }}

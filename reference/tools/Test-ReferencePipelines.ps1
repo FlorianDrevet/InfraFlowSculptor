@@ -217,6 +217,9 @@ if ([regex]::Matches((Get-Content -LiteralPath (Join-Path $pipelineRoot '.ifs/te
 $ordersReleasePipelineText = Get-Content -LiteralPath (Join-Path $pipelineRoot 'orders/infra/pipelines/release.yml') -Raw
 $infraReleaseTemplateText = Get-Content -LiteralPath (Join-Path $pipelineRoot '.ifs/templates/infra-release.yml') -Raw
 $infraRecoveryTemplateText = Get-Content -LiteralPath (Join-Path $pipelineRoot '.ifs/templates/infra-data-access-recovery.yml') -Raw
+if ($infraReleaseTemplateText -notmatch '(?m)^[ \t]*-[ \t]*\$\{\{[ \t]*if[ \t]+eq\(parameters\.project,[ \t]*''shop42''[ \t]*\)[ \t]*\}\}:[ \t]*\r?\n[ \t]+-[ \t]+template:[ \t]*/\.ifs/templates/infra-data-access-recovery\.yml[ \t]*$') {
+    throw 'Le modèle de reprise Shop42 doit être inclus uniquement pour le projet shop42.'
+}
 if ($ordersReleasePipelineText -notmatch '(?ms)name:\s*recoveryMode\s+displayName:.*?type:\s*string\s+default:\s*standard\s+values:\s*\r?\n\s*- standard\s*\r?\n\s*- recover-prd-762' -or
     $ordersReleasePipelineText -notmatch "(?m)^\s+recoveryMode:\s*\$\{\{ parameters\.recoveryMode \}\}\s*$") {
     throw 'La reprise Shop42 doit rester désactivée en mode standard et choisir le mode ciblé explicitement.'

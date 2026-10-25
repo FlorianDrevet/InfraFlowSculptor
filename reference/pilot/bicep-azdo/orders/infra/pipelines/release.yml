@@ -21,6 +21,14 @@ parameters:
   displayName: Commit de l'opération PRD #762
   type: string
   default: 893f2a3dda4d7c8461be9c93f208a9e84d317962
+- name: systemAssignedSqlClientIdDev
+  displayName: Client ID SQL de l'identité système DEV (optionnel si la connexion lit Entra)
+  type: string
+  default: ''
+- name: systemAssignedSqlClientIdPrd
+  displayName: Client ID SQL de l'identité système PRD (optionnel si la connexion lit Entra)
+  type: string
+  default: ''
 resources:
   pipelines:
   - pipeline: ci
@@ -44,7 +52,9 @@ extends:
     - name: dev
       protected: false
       dependsOn: []
+      systemAssignedSqlClientId: ${{ parameters.systemAssignedSqlClientIdDev }}
     - name: prd
       protected: true
       dependsOn:
       - Deploy_dev
+      systemAssignedSqlClientId: ${{ parameters.systemAssignedSqlClientIdPrd }}
