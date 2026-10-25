@@ -164,3 +164,25 @@ L’autorisation du D3 unique est consommée. Voir [`P-08-blocage-nettoyage-2026
 | Contrôle | Date UTC | Coût affiché | Seuil confirmé | Ressources Luna supprimées | Résultat |
 |---|---|---:|---:|---|---|
 | Aucun contrôle exécuté | — | — | — | — | Aucune ressource créée |
+
+## Nettoyage final des piles Shop42 — 2026-10-25
+
+Les suppressions de `platform-shared`, `core-dev` et `core-prd` sont terminées, chacune avec le code 0. Le `deleteAll` de
+`core-prd` a commencé à 23:57:21Z et s’est terminé à 00:06:29Z ; deux opérations de suppression d’enfants ont signalé HTTP
+404 après la suppression du Key Vault parent, tandis que la pile rapportait `failedResources=[]` et `error=null`. Le C5
+confirme que les IDs cibles sont absents et qu’aucun autre ID n’a été ajouté ou supprimé.
+
+Le C5 du 2026-10-25T00:11:18Z est identique au C5 post-`core-prd` : 143 ressources, 19 groupes, 0 pile, 38 rôles et
+7 budgets. Les données détaillées restent hors dépôt dans
+`%LOCALAPPDATA%/InfraFlowSculptor/P08/final-c5-refresh-20261025T001110Z/c5-final.json`. Le rôle D1b
+`Storage Blob Data Reader` du conteneur `ifs-operations` demeure, car son ID n’appartenait pas aux cibles ; `Key Vault
+Reader` sur `kv-shop42-main-dev` a disparu avec `core-dev`. Aucun budget n’a été créé ni modifié.
+
+C3 après suppression, capturé à 00:06:45Z, ne contient aucun build actif/en file, release active ou PR active ; il
+recense 17 pipelines, 9 activés et 8 désactivés. Cost Management à 00:09:25Z donne 133,281523 EUR HT ActualCost MTD
+(données jusqu’au 24/10), 38,118441 EUR de prévision du 25 au 31/10 et 171,399964 EUR projetés. En conservant la
+réserve précédente de 17,527800 EUR, le scénario conservateur est 188,927764 EUR, soit 11,072236 EUR sous l’alerte
+non plafonnante de 200 EUR.
+
+La procédure T § 7 exige encore le contrôle *Cost Analysis* du lendemain pour vérifier qu’aucune ligne ne court. Il est
+prévu le 2026-10-26 et n’a pas encore été exécuté ; P-08 reste `EN_COURS` jusqu’à cette vérification.
