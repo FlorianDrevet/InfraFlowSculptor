@@ -411,6 +411,42 @@ function Find-IfsIdentity {
     return $identityMatches[0]
 }
 
+function ConvertTo-IfsCanonicalCheckValue {
+    param([AllowNull()] [object] $Value)
+
+    if ($null -eq $Value) { return $null }
+    if ($Value -is [Collections.IDictionary]) {
+        $canonical = [ordered]@{}
+        foreach ($key in @($Value.Keys | Sort-Object -CaseSensitive)) {
+            $canonical[[string]$key] = ConvertTo-IfsCanonicalCheckValue -Value $Value[$key]
+        }
+        return $canonical
+    }
+    if ($Value -is [Collections.IList] -and $Value -isnot [string]) {
+        $items = [Collections.Generic.List[object]]::new()
+        foreach ($item in $Value) { $items.Add((ConvertTo-IfsCanonicalCheckValue -Value $item)) }
+        return ,$items.ToArray()
+    }
+    if ($Value -is [pscustomobject]) {
+        $canonical = [ordered]@{}
+        foreach ($property in @($Value.PSObject.Properties | Sort-Object -Property Name -CaseSensitive)) {
+            $canonical[$property.Name] = ConvertTo-IfsCanonicalCheckValue -Value $property.Value
+        }
+        return $canonical
+    }
+    return $Value
+}
+
+function Test-IfsCheckSettingsMatch {
+    param([AllowNull()] [object] $Current, [Parameter(Mandatory)] [object] $Expected)
+
+    $currentCanonical = ConvertTo-IfsCanonicalCheckValue -Value $Current
+    $expectedCanonical = ConvertTo-IfsCanonicalCheckValue -Value $Expected
+    $jsonCurrent = ConvertTo-Json -InputObject $currentCanonical -Depth 50 -Compress
+    $jsonExpected = ConvertTo-Json -InputObject $expectedCanonical -Depth 50 -Compress
+    return [string]::Equals($jsonCurrent, $jsonExpected, [StringComparison]::Ordinal)
+}
+
 function Set-IfsCheck {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
@@ -435,9 +471,7 @@ function Set-IfsCheck {
         $currentInstructions = [string](Get-IfsAdoProperty -Object $currentSettings -Name 'instructions')
         $currentDisplayName = [string](Get-IfsAdoProperty -Object $currentSettings -Name 'displayName')
         $hasMarker = $currentInstructions.Contains($script:OwnerMarker) -or $currentDisplayName.Contains($script:OwnerMarker)
-        $jsonCurrent = ConvertTo-Json -InputObject $currentSettings -Depth 50 -Compress
-        $jsonExpected = ConvertTo-Json -InputObject $Settings -Depth 50 -Compress
-        if ($jsonCurrent -eq $jsonExpected) {
+        if (Test-IfsCheckSettingsMatch -Current $currentSettings -Expected $Settings) {
             Add-IfsReportEvent -Target $ResourceName -Name "controle $($Type.name)" -Status 'deja conforme' -Details 'Les reglages correspondent au modele.'
             return $current
         }

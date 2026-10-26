@@ -172,9 +172,9 @@ Describe 'Finalisation du kit Azure DevOps' {
                 if ($global:IFS_ADO_FINALIZE_MODE -eq 'ExistingBranchCheck' -and $path -match 'resourceId=301') {
                     if ($path.Contains('$expand=settings')) {
                         $settings = [pscustomobject]@{
+                            inputs = [pscustomobject]@{ allowUnknownStatusBranch = 'false'; ensureProtectionOfBranch = 'true'; allowedBranches = 'refs/heads/main' }
+                            definitionRef = [pscustomobject]@{ version = '0.0.1'; name = 'evaluatebranchProtection'; id = '86b05a0c-73e6-4f7d-b3cf-e38f3b39a75b' }
                             displayName = 'managed-by: infraflowsculptor; ifs-kit-revision: 1'
-                            definitionRef = [pscustomobject]@{ id = '86b05a0c-73e6-4f7d-b3cf-e38f3b39a75b'; name = 'evaluatebranchProtection'; version = '0.0.1' }
-                            inputs = [pscustomobject]@{ allowedBranches = 'refs/heads/main'; ensureProtectionOfBranch = 'true'; allowUnknownStatusBranch = 'false' }
                         }
                         return [pscustomobject]@{ value = @([pscustomobject]@{ id = 510; resource = [pscustomobject]@{ type = 'endpoint'; id = '301'; name = 'ifs-shop-dev' }; type = [pscustomobject]@{ id = 'fe1de3ee-a436-41b4-bb20-f6eb4cb879a7'; name = 'Task Check' }; settings = $settings }) }
                     }
@@ -321,7 +321,7 @@ Describe 'Finalisation du kit Azure DevOps' {
         $global:IFS_ADO_PATCHES.Count | Should -BeGreaterThan 0
     }
 
-    It 'ne met pas a jour un controle IFS deja conforme' {
+    It 'ne met pas a jour un controle IFS deja conforme quand ADO reordonne les proprietes' {
         $global:IFS_ADO_FINALIZE_MODE = 'ExistingBranchCheck'
         $global:IFS_ADO_THROW_CHECK_POST_AT = 1
 
