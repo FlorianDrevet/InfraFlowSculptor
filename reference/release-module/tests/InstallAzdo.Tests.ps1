@@ -112,13 +112,18 @@ Describe 'Finalisation du kit Azure DevOps' {
             if ($path -match 'build/definitions') { return [pscustomobject]@{ value = $global:IFS_ADO_DEFINITIONS } }
             if ($Method -eq 'GET' -and $path -match 'policy/configurations') {
                 $global:IFS_ADO_POLICY_GETS.Add($path)
-                if ($global:IFS_ADO_FINALIZE_MODE -eq 'ExistingBuildValidation') {
+                if ($global:IFS_ADO_FINALIZE_MODE -in @('ExistingBuildValidation', 'ConformingBuildValidation')) {
+                    $filenamePatterns = if ($global:IFS_ADO_FINALIZE_MODE -eq 'ConformingBuildValidation') {
+                        @('/core/infra/**', '/.ifs/templates/**', '/.ifs/pins.json')
+                    }
+                    else { @('/core/infra/**') }
                     $settings = [pscustomobject]@{
                         buildDefinitionId = 203
                         displayName = 'IFS: shop · core · infra · PR'
-                        filenamePatterns = @('/core/infra/**')
+                        filenamePatterns = $filenamePatterns
                         manualQueueOnly = $false
                         queueOnSourceUpdateOnly = $true
+                        validDuration = 0
                         scope = @([pscustomobject]@{ repositoryId = 'repo-id'; refName = 'refs/heads/main'; matchKind = 'Exact' })
                     }
                     $policy = [pscustomobject]@{
@@ -349,6 +354,23 @@ Describe 'Finalisation du kit Azure DevOps' {
         $updatedPolicy.settings.displayName | Should -Be 'IFS: shop · core · infra · PR'
         $updatedPolicy.settings.filenamePatterns | Should -Contain '/core/infra/**'
         $updatedPolicy.settings.message | Should -BeNullOrEmpty
+    }
+
+    It 'ignore une politique IFS de validation de branche deja conforme' {
+        $global:IFS_ADO_FINALIZE_MODE = 'ConformingBuildValidation'
+        $global:IFS_ADO_THROW_CHECK_POST_AT = -1
+        $global:IFS_ADO_DEFINITIONS += [pscustomobject]@{
+            id = 203
+            name = 'shop · core · infra · PR'
+            path = '\shop\core'
+            description = 'managed-by: infraflowsculptor; ifs-kit-revision: 1'
+        }
+        [IO.File]::WriteAllText((Join-Path $script:tempRoot 'core/infra/pipelines/pr.yml'), "extends:`n  template: .ifs/templates/infra-pr.yml`n", [Text.UTF8Encoding]::new($false))
+
+        { & $script:installScript -Phase Finalize -RepositoryPath $script:tempRoot } | Should -Not -Throw
+
+        $global:IFS_ADO_POLICY_GETS.Count | Should -Be 1
+        $global:IFS_ADO_POLICY_UPDATES.Count | Should -Be 0
     }
 
     It 'utilise la file du run courant si le projet ne renvoie aucune file' {

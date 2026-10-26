@@ -27,7 +27,7 @@
     },
     {
       "path": ".ifs/install/scripts/Install-Azdo.ps1",
-      "sha256": "07d2a198c8fe2b66c3be43032c06745e1f6f74afbcc4856a431e4cac58005a2e"
+      "sha256": "89e927978b88e2303a9b4311bf94e4f1e3b0df285a9aea69473f29256f915ccf"
     },
     {
       "path": ".ifs/install/tests/IfsInstall.Tests.ps1",

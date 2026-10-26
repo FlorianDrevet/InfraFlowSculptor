@@ -500,12 +500,59 @@ function Set-IfsBranchPolicy {
         @($_.settings.scope | Where-Object { $_.repositoryId -eq $script:RepositoryId -and $_.refName -eq 'refs/heads/main' }).Count -gt 0
     })
     $displayName = "IFS: $($Definition.Name)"
+    $expectedSettings = [ordered]@{
+        buildDefinitionId = [int]$Definition.Id
+        displayName = $displayName
+        manualQueueOnly = $false
+        queueOnSourceUpdateOnly = $true
+        validDuration = 0
+        filenamePatterns = $FilenamePatterns
+        scope = @([ordered]@{ repositoryId = $script:RepositoryId; refName = 'refs/heads/main'; matchKind = 'Exact' })
+    }
     if ($policies.Count -gt 0) {
         $current = $policies[0]
         $currentSettings = Get-IfsAdoProperty -Object $current -Name 'settings'
         $currentDisplayName = [string](Get-IfsAdoProperty -Object $currentSettings -Name 'displayName')
         if ($currentDisplayName -ne $displayName) { throw "La politique de validation pour '$($Definition.Name)' existe sans marque IFS." }
-        $currentSettings.filenamePatterns = $FilenamePatterns
+        $currentPatterns = @(Get-IfsAdoProperty -Object $currentSettings -Name 'filenamePatterns')
+        $expectedPatterns = @($FilenamePatterns)
+        $patternsMatch = $currentPatterns.Count -eq $expectedPatterns.Count -and
+            [string]::Equals(
+                [string]::Join("`n", [string[]]@($currentPatterns | Sort-Object -CaseSensitive)),
+                [string]::Join("`n", [string[]]@($expectedPatterns | Sort-Object -CaseSensitive)),
+                [StringComparison]::Ordinal
+            )
+        $currentScopes = @(Get-IfsAdoProperty -Object $currentSettings -Name 'scope')
+        $scopeMatches = $currentScopes.Count -eq 1
+        if ($scopeMatches) {
+            $scope = $currentScopes[0]
+            $scopeMatches =
+                [string](Get-IfsAdoProperty -Object $scope -Name 'repositoryId') -ceq $script:RepositoryId -and
+                [string](Get-IfsAdoProperty -Object $scope -Name 'refName') -ceq 'refs/heads/main' -and
+                [string](Get-IfsAdoProperty -Object $scope -Name 'matchKind') -ceq 'Exact'
+        }
+        $manualQueueOnly = Get-IfsAdoProperty -Object $currentSettings -Name 'manualQueueOnly'
+        $queueOnSourceUpdateOnly = Get-IfsAdoProperty -Object $currentSettings -Name 'queueOnSourceUpdateOnly'
+        $validDuration = Get-IfsAdoProperty -Object $currentSettings -Name 'validDuration'
+        $policySettingsMatch =
+            [int](Get-IfsAdoProperty -Object $currentSettings -Name 'buildDefinitionId') -eq [int]$expectedSettings.buildDefinitionId -and
+            $currentDisplayName -ceq $expectedSettings.displayName -and
+            $null -ne $manualQueueOnly -and -not [bool]$manualQueueOnly -and
+            $null -ne $queueOnSourceUpdateOnly -and [bool]$queueOnSourceUpdateOnly -and
+            $null -ne $validDuration -and [int]$validDuration -eq [int]$expectedSettings.validDuration -and
+            $patternsMatch -and $scopeMatches
+        if ($policySettingsMatch) {
+            Add-IfsReportEvent -Target $Definition.Component -Name 'Build Validation main' -Status 'deja conforme' -Details $Definition.Name
+            return
+        }
+        foreach ($settingName in $expectedSettings.Keys) {
+            if ($currentSettings -is [Collections.IDictionary]) {
+                $currentSettings[$settingName] = $expectedSettings[$settingName]
+            }
+            else {
+                $currentSettings.$settingName = $expectedSettings[$settingName]
+            }
+        }
         $body = [ordered]@{ id = [int]$current.id; isEnabled = $true; isBlocking = $true; type = $current.type; settings = $currentSettings; revision = [int]$current.revision }
         if (-not $PSCmdlet.ShouldProcess($Definition.Name, 'mettre a jour la politique Build Validation')) { return }
         $null = Invoke-IfsAdoApi -Method PUT -Path "policy/configurations/$($current.id)?api-version=$script:ApiVersion" -Body $body
@@ -516,15 +563,7 @@ function Set-IfsBranchPolicy {
         isEnabled = $true
         isBlocking = $true
         type = [ordered]@{ id = '0609b952-1397-4640-95ec-e00a01b2c241' }
-        settings = [ordered]@{
-            buildDefinitionId = [int]$Definition.Id
-            displayName = $displayName
-            manualQueueOnly = $false
-            queueOnSourceUpdateOnly = $true
-            validDuration = 0
-            filenamePatterns = $FilenamePatterns
-            scope = @([ordered]@{ repositoryId = $script:RepositoryId; refName = 'refs/heads/main'; matchKind = 'Exact' })
-        }
+        settings = $expectedSettings
     }
     if (-not $PSCmdlet.ShouldProcess($Definition.Name, 'creer la politique Build Validation')) { return }
     $null = Invoke-IfsAdoApi -Method POST -Path "policy/configurations?api-version=$script:ApiVersion" -Body $body
