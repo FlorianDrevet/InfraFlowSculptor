@@ -435,13 +435,13 @@ function Set-IfsCheck {
         $currentInstructions = [string](Get-IfsAdoProperty -Object $currentSettings -Name 'instructions')
         $currentDisplayName = [string](Get-IfsAdoProperty -Object $currentSettings -Name 'displayName')
         $hasMarker = $currentInstructions.Contains($script:OwnerMarker) -or $currentDisplayName.Contains($script:OwnerMarker)
+        $jsonCurrent = ConvertTo-Json -InputObject $currentSettings -Depth 50 -Compress
+        $jsonExpected = ConvertTo-Json -InputObject $Settings -Depth 50 -Compress
+        if ($jsonCurrent -eq $jsonExpected) {
+            Add-IfsReportEvent -Target $ResourceName -Name "controle $($Type.name)" -Status 'deja conforme' -Details 'Les reglages correspondent au modele.'
+            return $current
+        }
         if (-not $hasMarker) {
-            $jsonCurrent = ConvertTo-Json -InputObject $currentSettings -Depth 50 -Compress
-            $jsonExpected = ConvertTo-Json -InputObject $Settings -Depth 50 -Compress
-            if ($jsonCurrent -eq $jsonExpected) {
-                Add-IfsReportEvent -Target $ResourceName -Name "controle $($Type.name)" -Status 'deja conforme' -Details 'Les reglages correspondent au modele.'
-                return $current
-            }
             throw "Le controle '$($Type.name)' sur '$ResourceName' existe sans marque IFS et differe du modele."
         }
         $body = [ordered]@{ id = [int]$current.id; resource = $current.resource; type = [ordered]@{ id = [string]$Type.id }; settings = $Settings; timeout = $Timeout; isDisabled = $false }

@@ -51,6 +51,7 @@ Describe 'Finalisation du kit Azure DevOps' {
         $global:IFS_ADO_PATCHES = [Collections.Generic.List[object]]::new()
         $global:IFS_ADO_FINALIZATION_EVENTS = [Collections.Generic.List[string]]::new()
         $global:IFS_ADO_CHECK_POSTS = [Collections.Generic.List[object]]::new()
+        $global:IFS_ADO_CHECK_PATCHES = [Collections.Generic.List[object]]::new()
         $global:IFS_ADO_CHECK_GETS = [Collections.Generic.List[string]]::new()
         $global:IFS_ADO_POLICY_GETS = [Collections.Generic.List[string]]::new()
         $global:IFS_ADO_POLICY_UPDATES = [Collections.Generic.List[object]]::new()
@@ -89,7 +90,10 @@ Describe 'Finalisation du kit Azure DevOps' {
                 if ($global:IFS_ADO_CHECK_POSTS.Count -eq $global:IFS_ADO_THROW_CHECK_POST_AT) { throw 'simulated check failure' }
                 return [pscustomobject]@{ id = 500 + $global:IFS_ADO_CHECK_POSTS.Count }
             }
-            if ($Method -eq 'PATCH' -and $path -match 'pipelines/checks/configurations/') { return [pscustomobject]@{ id = 510 } }
+            if ($Method -eq 'PATCH' -and $path -match 'pipelines/checks/configurations/') {
+                $global:IFS_ADO_CHECK_PATCHES.Add([pscustomobject]@{ Uri = [string]$Uri; Body = $Body })
+                return [pscustomobject]@{ id = 510 }
+            }
             if ($path -match 'git/repositories/') { return [pscustomobject]@{ defaultBranch = 'refs/heads/main' } }
             if ($path -match 'distributedtask/queues') {
                 if ($global:IFS_ADO_FINALIZE_MODE -in @('EmptyQueues', 'MissingBuildQueue')) { return [pscustomobject]@{ value = @() } }
@@ -185,7 +189,7 @@ Describe 'Finalisation du kit Azure DevOps' {
     AfterEach {
         foreach ($name in $script:environmentNames) { [Environment]::SetEnvironmentVariable($name, $script:environmentBackup[$name], 'Process') }
         if (Test-Path -LiteralPath $script:tempRoot) { Remove-Item -LiteralPath $script:tempRoot -Recurse -Force }
-        Remove-Variable -Name IFS_ADO_FINALIZE_MODE, IFS_ADO_CURRENT_BUILD_READS, IFS_ADO_TIMELINE_READS, IFS_ADO_PATCHES, IFS_ADO_FINALIZATION_EVENTS, IFS_ADO_CHECK_POSTS, IFS_ADO_CHECK_GETS, IFS_ADO_POLICY_GETS, IFS_ADO_POLICY_UPDATES, IFS_ADO_TYPE_API_CALLS, IFS_ADO_THROW_CHECK_POST_AT, IFS_ADO_DEFINITIONS, IFS_ADO_ENDPOINTS -Scope Global -ErrorAction SilentlyContinue
+        Remove-Variable -Name IFS_ADO_FINALIZE_MODE, IFS_ADO_CURRENT_BUILD_READS, IFS_ADO_TIMELINE_READS, IFS_ADO_PATCHES, IFS_ADO_FINALIZATION_EVENTS, IFS_ADO_CHECK_POSTS, IFS_ADO_CHECK_PATCHES, IFS_ADO_CHECK_GETS, IFS_ADO_POLICY_GETS, IFS_ADO_POLICY_UPDATES, IFS_ADO_TYPE_API_CALLS, IFS_ADO_THROW_CHECK_POST_AT, IFS_ADO_DEFINITIONS, IFS_ADO_ENDPOINTS -Scope Global -ErrorAction SilentlyContinue
     }
 
     It "retire l'autorisation temporaire si le groupe approbateur est absent" {
@@ -315,6 +319,15 @@ Describe 'Finalisation du kit Azure DevOps' {
 
         @($global:IFS_ADO_CHECK_GETS | Where-Object { $_.Contains('$expand=settings') }).Count | Should -BeGreaterThan 0
         $global:IFS_ADO_PATCHES.Count | Should -BeGreaterThan 0
+    }
+
+    It 'ne met pas a jour un controle IFS deja conforme' {
+        $global:IFS_ADO_FINALIZE_MODE = 'ExistingBranchCheck'
+        $global:IFS_ADO_THROW_CHECK_POST_AT = 1
+
+        { & $script:installScript -Phase Finalize -RepositoryPath $script:tempRoot } | Should -Throw '*simulated check failure*'
+
+        $global:IFS_ADO_CHECK_PATCHES.Count | Should -Be 0
     }
 
     It 'met a jour une politique IFS existante sans champ message dans ses reglages' {
