@@ -621,7 +621,6 @@ try {
 $endpointsResponse = Invoke-IfsAdoApi -Path 'serviceendpoint/endpoints?api-version=7.1-preview.4'
 $finalizationEndpointList = @(Get-IfsAdoValue $endpointsResponse)
 $finalizationManagedPipelineIds = @(Get-IfsManagedPipelineId -CurrentDefinitions $definitions -ProjectCode $model.ProjectCode)
-Set-IfsFinalEndpointPermission -ProjectCode $model.ProjectCode -Targets $model.Targets -Definitions $definitions -Endpoints $finalizationEndpointList -ManagedPipelineIds $finalizationManagedPipelineIds
 
 $approver = Find-IfsIdentity -DisplayName 'Shop Release Approvers'
 $approverId = [string](Get-IfsAdoProperty -Object $approver -Name 'id')

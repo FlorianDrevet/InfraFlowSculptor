@@ -27,7 +27,7 @@
     },
     {
       "path": ".ifs/install/scripts/Install-Azdo.ps1",
-      "sha256": "f8588da08122e7cc1940a1014f41f021f8c2f5f32c15507c803f8da34f59f661"
+      "sha256": "aa7919ad14feb49b03a9ab2bf39592fc104d97425f59960ff7e8383c6e1e4f30"
     },
     {
       "path": ".ifs/install/tests/IfsInstall.Tests.ps1",
@@ -95,7 +95,7 @@
     },
     {
       "path": ".ifs/templates/schemas/release-data.schema.json",
-      "sha256": "26e0c7ed364c72263b010929e5c94f77066822c65c73be78a6e09306ea45616a"
+      "sha256": "ea7e9b2ddeccac82d240a9843f0aabb2a1cacabe6322fb585668c9ab7886b278"
     },
     {
       "path": ".ifs/templates/scripts/Build-IfsImage.ps1",
@@ -107,7 +107,7 @@
     },
     {
       "path": ".ifs/templates/scripts/IfsRelease.psm1",
-      "sha256": "9c724dcc36730e0b376ca1e46a9b3a240b9ddc08df6f2cc56bd34b420ae136a1"
+      "sha256": "fcf27f4ec9e3ab71ebcfb47f8c4277fe8e35567008396c8aac1426871d30685a"
     },
     {
       "path": ".ifs/templates/scripts/Install-IfsTrivy.ps1",

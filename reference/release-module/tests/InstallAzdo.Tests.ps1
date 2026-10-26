@@ -49,6 +49,7 @@ Describe 'Finalisation du kit Azure DevOps' {
         $global:IFS_ADO_CURRENT_BUILD_READS = 0
         $global:IFS_ADO_TIMELINE_READS = 0
         $global:IFS_ADO_PATCHES = [Collections.Generic.List[object]]::new()
+        $global:IFS_ADO_FINALIZATION_EVENTS = [Collections.Generic.List[string]]::new()
         $global:IFS_ADO_CHECK_POSTS = [Collections.Generic.List[object]]::new()
         $global:IFS_ADO_CHECK_GETS = [Collections.Generic.List[string]]::new()
         $global:IFS_ADO_POLICY_GETS = [Collections.Generic.List[string]]::new()
@@ -78,10 +79,12 @@ Describe 'Finalisation du kit Azure DevOps' {
             param($Method, $Uri, $Headers, $ContentType, $Body)
             $path = ([uri]$Uri).AbsolutePath + ([uri]$Uri).Query
             if ($Method -eq 'PATCH' -and $path -match 'pipelines/pipelinePermissions/(endpoint|environment)/') {
+                $global:IFS_ADO_FINALIZATION_EVENTS.Add('endpoint-permission-patch')
                 $global:IFS_ADO_PATCHES.Add([pscustomobject]@{ Uri = [string]$Uri; Body = $Body })
                 return [pscustomobject]@{}
             }
             if ($Method -eq 'POST' -and $path -match 'pipelines/checks/configurations') {
+                $global:IFS_ADO_FINALIZATION_EVENTS.Add('check-post')
                 $global:IFS_ADO_CHECK_POSTS.Add([pscustomobject]@{ Uri = [string]$Uri; Body = $Body })
                 if ($global:IFS_ADO_CHECK_POSTS.Count -eq $global:IFS_ADO_THROW_CHECK_POST_AT) { throw 'simulated check failure' }
                 return [pscustomobject]@{ id = 500 + $global:IFS_ADO_CHECK_POSTS.Count }
@@ -182,7 +185,7 @@ Describe 'Finalisation du kit Azure DevOps' {
     AfterEach {
         foreach ($name in $script:environmentNames) { [Environment]::SetEnvironmentVariable($name, $script:environmentBackup[$name], 'Process') }
         if (Test-Path -LiteralPath $script:tempRoot) { Remove-Item -LiteralPath $script:tempRoot -Recurse -Force }
-        Remove-Variable -Name IFS_ADO_FINALIZE_MODE, IFS_ADO_CURRENT_BUILD_READS, IFS_ADO_TIMELINE_READS, IFS_ADO_PATCHES, IFS_ADO_CHECK_POSTS, IFS_ADO_CHECK_GETS, IFS_ADO_POLICY_GETS, IFS_ADO_POLICY_UPDATES, IFS_ADO_TYPE_API_CALLS, IFS_ADO_THROW_CHECK_POST_AT, IFS_ADO_DEFINITIONS, IFS_ADO_ENDPOINTS -Scope Global -ErrorAction SilentlyContinue
+        Remove-Variable -Name IFS_ADO_FINALIZE_MODE, IFS_ADO_CURRENT_BUILD_READS, IFS_ADO_TIMELINE_READS, IFS_ADO_PATCHES, IFS_ADO_FINALIZATION_EVENTS, IFS_ADO_CHECK_POSTS, IFS_ADO_CHECK_GETS, IFS_ADO_POLICY_GETS, IFS_ADO_POLICY_UPDATES, IFS_ADO_TYPE_API_CALLS, IFS_ADO_THROW_CHECK_POST_AT, IFS_ADO_DEFINITIONS, IFS_ADO_ENDPOINTS -Scope Global -ErrorAction SilentlyContinue
     }
 
     It "retire l'autorisation temporaire si le groupe approbateur est absent" {
@@ -362,5 +365,14 @@ Describe 'Finalisation du kit Azure DevOps' {
             $installer.Count | Should -Be 1
             $installer[0].authorized | Should -BeFalse
         }
+    }
+
+    It "garde les connexions autorisees jusqu'apres la configuration des controles" {
+        $global:IFS_ADO_FINALIZE_MODE = 'ProjectScopedApprover'
+
+        { & $script:installScript -Phase Finalize -RepositoryPath $script:tempRoot } | Should -Throw '*simulated check failure*'
+
+        $global:IFS_ADO_FINALIZATION_EVENTS[0] | Should -Be 'check-post'
+        $global:IFS_ADO_FINALIZATION_EVENTS[1] | Should -Be 'endpoint-permission-patch'
     }
 }
