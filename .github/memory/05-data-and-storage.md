@@ -26,6 +26,7 @@
   -s src/backend/InfraFlowSculptor.Api -o Persistence/Migrations`; la fabrique de conception emploie une chaîne
   locale factice.
 - J0-03 ajoute `organization_invitations` (adresse, rôles, expiration, état et `token_hash` unique) par la migration `J0_03_Invitations`. L'événement `InvitationCreated` passe par `outbox_messages` dans la transaction de la commande puis enfile un job `notifications`; le contenu d'outbox est vidé après envoi ou échec définitif.
+- J0-04 ajoute `audit_events`, `audit_personal_data` et `audit_purge_requests` (migration `20261027122817_J0_04_AuditEvents`). Un déclencheur refuse `UPDATE`/`DELETE` sur `audit_events`; `purge_audit_events` passe par la table de requêtes et borne le cutoff à 13 mois. Les noms/adresses personnels sont séparés, l'acteur reste référencé par identifiant opaque. La recette CI #40522297231 valide l'écriture/lecture ; le déclencheur local a été vérifié par psql après que le profil pgweb sans connexion a empêché l'exécution dans son UI.
 
 ## Pilote Azure SQL — P-02 (2026-10-06)
 

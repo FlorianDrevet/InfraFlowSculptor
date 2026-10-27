@@ -26,6 +26,7 @@
 - **2026-10-27** : J0-03 est validée localement : invitations, vérification d’adresse, outbox e-mail MailPit/ACS et acceptation.
   Voir `.github/memory/03-domain-model.md`, `04-frontend.md`, `05-data-and-storage.md`, `09-auth-and-build.md`,
   `10-api-endpoints.md` et `13-integrations.md`.
+- **2026-10-27** : J0-04 est validée par la CI : audit append-only, interface et accès vérifiés ; 18/18 E2E. Les captures et l’écart pgweb/psql sont consignés dans `docs/plan/recettes/suivi.md`.
 
 ## Fichiers thématiques
 
