@@ -33,6 +33,24 @@ export class Shell implements OnInit {
     void this.features.ensureLoaded().catch(() => undefined);
   });
 
+  private readonly registerOrganizationMembers = effect(onCleanup => {
+    const organizationId = this.activeOrganization.organizationId();
+    if (!organizationId) {
+      return;
+    }
+
+    onCleanup(
+      this.navigation.register({
+        id: 'organization-members',
+        labelKey: 'organization.membersLink',
+        path: `/organizations/${organizationId}/members`,
+        scope: 'organization',
+        featureKey: FEATURES.organizations,
+        iconName: 'users',
+      }),
+    );
+  });
+
   private readonly registerOrganizationSettings = effect(onCleanup => {
     const organizationId = this.activeOrganization.organizationId();
     if (!organizationId) {

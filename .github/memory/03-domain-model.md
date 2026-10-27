@@ -1,6 +1,6 @@
 # 03 — Modèle de domaine
 
-> Fondations ajoutées en S-03 ; J0-01 est en cours.
+> Fondations ajoutées en S-03 ; J0-01 et J0-02 sont implémentées.
 > Cible : `docs/specs/05-modele-de-donnees.md`, `docs/technique/02-backend.md` § 2-3.
 
 ## Faits vérifiés
@@ -14,3 +14,6 @@
 - `AuthorizationBehavior` applique `[RequiresOrganizationRole(OrganizationRole.Administrator)]` avant validation et unité de travail. `FeatureCatalog` recense les clés et états des lots 1 à 4 ; `IFeatureAvailability` prend en charge les activations par organisation.
 - La migration `J0_01_Organizations` ajoute `user_profiles`, `organizations`, `organization_members` et `organization_feature_access`. `seed demo` prépare Contoso/Alice-Bob-Chloé, Fabrikam/David et les profils sans organisation Emma/Nina.
 - Au 2026-10-27, les tests Domain (12), Application (7), API (25), Architecture (8) et Acceptance (3) passent ; le build de la solution passe sans avertissement ni erreur. Les fixtures de jobs créent maintenant leurs organisations et fournissent `X-Ifs-Organization`, comme l’impose le middleware de contexte.
+- J0-02 ajoute la gestion des rôles, le retrait et le départ des membres ; la dernière administratrice ne peut pas être retirée, partir ou perdre ce rôle (`RG-ORG-05`). `IProjectOwnershipCheck` reste un adaptateur sans projet jusqu'à J0-05.
+- Les restrictions d'organisation stockent des domaines e-mail normalisés et des identifiants de tenants autorisés. Les membres hors de ces règles sont signalés dans la liste, sans être supprimés automatiquement. La migration `J0_02_OrganizationAccessRestrictions` ajoute ces propriétés.
+- Les tests finaux J0-02 passent : Domain 17, Architecture 8, Application 7, Infrastructure 35, API 34 et Acceptance 3 ; le build .NET est sans avertissement ni erreur.

@@ -3,6 +3,8 @@
 
 import { OrganizationRole } from '../models/organization-role';
 export interface OrganizationSummaryResponse {
+  allowedEmailDomains: Array<string>;
+  allowedTenantIds: Array<string>;
   id: string;
   name: string;
   roles: Array<OrganizationRole>;

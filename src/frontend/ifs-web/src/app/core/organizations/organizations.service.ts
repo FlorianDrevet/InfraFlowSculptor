@@ -2,12 +2,17 @@ import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom, Observable, tap } from 'rxjs';
 import {
   Api,
+  changeOrganizationMemberRoles,
   createOrganization,
   getOrganization,
+  leaveOrganization,
+  listOrganizationMembers,
   listMyOrganizations,
+  removeOrganizationMember,
   renameOrganization,
+  updateOrganizationAccessRestrictions,
 } from '../api/generated';
-import type { OrganizationSummaryResponse } from '../api/generated';
+import type { OrganizationMemberResponse, OrganizationRole, OrganizationSummaryResponse } from '../api/generated';
 import { ActiveOrganizationStore } from '../http/active-organization.store';
 
 @Injectable({ providedIn: 'root' })
@@ -70,6 +75,50 @@ export class OrganizationsService {
       tap((updated) =>
         this.organizationState.update(organizations =>
           organizations.map(organization => organization.id === updated.id ? updated : organization),
+        ),
+      ),
+    );
+  }
+
+  listMembers(id: string): Observable<OrganizationMemberResponse[]> {
+    return this.api.invoke(listOrganizationMembers, { id });
+  }
+
+  changeMemberRoles(
+    id: string,
+    memberId: string,
+    roles: OrganizationRole[],
+  ): Observable<OrganizationMemberResponse> {
+    return this.api.invoke(changeOrganizationMemberRoles, { id, memberId, body: { roles } });
+  }
+
+  removeMember(id: string, memberId: string): Observable<void> {
+    return this.api.invoke(removeOrganizationMember, { id, memberId });
+  }
+
+  leave(id: string): Observable<void> {
+    return this.api.invoke(leaveOrganization, { id }).pipe(
+      tap(() => {
+        this.organizationState.update(organizations => organizations.filter(item => item.id !== id));
+        if (this.activeOrganization.organizationId() === id) {
+          this.activeOrganization.setOrganizationId(null);
+        }
+      }),
+    );
+  }
+
+  updateAccessRestrictions(
+    id: string,
+    allowedEmailDomains: string[],
+    allowedTenantIds: string[],
+  ): Observable<OrganizationSummaryResponse> {
+    return this.api.invoke(updateOrganizationAccessRestrictions, {
+      id,
+      body: { allowedEmailDomains, allowedTenantIds },
+    }).pipe(
+      tap(updated =>
+        this.organizationState.update(organizations =>
+          organizations.map(organization => organization.id === id ? updated : organization),
         ),
       ),
     );

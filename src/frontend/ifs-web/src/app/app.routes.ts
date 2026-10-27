@@ -45,6 +45,15 @@ export const routes: Routes = [
               ),
             title: 'Organisation — paramètres',
           },
+          {
+            path: 'members',
+            canActivate: [featureGuard(FEATURES.organizations)],
+            loadComponent: () =>
+              import('./features/organizations/organization-members').then(
+                (m) => m.OrganizationMembers,
+              ),
+            title: 'Membres de l’organisation',
+          },
         ],
       },
       {

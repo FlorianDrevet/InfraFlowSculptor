@@ -53,6 +53,8 @@ public sealed class CreateOrganizationCommandHandler(
             created.Value.Id.Value,
             created.Value.Name,
             adminMember.Roles,
-            created.Value.Version);
+            created.Value.Version,
+            created.Value.AllowedEmailDomains,
+            created.Value.AllowedTenantIds);
     }
 }

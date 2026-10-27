@@ -7,16 +7,19 @@ export { RequestBuilder } from './request-builder';
 export type { StrictHttpResponse } from './strict-http-response';
 export { Api } from './api';
 
+export type { ChangeOrganizationMemberRolesRequest } from './models/change-organization-member-roles-request';
 export type { CreateOrganizationRequest } from './models/create-organization-request';
 export type { FeatureAvailabilityResponse } from './models/feature-availability-response';
 export type { HttpValidationProblemDetails } from './models/http-validation-problem-details';
 export type { MePreferencesResponse } from './models/me-preferences-response';
 export type { MeResponse } from './models/me-response';
+export type { OrganizationMemberResponse } from './models/organization-member-response';
 export type { OrganizationRole } from './models/organization-role';
 export type { OrganizationSummaryResponse } from './models/organization-summary-response';
 export type { ProblemDetails } from './models/problem-details';
 export type { RenameOrganizationRequest } from './models/rename-organization-request';
 export type { UpdateMePreferencesRequest } from './models/update-me-preferences-request';
+export type { UpdateOrganizationAccessRestrictionsRequest } from './models/update-organization-access-restrictions-request';
 export type { VersionResponse } from './models/version-response';
 
 export type { GetVersion$Params as GetVersion$Params } from './fn/infra-flow-sculptor-api/get-version';
@@ -35,3 +38,13 @@ export type { GetOrganization$Params as GetOrganization$Params } from './fn/orga
 export { getOrganization as getOrganization } from './fn/organizations/get-organization';
 export type { RenameOrganization$Params as RenameOrganization$Params } from './fn/organizations/rename-organization';
 export { renameOrganization as renameOrganization } from './fn/organizations/rename-organization';
+export type { ListOrganizationMembers$Params as ListOrganizationMembers$Params } from './fn/organizations/list-organization-members';
+export { listOrganizationMembers as listOrganizationMembers } from './fn/organizations/list-organization-members';
+export type { ChangeOrganizationMemberRoles$Params as ChangeOrganizationMemberRoles$Params } from './fn/organizations/change-organization-member-roles';
+export { changeOrganizationMemberRoles as changeOrganizationMemberRoles } from './fn/organizations/change-organization-member-roles';
+export type { RemoveOrganizationMember$Params as RemoveOrganizationMember$Params } from './fn/organizations/remove-organization-member';
+export { removeOrganizationMember as removeOrganizationMember } from './fn/organizations/remove-organization-member';
+export type { LeaveOrganization$Params as LeaveOrganization$Params } from './fn/organizations/leave-organization';
+export { leaveOrganization as leaveOrganization } from './fn/organizations/leave-organization';
+export type { UpdateOrganizationAccessRestrictions$Params as UpdateOrganizationAccessRestrictions$Params } from './fn/organizations/update-organization-access-restrictions';
+export { updateOrganizationAccessRestrictions as updateOrganizationAccessRestrictions } from './fn/organizations/update-organization-access-restrictions';

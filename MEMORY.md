@@ -20,6 +20,9 @@
   fonctionnalités et interface. Les tests .NET, frontend et Playwright authentifiés (6/6 desktop/mobile), lint, builds
   et OpenAPI passent ; le tiroir mobile a été corrigé. Voir `.github/memory/03-domain-model.md`, `04-frontend.md`,
   `08-runtime-and-orchestration.md`, `09-auth-and-build.md` et `10-api-endpoints.md`.
+- **2026-10-27** : J0-02 est validée localement : rôles et cycle de vie des membres, `RG-ORG-05`, restrictions tenant/domaine,
+  API et interface. 104 tests .NET, 43 tests frontend, lint/build/OpenAPI et E2E authentifiés (16/16 desktop/mobile) passent.
+  Voir `.github/memory/03-domain-model.md`, `04-frontend.md` et `10-api-endpoints.md`.
 
 ## Fichiers thématiques
 

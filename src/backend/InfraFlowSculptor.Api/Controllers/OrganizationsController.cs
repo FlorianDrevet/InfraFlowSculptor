@@ -1,9 +1,15 @@
 using InfraFlowSculptor.Api.Common;
+using InfraFlowSculptor.Api.Common.Idempotency;
 using InfraFlowSculptor.Api.Errors;
+using InfraFlowSculptor.Application.Organizations.Commands.ChangeMemberRoles;
 using InfraFlowSculptor.Application.Organizations.Commands.CreateOrganization;
+using InfraFlowSculptor.Application.Organizations.Commands.LeaveOrganization;
+using InfraFlowSculptor.Application.Organizations.Commands.RemoveMember;
 using InfraFlowSculptor.Application.Organizations.Commands.RenameOrganization;
+using InfraFlowSculptor.Application.Organizations.Commands.UpdateAccessRestrictions;
 using InfraFlowSculptor.Application.Organizations;
 using InfraFlowSculptor.Application.Organizations.Queries.GetOrganization;
+using InfraFlowSculptor.Application.Organizations.Queries.ListOrganizationMembers;
 using InfraFlowSculptor.Application.Organizations.Queries.ListMyOrganizations;
 using InfraFlowSculptor.Contracts.Organizations;
 using InfraFlowSculptor.Domain.Common.Features;
@@ -86,9 +92,126 @@ public static class OrganizationsController
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status403Forbidden);
 
+        organizations.MapGet("/{id:guid}/members", async (
+                Guid id,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new ListOrganizationMembersQuery(id), cancellationToken);
+                return result.Match<IResult>(
+                    members => Results.Ok(members.Select(Map)),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.ListOrganizationMembers)
+            .WithSummary("Afficher les membres de l'organisation")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces<IReadOnlyList<OrganizationMemberResponse>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        organizations.MapPut("/{id:guid}/members/{memberId:guid}/roles", async (
+                Guid id,
+                Guid memberId,
+                ChangeOrganizationMemberRolesRequest request,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(
+                    new ChangeMemberRolesCommand(id, memberId, request.Roles),
+                    cancellationToken);
+                return result.Match<IResult>(
+                    member => Results.Ok(Map(member)),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.ChangeOrganizationMemberRoles)
+            .WithSummary("Modifier les rôles d'organisation d'un membre (UC-ORG-11)")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces<OrganizationMemberResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        organizations.MapDelete("/{id:guid}/members/{memberId:guid}", async (
+                Guid id,
+                Guid memberId,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new RemoveMemberCommand(id, memberId), cancellationToken);
+                return result.Match<IResult>(
+                    _ => Results.NoContent(),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.RemoveOrganizationMember)
+            .WithSummary("Retirer un membre de l'organisation (UC-ORG-12)")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        organizations.MapPost("/{id:guid}/leave", async (
+                Guid id,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new LeaveOrganizationCommand(id), cancellationToken);
+                return result.Match<IResult>(
+                    _ => Results.NoContent(),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.LeaveOrganization)
+            .WithSummary("Quitter une organisation (UC-ORG-13)")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        organizations.MapPut("/{id:guid}/access-restrictions", async (
+                Guid id,
+                UpdateOrganizationAccessRestrictionsRequest request,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(
+                    new UpdateAccessRestrictionsCommand(
+                        id,
+                        request.AllowedEmailDomains,
+                        request.AllowedTenantIds),
+                    cancellationToken);
+                return result.Match<IResult>(
+                    organization => Results.Ok(Map(organization)),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.UpdateOrganizationAccessRestrictions)
+            .WithSummary("Modifier les domaines et tenants autorisés (RG-ORG-06)")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces<OrganizationSummaryResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         return organizations;
     }
 
     private static OrganizationSummaryResponse Map(OrganizationSummary organization) =>
-        new(organization.Id, organization.Name, organization.Roles, organization.Version);
+        new(
+            organization.Id,
+            organization.Name,
+            organization.Roles,
+            organization.Version,
+            organization.AllowedEmailDomains,
+            organization.AllowedTenantIds);
+
+    private static OrganizationMemberResponse Map(OrganizationMemberSummary member) =>
+        new(member.Id, member.DisplayName, member.Email, member.Roles, member.IsOutsideAccessRestrictions);
 }

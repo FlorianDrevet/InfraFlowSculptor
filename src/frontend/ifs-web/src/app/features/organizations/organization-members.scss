@@ -1,0 +1,228 @@
+.organization-members {
+  display: grid;
+  gap: var(--ifs-space-6);
+}
+
+.organization-members__header h1 {
+  margin: 0;
+}
+
+.organization-members__search {
+  width: min(100%, 440px);
+}
+
+.organization-members__table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+}
+
+.organization-members table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: start;
+}
+
+.organization-members th,
+.organization-members td {
+  padding: var(--ifs-space-4);
+  border-bottom: 1px solid var(--ifs-line);
+  vertical-align: middle;
+}
+
+.organization-members th {
+  color: var(--ifs-text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.organization-members tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.organization-members__identity {
+  display: flex;
+  min-width: 220px;
+  align-items: center;
+  gap: var(--ifs-space-3);
+}
+
+.organization-members__avatar {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--ifs-line);
+  border-radius: 50%;
+  background: var(--ifs-surface-2);
+  color: var(--ifs-text-2);
+  font-weight: 600;
+}
+
+.organization-members__person {
+  display: grid;
+  min-width: 0;
+  gap: var(--ifs-space-1);
+  overflow-wrap: anywhere;
+}
+
+.organization-members__person > span:not(.organization-members__restriction) {
+  color: var(--ifs-text-2);
+  font-size: 13px;
+}
+
+.organization-members__restriction {
+  width: fit-content;
+  padding: 2px var(--ifs-space-2);
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-sm);
+  color: var(--ifs-text-2);
+  font-size: 12px;
+}
+
+.organization-members__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ifs-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.organization-members__roles li {
+  padding: var(--ifs-space-1) var(--ifs-space-2);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-sm);
+  color: var(--ifs-text-2);
+  font-size: 12px;
+}
+
+.organization-members__role-editor {
+  display: grid;
+  gap: var(--ifs-space-2);
+  min-width: 200px;
+  margin: 0;
+  padding: var(--ifs-space-3);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-md);
+}
+
+.organization-members__role-editor legend {
+  padding-inline: var(--ifs-space-1);
+  color: var(--ifs-text-2);
+  font-size: 12px;
+}
+
+.organization-members__role-editor label {
+  display: flex;
+  align-items: center;
+  gap: var(--ifs-space-2);
+  font-size: 13px;
+}
+
+.organization-members__actions,
+.organization-members__dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--ifs-space-2);
+}
+
+.organization-members__error {
+  margin: 0;
+  color: var(--ifs-danger-text);
+}
+
+.organization-members__dialog {
+  width: min(100% - var(--ifs-space-8), 480px);
+  padding: var(--ifs-space-6);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+  color: var(--ifs-text);
+  box-shadow: var(--ifs-shadow-overlay);
+}
+
+.organization-members__dialog::backdrop {
+  background: color-mix(in srgb, var(--ifs-text) 45%, transparent);
+}
+
+.organization-members__dialog h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.organization-members__dialog p {
+  margin: var(--ifs-space-3) 0 var(--ifs-space-6);
+  color: var(--ifs-text-2);
+}
+
+@media (max-width: 760px) {
+  .organization-members__table-wrap {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .organization-members table,
+  .organization-members tbody {
+    display: block;
+  }
+
+  .organization-members thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    clip-path: inset(50%);
+  }
+
+  .organization-members tbody {
+    display: grid;
+    gap: var(--ifs-space-3);
+  }
+
+  .organization-members tbody tr {
+    display: grid;
+    gap: var(--ifs-space-2);
+    padding: var(--ifs-space-3);
+    border: 1px solid var(--ifs-line);
+    border-radius: var(--ifs-radius-lg);
+    background: var(--ifs-surface-1);
+  }
+
+  .organization-members th,
+  .organization-members td {
+    display: block;
+    padding: var(--ifs-space-2);
+    border: 0;
+  }
+
+  .organization-members td[data-label]::before {
+    display: block;
+    margin-bottom: var(--ifs-space-2);
+    color: var(--ifs-text-2);
+    content: attr(data-label);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .organization-members__identity {
+    min-width: 0;
+  }
+
+  .organization-members__actions {
+    justify-content: flex-start;
+  }
+
+  .organization-members__dialog {
+    box-sizing: border-box;
+    max-width: calc(100vw - var(--ifs-space-4) - var(--ifs-space-4));
+    margin: auto var(--ifs-space-4);
+  }
+}

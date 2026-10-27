@@ -26,4 +26,7 @@ public sealed class OrganizationMember
         UserProfileId = userProfileId;
         roleValues = roles.Distinct().Select(role => (int)role).ToArray();
     }
+
+    internal void ChangeRoles(IEnumerable<OrganizationRole> roles) =>
+        roleValues = roles.Distinct().Select(role => (int)role).ToArray();
 }

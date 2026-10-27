@@ -54,3 +54,4 @@
 | 2026-10-27 | Codex | R-03 — crochet d'interruption P7 retiré de la sortie publiée ; preuves P1–P5/P7–P9 prototypées et écart de journalisation `revoke` consigné. |
 | 2026-10-27 | Codex | Workflow — rétablir une revue de code Claude CLI en lecture seule à chaque verrou, avec vérification des constats et verdict final Codex. |
 | 2026-10-27 | Codex | J0-01 validée localement — backend, profils, organisations, isolation, préférences, disponibilité des fonctions, interface et recette authentifiée 6/6 desktop/mobile ; correctif du tiroir mobile |
+| 2026-10-27 | Codex | J0-02 — rôles et cycle de vie des membres, protection RG-ORG-05, restrictions par domaines/tenants, routes API et interface ; 104 tests .NET, 43 tests frontend et 16/16 E2E passent |

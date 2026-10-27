@@ -40,7 +40,9 @@ public sealed class ListMyOrganizationsQueryHandler(IIfsDbContext dbContext, ICu
                     .Where(member => member.UserProfileId == profileId)
                     .SelectMany(member => member.Roles)
                     .ToArray(),
-                organization.Version))
+                organization.Version,
+                organization.AllowedEmailDomains,
+                organization.AllowedTenantIds))
             .ToArray();
 
         return result.ToArray();

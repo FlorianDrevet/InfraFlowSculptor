@@ -35,7 +35,11 @@
         routerLinkActive="sidebar__link--active"
         [routerLinkActiveOptions]="{ exact: true }"
         ariaCurrentWhenActive="page"
-        [attr.aria-label]="entry.id === 'organization-settings' ? ('organization.settingsLink' | transloco) : null"
+        [attr.aria-label]="entry.id === 'organization-settings'
+          ? ('organization.settingsLink' | transloco)
+          : entry.id === 'organization-members'
+            ? ('organization.membersLink' | transloco)
+            : null"
       >
         <app-ds-icon [name]="entry.iconName ?? 'home'" [size]="16" />
         <span>{{ entry.labelKey | transloco }}</span>

@@ -37,6 +37,12 @@ public sealed class GetOrganizationQueryHandler(
         var member = organization?.Members.SingleOrDefault(candidate => candidate.UserProfileId == profileId);
         return member is null || organization is null
             ? Error.NotFound("NOT_FOUND", "The organization was not found.")
-            : new OrganizationSummary(organization.Id.Value, organization.Name, member.Roles, organization.Version);
+            : new OrganizationSummary(
+                organization.Id.Value,
+                organization.Name,
+                member.Roles,
+                organization.Version,
+                organization.AllowedEmailDomains,
+                organization.AllowedTenantIds);
     }
 }

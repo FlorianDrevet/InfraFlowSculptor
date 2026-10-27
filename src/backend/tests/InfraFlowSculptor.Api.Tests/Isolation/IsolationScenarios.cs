@@ -16,6 +16,10 @@ public static class IsolationScenarios
     private const string DavidObjectId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
     private const string ContosoOrganizationId = "33333333-3333-4333-8333-333333333333";
     private const string TestJobId = "55555555-5555-4555-8555-555555555555";
+    private const string TestMemberId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    private static readonly string[] MemberRoles = ["Member"];
+    private static readonly string[] AllowedEmailDomains = ["contoso.example"];
+    private static readonly string[] AllowedTenantIds = ["11111111-1111-4111-8111-111111111111"];
 
     public static IReadOnlyDictionary<string, IsolationScenario> All { get; } =
         new Dictionary<string, IsolationScenario>(StringComparer.Ordinal)
@@ -50,6 +54,33 @@ public static class IsolationScenarios
                 $"/v1/organizations/{ContosoOrganizationId}",
                 HttpStatusCode.NotFound,
                 new { name = "Forbidden Rename" }),
+            ["ListOrganizationMembers"] = OrganizationScenario(
+                "ListOrganizationMembers",
+                HttpMethod.Get,
+                $"/v1/organizations/{ContosoOrganizationId}/members",
+                HttpStatusCode.NotFound),
+            ["ChangeOrganizationMemberRoles"] = OrganizationScenario(
+                "ChangeOrganizationMemberRoles",
+                HttpMethod.Put,
+                $"/v1/organizations/{ContosoOrganizationId}/members/{TestMemberId}/roles",
+                HttpStatusCode.NotFound,
+                new { roles = MemberRoles }),
+            ["RemoveOrganizationMember"] = OrganizationScenario(
+                "RemoveOrganizationMember",
+                HttpMethod.Delete,
+                $"/v1/organizations/{ContosoOrganizationId}/members/{TestMemberId}",
+                HttpStatusCode.NotFound),
+            ["LeaveOrganization"] = OrganizationScenario(
+                "LeaveOrganization",
+                HttpMethod.Post,
+                $"/v1/organizations/{ContosoOrganizationId}/leave",
+                HttpStatusCode.NotFound),
+            ["UpdateOrganizationAccessRestrictions"] = OrganizationScenario(
+                "UpdateOrganizationAccessRestrictions",
+                HttpMethod.Put,
+                $"/v1/organizations/{ContosoOrganizationId}/access-restrictions",
+                HttpStatusCode.NotFound,
+                new { allowedEmailDomains = AllowedEmailDomains, allowedTenantIds = AllowedTenantIds }),
             ["GetFeatures"] = AuthenticatedScenario("GetFeatures", HttpMethod.Get, "/v1/features", HttpStatusCode.OK),
             ["EnqueueDevelopmentPingJob"] = OrganizationScenario(
                 "EnqueueDevelopmentPingJob",

@@ -1,1 +1,32 @@
 @use './organization-create.scss';
+
+.organization-form h2 {
+  margin: var(--ifs-space-4) 0 0;
+  font-size: 1rem;
+}
+
+.organization-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--ifs-control-height);
+  padding: var(--ifs-space-2) var(--ifs-space-3);
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-1);
+  color: var(--ifs-text);
+  font: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.organization-form textarea:focus-visible {
+  border-color: var(--ifs-signal);
+  outline: 2px solid color-mix(in srgb, var(--ifs-signal) 35%, transparent);
+  outline-offset: 1px;
+}
+
+.organization-form__hint {
+  margin: 0;
+  color: var(--ifs-text-2);
+  font-size: 13px;
+}

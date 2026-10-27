@@ -49,6 +49,8 @@ public sealed class RenameOrganizationCommandHandler(
             organization.Id.Value,
             organization.Name,
             roles,
-            organization.Version + 1);
+            organization.Version + 1,
+            organization.AllowedEmailDomains,
+            organization.AllowedTenantIds);
     }
 }

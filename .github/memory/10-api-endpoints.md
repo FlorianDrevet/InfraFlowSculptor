@@ -1,6 +1,6 @@
 # 10 — Routes de l'API
 
-> S-14 implémenté le 2026-10-06 ; J0-01 ajoute les routes d’organisation et de disponibilité des fonctions.
+> S-14 implémenté le 2026-10-06 ; J0-01/J0-02 ajoutent les routes d’organisation, les fonctions et les contrôles d’accès aux membres.
 > Cible : DT-05, DT-06. Chaque étape qui ajoute une route l'inscrit ici (méthode, chemin, nom, permission, portée de débit).
 
 ## Faits vérifiés
@@ -24,3 +24,8 @@
 - Le client généré par `ng-openapi-gen` est normalisé en LF avec une seule fin de ligne afin que `git diff --check` et la comparaison soient reproductibles sous Windows/Linux.
 - `OpenApiDocumentTests.BuildDocumentMatchesRuntimeOpenApiDocument` compare le document runtime au fichier commité. Si un endpoint ajoute des services injectés, garder leurs registrations de contexte build alignées avec la configuration runtime; le test protège le contrat.
 - `ApiFactory` fixe `Auth:Authority` par `UseSetting` et une source mémoire ajoutée en dernier; `OpenApiDocumentTests` passe même quand le processus fournit volontairement une autre `Auth__Authority`.
+- `GET /v1/organizations/{id}/members` — `ListOrganizationMembers`, membre, limite `read`; la recherche et les résultats sont limités aux membres de l’organisation.
+- `PUT /v1/organizations/{id}/members/{memberId}/roles` — `ChangeOrganizationMemberRoles`, membre avec rôle `Administrator`, limite `write`, idempotence ; conflit `RG-ORG-05` si la dernière administratrice est rétrogradée.
+- `DELETE /v1/organizations/{id}/members/{memberId}` — `RemoveOrganizationMember`, administrateur, limite `write`, idempotence ; protège la dernière administratrice.
+- `POST /v1/organizations/{id}/leave` — `LeaveOrganization`, membre, limite `write`, idempotence ; protège la dernière administratrice.
+- `PUT /v1/organizations/{id}/access-restrictions` — `UpdateOrganizationAccessRestrictions`, administrateur, limite `write`, idempotence ; enregistre domaines et tenants autorisés.

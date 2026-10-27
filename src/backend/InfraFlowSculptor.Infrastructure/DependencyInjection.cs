@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, HttpCurrentUser>();
         services.TryAddScoped<IOrganizationRoleAuthorizer, EfOrganizationRoleAuthorizer>();
+        services.TryAddScoped<IProjectOwnershipCheck, NoProjectOwnershipCheck>();
         services.TryAddScoped<IPlanLimitGuard, UnlimitedPlanLimitGuard>();
         services.TryAddScoped<IFeatureAvailability, EfFeatureAvailability>();
         services.AddSingleton<IVerifiedEmailResolver, VerifiedEmailResolver>();

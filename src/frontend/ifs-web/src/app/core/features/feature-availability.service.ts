@@ -27,10 +27,10 @@ export class FeatureAvailabilityService {
     this.loadPromise = firstValueFrom(this.api.invoke(getFeatures, {}))
       .then(features => {
         if (this.activeOrganization.organizationId() === organizationId) {
+          this.loadedForOrganizationId = organizationId;
           this.enabledFeaturesState.set(
             new Set(features.filter(feature => feature.enabled).map(feature => feature.key)),
           );
-          this.loadedForOrganizationId = organizationId;
         }
       })
       .catch((error: unknown) => {
@@ -50,9 +50,10 @@ export class FeatureAvailabilityService {
   }
 
   isEnabled(featureKey: string): boolean {
+    const enabledFeatures = this.enabledFeaturesState();
     return (
       this.loadedForOrganizationId === this.activeOrganization.organizationId() &&
-      this.enabledFeaturesState().has(featureKey)
+      enabledFeatures.has(featureKey)
     );
   }
 }

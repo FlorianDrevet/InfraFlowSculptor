@@ -40,6 +40,16 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("version");
 
+                    b.PrimitiveCollection<string[]>("allowedEmailDomains")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("allowed_email_domains");
+
+                    b.PrimitiveCollection<Guid[]>("allowedTenantIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("allowed_tenant_ids");
+
                     b.HasKey("Id")
                         .HasName("pk_organizations");
 

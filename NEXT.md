@@ -66,7 +66,8 @@ Première mise à jour core-prd à 12:48Z : `denySettings=none`, actions conserv
 | Protection de la branche `main` sur GitHub | À activer par vous dans *Settings → Branches* | 2026-10-06 |
 | Secret de dépôt GitHub Actions `IFS_E2E_PASSWORD` | Configuré (valeur masquée) | 2026-10-06 |
 
-| Nettoyage résiduel Azure shop42 (demande de réduction des coûts) | Les trois groupes du kit encore présents ont été supprimés; C5 après opération : 135 ressources, 16 groupes, 0 pile, 30 rôles et 7 budgets. Aucun identifiant du snapshot de recette ne reste actif. Voir [preuve](docs/plan/preuves/nettoyage-residuel-shop42-20261027.md) pour le coût global, les tombstones Key Vault et l’écart de baseline. | 2026-10-27 |
+| Nettoyage résiduel Azure shop42 (demande de réduction des coûts) | Les trois groupes du kit encore présents ont été supprimés; C5 après opération : 135 ressources, 16 groupes, 0 pile, 30 rôles et 7 budgets. Recontrôle CLI du 2026-10-27 : 0 ressource correspondant aux noms/tags shop42/43/44 et 0 groupe de recette actif. Six coffres Key Vault standards restent en soft-delete jusqu’au 23–25 janvier 2027 ; ils ne génèrent pas de facturation d’usage en état supprimé. Voir [preuve](docs/plan/preuves/nettoyage-residuel-shop42-20261027.md). | 2026-10-27 |
+| Stack local J0-02 | AppHost Aspire en cours : web `http://localhost:4201`, API `http://localhost:7246`, Keycloak `http://localhost:8080`. Les paramètres de développement restent dans User Secrets. Le PostgreSQL local contient les données de recette J0-02 (organisations `Contoso Labs` horodatées et réglages de membres) ; ne pas réinitialiser la base. Aucun secret n’est consigné. | 2026-10-27 |
 
 ## Recettes autonomes en attente de Codex
 

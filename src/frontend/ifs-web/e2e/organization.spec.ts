@@ -1,4 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
+import { mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import { loginAsAlice, loginAsUser } from './support/login';
 
@@ -103,4 +105,100 @@ test('Emma sans organisation arrive sur la page de création', async ({ page }) 
   await loginAsUser(page, 'emma@outlook.example');
   await expect(page.getByRole('heading', { name: 'Créer une organisation' })).toBeVisible();
   await expect(page.getByLabel("Nom de l'organisation")).toBeVisible();
+});
+
+test('Alice gère les membres, les rôles et les restrictions d’accès', async ({ page }, testInfo) => {
+  test.skip(!process.env['IFS_E2E_PASSWORD'], 'Set IFS_E2E_PASSWORD for the local demo accounts.');
+
+  await loginAsAlice(page);
+  await openMobileMenu(page, testInfo.project.name);
+  const sidebar = testInfo.project.name === 'mobile'
+    ? page.locator('.sidebar--drawer')
+    : page.locator('.shell__sidebar');
+  const organizationSelector = sidebar.getByRole('combobox', { name: 'Organisation active' });
+  const organizationId = await organizationSelector.inputValue();
+
+  await sidebar.getByRole('link', { name: 'Membres', exact: true }).click();
+  await closeMobileMenu(page, testInfo.project.name);
+  await expect(page).toHaveURL(new RegExp(`/organizations/${organizationId}/members$`));
+  await expect(page.getByRole('heading', { name: 'Membres', exact: true })).toBeVisible();
+
+  const viewportWidth = page.viewportSize()?.width ?? 1440;
+  const pageWidths = await page.evaluate(() => ({
+    client: document.documentElement.clientWidth,
+    scroll: document.documentElement.scrollWidth,
+  }));
+  expect(pageWidths.scroll).toBeLessThanOrEqual(pageWidths.client);
+  const bobRow = page.getByRole('row').filter({ hasText: 'Bob Bernard' });
+  await expect(bobRow).toContainText('Membre');
+  const search = page.getByLabel('Rechercher un membre');
+  await search.fill('Bob');
+  await expect(page.getByRole('row').filter({ hasText: 'Alice Martin' })).toHaveCount(0);
+  await expect(bobRow).toBeVisible();
+  await search.fill('');
+  await expect(page.getByRole('row').filter({ hasText: 'Alice Martin' })).toBeVisible();
+  await page.getByRole('heading', { name: 'Membres', exact: true }).click();
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(
+    violations.filter(
+      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+    ),
+  ).toEqual([]);
+
+  const screenshotDirectory = resolve(
+    process.cwd(),
+    '../../../docs/plan/revues/captures/R-04',
+  );
+  await mkdir(screenshotDirectory, { recursive: true });
+  await page.screenshot({
+    path: resolve(screenshotDirectory, `OrgMembers-${viewportWidth}.png`),
+    fullPage: true,
+  });
+
+  await bobRow.getByRole('button', { name: 'Modifier', exact: true }).click();
+  await bobRow.getByRole('checkbox', { name: 'Gestionnaire des connexions' }).check();
+  await bobRow.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+  await expect(bobRow).toContainText('Gestionnaire des connexions');
+
+  const aliceRow = page.getByRole('row').filter({ hasText: 'Alice Martin' });
+  await aliceRow.getByRole('button', { name: 'Retirer', exact: true }).click();
+  const removalDialog = page.getByRole('dialog', { name: /Retirer Alice Martin/ });
+  await expect(removalDialog).toContainText("Le membre perdra l'accès à tous les projets de l'organisation.");
+  await removalDialog.getByRole('button', { name: 'Retirer', exact: true }).click();
+  await expect(removalDialog.getByRole('alert')).toContainText('RG-ORG-05');
+  await removalDialog.getByRole('button', { name: 'Annuler', exact: true }).click();
+
+  await openMobileMenu(page, testInfo.project.name);
+  await sidebar.getByRole('link', { name: 'Organisation', exact: true }).click();
+  await closeMobileMenu(page, testInfo.project.name);
+  await page.getByLabel('Domaines autorisés pour les invitations').fill('contoso.example');
+  await page.getByLabel('Tenants Entra autorisés').fill('11111111-1111-1111-1111-111111111111');
+  const restrictionsSaved = page.waitForResponse(response =>
+    response.request().method() === 'PUT'
+      && new URL(response.url()).pathname.endsWith('/access-restrictions'),
+  );
+  await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+  expect((await restrictionsSaved).status()).toBe(200);
+  await page.reload();
+  await expect(page.getByLabel('Domaines autorisés pour les invitations')).toHaveValue('contoso.example');
+  await expect(page.getByLabel('Tenants Entra autorisés')).toHaveValue('11111111-1111-1111-1111-111111111111');
+});
+
+test('Chloé consulte les membres sans pouvoir les modifier', async ({ page }, testInfo) => {
+  test.skip(!process.env['IFS_E2E_PASSWORD'], 'Set IFS_E2E_PASSWORD for the local demo accounts.');
+
+  await loginAsUser(page, 'chloe@contoso.example');
+  await openMobileMenu(page, testInfo.project.name);
+  const sidebar = testInfo.project.name === 'mobile'
+    ? page.locator('.sidebar--drawer')
+    : page.locator('.shell__sidebar');
+  await sidebar.getByRole('link', { name: 'Membres', exact: true }).click();
+  await closeMobileMenu(page, testInfo.project.name);
+  await expect(page.getByRole('heading', { name: 'Membres', exact: true })).toBeVisible();
+  await expect(page.getByRole('row').filter({ hasText: 'Bob Bernard' }))
+    .toContainText('Gestionnaire des connexions');
+  await expect(page.getByRole('button', { name: 'Modifier', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Retirer', exact: true })).toHaveCount(0);
 });

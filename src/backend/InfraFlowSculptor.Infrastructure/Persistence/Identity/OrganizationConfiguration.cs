@@ -12,6 +12,16 @@ public sealed class OrganizationConfiguration : IEntityTypeConfiguration<Organiz
         builder.HasKey(organization => organization.Id).HasName("pk_organizations");
         builder.Property(organization => organization.Name).HasMaxLength(80).IsRequired();
         builder.Property(organization => organization.Version).IsConcurrencyToken();
+        builder.Property<string[]>("allowedEmailDomains")
+            .HasField("allowedEmailDomains")
+            .HasColumnName("allowed_email_domains")
+            .HasColumnType("text[]")
+            .IsRequired();
+        builder.Property<Guid[]>("allowedTenantIds")
+            .HasField("allowedTenantIds")
+            .HasColumnName("allowed_tenant_ids")
+            .HasColumnType("uuid[]")
+            .IsRequired();
 
         builder.OwnsMany(organization => organization.Members, members =>
         {

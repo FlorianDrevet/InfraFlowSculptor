@@ -1,6 +1,6 @@
 # 04 — Frontend
 
-> S-14 implémenté le 2026-10-06 ; J0-01 ajoute le choix d’organisation et ses pages.
+> S-14 implémenté le 2026-10-06 ; J0-01/J0-02 ajoutent le choix d’organisation, la page des membres et les restrictions d’accès.
 > Cible : `docs/technique/04-frontend.md`. Étapes S-09 à S-14, puis chaque étape UI.
 
 ## Faits vérifiés
@@ -19,3 +19,5 @@
 - J0-01 ajoute `ActiveOrganizationStore` avec persistance locale, le sélecteur d’organisation dans la barre latérale, la page de création quand l’utilisateur n’a aucune organisation et les réglages limités au nom. `organizationMembershipGuard` masque une URL d’organisation étrangère ; `featureGuard` et `NavigationRegistry` filtrent selon `GET /v1/features`.
 - `UserPreferencesService` charge les préférences serveur dans le shell ; `LanguageService` et `ThemeService` appliquent ensuite la valeur du profil. `organization.spec.ts` couvre création, renommage, changement d’organisation, refus d’une organisation étrangère et utilisateur sans organisation.
 - Le 2026-10-27, lint, `npm test` (35 tests Angular, 3 tokens, 3 icônes), build, `api:check` et `organization.spec.ts` passent. L’E2E authentifié couvre Alice (création, renommage, sélection), David (seule Fabrikam, refus de l’URL Contoso) et Emma (aucune organisation) sur Chromium desktop 1440×900 et mobile 390×844 : 6/6. `AppHost:WebPort` garde 4200 par défaut et accepte 4201 pour éviter le projet externe qui occupe 4200. Le tiroir mobile force `.dialog-surface` à la largeur de son panneau ; capture vérifiée, bouton « Fermer » visible.
+- J0-02 ajoute l’écran des membres et étend les réglages aux domaines et tenants autorisés. Les rôles et actions de retrait/départ sont réservés aux administrateurs ; un membre simple reste en lecture seule. Les scénarios E2E authentifiés passent 16/16 sur desktop 1440×900 et mobile 390×844, captures dans `docs/plan/revues/captures/R-04/`.
+- Le test d’interface a révélé deux défauts corrigés : les liens ne se rafraîchissaient pas après le chargement des fonctions, et les erreurs `ProblemDetails` renvoyées comme texte n’étaient pas décodées. Vérification finale J0-02 : 37 tests Angular, 3 tests tokens, 3 tests icônes, lint (85 clés i18n), build sans avertissement et `api:check` passent.
