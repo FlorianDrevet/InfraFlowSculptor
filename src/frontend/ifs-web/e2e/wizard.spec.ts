@@ -68,12 +68,13 @@ test('Alice crée un projet et reprend son brouillon depuis un autre navigateur'
   await expect(page.getByRole('heading', { name: 'Où publier les fichiers' })).toBeVisible();
   await page.close();
 
-  const resumePage = await browser.newPage({
+  const resumeContext = await browser.newContext({
     baseURL: process.env['IFS_E2E_BASE_URL'] ?? 'http://localhost:4200',
     viewport: page.viewportSize() ?? undefined,
     ignoreHTTPSErrors: true,
     locale: 'fr-FR',
   });
+  const resumePage = await resumeContext.newPage();
   try {
     await loginAsAlice(resumePage);
     await selectFrench(resumePage);
@@ -81,7 +82,12 @@ test('Alice crée un projet et reprend son brouillon depuis un autre navigateur'
     await expect(
       resumePage.getByRole('heading', { name: 'Où publier les fichiers' }),
     ).toBeVisible();
-    await expect(resumePage.getByText(projectName, { exact: true })).toBeVisible();
+    await resumePage.getByRole('button', { name: 'Identité' }).click();
+    await expect(resumePage.getByLabel('Nom', { exact: true })).toHaveValue(projectName);
+    await resumePage.getByRole('button', { name: 'Publication' }).click();
+    await expect(
+      resumePage.getByRole('heading', { name: 'Où publier les fichiers' }),
+    ).toBeVisible();
 
     await resumePage.getByRole('button', { name: 'Passer' }).click();
     await expect(resumePage.getByRole('heading', { name: 'Récapitulatif' })).toBeVisible();
@@ -110,7 +116,7 @@ test('Alice crée un projet et reprend son brouillon depuis un autre navigateur'
     await expect(resumePage.getByRole('heading', { name: 'Projet créé' })).toBeVisible();
     await expect(resumePage.getByText('vous en êtes propriétaire')).toBeVisible();
   } finally {
-    await resumePage.close();
+    await resumeContext.close();
   }
 });
 
