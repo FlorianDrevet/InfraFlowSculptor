@@ -69,3 +69,4 @@
 | 2026-10-27 10:31 | Codex | `J0-01` recette autonome à exécuter |  |
 | 2026-10-27 10:31 | Codex | `J0-01` reprise après recette autonome vérifiée |  |
 | 2026-10-27 10:34 | Codex | `J0-01` terminée | commit `bc6c2c4` |
+| 2026-10-27 11:44 | Codex | `J0-02` terminée | commit `6310642` |
