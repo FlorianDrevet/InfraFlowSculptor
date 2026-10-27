@@ -119,6 +119,46 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.ToTable("organizations", (string)null);
                 });
 
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_projects");
+
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_projects_organization_id");
+
+                    b.ToTable("projects", (string)null);
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Domain.UserProfileAggregate.UserProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -496,6 +536,53 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_projects_organizations_organization_id");
+
+                    b.OwnsMany("InfraFlowSculptor.Domain.OrganizationAggregate.ProjectRoleAssignment", "RoleAssignments", b1 =>
+                        {
+                            b1.Property<Guid>("ProjectId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("project_id");
+
+                            b1.Property<Guid>("Principal")
+                                .HasColumnType("uuid")
+                                .HasColumnName("principal_id");
+
+                            b1.Property<int>("Role")
+                                .HasColumnType("integer")
+                                .HasColumnName("role");
+
+                            b1.Property<int>("Scope")
+                                .HasColumnType("integer")
+                                .HasColumnName("scope");
+
+                            b1.Property<Guid>("OrganizationId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("organization_id");
+
+                            b1.HasKey("ProjectId", "Principal", "Role", "Scope")
+                                .HasName("pk_project_role_assignments");
+
+                            b1.HasIndex("OrganizationId", "Principal")
+                                .HasDatabaseName("ix_project_role_assignments_organization_principal");
+
+                            b1.ToTable("project_role_assignments", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProjectId")
+                                .HasConstraintName("fk_project_role_assignments_projects_project_id");
+                        });
+
+                    b.Navigation("RoleAssignments");
                 });
 
             modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Auditing.AuditEventEntity", b =>

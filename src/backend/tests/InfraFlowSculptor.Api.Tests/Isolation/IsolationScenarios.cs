@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Net.Http.Headers;
+using InfraFlowSculptor.Api.Configuration;
 using InfraFlowSculptor.Api.Tests.Common;
 
 namespace InfraFlowSculptor.Api.Tests.Isolation;
@@ -19,6 +20,7 @@ public static class IsolationScenarios
     private const string TestMemberId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
     private const string TestInvitationId = "66666666-6666-4666-8666-666666666666";
     private const string TestInvitationToken = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    private static readonly string ShopProjectId = DemoDataSeeder.ShopProjectId.Value.ToString("D");
     private static readonly string[] MemberRoles = ["Member"];
     private static readonly string[] AllowedEmailDomains = ["contoso.example"];
     private static readonly string[] AllowedTenantIds = ["11111111-1111-4111-8111-111111111111"];
@@ -120,6 +122,33 @@ public static class IsolationScenarios
                 $"/v1/invitations/{TestInvitationToken}",
                 HttpStatusCode.NotFound),
             ["GetFeatures"] = AuthenticatedScenario("GetFeatures", HttpMethod.Get, "/v1/features", HttpStatusCode.OK),
+            ["GetMyProjectPermissions"] = OrganizationScenario(
+                "GetMyProjectPermissions",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/permissions/me",
+                HttpStatusCode.NotFound),
+            ["GetProjectMemberPermissions"] = OrganizationScenario(
+                "GetProjectMemberPermissions",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/members/{TestMemberId}/permissions",
+                HttpStatusCode.NotFound),
+            ["AssignProjectRole"] = OrganizationScenario(
+                "AssignProjectRole",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/members/{TestMemberId}/roles",
+                HttpStatusCode.NotFound,
+                new { role = "Reader", scope = "Project", expectedVersion = 1 }),
+            ["RemoveProjectRole"] = OrganizationScenario(
+                "RemoveProjectRole",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}/members/{TestMemberId}/roles/Reader?scope=Project&expectedVersion=1",
+                HttpStatusCode.NotFound),
+            ["TakeProjectOwnership"] = OrganizationScenario(
+                "TakeProjectOwnership",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/ownership",
+                HttpStatusCode.NotFound,
+                new { expectedVersion = 1 }),
             ["EnqueueDevelopmentPingJob"] = OrganizationScenario(
                 "EnqueueDevelopmentPingJob",
                 HttpMethod.Post,

@@ -12,4 +12,7 @@ public static class AuditActions
     public const string InvitationResent = "organization.invitation.resent";
     public const string InvitationRevoked = "organization.invitation.revoked";
     public const string InvitationAccepted = "organization.invitation.accepted";
+    public const string ProjectRoleAssigned = "project.role.assigned";
+    public const string ProjectRoleRemoved = "project.role.removed";
+    public const string ProjectOwnershipTaken = "project.ownership.taken";
 }

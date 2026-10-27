@@ -57,3 +57,4 @@
 | 2026-10-27 | Codex | J0-02 — rôles et cycle de vie des membres, protection RG-ORG-05, restrictions par domaines/tenants, routes API et interface ; 104 tests .NET, 43 tests frontend et 16/16 E2E passent |
 | 2026-10-27 | Codex | J0-03 — invitations à jeton empreint, contrôle d’adresse vérifiée, e-mail via outbox, adaptateurs MailPit/ACS, interface d’invitation et retour après connexion |
 | 2026-10-27 | Codex | J0-04 — journal append-only, purge bornée à 13 mois, consultation d’organisation et recette E2E desktop/mobile validée (18/18) |
+| 2026-10-27 | Codex | J0-05 — permissions et rôles de projet, agrégat `shop`, autorisation systématique, endpoints OpenAPI, attribution plafonnée, dernier propriétaire et audit ; 155 tests backend et 59 tests frontend passent |

@@ -4,6 +4,7 @@ using InfraFlowSculptor.Domain.OrganizationAggregate;
 using InfraFlowSculptor.Domain.UserProfileAggregate;
 using InfraFlowSculptor.Infrastructure.Azure;
 using InfraFlowSculptor.Infrastructure.Persistence;
+using InfraFlowSculptor.Infrastructure.Persistence.Admin;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -13,6 +14,7 @@ public static class DemoDataSeeder
 {
     private static readonly OrganizationId ContosoId = new(Guid.Parse("33333333-3333-4333-8333-333333333333"));
     private static readonly OrganizationId FabrikamId = new(Guid.Parse("44444444-4444-4444-8444-444444444444"));
+    public static readonly ProjectId ShopProjectId = new(Guid.Parse("77777777-7777-4777-8777-777777777777"));
 
     private static readonly DemoUser[] Users =
     [
@@ -42,7 +44,7 @@ public static class DemoDataSeeder
         await using var dbContext = new IfsDbContext(options, new NoCurrentOrganization());
         await dbContext.Database.MigrateAsync();
         await SeedAsync(dbContext, TimeProvider.System);
-        Console.WriteLine("Les profils de démonstration et les organisations Contoso et Fabrikam sont prêts.");
+        Console.WriteLine("Les profils de démonstration, Contoso, Fabrikam et le projet Contoso/shop sont prêts.");
     }
 
     public static async Task SeedAsync(IfsDbContext dbContext, TimeProvider clock)
@@ -96,6 +98,12 @@ public static class DemoDataSeeder
         }
 
         await dbContext.SaveChangesAsync();
+        await new EfDemoProjectSeeder(dbContext).SeedShopAsync(
+            ShopProjectId,
+            ContosoId,
+            profiles[Users[0].ObjectId].Id,
+            profiles[Users[1].ObjectId].Id,
+            profiles[Users[2].ObjectId].Id);
     }
 
     private static void AddMemberIfMissing(

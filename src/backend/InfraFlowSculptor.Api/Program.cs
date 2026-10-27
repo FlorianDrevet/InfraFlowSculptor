@@ -130,6 +130,7 @@ v1.MapSystemEndpoints();
 v1.MapMeEndpoints();
 v1.MapOrganizationEndpoints();
 v1.MapInvitationEndpoints();
+v1.MapProjectEndpoints();
 v1.MapFeatureEndpoints();
 if (!isOpenApiBuild && (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing")))
 {

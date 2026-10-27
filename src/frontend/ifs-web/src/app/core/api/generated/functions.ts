@@ -41,3 +41,13 @@ export type { ResendOrganizationInvitation$Params as ResendOrganizationInvitatio
 export { resendOrganizationInvitation as resendOrganizationInvitation } from './fn/organizations/resend-organization-invitation';
 export type { RevokeOrganizationInvitation$Params as RevokeOrganizationInvitation$Params } from './fn/organizations/revoke-organization-invitation';
 export { revokeOrganizationInvitation as revokeOrganizationInvitation } from './fn/organizations/revoke-organization-invitation';
+export type { GetMyProjectPermissions$Params as GetMyProjectPermissions$Params } from './fn/projects/get-my-project-permissions';
+export { getMyProjectPermissions as getMyProjectPermissions } from './fn/projects/get-my-project-permissions';
+export type { GetProjectMemberPermissions$Params as GetProjectMemberPermissions$Params } from './fn/projects/get-project-member-permissions';
+export { getProjectMemberPermissions as getProjectMemberPermissions } from './fn/projects/get-project-member-permissions';
+export type { AssignProjectRole$Params as AssignProjectRole$Params } from './fn/projects/assign-project-role';
+export { assignProjectRole as assignProjectRole } from './fn/projects/assign-project-role';
+export type { RemoveProjectRole$Params as RemoveProjectRole$Params } from './fn/projects/remove-project-role';
+export { removeProjectRole as removeProjectRole } from './fn/projects/remove-project-role';
+export type { TakeProjectOwnership$Params as TakeProjectOwnership$Params } from './fn/projects/take-project-ownership';
+export { takeProjectOwnership as takeProjectOwnership } from './fn/projects/take-project-ownership';

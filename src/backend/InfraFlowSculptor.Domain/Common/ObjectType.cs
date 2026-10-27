@@ -15,5 +15,6 @@ public enum ObjectType
     ApiToken,
     Invitation,
     OrganizationMember,
+    ProjectRoleAssignment,
     AuditEvent
 }

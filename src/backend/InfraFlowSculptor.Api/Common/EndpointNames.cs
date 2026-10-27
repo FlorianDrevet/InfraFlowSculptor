@@ -22,4 +22,9 @@ public static class EndpointNames
     public const string AcceptInvitation = "AcceptInvitation";
     public const string GetInvitationPreview = "GetInvitationPreview";
     public const string GetFeatures = "GetFeatures";
+    public const string GetMyProjectPermissions = "GetMyProjectPermissions";
+    public const string GetProjectMemberPermissions = "GetProjectMemberPermissions";
+    public const string AssignProjectRole = "AssignProjectRole";
+    public const string RemoveProjectRole = "RemoveProjectRole";
+    public const string TakeProjectOwnership = "TakeProjectOwnership";
 }

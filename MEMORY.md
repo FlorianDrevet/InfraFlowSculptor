@@ -27,6 +27,7 @@
   Voir `.github/memory/03-domain-model.md`, `04-frontend.md`, `05-data-and-storage.md`, `09-auth-and-build.md`,
   `10-api-endpoints.md` et `13-integrations.md`.
 - **2026-10-27** : J0-04 est validée par la CI : audit append-only, interface et accès vérifiés ; 18/18 E2E. Les captures et l’écart pgweb/psql sont consignés dans `docs/plan/recettes/suivi.md`.
+- **2026-10-27** : J0-05 ajoute permissions et rôles de projet, l'agrégat minimal `shop`, les contrôles de sécurité, la migration et les endpoints. 155 tests backend et 59 frontend, build Release, lint et OpenAPI passent ; détails dans `.github/memory/03-domain-model.md`, `09-auth-and-build.md` et `10-api-endpoints.md`.
 
 ## Fichiers thématiques
 
