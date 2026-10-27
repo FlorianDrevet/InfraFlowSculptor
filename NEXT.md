@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`R-03`](docs/plan/01-preuves.md#-r-03--revue-des-preuves) — Revue des preuves |
+| **Étape courante** | [`J0-01`](docs/plan/02-jalon-0-pilote.md#j0-01--profils-dutilisateur-et-organisations) — Profils d'utilisateur et organisations |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) (commit `f99e3cc`) |
-| **Étape suivante** | `J0-01` — Profils d'utilisateur et organisations |
+| **Dernière étape terminée** | [`R-03`](docs/plan/01-preuves.md#-r-03--revue-des-preuves) — Revue des preuves (auto-validée) |
+| **Étape suivante** | `J0-02` — Membres et réglages d'accès de l'organisation |
 | **Verrou** | aucun |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
-| **Dernière mise à jour** | 2026-10-27 — Codex |
+| **Dernière mise à jour** | 2026-10-27 — Codex (auto-validation R-03) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
