@@ -78,9 +78,12 @@ test('Alice vérifie les changements d’audit et Chloé reçoit la permission r
     await openSidebarLink(page, testInfo.project.name, 'Journal d’audit');
     await expect(page).toHaveURL(new RegExp('/organizations/' + CONTOSO_ID + '/audit$'));
     await expect(page.getByRole('heading', { name: 'Journal d’audit' })).toBeVisible();
-    const organizationChange = page.getByRole('row').filter({ hasText: updatedName });
+    const organizationChange = page
+      .getByRole('row')
+      .filter({ hasText: 'Nom de l’organisation modifié' });
     await expect(organizationChange).toHaveCount(1);
     await expect(organizationChange).toContainText(organizationName);
+    await expect(organizationChange).toContainText(updatedName);
     await expect(organizationChange).toContainText('Nom de l’organisation modifié');
     await expect(organizationChange).toContainText('Alice Martin');
     const roleChange = page
