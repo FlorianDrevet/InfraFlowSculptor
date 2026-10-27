@@ -1,8 +1,8 @@
 # Auto-revues aux verrous
 
-À chaque verrou `R-nn`, Codex relit le segment courant et consigne sa vérification dans
-`R-nn-autovalidation.md`. Les fichiers `R-nn-demande.md` et `R-nn-revue.md` déjà présents restent des éléments historiques ;
-aucune revue Claude ou validation d'un modèle externe n'est requise pour les prochains verrous.
+À chaque verrou `R-nn`, Claude CLI relit en lecture seule le code du segment depuis sa branche de base. Codex vérifie les
+constats, corrige ceux qui sont confirmés, relance les vérifications et consigne la revue et son traitement dans
+`R-nn-autovalidation.md`. Les fichiers `R-nn-demande.md` et `R-nn-revue.md` déjà présents restent des éléments historiques.
 
 Après avoir relancé les vérifications et les recettes, exécuter :
 
@@ -28,6 +28,12 @@ Verdict : VALIDÉ
 |---|---|
 | `python tools/plan/gate.py lint` | ... |
 | <builds, tests, analyseurs> | ... |
+
+## Revue Claude CLI
+- **Commande et base** : ...
+- **Portée** : ...
+- **Constats** : aucun / liste des constats avec gravité et chemin:ligne.
+- **Vérification et traitement par Codex** : ...
 
 ## Recette exécutée
 | Scénario | Action exécutée | Résultat observé | Preuve |

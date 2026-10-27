@@ -6,8 +6,9 @@ description: "Use at the start of every Codex session in InfraFlowSculptor, and 
 # Exécuter l'étape courante du plan
 
 La conception de référence est dans les specs, décisions, plan et maquettes. Tu exécutes **l'étape courante** de `NEXT.md`,
-puis la suivante, jusqu'à un vrai manque d'information, un accès indisponible ou un risque de coût non chiffré. Les verrous
-🔒 sont des points d'auto-revue, sans attente de Claude, d'un autre modèle ou d'une validation humaine.
+puis la suivante, jusqu'à un vrai manque d'information, un accès indisponible ou un risque de coût non chiffré. À chaque
+verrou 🔒, demande une revue de code à Claude CLI selon `.agents/skills/demander-revue/SKILL.md`, puis fais l'auto-revue
+Codex : Claude fournit des constats, Codex les vérifie et reste responsable du verdict et du gate.
 
 ## 1. Ouvrir
 
@@ -18,7 +19,8 @@ puis la suivante, jusqu'à un vrai manque d'information, un accès indisponible 
    `BLOQUE` ne se lève qu'après vérification de la condition et consignation de la preuve avec `gate.py unblock <ID> <preuve>`.
    Un statut `EN_ATTENTE_DE_RECETTE` signifie que Codex doit exécuter la recette ; `EN_ATTENTE_DE_REVUE` signifie qu'il
    doit faire l'auto-revue.
-3. Si l'étape courante est un verrou `R-nn`, exécute la checklist d'auto-revue au § 5. Ne demande pas de revue externe.
+3. Si l'étape courante est un verrou `R-nn`, demande d'abord la revue Claude CLI du segment selon la skill `demander-revue`,
+   puis exécute la checklist d'auto-revue au § 5.
 4. Si l'étape dépend d'une décision non confirmée de `NEXT.md`, demande ce choix à Florian ; ne le remplace pas par une
    validation de modèle externe.
 5. Passe le statut à `EN_COURS` avec les commandes du `gate.py`, sans modifier à la main ses lignes gérées.
@@ -60,6 +62,7 @@ puis la suivante, jusqu'à un vrai manque d'information, un accès indisponible 
 1. `git add` des seuls fichiers de l'étape ; `git diff --cached --check` propre.
 2. Commit avec le message du plan, puis une ligne vide et `Étape: <ID>`.
 3. `python tools/plan/gate.py done <ID>` ; commit `chore(plan): <ID> terminée` (NEXT.md, JOURNAL.md) ; `git push`.
-4. Si l'étape suivante est un verrou, effectue l'auto-revue : crée `docs/plan/revues/R-nn-autovalidation.md` avec les
-   rubriques du modèle, puis `python tools/plan/gate.py auto-review R-nn`. Ensuite reprends au § 1 pour l'étape suivante,
+4. Si l'étape suivante est un verrou, demande la revue Claude CLI du diff depuis la base du segment et consigne les
+   constats et leur traitement dans `docs/plan/revues/R-nn-autovalidation.md`. Puis effectue l'auto-revue Codex avec les
+   rubriques du modèle et `python tools/plan/gate.py auto-review R-nn`. Ensuite reprends au § 1 pour l'étape suivante,
    tant que la session le permet. En fin de session, `NEXT.md` est à jour et poussé.

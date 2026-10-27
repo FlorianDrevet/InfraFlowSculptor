@@ -18,8 +18,8 @@ il s'y réfère par leurs identifiants.
 
 | Acteur | Rôle | Ne fait jamais |
 |---|---|---|
-| **Claude (Opus)** | A contribué aux décisions et documents historiques. | Aucun verdict de Claude ni d'un autre modèle n'est requis pour poursuivre. |
-| **Luna (Codex)** | **Exécute et valide** le plan : tests d'abord, code, recettes, auto-revue, mémoire, commit et `NEXT.md`. | Prendre une décision de conception absente des documents ou ignorer un vrai blocage. |
+| **Claude CLI** | Fournit une revue de code en lecture seule à chaque verrou `R-nn` ; ses constats sont vérifiés et consignés. | Trancher la conception ou fournir le verdict final du plan. |
+| **Luna (Codex)** | **Exécute et valide** le plan : tests d'abord, code, recettes, revue Claude CLI aux verrous, auto-revue, mémoire, commit et `NEXT.md`. | Prendre une décision de conception absente des documents ou ignorer un vrai blocage. |
 | **Florian** | Fournit un choix de conception, une authentification ou un plafond de coût si ces éléments manquent réellement. | Exécuter les validations de routine que Codex peut faire lui-même. |
 
 ## Les phases
@@ -77,23 +77,27 @@ flowchart TD
   F --> G["gate.py done ID · push"]
   G --> H{"Étape suivante = 🔒 ?"}
   H -- non --> B
-  H -- oui --> I["Auto-revue Codex<br/>R-nn-autovalidation.md · gate.py auto-review"]
-  I --> B
+  H -- oui --> I["Revue du diff par Claude CLI<br/>constats vérifiés par Codex"]
+  I --> J["Auto-revue Codex<br/>R-nn-autovalidation.md · gate.py auto-review"]
+  J --> B
 ```
 
 ## Les verrous 🔒
 
-Un verrou `R-nn` est un point de contrôle où **Luna relit et valide elle-même** tout ce qui a été fait depuis le verrou
-précédent. Il ne suspend pas l'avancement pour attendre Claude, un autre modèle ou Florian.
+Un verrou `R-nn` est un point de contrôle où **Claude CLI relit le code du segment en lecture seule**, puis **Luna vérifie
+les constats et valide elle-même** tout ce qui a été fait depuis le verrou précédent.
 
-1. **Luna** exécute et consigne les recettes du segment, relit les changements, relance les vérifications et écrit
-   `docs/plan/revues/R-nn-autovalidation.md` selon le modèle dans [`revues/README.md`](revues/README.md).
-2. `python tools/plan/gate.py auto-review R-nn` valide le checkpoint si le rapport contient le verdict, les tests, les
-   recettes, les écarts et les contrôles de coût et de sécurité. Le crochet git et la CI ne bloquent pas les commits
-   pendant cette auto-revue.
-3. Luna poursuit sur la branche prévue et peut ouvrir, fusionner ou mettre à jour une pull request dans le périmètre de test
+1. **Claude CLI** relit le diff de code depuis la base du segment et fournit les constats sans modifier le dépôt ni publier
+   automatiquement de commentaire.
+2. **Luna** vérifie chaque constat, corrige ceux qui sont confirmés, relance les vérifications et consigne la revue Claude
+   ainsi que son traitement dans `docs/plan/revues/R-nn-autovalidation.md` selon le modèle dans
+   [`revues/README.md`](revues/README.md). Si aucun code n'a changé, elle le note explicitement.
+3. `python tools/plan/gate.py auto-review R-nn` valide le checkpoint si le rapport contient le verdict, les tests, les
+   recettes, les écarts et les contrôles de coût et de sécurité. Le verdict reste celui de Codex ; le crochet git et la CI
+   ne bloquent pas les commits pendant cette auto-revue.
+4. Luna poursuit sur la branche prévue et peut ouvrir, fusionner ou mettre à jour une pull request dans le périmètre de test
    autorisé. Toute contradiction, information d'accès manquante ou coût non chiffré reste un blocage explicite.
-4. Si le prochain jalon est seulement découpé, le verrou ne permet pas d'inventer sa conception : Luna lit les références,
+5. Si le prochain jalon est seulement découpé, le verrou ne permet pas d'inventer sa conception : Luna lit les références,
    puis demande à Florian le choix précis qui manque.
 
 ## Branches et pull requests
