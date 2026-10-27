@@ -78,3 +78,4 @@
 | 2026-10-27 17:53 | Codex | `R-04` blocage confirmé | docs/plan/revues/R-04-blocage-idempotence.md |
 | 2026-10-27 18:25 | Codex | `R-04` blocage résolu | docs/plan/revues/R-04-blocage-idempotence.md |
 | 2026-10-27 19:25 | Codex | `R-04` auto-validée | R-04-autovalidation.md |
+| 2026-10-27 20:07 | Codex | `J0-06` terminée | commit `eee2c64` |

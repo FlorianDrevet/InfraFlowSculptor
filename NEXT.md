@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-06`](docs/plan/02-jalon-0-pilote.md#j0-06--catalogue-du-pilote) — Catalogue du pilote |
+| **Étape courante** | [`J0-07`](docs/plan/02-jalon-0-pilote.md#j0-07--projets-et-environnements-api) — Projets et environnements (API) |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`R-04`](docs/plan/02-jalon-0-pilote.md#-r-04--revue-de-sécurité-des-accès) — Revue de sécurité des accès (auto-validée) |
-| **Étape suivante** | `J0-07` — Projets et environnements (API) |
+| **Dernière étape terminée** | [`J0-06`](docs/plan/02-jalon-0-pilote.md#j0-06--catalogue-du-pilote) — Catalogue du pilote (commit `eee2c64`) |
+| **Étape suivante** | `J0-08` — Assistant de création de projet |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
-| **Dernière mise à jour** | 2026-10-27 — Codex (auto-validation R-04) |
+| **Dernière mise à jour** | 2026-10-27 — Codex |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
