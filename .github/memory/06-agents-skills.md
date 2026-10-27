@@ -1,20 +1,22 @@
 # 06 — Agents, skills et verrous
 
 ## Répartition
-Les specs, décisions, plan et maquettes portent la conception. Luna (Codex) exécute les étapes, recettes et auto-revues sans
-attendre Claude ou un modèle plus élevé. Si le plan ne suffit pas pour un choix de conception, Luna demande ce point à Florian.
+Les specs, décisions, plan et maquettes portent la conception. Luna (Codex) exécute les étapes, recettes et auto-revues.
+À chaque verrou `R-nn`, Claude CLI relit le code du segment en lecture seule ; Codex vérifie et traite ses constats puis garde
+la responsabilité du verdict et du gate. Si le plan ne suffit pas pour un choix de conception, Luna demande ce point à Florian.
 Consignes : `AGENTS.md`.
 
 ## Cycle
 `NEXT.md` → `gate.py check` → étape → commit `Étape: ID` → `gate.py done ID` → … → verrou 🔒 `R-nn` :
-Codex exécute les recettes, relit les changements, crée `R-nn-autovalidation.md` puis lance `gate.py auto-review`.
+Claude CLI relit le code du segment, Codex vérifie ses constats, exécute les recettes, crée `R-nn-autovalidation.md` puis
+lance `gate.py auto-review`.
 `gate.py check` ne bloque pas une recette ou auto-revue en cours ; un blocage réel exige une preuve et `gate.py unblock`.
 
 ## Skills
 | Qui | Skill |
 |---|---|
 | Luna | `executer-etape` (`.agents/skills/`) |
-| Claude | Skills historiques de conception ; aucune revue n'est requise pour avancer |
+| Claude CLI | `demander-revue` (`.agents/skills/`) — constats de code aux verrous, vérifiés par Codex |
 | Tous | `tdd-workflow`, `cqrs-feature`, `xunit-testing`, `angular-strata`, `memory-management` (`.github/skills/`) |
 
 ## Règles d'architecture vérifiées par tests

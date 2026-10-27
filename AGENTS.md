@@ -30,7 +30,7 @@ Langue : français pour les échanges, les commits, la documentation ; anglais p
 | Une étape à la fois, dans l'ordre du plan ; un commit par étape, message du plan, pied `Étape: <ID>` | Sauter une étape, en fusionner deux, anticiper la suivante |
 | Test d'abord ([`tdd-workflow`](.github/skills/tdd-workflow/SKILL.md)) | Écrire du code de production sans test qui échouait avant |
 | `gate.py done <ID>` puis push après chaque étape | Modifier à la main les lignes du tableau de `NEXT.md` gérées par `gate.py` |
-| À chaque verrou, relire le diff et les preuves, écrire `R-nn-autovalidation.md`, exécuter `gate.py auto-review` | Attendre une validation de Claude, d'un autre modèle ou d'une personne |
+| À chaque verrou, demander une revue de code à Claude CLI, vérifier ses constats, puis écrire `R-nn-autovalidation.md` et exécuter `gate.py auto-review` | Traiter l'avis de Claude comme le verdict final ou ignorer un constat confirmé |
 | Exécuter les recettes et tests 🧪 toi-même avec les accès disponibles, noter les résultats dans `recettes/suivi.md` | Déclarer une recette passée sans l'avoir exécutée ou une vérification sans preuve |
 | Suivre le code réel si le plan se trompe de nom de fichier et noter l'écart dans l'auto-revue | Trancher une contradiction avec une spec, une règle de sécurité ou de données personnelles |
 | Mettre à jour la mémoire ([`memory-management`](.github/skills/memory-management/SKILL.md)) | Modifier `docs/specs/`, `docs/technique/`, le texte des étapes de `docs/plan/` ou `reference/` sans que l'étape le demande |
@@ -59,6 +59,7 @@ Détail :
 | Skill | Rôle | Fichier |
 |---|---|---|
 | `executer-etape` | Cycle complet d'une étape du plan | `.agents/skills/executer-etape/SKILL.md` |
+| `demander-revue` | Revue de code Claude CLI aux verrous du plan | `.agents/skills/demander-revue/SKILL.md` |
 | `tdd-workflow` | Rouge → vert → refactorisation | `.github/skills/tdd-workflow/SKILL.md` |
 | `cqrs-feature` | Anatomie d'une tranche backend | `.github/skills/cqrs-feature/SKILL.md` |
 | `xunit-testing` | Conventions des tests .NET | `.github/skills/xunit-testing/SKILL.md` |

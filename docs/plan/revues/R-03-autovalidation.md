@@ -61,3 +61,10 @@ Le run précédent sur l'ancien SHA `be21cd5` avait échoué avant les tests, pe
 - #748 n'est pas diagnostiqué, conformément à la consigne de recette.
 - La projection prudente est très proche de l'alerte de 200 EUR et n'inclut pas les taxes ; aucune action Azure facturable supplémentaire n'est autorisée par cette revue.
 - Les preuves P1–P5 et P7–P9 sont prototypées sur la sortie écrite à la main. P6 reste spécifiée et P10 décidée ; elles ne sont pas déclarées vérifiées par IFS.
+
+## Revue Claude CLI complémentaire (2026-10-27)
+
+- **Commande** : `claude -p "Review commit 91c7710 against its first parent. Inspect the diff and relevant surrounding code and tests. This is a read-only review; do not edit files. Return only actionable correctness, security, or reliability findings with severity and exact file and line. If you find none, say so and mention any relevant residual test gap."`
+- **Portée** : changement de code R-03 `91c7710`.
+- **Constats** : aucun défaut actionnable. Le reviewer note deux limites de couverture : le test interdit le littéral `IFS_TEST_ABORT_AFTER` sans exclure un crochet équivalent sous un autre nom ; le test de référence ne valide pas lui-même le hash de `manifest.example.json`.
+- **Traitement** : constat vérifié par lecture ; aucune correction supplémentaire requise pour le changement revu. La cohérence du manifeste reste vérifiée par `ProofTools` dans le parcours de preuve.
