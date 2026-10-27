@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { type Page, expect, test } from '@playwright/test';
+import { type Page, type Response, expect, test } from '@playwright/test';
 import { loginAsAlice } from './support/login';
 
 const CONTOSO_ID = '33333333-3333-4333-8333-333333333333';
@@ -115,19 +115,29 @@ async function selectFrench(page: Page): Promise<void> {
     await page.getByRole('button', { name: /Menu/ }).click();
   }
 
-  const preferenceSaved = page.waitForResponse(
-    (response) =>
-      response.request().method() === 'PUT' &&
-      new URL(response.url()).pathname === '/v1/me/preferences',
-  );
-  await page
-    .locator('app-language-switch [role="group"]:visible')
-    .getByRole('button', { name: 'FR', exact: true })
-    .click();
+  const languageSwitch = page.locator('app-language-switch [role="group"]:visible');
+  const frenchButton = languageSwitch.getByRole('button', { name: 'FR', exact: true });
+  const englishButton = languageSwitch.getByRole('button', { name: 'EN', exact: true });
+  if ((await frenchButton.getAttribute('aria-pressed')) === 'true') {
+    const englishPreferenceSaved = waitForPreferenceSave(page);
+    await englishButton.click();
+    expect((await englishPreferenceSaved).ok()).toBeTruthy();
+  }
+
+  const frenchPreferenceSaved = waitForPreferenceSave(page);
+  await frenchButton.click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
-  expect((await preferenceSaved).ok()).toBeTruthy();
+  expect((await frenchPreferenceSaved).ok()).toBeTruthy();
 
   if ((page.viewportSize()?.width ?? 1440) <= 760) {
     await page.keyboard.press('Escape');
   }
+}
+
+function waitForPreferenceSave(page: Page): Promise<Response> {
+  return page.waitForResponse(
+    (response) =>
+      response.request().method() === 'PUT' &&
+      new URL(response.url()).pathname === '/v1/me/preferences',
+  );
 }
