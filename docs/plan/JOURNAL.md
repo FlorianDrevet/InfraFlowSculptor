@@ -68,3 +68,4 @@
 | 2026-10-27 04:57 | Codex | `R-03` auto-validée | R-03-autovalidation.md |
 | 2026-10-27 10:31 | Codex | `J0-01` recette autonome à exécuter |  |
 | 2026-10-27 10:31 | Codex | `J0-01` reprise après recette autonome vérifiée |  |
+| 2026-10-27 10:34 | Codex | `J0-01` terminée | commit `bc6c2c4` |

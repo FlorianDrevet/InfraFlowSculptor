@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-01`](docs/plan/02-jalon-0-pilote.md#j0-01--profils-dutilisateur-et-organisations) — Profils d'utilisateur et organisations |
-| **Statut** | `EN_COURS` |
-| **Dernière étape terminée** | [`R-03`](docs/plan/01-preuves.md#-r-03--revue-des-preuves) — Revue des preuves (auto-validée) |
-| **Étape suivante** | `J0-02` — Membres et réglages d'accès de l'organisation |
+| **Étape courante** | [`J0-02`](docs/plan/02-jalon-0-pilote.md#j0-02--membres-et-réglages-daccès-de-lorganisation) — Membres et réglages d'accès de l'organisation |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`J0-01`](docs/plan/02-jalon-0-pilote.md#j0-01--profils-dutilisateur-et-organisations) — Profils d'utilisateur et organisations (commit `bc6c2c4`) |
+| **Étape suivante** | `J0-03` — Invitations et e-mails |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-acces` (créée depuis `origin/impl/socle` après la fusion de R-03) |
 | **Dernière mise à jour** | 2026-10-27 — Codex |
