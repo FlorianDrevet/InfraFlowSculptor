@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-05`](docs/plan/02-jalon-0-pilote.md#j0-05--permissions-rôles-de-projet-et-autorisation) — Permissions, rôles de projet et autorisation |
+| **Étape courante** | [`R-04`](docs/plan/02-jalon-0-pilote.md#-r-04--revue-de-sécurité-des-accès) — Revue de sécurité des accès |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-04`](docs/plan/02-jalon-0-pilote.md#j0-04--journal-daudit-écriture-et-consultation-simple) — Journal d'audit (écriture et consultation simple) (commit `b249f29`) |
-| **Étape suivante** | `R-04` — Revue de sécurité des accès |
+| **Dernière étape terminée** | [`J0-05`](docs/plan/02-jalon-0-pilote.md#j0-05--permissions-rôles-de-projet-et-autorisation) — Permissions, rôles de projet et autorisation (commit `3e5fd64`) |
+| **Étape suivante** | `J0-06` — Catalogue du pilote |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-acces` (créée depuis `origin/impl/socle` après la fusion de R-03) |
 | **Dernière mise à jour** | 2026-10-27 — Codex |
