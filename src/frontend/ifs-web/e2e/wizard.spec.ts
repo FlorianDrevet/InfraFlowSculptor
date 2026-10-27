@@ -87,7 +87,7 @@ test('Alice crée un projet et reprend son brouillon depuis un autre navigateur'
       .analyze();
     expect(accessibility.violations).toEqual([]);
 
-    const captureDirectory = resolve(process.cwd(), '../../../docs/plan/revues/captures/R-05');
+    const captureDirectory = resolve(process.cwd(), 'e2e/__captures__');
     await mkdir(captureDirectory, { recursive: true });
     await resumePage.screenshot({
       path: resolve(captureDirectory, `Assistant-${resumePage.viewportSize()?.width ?? 1440}.png`),
