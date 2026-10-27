@@ -16,8 +16,8 @@ test('Alice crée un projet et reprend son brouillon depuis un autre navigateur'
   await loginAsAlice(page);
   await selectFrench(page);
   await page.goto(`/o/${CONTOSO_ID}/projects/new`);
-  await expect(page.getByRole('heading', { name: 'Identité du projet' })).toBeVisible();
   await page.getByRole('button', { name: /Identité/ }).click();
+  await expect(page.getByRole('heading', { name: 'Identité du projet' })).toBeVisible();
 
   const suffix = Date.now().toString(36).slice(-7);
   const projectName = `Boutique en ligne ${suffix}`;
@@ -49,11 +49,12 @@ test('Alice crée un projet et reprend son brouillon depuis un autre navigateur'
   await page.locator('input[name="environmentCode1"]').fill('prd');
   await page.locator('select[name="environmentRegion1"]').selectOption('francecentral');
   await page.locator('input[name="environmentSubscription1"]').fill(TEST_SUBSCRIPTION_ID);
-  const protectedToggle = page.getByRole('checkbox', {
-    name: 'Protégé : chaque déploiement exige une approbation',
-  });
-  if (!(await protectedToggle.isChecked())) {
-    await protectedToggle.check();
+  const protectedToggle = page
+    .locator('.wizard-environment')
+    .nth(1)
+    .getByRole('switch', { name: 'Protégé : chaque déploiement exige une approbation' });
+  if ((await protectedToggle.getAttribute('aria-checked')) !== 'true') {
+    await protectedToggle.click();
   }
   await page.getByLabel('Approbateurs', { exact: true }).fill('Shop Release Approvers');
 
