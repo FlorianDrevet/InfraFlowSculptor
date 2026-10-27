@@ -27,4 +27,7 @@ public static class EndpointNames
     public const string AssignProjectRole = "AssignProjectRole";
     public const string RemoveProjectRole = "RemoveProjectRole";
     public const string TakeProjectOwnership = "TakeProjectOwnership";
+    public const string GetCatalogVersions = "GetCatalogVersions";
+    public const string GetCatalogTypes = "GetCatalogTypes";
+    public const string GetCatalogType = "GetCatalogType";
 }

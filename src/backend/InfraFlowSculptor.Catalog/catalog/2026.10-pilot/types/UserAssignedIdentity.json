@@ -1,0 +1,115 @@
+{
+  "type": "UserAssignedIdentity",
+  "labels": {
+    "fr": "Identité managée affectée par l’utilisateur",
+    "en": "User-assigned managed identity"
+  },
+  "category": "security",
+  "icon": "managed-identity",
+  "armType": "Microsoft.ManagedIdentity/userAssignedIdentities",
+  "availableFrom": "lot1",
+  "documentationUrl": "https://learn.microsoft.com/en-us/azure/templates/microsoft.managedidentity/2023-01-31/userassignedidentities",
+  "verifiedAgainstDocsOn": "2026-10-27",
+  "naming": {
+    "abbreviation": "id",
+    "allowed": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$",
+    "case": "mixed",
+    "separators": [
+      "-",
+      "_"
+    ],
+    "forbidConsecutiveSeparators": true,
+    "minLength": 3,
+    "maxLength": 128,
+    "firstChar": "alphanumeric",
+    "lastChar": "alphanumeric",
+    "uniqueness": "resourceGroup",
+    "availabilityDomain": null
+  },
+  "properties": [],
+  "fixedValues": [],
+  "children": [],
+  "identities": {
+    "system": false,
+    "userAssignedMax": 0
+  },
+  "links": {
+    "asSource": [
+      "Access",
+      "DataAccess"
+    ],
+    "asTarget": [],
+    "required": []
+  },
+  "outputs": [
+    {
+      "name": "principalId",
+      "description": "Identifiant du principal de service.",
+      "sensitive": false,
+      "computableFromName": false
+    },
+    {
+      "name": "clientId",
+      "description": "Identifiant client.",
+      "sensitive": false,
+      "computableFromName": false
+    },
+    {
+      "name": "id",
+      "description": "Identifiant de la ressource.",
+      "sensitive": false,
+      "computableFromName": false
+    }
+  ],
+  "lifecycle": {
+    "family": "authorizationConfiguration"
+  },
+  "roles": [
+    "Managed Identity Operator"
+  ],
+  "roleEquivalences": {},
+  "dataAccess": {
+    "supported": false,
+    "levels": [],
+    "databaseEngine": null
+  },
+  "exposure": {
+    "modes": [],
+    "privateGroupIds": [],
+    "privateDnsZones": [],
+    "conditions": []
+  },
+  "diagnostics": {
+    "supported": true
+  },
+  "applicationSettings": {
+    "destination": "none"
+  },
+  "languageSupport": {
+    "Bicep": "full",
+    "Terraform": "none",
+    "Pulumi": "none"
+  },
+  "generation": {
+    "Bicep": {
+      "module": "br/public:avm/res/managed-identity/user-assigned-identity:0.6.0",
+      "versionPin": "0.6.0",
+      "map": {
+        "name": "name",
+        "location": "location"
+      }
+    }
+  },
+  "deprecations": [],
+  "privateDnsZones": [],
+  "requiredNetworkRules": [],
+  "recommendedAlerts": [],
+  "pricing": {
+    "source": "azure-retail-prices",
+    "meters": [],
+    "assumptions": [],
+    "estimated": false,
+    "unestimatedReason": "Aucun scénario tarifaire par défaut n’est estimé pour le profil du pilote."
+  },
+  "drift": []
+}

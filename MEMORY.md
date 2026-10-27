@@ -72,6 +72,7 @@
 | Tester le vérificateur de prérequis | `python -m unittest discover tools/dev/tests` |
 | Compiler le backend | `dotnet build src/backend/InfraFlowSculptor.slnx` |
 | Démarrer l'application locale | `cd src/backend; aspire run` |
+| Tester le type JSON du client OpenAPI | `cd src/frontend/ifs-web; npm run api:normalizer:test` |
 | Mettre à jour le graphe de code, sans LLM | `python -m graphify update .` (à la racine) |
 | Étape terminée | `python tools/plan/gate.py done <ID>` |
 | Auto-valider un verrou après vérification | `python tools/plan/gate.py auto-review <R-nn>` |

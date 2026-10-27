@@ -9,7 +9,13 @@ export function normalizeGeneratedApi(directory) {
       normalizeGeneratedApi(entryPath);
     } else if (entry.isFile() && entry.name.endsWith('.ts')) {
       const original = readFileSync(entryPath, 'utf8');
-      const normalized = original.replace(/\r\n?/g, '\n').replace(/\n*$/, '\n');
+      let normalized = original.replace(/\r\n?/g, '\n').replace(/\n*$/, '\n');
+      if (entry.name === 'json-element.ts') {
+        normalized = normalized.replace(
+          'export type JsonElement = any;',
+          'export type JsonElement = boolean | null | number | string | JsonElement[] | { [key: string]: JsonElement };',
+        );
+      }
       if (normalized !== original) {
         writeFileSync(entryPath, normalized, 'utf8');
       }

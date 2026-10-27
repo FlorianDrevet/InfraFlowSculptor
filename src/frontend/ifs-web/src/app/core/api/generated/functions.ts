@@ -51,3 +51,9 @@ export type { RemoveProjectRole$Params as RemoveProjectRole$Params } from './fn/
 export { removeProjectRole as removeProjectRole } from './fn/projects/remove-project-role';
 export type { TakeProjectOwnership$Params as TakeProjectOwnership$Params } from './fn/projects/take-project-ownership';
 export { takeProjectOwnership as takeProjectOwnership } from './fn/projects/take-project-ownership';
+export type { GetCatalogVersions$Params as GetCatalogVersions$Params } from './fn/catalog/get-catalog-versions';
+export { getCatalogVersions as getCatalogVersions } from './fn/catalog/get-catalog-versions';
+export type { GetCatalogTypes$Params as GetCatalogTypes$Params } from './fn/catalog/get-catalog-types';
+export { getCatalogTypes as getCatalogTypes } from './fn/catalog/get-catalog-types';
+export type { GetCatalogType$Params as GetCatalogType$Params } from './fn/catalog/get-catalog-type';
+export { getCatalogType as getCatalogType } from './fn/catalog/get-catalog-type';

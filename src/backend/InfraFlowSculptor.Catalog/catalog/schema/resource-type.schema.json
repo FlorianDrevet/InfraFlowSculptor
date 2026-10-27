@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://infraflowsculptor.local/schema/resource-type.schema.json",
+  "title": "Descripteur de type de ressource IFS",
+  "type": "object",
+  "required": [
+    "type", "labels", "category", "icon", "armType", "availableFrom", "documentationUrl",
+    "verifiedAgainstDocsOn", "naming", "properties", "fixedValues", "children", "identities",
+    "links", "outputs", "lifecycle", "roles", "roleEquivalences", "dataAccess", "exposure",
+    "diagnostics", "applicationSettings", "languageSupport", "generation", "deprecations",
+    "privateDnsZones", "requiredNetworkRules", "recommendedAlerts", "pricing", "drift"
+  ],
+  "properties": {
+    "type": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]+$" },
+    "labels": { "$ref": "#/$defs/labels" },
+    "category": { "enum": ["observability", "security", "data", "compute", "platform"] },
+    "icon": { "type": "string", "minLength": 1 },
+    "armType": { "type": "string", "pattern": "^[A-Za-z0-9.]+/.+$" },
+    "availableFrom": { "enum": ["lot1"] },
+    "documentationUrl": { "type": "string", "format": "uri" },
+    "verifiedAgainstDocsOn": { "type": "string", "format": "date" },
+    "naming": { "$ref": "#/$defs/naming" },
+    "properties": { "type": "array", "items": { "$ref": "#/$defs/property" } },
+    "fixedValues": { "type": "array", "items": { "$ref": "#/$defs/fixedValue" } },
+    "children": { "type": "array", "items": { "$ref": "#/$defs/child" } },
+    "identities": {
+      "type": "object",
+      "required": ["system", "userAssignedMax"],
+      "properties": {
+        "system": { "type": "boolean" },
+        "userAssignedMax": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "links": {
+      "type": "object",
+      "required": ["asSource", "asTarget", "required"],
+      "properties": {
+        "asSource": { "type": "array", "items": { "$ref": "#/$defs/linkKind" }, "uniqueItems": true },
+        "asTarget": { "type": "array", "items": { "$ref": "#/$defs/linkKind" }, "uniqueItems": true },
+        "required": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["kind", "cardinality"],
+            "properties": {
+              "kind": { "$ref": "#/$defs/linkKind" },
+              "cardinality": { "enum": ["one", "oneOrMany"] }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "outputs": { "type": "array", "items": { "$ref": "#/$defs/output" } },
+    "lifecycle": {
+      "type": "object",
+      "required": ["family"],
+      "properties": { "family": { "enum": ["data", "state", "authorizationConfiguration"] } },
+      "additionalProperties": false
+    },
+    "roles": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "roleEquivalences": {
+      "type": "object",
+      "additionalProperties": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+    },
+    "dataAccess": {
+      "type": "object",
+      "required": ["supported", "levels", "databaseEngine"],
+      "properties": {
+        "supported": { "type": "boolean" },
+        "levels": { "type": "array", "items": { "type": "string" } },
+        "databaseEngine": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "exposure": {
+      "type": "object",
+      "required": ["modes", "privateGroupIds", "privateDnsZones", "conditions"],
+      "properties": {
+        "modes": { "type": "array", "items": { "enum": ["Public", "Restricted", "Private"] }, "uniqueItems": true },
+        "privateGroupIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "privateDnsZones": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "conditions": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "diagnostics": {
+      "type": "object",
+      "required": ["supported"],
+      "properties": { "supported": { "type": "boolean" } },
+      "additionalProperties": false
+    },
+    "applicationSettings": {
+      "type": "object",
+      "required": ["destination"],
+      "properties": { "destination": { "enum": ["none", "environmentVariables", "appConfiguration"] } },
+      "additionalProperties": false
+    },
+    "languageSupport": {
+      "type": "object",
+      "required": ["Bicep", "Terraform", "Pulumi"],
+      "properties": {
+        "Bicep": { "$ref": "#/$defs/languageSupportLevel" },
+        "Terraform": { "$ref": "#/$defs/languageSupportLevel" },
+        "Pulumi": { "$ref": "#/$defs/languageSupportLevel" }
+      },
+      "additionalProperties": false
+    },
+    "generation": {
+      "type": "object",
+      "required": ["Bicep"],
+      "properties": {
+        "Bicep": {
+          "type": "object",
+          "required": ["module", "versionPin", "map"],
+          "properties": {
+            "module": { "type": "string", "pattern": "^br/public:avm/" },
+            "versionPin": { "type": "string", "minLength": 1 },
+            "map": { "type": "object", "additionalProperties": { "type": "string", "minLength": 1 } }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "deprecations": { "type": "array", "items": { "$ref": "#/$defs/deprecation" } },
+    "privateDnsZones": { "type": "array", "items": { "$ref": "#/$defs/privateDnsZone" } },
+    "requiredNetworkRules": { "type": "array", "items": { "$ref": "#/$defs/networkRule" } },
+    "recommendedAlerts": { "type": "array", "items": { "$ref": "#/$defs/alert" } },
+    "pricing": { "$ref": "#/$defs/pricing" },
+    "drift": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+  },
+  "$defs": {
+    "labels": {
+      "type": "object",
+      "required": ["fr", "en"],
+      "properties": { "fr": { "type": "string" }, "en": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "naming": {
+      "type": "object",
+      "required": ["abbreviation", "allowed", "case", "separators", "forbidConsecutiveSeparators", "minLength", "maxLength", "firstChar", "lastChar", "uniqueness", "availabilityDomain"],
+      "properties": {
+        "abbreviation": { "type": "string", "minLength": 1 },
+        "allowed": { "type": "string", "minLength": 1 },
+        "case": { "enum": ["lower", "upper", "mixed"] },
+        "separators": { "type": "array", "items": { "type": "string", "maxLength": 1 } },
+        "forbidConsecutiveSeparators": { "type": "boolean" },
+        "minLength": { "type": "integer", "minimum": 1 },
+        "maxLength": { "type": "integer", "minimum": 1 },
+        "firstChar": { "type": "string" },
+        "lastChar": { "type": "string" },
+        "uniqueness": { "enum": ["global", "resourceGroup", "parent"] },
+        "availabilityDomain": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "property": {
+      "type": "object",
+      "required": ["name", "labels", "kind", "overridable"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "labels": { "$ref": "#/$defs/labels" },
+        "kind": { "enum": ["boolean", "integer", "number", "string", "enum", "reference", "array", "object"] },
+        "values": { "type": "array", "items": {} },
+        "default": {},
+        "minimum": { "type": "number" },
+        "maximum": { "type": "number" },
+        "minLength": { "type": "integer", "minimum": 0 },
+        "maxLength": { "type": "integer", "minimum": 0 },
+        "overridable": { "type": "boolean" },
+        "lockedAfterPublish": { "type": "boolean" },
+        "irreversible": {
+          "type": "object",
+          "required": ["from", "to"],
+          "properties": { "from": {}, "to": {} },
+          "additionalProperties": false
+        },
+        "deprecatedValues": { "type": "array", "items": { "type": "string" } },
+        "condition": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "fixedValue": {
+      "type": "object",
+      "required": ["name", "value", "labels"],
+      "properties": { "name": { "type": "string" }, "value": {}, "labels": { "$ref": "#/$defs/labels" } },
+      "additionalProperties": false
+    },
+    "child": {
+      "type": "object",
+      "required": ["type", "labels", "naming", "properties"],
+      "properties": {
+        "type": { "type": "string" },
+        "labels": { "$ref": "#/$defs/labels" },
+        "naming": { "$ref": "#/$defs/naming" },
+        "properties": { "type": "array", "items": { "$ref": "#/$defs/property" } }
+      },
+      "additionalProperties": false
+    },
+    "linkKind": { "enum": ["Hosting", "Logging", "Diagnostics", "Telemetry", "ImagePull", "HostStorage", "ConfigurationRead", "Access", "DataAccess", "ValueDependency", "SecretRead"] },
+    "output": {
+      "type": "object",
+      "required": ["name", "description", "sensitive", "computableFromName"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "sensitive": { "type": "boolean" },
+        "condition": { "type": "string" },
+        "computableFromName": { "type": "boolean" },
+        "pattern": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "languageSupportLevel": { "enum": ["full", "partial", "none"] },
+    "deprecation": {
+      "type": "object",
+      "required": ["value", "deprecatedOn", "refusedOn"],
+      "properties": {
+        "value": { "type": "string" },
+        "deprecatedOn": { "type": ["string", "null"], "format": "date" },
+        "refusedOn": { "type": ["string", "null"], "format": "date" }
+      },
+      "additionalProperties": false
+    },
+    "privateDnsZone": {
+      "type": "object",
+      "required": ["groupId", "zoneName"],
+      "properties": { "groupId": { "type": "string" }, "zoneName": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "networkRule": {
+      "type": "object",
+      "required": ["usage", "protocol", "port"],
+      "properties": { "usage": { "type": "string" }, "protocol": { "type": "string" }, "port": { "type": "integer", "minimum": 1, "maximum": 65535 } },
+      "additionalProperties": false
+    },
+    "alert": {
+      "type": "object",
+      "required": ["metric", "aggregation", "threshold", "severity"],
+      "properties": {
+        "metric": { "type": "string" },
+        "aggregation": { "type": "string" },
+        "threshold": { "type": "number" },
+        "severity": { "type": "integer", "minimum": 0, "maximum": 4 }
+      },
+      "additionalProperties": false
+    },
+    "pricing": {
+      "type": "object",
+      "required": ["source", "meters", "assumptions", "estimated"],
+      "properties": {
+        "source": { "enum": ["azure-retail-prices"] },
+        "meters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["serviceName", "productName", "meterName"],
+            "properties": { "serviceName": { "type": "string" }, "productName": { "type": "string" }, "meterName": { "type": "string" } },
+            "additionalProperties": false
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "unit", "default"],
+            "properties": { "name": { "type": "string" }, "unit": { "type": "string" }, "default": { "type": "number", "minimum": 0 } },
+            "additionalProperties": false
+          }
+        },
+        "estimated": { "type": "boolean" },
+        "unestimatedReason": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

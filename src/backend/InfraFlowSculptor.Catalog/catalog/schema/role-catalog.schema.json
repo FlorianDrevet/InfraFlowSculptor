@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://infraflowsculptor.local/schema/role-catalog.schema.json",
+  "title": "Rôles Azure intégrés du catalogue IFS",
+  "type": "object",
+  "required": ["roles"],
+  "properties": {
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "definitionId", "description", "documentationUrl"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "definitionId": { "type": "string", "format": "uuid" },
+          "description": { "type": "string", "minLength": 1 },
+          "documentationUrl": { "type": "string", "format": "uri" }
+        },
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false
+}

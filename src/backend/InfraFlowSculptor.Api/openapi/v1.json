@@ -1685,6 +1685,150 @@
           }
         ]
       }
+    },
+    "/v1/catalog/versions": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "Lister les versions disponibles du catalogue.",
+        "operationId": "GetCatalogVersions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogVersionResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/catalog/{version}/types": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "Rechercher les types d’une version du catalogue.",
+        "operationId": "GetCatalogTypes",
+        "parameters": [
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogResourceTypeSummaryResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/catalog/{version}/types/{type}": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "summary": "Lire le descripteur complet d’un type de ressource.",
+        "operationId": "GetCatalogType",
+        "parameters": [
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonElement"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -1844,6 +1988,65 @@
           },
           "isPersonalData": {
             "type": "boolean"
+          }
+        }
+      },
+      "CatalogResourceTypeSummaryResponse": {
+        "required": [
+          "type",
+          "category",
+          "labelFr",
+          "labelEn",
+          "icon"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "labelFr": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          }
+        }
+      },
+      "CatalogVersionResponse": {
+        "required": [
+          "version",
+          "status",
+          "publishedAt",
+          "supportEndsAt",
+          "fingerprint"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "supportEndsAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "fingerprint": {
+            "type": "string"
           }
         }
       },
@@ -2116,6 +2319,7 @@
           }
         }
       },
+      "JsonElement": { },
       "MePreferencesResponse": {
         "required": [
           "preferredLanguage",
@@ -2469,6 +2673,9 @@
     },
     {
       "name": "Projects"
+    },
+    {
+      "name": "Catalog"
     }
   ]
 }

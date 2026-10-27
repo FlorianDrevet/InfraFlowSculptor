@@ -14,7 +14,7 @@
 | **Dernière étape terminée** | [`R-04`](docs/plan/02-jalon-0-pilote.md#-r-04--revue-de-sécurité-des-accès) — Revue de sécurité des accès (auto-validée) |
 | **Étape suivante** | `J0-07` — Projets et environnements (API) |
 | **Verrou** | aucun |
-| **Branche** | `impl/j0-acces` (créée depuis `origin/impl/socle` après la fusion de R-03) |
+| **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
 | **Dernière mise à jour** | 2026-10-27 — Codex (auto-validation R-04) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).

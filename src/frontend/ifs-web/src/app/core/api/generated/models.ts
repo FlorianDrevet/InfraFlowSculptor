@@ -6,6 +6,8 @@ export type { AuditEventDiffResponse } from './models/audit-event-diff-response'
 export type { AuditEventPageResponse } from './models/audit-event-page-response';
 export type { AuditEventResponse } from './models/audit-event-response';
 export type { AuditPropertyChangeResponse } from './models/audit-property-change-response';
+export type { CatalogResourceTypeSummaryResponse } from './models/catalog-resource-type-summary-response';
+export type { CatalogVersionResponse } from './models/catalog-version-response';
 export type { ChangeOrganizationMemberRolesRequest } from './models/change-organization-member-roles-request';
 export type { CreateOrganizationRequest } from './models/create-organization-request';
 export type { EffectiveProjectPermissionsResponse } from './models/effective-project-permissions-response';
@@ -16,6 +18,7 @@ export type { InvitationPreviewResponse } from './models/invitation-preview-resp
 export type { InvitationResponse } from './models/invitation-response';
 export type { InvitationStatus } from './models/invitation-status';
 export type { InviteOrganizationRequest } from './models/invite-organization-request';
+export type { JsonElement } from './models/json-element';
 export type { MePreferencesResponse } from './models/me-preferences-response';
 export type { MeResponse } from './models/me-response';
 export type { ObjectType } from './models/object-type';

@@ -4,6 +4,7 @@
     <File Path="global.json" />
   </Folder>
   <Project Path="InfraFlowSculptor.Api/InfraFlowSculptor.Api.csproj" />
+  <Project Path="InfraFlowSculptor.Catalog/InfraFlowSculptor.Catalog.csproj" />
   <Project Path="InfraFlowSculptor.Application/InfraFlowSculptor.Application.csproj" />
   <Project Path="InfraFlowSculptor.Contracts/InfraFlowSculptor.Contracts.csproj" />
   <Project Path="InfraFlowSculptor.Domain/InfraFlowSculptor.Domain.csproj" />
@@ -20,5 +21,6 @@
     <Project Path="tests/InfraFlowSculptor.Architecture.Tests/InfraFlowSculptor.Architecture.Tests.csproj" />
     <Project Path="tests/InfraFlowSculptor.Domain.Tests/InfraFlowSculptor.Domain.Tests.csproj" />
     <Project Path="tests/InfraFlowSculptor.Infrastructure.Tests/InfraFlowSculptor.Infrastructure.Tests.csproj" />
+    <Project Path="tests/InfraFlowSculptor.Catalog.Tests/InfraFlowSculptor.Catalog.Tests.csproj" />
   </Folder>
 </Solution>

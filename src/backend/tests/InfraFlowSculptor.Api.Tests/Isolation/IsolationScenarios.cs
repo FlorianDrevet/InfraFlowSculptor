@@ -122,6 +122,21 @@ public static class IsolationScenarios
                 $"/v1/invitations/{TestInvitationToken}",
                 HttpStatusCode.NotFound),
             ["GetFeatures"] = AuthenticatedScenario("GetFeatures", HttpMethod.Get, "/v1/features", HttpStatusCode.OK),
+            ["GetCatalogVersions"] = AuthenticatedScenario(
+                "GetCatalogVersions",
+                HttpMethod.Get,
+                "/v1/catalog/versions",
+                HttpStatusCode.OK),
+            ["GetCatalogTypes"] = AuthenticatedScenario(
+                "GetCatalogTypes",
+                HttpMethod.Get,
+                "/v1/catalog/2026.10-pilot/types?category=security",
+                HttpStatusCode.OK),
+            ["GetCatalogType"] = AuthenticatedScenario(
+                "GetCatalogType",
+                HttpMethod.Get,
+                "/v1/catalog/2026.10-pilot/types/KeyVault",
+                HttpStatusCode.OK),
             ["GetMyProjectPermissions"] = OrganizationScenario(
                 "GetMyProjectPermissions",
                 HttpMethod.Get,
