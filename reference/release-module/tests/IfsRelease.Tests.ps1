@@ -1714,3 +1714,10 @@ Describe "Révocation d'accès RBAC" {
         }
     }
 }
+
+Describe "Sortie de référence publiée" {
+    It "n'expose aucun crochet d'arrêt réservé aux preuves" {
+        $moduleSource = [System.IO.File]::ReadAllText($script:modulePath)
+        $moduleSource | Should -Not -Match 'IFS_TEST_ABORT_AFTER'
+    }
+}

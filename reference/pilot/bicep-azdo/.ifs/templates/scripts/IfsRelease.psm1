@@ -1022,7 +1022,6 @@ function Invoke-IfsPendingOperation {
             if ($operation.state -eq 'ToDo') { [void](Set-IfsOperationState -Context $Context -OperationId $operation.id -State 'Started') }
             $stackOutput = Invoke-IfsStackDeployment -ReleaseData $ReleaseData -TemplateFile $TemplateFile -ParameterFile $ParameterFile -DeploymentIdentityObjectId $DeploymentIdentityObjectId -ApplicationIdentityObjectId $ApplicationIdentityObjectId -AppOwnedState $AppOwnedState
             $summary.detachedResources.AddRange([string[]]$stackOutput.detachedResources)
-            if ($env:IFS_TEST_ABORT_AFTER -eq 'deploy-unit') { [Environment]::Exit(137) }
             [void](Set-IfsOperationState -Context $Context -OperationId $operation.id -State 'Done')
             continue
         }
@@ -1464,7 +1463,6 @@ function Invoke-IfsInfraDeploy {
     Déploie une unité après contrôle de fraîcheur et d'empreinte sous le verrou de cible.
     .DESCRIPTION
     Toutes les opérations prévues sont inscrites au journal avant leur première mutation. Le rapport est écrit dans finally.
-    IFS_TEST_ABORT_AFTER=deploy-unit est réservé aux preuves : il termine le processus après l’étape 9 sans rapport.
     #>
     [CmdletBinding()]
     param(
