@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) |
-| **Statut** | `EN_COURS` |
-| **Dernière étape terminée** | [`P-07`](docs/plan/01-preuves.md#p-07--outillage-des-preuves-et-recette-pas-à-pas) — Outillage des preuves et recette pas à pas (commit `1d6f1be`) |
-| **Étape suivante** | `R-03` — Revue des preuves |
+| **Étape courante** | [`R-03`](docs/plan/01-preuves.md#-r-03--revue-des-preuves) — Revue des preuves |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`P-08`](docs/plan/01-preuves.md#p-08--exécution-des-preuves-accompagnement) — Exécution des preuves (accompagnement) (commit `f99e3cc`) |
+| **Étape suivante** | `J0-01` — Profils d'utilisateur et organisations |
 | **Verrou** | aucun |
 | **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
-| **Dernière mise à jour** | 2026-10-26 — Codex (blocage résolu) |
+| **Dernière mise à jour** | 2026-10-27 — Codex |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
