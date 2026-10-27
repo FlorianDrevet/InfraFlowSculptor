@@ -36,6 +36,15 @@ public static class CatalogLoader
                 .Select(ParseResourceType)
                 .ToImmutableArray();
 
+            var regionFile = files.Single(file => string.Equals(file.Path, $"{versionPrefix}regions.json", StringComparison.Ordinal));
+            using var regionDocument = JsonDocument.Parse(regionFile.Content);
+            var regions = regionDocument.RootElement.GetProperty("regions")
+                .EnumerateArray()
+                .Select(region => new CatalogRegion(
+                    region.GetProperty("name").GetString()!,
+                    region.GetProperty("code").GetString()!))
+                .ToImmutableArray();
+
             var fingerprint = ComputeFingerprint(files.Where(file => file.Path.StartsWith(versionPrefix, StringComparison.Ordinal))
                 .Select(file => new CatalogFingerprintInput(file.Path[versionPrefix.Length..], file.Content)));
             var supportEndsAtElement = metadata.GetProperty("supportEndsAt");
@@ -51,6 +60,7 @@ public static class CatalogLoader
                 metadata.GetProperty("notes").GetString()!,
                 DateOnly.Parse(metadata.GetProperty("verifiedAgainstDocsOn").GetString()!, System.Globalization.CultureInfo.InvariantCulture),
                 descriptors,
+                regions,
                 fingerprint));
         }
 

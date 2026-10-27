@@ -13,6 +13,7 @@ public sealed class EfDemoProjectSeeder(IfsDbContext dbContext)
         UserProfileId ownerId,
         UserProfileId contributorId,
         UserProfileId readerId,
+        string catalogVersion,
         CancellationToken cancellationToken = default)
     {
         var project = await dbContext.Projects
@@ -22,7 +23,19 @@ public sealed class EfDemoProjectSeeder(IfsDbContext dbContext)
 
         if (project is null)
         {
-            project = ProjectAggregate.Create(projectId, organizationId, "shop", "shop", ownerId).Value;
+            var ownerTenantId = await dbContext.UserProfiles
+                .Where(profile => profile.Id == ownerId)
+                .Select(profile => profile.TenantId)
+                .SingleAsync(cancellationToken);
+            project = ProjectAggregate.Create(
+                projectId,
+                organizationId,
+                "shop",
+                "shop",
+                ownerTenantId,
+                string.Empty,
+                catalogVersion,
+                ownerId).Value;
             dbContext.Projects.Add(project);
         }
         else if (project.OrganizationId != organizationId)

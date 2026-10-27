@@ -6,6 +6,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\InfraFlowSculptor.Domain\InfraFlowSculptor.Domain.csproj" />
+      <ProjectReference Include="..\InfraFlowSculptor.Catalog\InfraFlowSculptor.Catalog.csproj" />
     </ItemGroup>
 
     <ItemGroup>

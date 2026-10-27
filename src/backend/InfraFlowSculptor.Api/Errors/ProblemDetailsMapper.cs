@@ -9,6 +9,8 @@ public static class ProblemDetailsMapper
         ProblemMetadataKeys.Permission,
         ProblemMetadataKeys.CurrentVersion,
         ProblemMetadataKeys.Current,
+        ProblemMetadataKeys.AffectedResources,
+        ProblemMetadataKeys.AffectedData,
         ProblemMetadataKeys.Limit,
         ProblemMetadataKeys.Plan
     ];

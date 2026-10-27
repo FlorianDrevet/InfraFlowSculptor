@@ -34,6 +34,7 @@ public class IfsDbContext(
     };
 
     private readonly ICurrentOrganization currentOrganization = currentOrganization;
+    private long savepointSequence;
 
     public DbSet<OutboxMessageEntity> OutboxMessages => Set<OutboxMessageEntity>();
 
@@ -69,11 +70,13 @@ public class IfsDbContext(
     {
         if (Database.CurrentTransaction is { } currentTransaction)
         {
-            return new IfsDbTransaction(currentTransaction, isOwner: false);
+            var savepoint = $"ifs_nested_{Interlocked.Increment(ref savepointSequence)}";
+            await currentTransaction.CreateSavepointAsync(savepoint, cancellationToken);
+            return new IfsDbTransaction(currentTransaction, isOwner: false, savepoint);
         }
 
         var transaction = await Database.BeginTransactionAsync(cancellationToken);
-        return new IfsDbTransaction(transaction, isOwner: true);
+        return new IfsDbTransaction(transaction, isOwner: true, savepointName: null);
     }
 
     public IReadOnlyCollection<IDomainEvent> GetDomainEvents() =>

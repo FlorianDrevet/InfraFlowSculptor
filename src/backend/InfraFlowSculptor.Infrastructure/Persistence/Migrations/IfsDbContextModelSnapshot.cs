@@ -125,15 +125,77 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("CatalogVersion")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("catalog_version");
+
+                    b.Property<string>("CiPlatform")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("AzureDevOps")
+                        .HasColumnName("ci_platform");
+
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)")
                         .HasColumnName("code");
 
+                    b.Property<Guid?>("CoordinatorUserProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("coordinator_user_profile_id");
+
+                    b.Property<string[]>("DefaultReviewers")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasDefaultValueSql("ARRAY[]::text[]")
+                        .HasColumnName("default_reviewers");
+
+                    b.Property<string[]>("DefaultRunners")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasDefaultValueSql("ARRAY[]::text[]")
+                        .HasColumnName("default_runners");
+
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description");
+
+                    b.Property<DateTimeOffset?>("FirstPublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("first_published_at");
+
+                    b.Property<string>("InfrastructureLanguage")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("Bicep")
+                        .HasColumnName("infrastructure_language");
+
+                    b.Property<int>("ModelVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("model_version");
+
+                    b.Property<string>("ModuleSource")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasDefaultValue("AVM registre public")
+                        .HasColumnName("module_source");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -144,6 +206,16 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
+
+                    b.Property<bool>("SystemTagsEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("system_tags_enabled");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
 
                     b.Property<int>("Version")
                         .IsConcurrencyToken()
@@ -623,7 +695,152 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                                 .HasConstraintName("fk_project_role_assignments_projects_project_id");
                         });
 
+                    b.OwnsMany("InfraFlowSculptor.Domain.ProjectAggregate.ProjectTag", "Tags", b1 =>
+                        {
+                            b1.Property<Guid>("ProjectId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("project_id");
+
+                            b1.Property<string>("Key")
+                                .HasMaxLength(512)
+                                .HasColumnType("character varying(512)")
+                                .HasColumnName("key");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)")
+                                .HasColumnName("value");
+
+                            b1.HasKey("ProjectId", "Key")
+                                .HasName("pk_project_tags");
+
+                            b1.ToTable("project_tags", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProjectId")
+                                .HasConstraintName("fk_project_tags_projects_project_id");
+                        });
+
+                    b.OwnsMany("InfraFlowSculptor.Domain.ProjectAggregate.ProjectEnvironment", "Environments", b1 =>
+                        {
+                            b1.Property<Guid>("ProjectId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("project_id");
+
+                            b1.Property<Guid>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("uuid")
+                                .HasColumnName("environment_id");
+
+                            b1.PrimitiveCollection<string[]>("Approvers")
+                                .IsRequired()
+                                .HasColumnType("text[]")
+                                .HasColumnName("approvers");
+
+                            b1.Property<string>("Code")
+                                .IsRequired()
+                                .HasMaxLength(8)
+                                .HasColumnType("character varying(8)")
+                                .HasColumnName("code");
+
+                            b1.Property<string>("DeploymentConnection")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("deployment_connection");
+
+                            b1.Property<string>("Description")
+                                .IsRequired()
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("description");
+
+                            b1.Property<DateTimeOffset?>("FirstPublishedAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("first_published_at");
+
+                            b1.Property<bool>("IsProtected")
+                                .HasColumnType("boolean")
+                                .HasColumnName("is_protected");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("name");
+
+                            b1.Property<int>("Position")
+                                .HasColumnType("integer")
+                                .HasColumnName("position");
+
+                            b1.Property<string>("Region")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("region");
+
+                            b1.PrimitiveCollection<string[]>("Runners")
+                                .IsRequired()
+                                .HasColumnType("text[]")
+                                .HasColumnName("runners");
+
+                            b1.Property<Guid>("SubscriptionId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("subscription_id");
+
+                            b1.HasKey("ProjectId", "Id")
+                                .HasName("pk_project_environments");
+
+                            b1.HasIndex("ProjectId", "Position")
+                                .IsUnique()
+                                .HasDatabaseName("ux_project_environments_project_position");
+
+                            b1.ToTable("project_environments", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProjectId")
+                                .HasConstraintName("fk_project_environments_projects_project_id");
+
+                            b1.OwnsMany("InfraFlowSculptor.Domain.ProjectAggregate.ProjectTag", "Tags", b2 =>
+                                {
+                                    b2.Property<Guid>("ProjectId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("project_id");
+
+                                    b2.Property<Guid>("EnvironmentId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("environment_id");
+
+                                    b2.Property<string>("Key")
+                                        .HasMaxLength(512)
+                                        .HasColumnType("character varying(512)")
+                                        .HasColumnName("key");
+
+                                    b2.Property<string>("Value")
+                                        .IsRequired()
+                                        .HasMaxLength(256)
+                                        .HasColumnType("character varying(256)")
+                                        .HasColumnName("value");
+
+                                    b2.HasKey("ProjectId", "EnvironmentId", "Key")
+                                        .HasName("pk_project_environment_tags");
+
+                                    b2.ToTable("project_environment_tags", (string)null);
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ProjectId", "EnvironmentId")
+                                        .HasConstraintName("fk_project_environment_tags_project_environments_project_id_en");
+                                });
+
+                            b1.Navigation("Tags");
+                        });
+
+                    b.Navigation("Environments");
+
                     b.Navigation("RoleAssignments");
+
+                    b.Navigation("Tags");
                 });
 
             modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Auditing.AuditEventEntity", b =>

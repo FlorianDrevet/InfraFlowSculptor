@@ -1,4 +1,5 @@
 using InfraFlowSculptor.Application.Common.Security;
+using InfraFlowSculptor.Catalog;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.OrganizationAggregate;
 using InfraFlowSculptor.Domain.UserProfileAggregate;
@@ -112,7 +113,9 @@ public static class DemoDataSeeder
             ContosoId,
             profiles[Users[0].ObjectId].Id,
             profiles[Users[1].ObjectId].Id,
-            profiles[Users[2].ObjectId].Id);
+            profiles[Users[2].ObjectId].Id,
+            CatalogLoader.Load().LatestPublished?.Version
+                ?? throw new InvalidOperationException("The demo seeder requires a published catalog version."));
     }
 
     private static void AddMemberIfMissing(

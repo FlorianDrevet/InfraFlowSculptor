@@ -33,10 +33,7 @@ public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
             var response = await next(message, cancellationToken);
             if (response is IErrorOr { IsError: true })
             {
-                if (transaction.IsOwner)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                }
+                await transaction.RollbackAsync(cancellationToken);
 
                 dbContext.ClearDomainEvents();
                 dbContext.ClearTrackedChanges();
@@ -68,20 +65,14 @@ public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
-            if (transaction.IsOwner)
-            {
-                await transaction.CommitAsync(cancellationToken);
-            }
+            await transaction.CommitAsync(cancellationToken);
 
             dbContext.ClearDomainEvents();
             return response;
         }
         catch (ConcurrencyConflictException)
         {
-            if (transaction.IsOwner)
-            {
-                await transaction.RollbackAsync(CancellationToken.None);
-            }
+            await transaction.RollbackAsync(CancellationToken.None);
 
             dbContext.ClearDomainEvents();
             dbContext.ClearTrackedChanges();
@@ -89,10 +80,7 @@ public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
         }
         catch
         {
-            if (transaction.IsOwner)
-            {
-                await transaction.RollbackAsync(CancellationToken.None);
-            }
+            await transaction.RollbackAsync(CancellationToken.None);
 
             dbContext.ClearDomainEvents();
             dbContext.ClearTrackedChanges();

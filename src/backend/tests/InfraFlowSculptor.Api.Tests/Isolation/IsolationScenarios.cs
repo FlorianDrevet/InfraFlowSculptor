@@ -137,6 +137,11 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 "/v1/catalog/2026.10-pilot/types/KeyVault",
                 HttpStatusCode.OK),
+            ["GetCatalogRegions"] = AuthenticatedScenario(
+                "GetCatalogRegions",
+                HttpMethod.Get,
+                "/v1/catalog/2026.10-pilot/regions",
+                HttpStatusCode.OK),
             ["GetMyProjectPermissions"] = OrganizationScenario(
                 "GetMyProjectPermissions",
                 HttpMethod.Get,
@@ -164,6 +169,69 @@ public static class IsolationScenarios
                 $"/v1/projects/{ShopProjectId}/ownership",
                 HttpStatusCode.NotFound,
                 new { expectedVersion = 1 }),
+            ["ListProjects"] = OrganizationScenario(
+                "ListProjects",
+                HttpMethod.Get,
+                "/v1/projects",
+                HttpStatusCode.NotFound),
+            ["CreateProject"] = OrganizationScenario(
+                "CreateProject",
+                HttpMethod.Post,
+                "/v1/projects",
+                HttpStatusCode.NotFound,
+                new { name = "Isolated Project", code = "isolated", tenantId = Guid.NewGuid(), description = "" }),
+            ["GetProject"] = OrganizationScenario(
+                "GetProject",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}",
+                HttpStatusCode.NotFound),
+            ["SetProjectTags"] = OrganizationScenario(
+                "SetProjectTags",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/tags",
+                HttpStatusCode.NotFound,
+                new { tags = new Dictionary<string, string>(), expectedVersion = 1 }),
+            ["DeleteProject"] = OrganizationScenario(
+                "DeleteProject",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}",
+                HttpStatusCode.NotFound,
+                new { nameConfirmation = "shop", expectedVersion = 1 }),
+            ["RestoreProject"] = OrganizationScenario(
+                "RestoreProject",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/restore",
+                HttpStatusCode.NotFound,
+                new { expectedVersion = 1 }),
+            ["ListProjectEnvironments"] = OrganizationScenario(
+                "ListProjectEnvironments",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/environments",
+                HttpStatusCode.NotFound),
+            ["AddProjectEnvironment"] = OrganizationScenario(
+                "AddProjectEnvironment",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/environments",
+                HttpStatusCode.NotFound,
+                new { name = "Development", code = "dev", position = 1, subscriptionId = Guid.NewGuid(), region = "francecentral", isProtected = false, approvers = Array.Empty<string>(), runners = Array.Empty<string>(), description = "", tags = new Dictionary<string, string>(), expectedVersion = 1 }),
+            ["UpdateProjectEnvironment"] = OrganizationScenario(
+                "UpdateProjectEnvironment",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/environments/{Guid.NewGuid():D}",
+                HttpStatusCode.NotFound,
+                new { name = "Development", code = "dev", subscriptionId = Guid.NewGuid(), region = "francecentral", isProtected = false, approvers = Array.Empty<string>(), runners = Array.Empty<string>(), description = "", tags = new Dictionary<string, string>(), confirmTargetImpact = false, expectedVersion = 1 }),
+            ["MoveProjectEnvironment"] = OrganizationScenario(
+                "MoveProjectEnvironment",
+                HttpMethod.Patch,
+                $"/v1/projects/{ShopProjectId}/environments/{Guid.NewGuid():D}/position",
+                HttpStatusCode.NotFound,
+                new { position = 1, expectedVersion = 1 }),
+            ["DeleteProjectEnvironment"] = OrganizationScenario(
+                "DeleteProjectEnvironment",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}/environments/{Guid.NewGuid():D}",
+                HttpStatusCode.NotFound,
+                new { confirmDeletion = false, expectedVersion = 1 }),
             ["EnqueueDevelopmentPingJob"] = OrganizationScenario(
                 "EnqueueDevelopmentPingJob",
                 HttpMethod.Post,

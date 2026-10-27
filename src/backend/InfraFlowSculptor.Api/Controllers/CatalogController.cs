@@ -82,6 +82,21 @@ public static class CatalogController
             .Produces<JsonElement>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
+        catalog.MapGet("/{version}/regions", (string version, ICatalogProvider catalogProvider) =>
+            {
+                var catalogVersion = catalogProvider.GetVersion(version);
+                return catalogVersion is null
+                    ? Results.NotFound()
+                    : Results.Ok(catalogVersion.Regions);
+            })
+            .WithName(EndpointNames.GetCatalogRegions)
+            .WithSummary("Lister les régions d’une version du catalogue.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .WithMetadata(new OrganizationAgnostic())
+            .Produces<IReadOnlyList<CatalogRegion>>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
         return v1;
     }
 }
