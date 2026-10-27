@@ -73,8 +73,9 @@
       </nav>
     </aside>
 
-    <main
+    <section
       class="wizard-main mx-auto grid w-full max-w-5xl content-start gap-6 px-8 py-8 max-[760px]:w-auto max-[760px]:px-4 max-[760px]:py-6"
+      aria-labelledby="wizard-title"
     >
       <header class="wizard-heading grid gap-2">
         @if (state().step === 5) {
@@ -402,42 +403,56 @@
             <section class="wizard-review grid min-w-0 gap-4">
               <dl class="wizard-review-list m-0 grid min-w-0 gap-3">
                 <div
-                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)]"
                 >
                   <dt>{{ 'projectWizard.nameAndCode' | transloco }}</dt>
-                  <dd>
-                    {{ state().name }} · <code>{{ state().code }}</code>
+                  <dd
+                    class="wizard-review-value grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3"
+                  >
+                    <span
+                      >{{ state().name }} · <code>{{ state().code }}</code></span
+                    >
+                    <button type="button" (click)="goToStep(1)">
+                      {{ 'projectWizard.edit' | transloco }}
+                    </button>
                   </dd>
-                  <button type="button" (click)="goToStep(1)">
-                    {{ 'projectWizard.edit' | transloco }}
-                  </button>
                 </div>
                 <div
-                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)]"
                 >
                   <dt>{{ 'projectWizard.infrastructureLanguage' | transloco }}</dt>
-                  <dd>
-                    Bicep · {{ 'projectWizard.avmPublic' | transloco }} ·
-                    {{ 'projectWizard.catalogVersion' | transloco }} {{ catalogVersion() }}
+                  <dd
+                    class="wizard-review-value grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3"
+                  >
+                    <span>
+                      Bicep · {{ 'projectWizard.avmPublic' | transloco }} ·
+                      {{ 'projectWizard.catalogVersion' | transloco }} {{ catalogVersion() }}
+                    </span>
+                    <button type="button" (click)="goToStep(2)">
+                      {{ 'projectWizard.edit' | transloco }}
+                    </button>
                   </dd>
-                  <button type="button" (click)="goToStep(2)">
-                    {{ 'projectWizard.edit' | transloco }}
-                  </button>
                 </div>
                 <div
-                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)]"
                 >
                   <dt>{{ 'projectWizard.ciPlatform' | transloco }}</dt>
-                  <dd>Azure DevOps Pipelines</dd>
-                  <button type="button" (click)="goToStep(2)">
-                    {{ 'projectWizard.edit' | transloco }}
-                  </button>
+                  <dd
+                    class="wizard-review-value grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3"
+                  >
+                    <span>Azure DevOps Pipelines</span>
+                    <button type="button" (click)="goToStep(2)">
+                      {{ 'projectWizard.edit' | transloco }}
+                    </button>
+                  </dd>
                 </div>
                 <div
-                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)]"
                 >
                   <dt>{{ 'projectWizard.environments' | transloco }}</dt>
-                  <dd>
+                  <dd
+                    class="wizard-review-value grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3"
+                  >
                     <ul>
                       @for (environment of state().environments; track $index) {
                         <li>
@@ -454,51 +469,63 @@
                         </li>
                       }
                     </ul>
+                    <button type="button" (click)="goToStep(3)">
+                      {{ 'projectWizard.edit' | transloco }}
+                    </button>
                   </dd>
-                  <button type="button" (click)="goToStep(3)">
-                    {{ 'projectWizard.edit' | transloco }}
-                  </button>
                 </div>
                 <div
-                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)]"
                 >
                   <dt>{{ 'projectWizard.defaultTemplate' | transloco }}</dt>
-                  <dd>
-                    <code>{{ state().defaultNameTemplate }}</code>
+                  <dd
+                    class="wizard-review-value grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3"
+                  >
+                    <span
+                      ><code>{{ state().defaultNameTemplate }}</code></span
+                    >
+                    <button type="button" (click)="goToStep(4)">
+                      {{ 'projectWizard.edit' | transloco }}
+                    </button>
                   </dd>
-                  <button type="button" (click)="goToStep(4)">
-                    {{ 'projectWizard.edit' | transloco }}
-                  </button>
                 </div>
                 <div
-                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)]"
                 >
                   <dt>{{ 'projectWizard.resourceGroupTemplate' | transloco }}</dt>
-                  <dd>
-                    <code>{{ state().resourceGroupNameTemplate }}</code>
+                  <dd
+                    class="wizard-review-value grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3"
+                  >
+                    <span
+                      ><code>{{ state().resourceGroupNameTemplate }}</code></span
+                    >
+                    <button type="button" (click)="goToStep(4)">
+                      {{ 'projectWizard.edit' | transloco }}
+                    </button>
                   </dd>
-                  <button type="button" (click)="goToStep(4)">
-                    {{ 'projectWizard.edit' | transloco }}
-                  </button>
                 </div>
                 <div
-                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)]"
                 >
                   <dt>{{ 'projectWizard.publishingPlan' | transloco }}</dt>
-                  <dd>
-                    {{
-                      (state().publishingPreset
-                        ? 'projectWizard.monoRepoPreset'
-                        : 'projectWizard.noPublishingPlan'
-                      ) | transloco
-                    }}
+                  <dd
+                    class="wizard-review-value grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3"
+                  >
+                    <span>
+                      {{
+                        (state().publishingPreset
+                          ? 'projectWizard.monoRepoPreset'
+                          : 'projectWizard.noPublishingPlan'
+                        ) | transloco
+                      }}
+                    </span>
+                    <button type="button" (click)="goToStep(5)">
+                      {{ 'projectWizard.edit' | transloco }}
+                    </button>
                   </dd>
-                  <button type="button" (click)="goToStep(5)">
-                    {{ 'projectWizard.edit' | transloco }}
-                  </button>
                 </div>
                 <div
-                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)]"
                 >
                   <dt>{{ 'projectWizard.systemTags' | transloco }}</dt>
                   <dd>
@@ -557,6 +584,6 @@
           }
         </footer>
       </form>
-    </main>
+    </section>
   </div>
 }
