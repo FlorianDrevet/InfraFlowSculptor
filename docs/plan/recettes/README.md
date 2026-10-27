@@ -1,7 +1,7 @@
-# Recettes — les tests que vous faites vous-même
+# Recettes — vérifications exécutées par Codex
 
-Chaque étape du plan a son test manuel 🧪. Une **recette** enchaîne ceux d'un segment et ajoute un parcours de bout en
-bout ; elle est exigée à chaque verrou 🔒 avant l'approbation de Claude.
+Chaque étape du plan a son test 🧪. Une **recette** enchaîne ceux d'un segment et ajoute un parcours de bout en
+bout ; Codex l'exécute avant l'auto-validation du verrou 🔒. Aucun résultat n'est renvoyé à Claude ou à un autre modèle.
 
 | Recette | Verrous | Environnement |
 |---|---|---|
@@ -12,13 +12,14 @@ bout ; elle est exigée à chaque verrou 🔒 avant l'approbation de Claude.
 
 ## Comment exécuter une recette
 
-1. `git pull`, puis lire `NEXT.md` : la recette demandée et sa section y sont citées.
+1. Lire `NEXT.md` : la recette demandée et sa section y sont citées.
 2. Partir de l'état indiqué en tête de section (souvent : `aspire run`, puis `seed demo`).
-3. Suivre les actions dans l'ordre, sans improviser : si une action est ambiguë, c'est un défaut de la recette — le noter.
-4. Pour chaque ligne, comparer à « Attendu ». Au premier écart, noter : l'étape, ce que vous avez vu (capture si
-   possible), l'heure ; continuer si c'est sans dépendance, sinon s'arrêter.
-5. Reporter le résultat dans [`suivi.md`](suivi.md) et le transmettre à Claude pour la revue (ou à Luna si la
-   recette est celle des preuves, P-08).
+3. Suivre les actions dans l'ordre. Si une action est ambiguë, noter l'ambiguïté et ne pas inventer le résultat attendu.
+4. Pour chaque ligne, comparer à « Attendu ». Au premier écart, consigner l'étape, le résultat observé, l'heure et la preuve ;
+   continuer seulement si les étapes suivantes en sont indépendantes.
+5. Reporter directement le résultat dans [`suivi.md`](suivi.md), puis poursuivre l'étape. Demander à Florian uniquement une
+   authentification qu'il doit effectuer lui-même, une décision de conception manquante ou un plafond de coût qui ne peut pas
+   être déduit des contrôles existants.
 
 ## Utilisateurs de démonstration
 

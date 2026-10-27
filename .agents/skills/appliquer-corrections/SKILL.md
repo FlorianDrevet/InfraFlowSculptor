@@ -1,15 +1,11 @@
 ---
 name: appliquer-corrections
-description: "Use when NEXT.md status is CORRECTIONS_DEMANDEES: apply the numbered corrections R-nn-Cn listed by Claude in docs/plan/revues/R-nn-revue.md, then request the review again."
+description: "Deprecated: historical Claude correction workflow. Codex resolves its own verified findings during autonomous validation."
 ---
 
-# Appliquer les corrections d'une revue
+# Skill retirée — corrections autonomes
 
-1. Lis `docs/plan/revues/R-nn-revue.md` en entier, en particulier le tableau « Corrections demandées ».
-2. Pour chaque correction `R-nn-Cn`, dans l'ordre : test qui prouve le défaut (rouge), correction (vert), vérifications,
-   commit `fix(<portée>): <résumé>` avec le pied `Étape: R-nn-Cn`. Ne corrige **que** ce qui est demandé ; un autre
-   défaut constaté va dans la nouvelle demande, pas dans le code.
-3. Une correction impossible ou contradictoire : ne la contourne pas ; écris-le dans la nouvelle demande.
-4. Complète `R-nn-demande.md` par une section « Tour n — corrections » (ID, commit, vérification), puis
-   `python tools/plan/gate.py request R-nn`, commit `docs(plan): nouvelle demande de revue R-nn`, push, mise à jour de
-   la pull request. **Arrête-toi** comme dans `demander-revue`.
+Cette skill reste dans le dépôt pour préserver l'historique des instructions. Ne pas l'invoquer dans le flux courant.
+Lors de son auto-revue, Codex corrige tout défaut de mise en œuvre démontré par un test, puis relance les vérifications
+complètes avant `gate.py auto-review`. Une ambiguïté de conception ou un écart non tranchable reste un vrai blocage et
+doit être exposé précisément à Florian.

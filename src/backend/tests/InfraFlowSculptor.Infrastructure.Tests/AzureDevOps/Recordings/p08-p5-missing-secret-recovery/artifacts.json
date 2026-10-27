@@ -1,0 +1,74 @@
+{
+  "continuation_token": "SECRET_REDACTED",
+  "count": 4,
+  "value": [
+    {
+      "id": 376,
+      "name": "ifs-preview-dev",
+      "resource": {
+        "data": "802A99AC3C83466A55DECD70B9725B0884A7AEF3C866DE5F1D1FE56A9268C4DD01",
+        "downloadUrl": "https://artprodweu2.artifacts.visualstudio.com/A4ef6e6c2-31fb-4df4-a0dc-28dab6a35b18/GUID_001/_apis/artifact/cGlwZWxpbmVhcnRpZmFjdDovL2Zsb3JpYW5kcmV2ZXQwMzMyL3Byb2plY3RJZC9lZjU2ODUxOS1jYmNjLTRmODctOGM2OS1hOGFmMjE2YjFiMTQvYnVpbGRJZC84NjEvYXJ0aWZhY3ROYW1lL2lmcy1wcmV2aWV3LWRldg2/content?format=zip",
+        "properties": {
+          "DomainId": "0",
+          "HashType": "DEDUP1024K",
+          "RootId": "25527B656424EF162C06CB21FFF80D2FB8190C1B2C542D9D49D9FB6BFFF9447A02",
+          "artifactsize": "17490"
+        },
+        "type": "PipelineArtifact",
+        "url": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/builds/861/artifacts?artifactName=ifs-preview-dev&api-version=7.1"
+      },
+      "source": "GUID_020"
+    },
+    {
+      "id": 377,
+      "name": "ifs-report-dev",
+      "resource": {
+        "data": "C63456C45F8636557B263E3C68A00CB72E28DE1C23B533827F18EAF11CA0EDB801",
+        "downloadUrl": "https://artprodweu2.artifacts.visualstudio.com/A4ef6e6c2-31fb-4df4-a0dc-28dab6a35b18/GUID_001/_apis/artifact/cGlwZWxpbmVhcnRpZmFjdDovL2Zsb3JpYW5kcmV2ZXQwMzMyL3Byb2plY3RJZC9lZjU2ODUxOS1jYmNjLTRmODctOGM2OS1hOGFmMjE2YjFiMTQvYnVpbGRJZC84NjEvYXJ0aWZhY3ROYW1lL2lmcy1yZXBvcnQtZGV20/content?format=zip",
+        "properties": {
+          "DomainId": "0",
+          "HashType": "DEDUP1024K",
+          "RootId": "16C2B4CF2F7701AF71F4BDB00E4639511E78E3F263E8BBFE5D9709B57D33BA7E02",
+          "artifactsize": "2195"
+        },
+        "type": "PipelineArtifact",
+        "url": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/builds/861/artifacts?artifactName=ifs-report-dev&api-version=7.1"
+      },
+      "source": "GUID_018"
+    },
+    {
+      "id": 378,
+      "name": "ifs-preview-prd",
+      "resource": {
+        "data": "0A51F6A8A72ABB99C3C2C2986126CDE9FCF09EB806D9B5F82DF7B98D8D6721FF01",
+        "downloadUrl": "https://artprodweu2.artifacts.visualstudio.com/A4ef6e6c2-31fb-4df4-a0dc-28dab6a35b18/GUID_001/_apis/artifact/cGlwZWxpbmVhcnRpZmFjdDovL2Zsb3JpYW5kcmV2ZXQwMzMyL3Byb2plY3RJZC9lZjU2ODUxOS1jYmNjLTRmODctOGM2OS1hOGFmMjE2YjFiMTQvYnVpbGRJZC84NjEvYXJ0aWZhY3ROYW1lL2lmcy1wcmV2aWV3LXByZA2/content?format=zip",
+        "properties": {
+          "DomainId": "0",
+          "HashType": "DEDUP1024K",
+          "RootId": "7863DF0164148ABC459F153292A08506F7DEF67A65D1DC536C732E90BA43528D02",
+          "artifactsize": "18300"
+        },
+        "type": "PipelineArtifact",
+        "url": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/builds/861/artifacts?artifactName=ifs-preview-prd&api-version=7.1"
+      },
+      "source": "GUID_015"
+    },
+    {
+      "id": 379,
+      "name": "ifs-report-prd",
+      "resource": {
+        "data": "0AA2F3295CCDC16A21392CF06A2EF016458CD3F392D27F2E3DAD8966B21F8F2001",
+        "downloadUrl": "https://artprodweu2.artifacts.visualstudio.com/A4ef6e6c2-31fb-4df4-a0dc-28dab6a35b18/GUID_001/_apis/artifact/cGlwZWxpbmVhcnRpZmFjdDovL2Zsb3JpYW5kcmV2ZXQwMzMyL3Byb2plY3RJZC9lZjU2ODUxOS1jYmNjLTRmODctOGM2OS1hOGFmMjE2YjFiMTQvYnVpbGRJZC84NjEvYXJ0aWZhY3ROYW1lL2lmcy1yZXBvcnQtcHJk0/content?format=zip",
+        "properties": {
+          "DomainId": "0",
+          "HashType": "DEDUP1024K",
+          "RootId": "21C1B4C86B3CDC6EDC9DAEF83041FB9A5BDDEAFE1C62B9D4AD3CF21C82A98BFC02",
+          "artifactsize": "2277"
+        },
+        "type": "PipelineArtifact",
+        "url": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/builds/861/artifacts?artifactName=ifs-report-prd&api-version=7.1"
+      },
+      "source": "GUID_009"
+    }
+  ]
+}

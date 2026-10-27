@@ -1,0 +1,23 @@
+{
+  "continuation_token": "SECRET_REDACTED",
+  "count": 1,
+  "value": [
+    {
+      "id": 324,
+      "name": "image",
+      "resource": {
+        "data": "7B608727C3F64EF303E9CFD57A940AD8912EF4A5790ED29A32DF93740EB5A6B801",
+        "downloadUrl": "https://artprodweu2.artifacts.visualstudio.com/A4ef6e6c2-31fb-4df4-a0dc-28dab6a35b18/GUID_001/_apis/artifact/cGlwZWxpbmVhcnRpZmFjdDovL2Zsb3JpYW5kcmV2ZXQwMzMyL3Byb2plY3RJZC9lZjU2ODUxOS1jYmNjLTRmODctOGM2OS1hOGFmMjE2YjFiMTQvYnVpbGRJZC84MDYvYXJ0aWZhY3ROYW1lL2ltYWdl0/content?format=zip",
+        "properties": {
+          "DomainId": "0",
+          "HashType": "DEDUP1024K",
+          "RootId": "A11C9BFD0EAAA9078979486398F866E327463D1611124DA2B0DEE370584E5A5F02",
+          "artifactsize": "345314"
+        },
+        "type": "PipelineArtifact",
+        "url": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/builds/806/artifacts?artifactName=image&api-version=7.1"
+      },
+      "source": "GUID_006"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "continuation_token": "SECRET_REDACTED",
+  "count": 2,
+  "value": [
+    {
+      "id": 337,
+      "name": "ifs-preview-dev",
+      "resource": {
+        "data": "CEBD7F7DB99D9BB3A578604B1DE594C732D068212AF4E70EE7CB6B3077CF263E01",
+        "downloadUrl": "https://artprodweu2.artifacts.visualstudio.com/A4ef6e6c2-31fb-4df4-a0dc-28dab6a35b18/GUID_001/_apis/artifact/cGlwZWxpbmVhcnRpZmFjdDovL2Zsb3JpYW5kcmV2ZXQwMzMyL3Byb2plY3RJZC9lZjU2ODUxOS1jYmNjLTRmODctOGM2OS1hOGFmMjE2YjFiMTQvYnVpbGRJZC84MzAvYXJ0aWZhY3ROYW1lL2lmcy1wcmV2aWV3LWRldg2/content?format=zip",
+        "properties": {
+          "DomainId": "0",
+          "HashType": "DEDUP1024K",
+          "RootId": "83FC7DF63F000098AFAE49C0745F1639617AA060BFB8513144AE36433147D48902",
+          "artifactsize": "35165"
+        },
+        "type": "PipelineArtifact",
+        "url": "org-redacted/GUID_001/_apis/build/builds/830/artifacts?artifactName=ifs-preview-dev&api-version=7.1"
+      },
+      "source": "GUID_023"
+    },
+    {
+      "id": 338,
+      "name": "ifs-report-dev",
+      "resource": {
+        "data": "90708F31BBAAC485B7550C3903085A7E37B237A8F844ABE0FABF73607EC3BF2801",
+        "downloadUrl": "https://artprodweu2.artifacts.visualstudio.com/A4ef6e6c2-31fb-4df4-a0dc-28dab6a35b18/GUID_001/_apis/artifact/cGlwZWxpbmVhcnRpZmFjdDovL2Zsb3JpYW5kcmV2ZXQwMzMyL3Byb2plY3RJZC9lZjU2ODUxOS1jYmNjLTRmODctOGM2OS1hOGFmMjE2YjFiMTQvYnVpbGRJZC84MzAvYXJ0aWZhY3ROYW1lL2lmcy1yZXBvcnQtZGV20/content?format=zip",
+        "properties": {
+          "DomainId": "0",
+          "HashType": "DEDUP1024K",
+          "RootId": "1C656D607C32A928AF52F1DF7371DB298F52DC03C42B9059B2CAE23DFC70149D02",
+          "artifactsize": "6266"
+        },
+        "type": "PipelineArtifact",
+        "url": "org-redacted/GUID_001/_apis/build/builds/830/artifacts?artifactName=ifs-report-dev&api-version=7.1"
+      },
+      "source": "GUID_012"
+    }
+  ]
+}

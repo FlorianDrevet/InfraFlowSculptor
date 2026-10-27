@@ -1,0 +1,146 @@
+{
+  "_links": {
+    "badge": {
+      "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/status/120"
+    },
+    "self": {
+      "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/938"
+    },
+    "sourceVersionDisplayUri": {
+      "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/builds/938/sources"
+    },
+    "timeline": {
+      "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/builds/938/Timeline"
+    },
+    "web": {
+      "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=938"
+    }
+  },
+  "appendCommitMessageToRunName": true,
+  "buildNumber": "project-redacted � platform � rev 3 � PR",
+  "buildNumberRevision": 4,
+  "continuation_token": "SECRET_REDACTED",
+  "definition": {
+    "drafts": [],
+    "id": 120,
+    "name": "project-redacted � platform � infra � PR",
+    "path": "\\project-redacted\\platform",
+    "project": {
+      "id": "GUID_001",
+      "lastUpdateTime": "2026-10-25T09:37:09.973Z",
+      "name": "project-redacted",
+      "revision": 59,
+      "state": "wellFormed",
+      "url": "https://dev.azure.com/org-redacted/_apis/projects/GUID_001",
+      "visibility": "private"
+    },
+    "queueStatus": "enabled",
+    "revision": 13,
+    "type": "build",
+    "uri": "vstfs:///Build/Definition/120",
+    "url": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Definitions/120?revision=13"
+  },
+  "finishTime": "2026-10-26T22:05:11.94739Z",
+  "id": 938,
+  "lastChangedBy": {
+    "_links": {
+      "avatar": {
+        "href": "https://dev.azure.com/org-redacted/_apis/GraphProfile/MemberAvatars/s2s.MDAwMDAwMDItMDAwMC04ODg4LTgwMDAtMDAwMDAwMDAwMDAwQDJjODk1OTA4LTA0ZTAtNDk1Mi04OWZkLTU0YjAwNDZkNjI4OA"
+      }
+    },
+    "descriptor": "IDENTITY_DESCRIPTOR_001",
+    "displayName": "Microsoft.VisualStudio.Services.TFS",
+    "id": "GUID_002",
+    "imageUrl": "URL_REDACTED",
+    "uniqueName": "ADDRESS_001",
+    "url": "https://spsprodneu1.vssps.visualstudio.com/A00d7c0b1-6dcc-4f3d-9d4c-ea25e406368c/_apis/Identities/GUID_002"
+  },
+  "lastChangedDate": "2026-10-26T22:05:12.087Z",
+  "logs": {
+    "id": 0,
+    "type": "Container",
+    "url": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/builds/938/logs"
+  },
+  "orchestrationPlan": {
+    "planId": "GUID_003"
+  },
+  "parameters": "{\"system.pullRequest.pullRequestId\":\"94\",\"system.pullRequest.sourceBranch\":\"refs/heads/proof/p7-rev3\",\"system.pullRequest.targetBranch\":\"refs/heads/main\",\"system.pullRequest.targetBranchName\":\"main\",\"system.pullRequest.sourceCommitId\":\"a5d6b631bb970cfd98cc0530a2302cba601cfcf9\",\"system.pullRequest.sourceRepositoryUri\":\"https://ADDRESS_002/org-redacted/project-redacted/_git/project-redacted\",\"system.pullRequest.pullRequestIteration\":\"1\"}",
+  "plans": [
+    {
+      "planId": "GUID_003"
+    }
+  ],
+  "priority": "normal",
+  "project": {
+    "id": "GUID_001",
+    "lastUpdateTime": "2026-10-25T09:37:09.973Z",
+    "name": "project-redacted",
+    "revision": 59,
+    "state": "wellFormed",
+    "url": "https://dev.azure.com/org-redacted/_apis/projects/GUID_001",
+    "visibility": "private"
+  },
+  "properties": {},
+  "queue": {
+    "id": 54,
+    "name": "Hosted",
+    "pool": {
+      "id": 2,
+      "isHosted": true,
+      "name": "HOST_001"
+    }
+  },
+  "queueTime": "2026-10-26T22:00:47.9398269Z",
+  "reason": "pullRequest",
+  "repository": {
+    "checkoutSubmodules": false,
+    "clean": null,
+    "id": "GUID_004",
+    "name": "HOST_002",
+    "type": "TfsGit",
+    "url": "URL_REDACTED"
+  },
+  "requestedBy": {
+    "_links": {
+      "avatar": {
+        "href": "https://dev.azure.com/org-redacted/_apis/GraphProfile/MemberAvatars/s2s.MDAwMDAwMDItMDAwMC04ODg4LTgwMDAtMDAwMDAwMDAwMDAwQDJjODk1OTA4LTA0ZTAtNDk1Mi04OWZkLTU0YjAwNDZkNjI4OA"
+      }
+    },
+    "descriptor": "IDENTITY_DESCRIPTOR_001",
+    "displayName": "PERSON_001",
+    "id": "OBJECT_ID_001",
+    "imageUrl": "URL_REDACTED",
+    "uniqueName": "ADDRESS_001",
+    "url": "https://spsprodneu1.vssps.visualstudio.com/A00d7c0b1-6dcc-4f3d-9d4c-ea25e406368c/_apis/Identities/GUID_002"
+  },
+  "requestedFor": {
+    "_links": {
+      "avatar": {
+        "href": "https://dev.azure.com/org-redacted/_apis/GraphProfile/MemberAvatars/IDENTITY_DESCRIPTOR_002"
+      }
+    },
+    "descriptor": "IDENTITY_DESCRIPTOR_002",
+    "displayName": "PERSON_002",
+    "id": "OBJECT_ID_002",
+    "imageUrl": "URL_REDACTED",
+    "uniqueName": "ADDRESS_003",
+    "url": "https://spsprodneu1.vssps.visualstudio.com/A00d7c0b1-6dcc-4f3d-9d4c-ea25e406368c/_apis/Identities/GUID_005"
+  },
+  "result": "succeeded",
+  "retainedByRelease": false,
+  "sourceBranch": "refs/pull/94/merge",
+  "sourceVersion": "609f8df1243504617e3b6604416cd94443bab828",
+  "startTime": "2026-10-26T22:04:40.9205499Z",
+  "status": "completed",
+  "tags": [],
+  "triggerInfo": {
+    "pr.isFork": "False",
+    "pr.number": "94",
+    "pr.triggerRepository": "GUID_004",
+    "pr.triggerRepository.Type": "TfsGit"
+  },
+  "triggeredByBuild": null,
+  "uri": "vstfs:///Build/Build/938",
+  "url": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/938",
+  "validationResults": []
+}

@@ -9,9 +9,13 @@
   OIDC Keycloak local, Angular 22, Strata, OpenAPI/client généré, CI et observabilité sont en place. Le run CI
   `37460726122` est vert ; détails et écarts de recette restent dans [`NEXT.md`](NEXT.md) et
   [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md).
-- **S-17 terminé le 2026-10-06** : mémoire vérifiée, graphe de code local et guide « Démarrer » ajoutés. Le contrôle de
-  prérequis passe; le parcours sur clone neuf reste en attente dans [`NEXT.md`](NEXT.md), car l'AppHost actif occupe les
-  ports fixes. Le verrou courant est R-01. Les moteurs/catalogues et intégrations métier restent des étapes futures.
+- **S-17 terminé le 2026-10-06** : mémoire vérifiée, graphe de code local et guide « Démarrer » ajoutés. À cette date, le
+  contrôle de prérequis passait; le parcours sur clone neuf restait en attente dans [`NEXT.md`](NEXT.md), car l'AppHost
+  actif occupait les ports fixes. Le verrou courant était R-01. Les moteurs/catalogues et intégrations métier étaient
+  des étapes futures.
+- **2026-10-27** : les preuves P1–P5 et P7–P9 sur la sortie écrite à la main sont prototypées. Le crochet P7
+  `IFS_TEST_ABORT_AFTER` a été retiré de la sortie client ; voir `.github/memory/08-runtime-and-orchestration.md` et
+  la revue R-03 pour l'écart de journalisation `revoke`.
 
 ## Fichiers thématiques
 
@@ -38,7 +42,7 @@
 
 ## Repères
 
-1. Lire `NEXT.md` avant tout ; `python tools/plan/gate.py check` avant une étape.
+1. Lire `NEXT.md` avant tout ; `python tools/plan/gate.py check` avant une étape. Codex exécute les recettes et auto-valide les verrous.
 2. Un seul moteur de calcul (`InfraFlowSculptor.Engine`), pur ; le frontend ne calcule rien.
 3. La sortie de référence (`reference/`) fait foi pour les émetteurs.
 4. Chaque route a son test d'isolation (EXG-01).
@@ -57,4 +61,7 @@
 | Démarrer l'application locale | `cd src/backend; aspire run` |
 | Mettre à jour le graphe de code, sans LLM | `python -m graphify update .` (à la racine) |
 | Étape terminée | `python tools/plan/gate.py done <ID>` |
+| Auto-valider un verrou après vérification | `python tools/plan/gate.py auto-review <R-nn>` |
+| Lever un blocage résolu et consigné | `python tools/plan/gate.py unblock <ID> <preuve>` |
+| Reprendre après une recette exécutée par Codex | `python tools/plan/gate.py resume <ID>` |
 | Réexporter maquette / Strata | `python tools/design/export_design.py maquette|strata …` (voir `docs/design/README.md`) |

@@ -1,0 +1,51 @@
+2026-10-26T23:11:22.4953759Z ##[section]Starting: Étapes 5 à 13 — relire sous verrou, journaliser et déployer
+2026-10-26T23:11:22.4959045Z ==============================================================================
+2026-10-26T23:11:22.4959149Z Task         : Azure CLI
+2026-10-26T23:11:22.4959215Z Description  : Run Azure CLI commands against an Azure subscription in a PowerShell Core/Shell script when running on Linux agent or PowerShell/PowerShell Core/Batch script when running on Windows agent.
+2026-10-26T23:11:22.4959375Z Version      : 2.282.1
+2026-10-26T23:11:22.4959441Z Author       : Microsoft Corporation
+2026-10-26T23:11:22.4959505Z Help         : https://docs.microsoft.com/azure/devops/pipelines/tasks/deploy/azure-cli
+2026-10-26T23:11:22.4959726Z ==============================================================================
+2026-10-26T23:11:22.5479208Z [Host] Selected Node version: Node24 (Strategy: Node24Strategy)
+2026-10-26T23:11:22.8472621Z [command]/usr/bin/az version
+2026-10-26T23:11:25.3310384Z {
+2026-10-26T23:11:25.3331882Z   "azure-cli": "2.91.0",
+2026-10-26T23:11:25.3352126Z   "azure-cli-core": "2.91.0",
+2026-10-26T23:11:25.3352446Z   "azure-cli-telemetry": "1.1.0",
+2026-10-26T23:11:25.3371842Z   "extensions": {
+2026-10-26T23:11:25.3372104Z     "azure-devops": "1.0.8"
+2026-10-26T23:11:25.3372323Z   }
+2026-10-26T23:11:25.3372521Z }
+2026-10-26T23:11:25.3428357Z Setting AZURE_CONFIG_DIR env variable to: /home/vsts/work/_temp/.azclitask-mLBlUE
+2026-10-26T23:11:25.3430515Z Setting active cloud to: AzureCloud
+2026-10-26T23:11:25.3508281Z [command]/usr/bin/az cloud set -n AzureCloud
+2026-10-26T23:11:27.7633844Z [command]/usr/bin/az login --service-principal -u *** --tenant GUID_001 --allow-no-subscriptions --federated-token ***
+2026-10-26T23:11:28.7652125Z [
+2026-10-26T23:11:28.7658575Z   {
+2026-10-26T23:11:28.7692069Z     "cloudName": "AzureCloud",
+2026-10-26T23:11:28.7692660Z     "homeTenantId": "GUID_001",
+2026-10-26T23:11:28.7711946Z     "id": "GUID_002",
+2026-10-26T23:11:28.7731790Z     "isDefault": true,
+2026-10-26T23:11:28.7751795Z     "managedByTenants": [],
+2026-10-26T23:11:28.7752322Z     "name": "Florian - 15-07-2026",
+2026-10-26T23:11:28.7771813Z     "state": "Enabled",
+2026-10-26T23:11:28.7791846Z     "tenantId": "GUID_001",
+2026-10-26T23:11:28.7811840Z     "user": {
+2026-10-26T23:11:28.7812522Z       "name": "***",
+2026-10-26T23:11:28.7832118Z       "type": "servicePrincipal"
+2026-10-26T23:11:28.7851770Z     }
+2026-10-26T23:11:28.7852237Z   }
+2026-10-26T23:11:28.7872073Z ]
+2026-10-26T23:11:28.8031960Z [command]/usr/bin/az account set --subscription GUID_002
+2026-10-26T23:11:29.2019349Z [command]/usr/bin/pwsh -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Unrestricted -Command . '/home/vsts/work/_temp/azureclitaskscript1793056282829.ps1'
+2026-10-26T23:14:57.3459061Z [31;1mRegister-PSRepository : [31;1mUse 'Register-PSRepository -Default' to register the PSGallery repository.[0m
+2026-10-26T23:14:57.3460614Z [31;1m[31;1mAt /home/vsts/work/1/ci/infra/.ifs/templates/scripts/IfsRelease.psm1:1173 char:5[0m
+2026-10-26T23:14:57.3461064Z [31;1m[31;1m+     Register-PSRepository -Name 'PSGallery' -SourceLocation 'https:// …[0m
+2026-10-26T23:14:57.3461678Z [31;1m[31;1m+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+2026-10-26T23:14:57.3462125Z [31;1m[31;1m+ CategoryInfo          : InvalidArgument: (PSGallery:String) [Register-PSRepository], ArgumentException[0m
+2026-10-26T23:14:57.3462575Z [31;1m[31;1m+ FullyQualifiedErrorId : UseDefaultParameterSetOnRegisterPSRepository,Register-PSRepository[0m
+2026-10-26T23:14:57.4059178Z 
+2026-10-26T23:14:57.4159951Z ##[error]Script failed with exit code: 1
+2026-10-26T23:14:57.4176866Z [command]/usr/bin/az account clear
+2026-10-26T23:14:58.1836983Z ##[section]Finishing: Étapes 5 à 13 — relire sous verrou, journaliser et déployer
+

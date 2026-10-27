@@ -1,0 +1,52 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+parameters:
+- name: project
+  type: string
+- name: component
+  type: string
+- name: application
+  type: string
+- name: target
+  type: object
+
+stages:
+- stage: Deploy_${{ parameters.target.name }}
+  displayName: Déployer l’image en ${{ parameters.target.name }}
+  dependsOn: ${{ parameters.target.dependsOn }}
+  lockBehavior: sequential
+  jobs:
+  - deployment: Deploy_${{ parameters.target.name }}
+    displayName: Déployer puis vérifier la santé de l’application
+    environment: ${{ parameters.project }}-${{ parameters.target.name }}
+    pool:
+      vmImage: ubuntu-latest
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: none
+          - download: build
+            artifact: image
+          - pwsh: |
+              $ErrorActionPreference = 'Stop'
+              New-Item -ItemType Directory -Path "$(Pipeline.Workspace)/ifs-app-reports" -Force | Out-Null
+              & "$(Pipeline.Workspace)/build/image/.ifs/templates/scripts/Set-IfsRunName.ps1" -ManifestPath "$(Pipeline.Workspace)/build/image/.ifs/manifest.json" -Component '${{ parameters.component }}' -Target '${{ parameters.target.name }}'
+            displayName: Nommer le run depuis le manifeste
+          - task: AzureCLI@2
+            displayName: Déployer l’image par empreinte puis contrôler /health
+            inputs:
+              azureSubscription: ifs-${{ parameters.project }}-${{ parameters.target.name }}-app
+              scriptType: pscore
+              scriptLocation: scriptPath
+              scriptPath: $(Pipeline.Workspace)/build/image/.ifs/templates/scripts/Invoke-IfsAppDeploy.ps1
+              arguments: >
+                -ReleasePath "$(Pipeline.Workspace)/build/image/${{ parameters.component }}/infra/release.${{ parameters.target.name }}.json"
+                -ImageManifestPath "$(Pipeline.Workspace)/build/image/image.json"
+                -Application '${{ parameters.application }}'
+                -Target '${{ parameters.target.name }}'
+                -OutputPath "$(Pipeline.Workspace)/ifs-app-reports/ifs-app-report.json"
+            condition: succeeded()
+          - publish: $(Pipeline.Workspace)/ifs-app-reports
+            artifact: ifs-app-report-${{ parameters.target.name }}
+            condition: always()
+            displayName: Publier le rapport applicatif

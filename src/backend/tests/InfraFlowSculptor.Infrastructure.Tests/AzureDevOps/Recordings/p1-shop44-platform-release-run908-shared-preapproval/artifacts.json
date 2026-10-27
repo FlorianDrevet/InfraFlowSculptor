@@ -1,0 +1,23 @@
+{
+  "continuation_token": "SECRET_REDACTED",
+  "count": 1,
+  "value": [
+    {
+      "id": 401,
+      "name": "ifs-preview-shared",
+      "resource": {
+        "data": "3B15A7AA6F3B8FC28B8B6E064713788011AC00E174066B0C5A80EF7182B52E7A01",
+        "downloadUrl": "https://artprodweu2.artifacts.visualstudio.com/A4ef6e6c2-31fb-4df4-a0dc-28dab6a35b18/GUID_001/_apis/artifact/cGlwZWxpbmVhcnRpZmFjdDovL2Zsb3JpYW5kcmV2ZXQwMzMyL3Byb2plY3RJZC9iNTI2ZmZmZS0zMTFhLTRhNWMtYmFkYy0yOWE2MGI2NDI3OWIvYnVpbGRJZC85MDgvYXJ0aWZhY3ROYW1lL2lmcy1wcmV2aWV3LXNoYXJlZA2/content?format=zip",
+        "properties": {
+          "DomainId": "0",
+          "HashType": "DEDUP1024K",
+          "RootId": "35EF8CDDBE8A6D9FF4FB93B6E80F5A5B2D60AB4EC64F60868760429FA63D126202",
+          "artifactsize": "4667"
+        },
+        "type": "PipelineArtifact",
+        "url": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/builds/908/artifacts?artifactName=ifs-preview-shared&api-version=7.1"
+      },
+      "source": "GUID_010"
+    }
+  ]
+}

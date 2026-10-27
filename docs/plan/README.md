@@ -11,16 +11,16 @@ il s'y réfère par leurs identifiants.
 | Pourquoi c'est construit ainsi | [`../technique/`](../technique/README.md) |
 | À quoi ressemble chaque écran | [`../design/`](../design/README.md) |
 | Ce qui a été fait, quand | [`JOURNAL.md`](JOURNAL.md) |
-| Les revues de Claude | [`revues/`](revues/README.md) |
-| Les tests manuels à faire et leurs résultats | [`recettes/`](recettes/README.md) |
+| Les auto-revues et leurs résultats | [`revues/`](revues/README.md) |
+| Les recettes et leurs résultats | [`recettes/`](recettes/README.md) |
 
 ## Qui fait quoi
 
 | Acteur | Rôle | Ne fait jamais |
 |---|---|---|
-| **Claude (Opus)** | Conçoit : specs, technique, plan, maquettes. **Relit** à chaque verrou 🔒, rend un verdict, détaille le jalon suivant. | Écrire le code de production. |
-| **Luna (Codex)** | **Exécute** le plan étape par étape : tests d'abord, code, vérification, mémoire, commit, `NEXT.md`. Prépare les tests manuels. | Prendre une décision de conception ; franchir un verrou ; modifier `docs/specs/`, `docs/technique/` ou le texte du plan. |
-| **Vous** | Lancez Luna et Claude, exécutez les tests manuels 🧪 et les recettes, faites ce qui touche à vos comptes (Azure, Azure DevOps, Entra), fusionnez les pull requests. | — |
+| **Claude (Opus)** | A contribué aux décisions et documents historiques. | Aucun verdict de Claude ni d'un autre modèle n'est requis pour poursuivre. |
+| **Luna (Codex)** | **Exécute et valide** le plan : tests d'abord, code, recettes, auto-revue, mémoire, commit et `NEXT.md`. | Prendre une décision de conception absente des documents ou ignorer un vrai blocage. |
+| **Florian** | Fournit un choix de conception, une authentification ou un plafond de coût si ces éléments manquent réellement. | Exécuter les validations de routine que Codex peut faire lui-même. |
 
 ## Les phases
 
@@ -36,13 +36,11 @@ il s'y réfère par leurs identifiants.
 
 **Pourquoi les jalons suivants ne sont pas encore détaillés au fichier près.** Une étape exécutable sans
 décision cite des fichiers, des classes et des commandes qui n'existeront qu'après les étapes précédentes.
-Les écrire maintenant, c'est écrire des étapes qu'on réécrira. Chaque jalon est donc **découpé** dès
-aujourd'hui (objectif, contenu, références, tests, recette), et **détaillé au niveau d'exécution par Claude
-au verrou qui le précède**, sur le code réel. Luna ne commence jamais une étape qui n'est pas au niveau
-d'exécution : un fichier de jalon seulement découpé porte la ligne `> **Niveau : découpé.**`, et `gate.py check` refuse
-(code 3) toute étape d'un tel fichier ; la skill `detailler-jalon` retire cette ligne quand le détail est fait. `gate.py
-lint` vérifie seulement la présence des rubriques 🔧 ✅ 🧪 : il ne mesure pas le niveau de détail, que la revue de Claude
-garantit.
+Les écrire trop tôt peut produire des étapes qui devront être réécrites. Chaque jalon est donc **découpé** dès
+aujourd'hui (objectif, contenu, références, tests, recette), puis détaillé quand le code réel rend les choix vérifiables.
+Luna ne commence pas une étape qui n'est pas exécutable : un fichier seulement découpé porte la ligne
+`> **Niveau : découpé.**`, et `gate.py check` refuse (code 3) toute étape de ce fichier. Si les références ne suffisent pas
+à retirer cette marque sans inventer une décision de conception, Luna demande à Florian le choix manquant.
 
 ## Anatomie d'une étape
 
@@ -59,58 +57,44 @@ garantit.
 🎯 **Objectif.**  Ce que l'étape rend possible.
 🔧 **À faire.**   Liste numérotée, fichiers et noms exacts.
 ✅ **Vérification automatique.**  Commandes et résultat attendu.
-🧪 **Test manuel.**  Ce que vous faites de vos mains et ce que vous devez voir.
+🧪 **Test de recette.**  Ce que Codex exécute et le résultat attendu.
 🧠 **Mémoire.**  Fichiers de `.github/memory/` à mettre à jour.
 📌 **Hors dépôt.**  État externe à consigner dans `NEXT.md` (Azure, Entra, Azure DevOps…), s'il y en a.
 ```
 
-## Le cycle de Luna
+## Le cycle d'auto-validation
 
 Skill : [`.agents/skills/executer-etape/SKILL.md`](../../.agents/skills/executer-etape/SKILL.md).
 
 ```mermaid
 flowchart TD
   A["git pull · lire NEXT.md"] --> B{"gate.py check"}
-  B -- "code 3 : verrou" --> Z["S'arrêter, dire pourquoi"]
+  B -- "vrai blocage" --> Z["Vérifier les faits · résoudre ou demander l'info manquante"]
   B -- ok --> C["Lire l'étape courante<br/>+ specs + technique + maquette"]
   C --> D["Test d'abord → code → vert"]
-  D --> E["Vérification ✅ · préparer 🧪 · mémoire 🧠"]
+  D --> E["Vérifier ✅ · exécuter 🧪 · mémoire 🧠"]
   E --> F["Commit (message du plan, pied « Étape: ID »)"]
   F --> G["gate.py done ID · push"]
   G --> H{"Étape suivante = 🔒 ?"}
   H -- non --> B
-  H -- oui --> I["skill demander-revue :<br/>R-nn-demande.md · PR · gate.py request"]
-  I --> Z
+  H -- oui --> I["Auto-revue Codex<br/>R-nn-autovalidation.md · gate.py auto-review"]
+  I --> B
 ```
 
 ## Les verrous 🔒
 
-Un verrou `R-nn` est une étape du plan où **Luna s'arrête** et où **Claude (Opus) relit** tout ce qui a été
-fait depuis le verrou précédent.
+Un verrou `R-nn` est un point de contrôle où **Luna relit et valide elle-même** tout ce qui a été fait depuis le verrou
+précédent. Il ne suspend pas l'avancement pour attendre Claude, un autre modèle ou Florian.
 
-1. **Luna** écrit `docs/plan/revues/R-nn-demande.md` (modèle dans [`revues/README.md`](revues/README.md)) :
-   étapes couvertes, commits, résultats des vérifications, écarts au plan, captures, tests manuels prêts.
-   Elle pousse la branche, ouvre la pull request du segment vers `main`, exécute
-   `python tools/plan/gate.py request R-nn` et **s'arrête**. Le statut de `NEXT.md` devient
-   `EN_ATTENTE_DE_REVUE`.
-2. **Pendant la revue**, `gate.py check` renvoie le code 3 et le crochet git `pre-commit` refuse tout commit
-   hors de `docs/`, `NEXT.md` et de la mémoire. Une nouvelle session de Luna lit `NEXT.md` et s'arrête.
-3. **Vous** exécutez la recette du segment ([`recettes/`](recettes/README.md)) et consignez le résultat dans
-   [`recettes/suivi.md`](recettes/suivi.md).
-4. **Claude** applique [`.claude/skills/revue-verrou/SKILL.md`](../../.claude/skills/revue-verrou/SKILL.md) :
-   relit le diff du segment, relance les vérifications, confronte au plan, aux specs et aux maquettes,
-   vérifie la recette, écrit `docs/plan/revues/R-nn-revue.md` avec un verdict :
-   - `Verdict : APPROUVÉ` → `gate.py approve R-nn --by Claude` ; vous fusionnez la pull request ; Luna repart
-     de `main` sur la branche du segment suivant.
-   - `Verdict : CORRECTIONS` → corrections numérotées `R-nn-C1…` dans la revue, `gate.py reject R-nn` ;
-     Luna les applique ([`appliquer-corrections`](../../.agents/skills/appliquer-corrections/SKILL.md)), puis
-     redemande la revue.
-5. Au verrou qui clôt un jalon, Claude **détaille le jalon suivant** au niveau d'exécution
-   ([`.claude/skills/detailler-jalon/SKILL.md`](../../.claude/skills/detailler-jalon/SKILL.md)) avant d'approuver.
-
-Le verrou ne repose pas sur la seule bonne volonté : `gate.py` est exécuté au début de chaque session de
-Luna, par le crochet git, et par la CI ([`plan-gate.yml`](../../.github/workflows/plan-gate.yml)) qui
-refuse un `NEXT.md` positionné après un verrou non approuvé.
+1. **Luna** exécute et consigne les recettes du segment, relit les changements, relance les vérifications et écrit
+   `docs/plan/revues/R-nn-autovalidation.md` selon le modèle dans [`revues/README.md`](revues/README.md).
+2. `python tools/plan/gate.py auto-review R-nn` valide le checkpoint si le rapport contient le verdict, les tests, les
+   recettes, les écarts et les contrôles de coût et de sécurité. Le crochet git et la CI ne bloquent pas les commits
+   pendant cette auto-revue.
+3. Luna poursuit sur la branche prévue et peut ouvrir, fusionner ou mettre à jour une pull request dans le périmètre de test
+   autorisé. Toute contradiction, information d'accès manquante ou coût non chiffré reste un blocage explicite.
+4. Si le prochain jalon est seulement découpé, le verrou ne permet pas d'inventer sa conception : Luna lit les références,
+   puis demande à Florian le choix précis qui manque.
 
 ## Branches et pull requests
 
@@ -125,13 +109,13 @@ refuse un `NEXT.md` positionné après un verrou non approuvé.
   Étape: J0-10
   ```
 - Push après chaque étape (le travail sur plusieurs machines ne doit rien perdre).
-- Au verrou : une pull request `impl/<segment>` → `main`, titre `[R-nn] <titre du verrou>`, description =
-  la demande de revue. Vous seul fusionnez.
+- Au verrou : créer l'auto-revue. Une pull request `impl/<segment>` → `main` peut être créée et fusionnée par Codex dans le
+  périmètre autorisé, après les contrôles requis par le dépôt.
 
 ## `NEXT.md`
 
 `NEXT.md` est **court** : l'étape courante, son statut, la suivante, le verrou, l'état hors dépôt (📌), les
-tests manuels en attente, les questions pour Claude. Il ne contient ni l'historique (→ [`JOURNAL.md`](JOURNAL.md),
+recettes impossibles avec les accès disponibles et les points ouverts pour Florian. Il ne contient ni l'historique (→ [`JOURNAL.md`](JOURNAL.md),
 écrit par `gate.py`), ni le détail des étapes (→ ce dossier). S'il dépasse deux écrans, du détail y est
 descendu qui appartenait ailleurs.
 
@@ -140,18 +124,19 @@ libellés.
 
 ## Quand le plan ne suffit pas
 
-Luna ne tranche rien. Si une étape :
+Luna ne fabrique pas de décision de conception. Si une étape :
 - contredit le code réel (nom de fichier, signature) → suivre le code réel **en restant fidèle à
   l'intention**, et noter l'écart pour la demande de revue ;
 - contredit une spec, ou exige un choix non écrit (règle métier, sécurité, données personnelles, nouvelle
   dépendance, nouveau service Azure) → **s'arrêter** : statut `BLOQUE`, question écrite dans la section
-  « Questions pour Claude » de `NEXT.md`, commit `chore(plan): question sur <ID>`, push. Vous transmettez
-  à Claude, qui répond en modifiant le plan ou la technique, puis remet le statut à `A_FAIRE`.
+  « Points ouverts » de `NEXT.md`. Florian tranche le choix ou fournit l'information nécessaire ; Luna vérifie la résolution,
+  la consigne et lève le blocage avec `gate.py unblock`. Aucun avis de modèle externe n'est requis.
 - dépend d'une version de paquet introuvable → règle de [DT-03](../technique/01-decisions.md#dt-03--versions-épinglées).
 
-## Les tests manuels
+## Les recettes
 
 Chaque étape a son 🧪 ; chaque segment a sa **recette** (enchaînement des 🧪 du segment, plus un parcours de
-bout en bout) dans [`recettes/`](recettes/README.md). Ils sont écrits pour être faits par vous, seul, avec les
-utilisateurs de démonstration ([technique 05 § 3](../technique/05-execution-locale.md#3-utilisateurs-de-démonstration-royaume-keycloak-ifs)).
-Chaque test dit : prérequis, actions numérotées, résultat attendu, et quoi noter si ce n'est pas le cas.
+bout en bout) dans [`recettes/`](recettes/README.md). Codex exécute ces tests avec les utilisateurs de démonstration
+([technique 05 § 3](../technique/05-execution-locale.md#3-utilisateurs-de-démonstration-royaume-keycloak-ifs)) et les accès disponibles.
+Chaque test dit : prérequis, actions numérotées, résultat attendu, et quoi noter si ce n'est pas le cas. Si un accès ou une
+information manque, Codex demande seulement cet élément à Florian ; il ne lui demande pas d'exécuter la recette.
