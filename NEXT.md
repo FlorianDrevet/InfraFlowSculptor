@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-07`](docs/plan/02-jalon-0-pilote.md#j0-07--projets-et-environnements-api) — Projets et environnements (API) |
+| **Étape courante** | [`J0-08`](docs/plan/02-jalon-0-pilote.md#j0-08--assistant-de-création-de-projet) — Assistant de création de projet |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-06`](docs/plan/02-jalon-0-pilote.md#j0-06--catalogue-du-pilote) — Catalogue du pilote (commit `eee2c64`) |
-| **Étape suivante** | `J0-08` — Assistant de création de projet |
+| **Dernière étape terminée** | [`J0-07`](docs/plan/02-jalon-0-pilote.md#j0-07--projets-et-environnements-api) — Projets et environnements (API) (commit `f0f4252`) |
+| **Étape suivante** | `J0-09` — Écrans du projet : liste, vue d'ensemble, environnements, paramètres, membres |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
 | **Dernière mise à jour** | 2026-10-27 — Codex |
