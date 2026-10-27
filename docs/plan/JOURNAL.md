@@ -80,3 +80,6 @@
 | 2026-10-27 19:25 | Codex | `R-04` auto-validée | R-04-autovalidation.md |
 | 2026-10-27 20:07 | Codex | `J0-06` terminée | commit `eee2c64` |
 | 2026-10-27 20:56 | Codex | `J0-07` terminée | commit `f0f4252` |
+| 2026-10-27 21:46 | Codex | `J0-08` recette autonome à exécuter |  |
+| 2026-10-27 23:33 | Codex | `J0-08` reprise après recette autonome vérifiée |  |
+| 2026-10-27 23:33 | Codex | `J0-08` terminée | commit `02a4ae5` |

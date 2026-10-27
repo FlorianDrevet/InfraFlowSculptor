@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-08`](docs/plan/02-jalon-0-pilote.md#j0-08--assistant-de-création-de-projet) — Assistant de création de projet |
+| **Étape courante** | [`J0-09`](docs/plan/02-jalon-0-pilote.md#j0-09--écrans-du-projet--liste-vue-densemble-environnements-paramètres-membres) — Écrans du projet : liste, vue d'ensemble, environnements, paramètres, membres |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-07`](docs/plan/02-jalon-0-pilote.md#j0-07--projets-et-environnements-api) — Projets et environnements (API) (commit `f0f4252`) |
-| **Étape suivante** | `J0-09` — Écrans du projet : liste, vue d'ensemble, environnements, paramètres, membres |
+| **Dernière étape terminée** | [`J0-08`](docs/plan/02-jalon-0-pilote.md#j0-08--assistant-de-création-de-projet) — Assistant de création de projet (commit `02a4ae5`) |
+| **Étape suivante** | `J0-10` — Composants et groupes de ressources |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
 | **Dernière mise à jour** | 2026-10-27 — Codex |
