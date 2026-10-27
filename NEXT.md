@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-03`](docs/plan/02-jalon-0-pilote.md#j0-03--invitations-et-e-mails) — Invitations et e-mails |
+| **Étape courante** | [`J0-04`](docs/plan/02-jalon-0-pilote.md#j0-04--journal-daudit-écriture-et-consultation-simple) — Journal d'audit (écriture et consultation simple) |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-02`](docs/plan/02-jalon-0-pilote.md#j0-02--membres-et-réglages-daccès-de-lorganisation) — Membres et réglages d'accès de l'organisation (commit `6310642`) |
-| **Étape suivante** | `J0-04` — Journal d'audit (écriture et consultation simple) |
+| **Dernière étape terminée** | [`J0-03`](docs/plan/02-jalon-0-pilote.md#j0-03--invitations-et-e-mails) — Invitations et e-mails (commit `a887316`) |
+| **Étape suivante** | `J0-05` — Permissions, rôles de projet et autorisation |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-acces` (créée depuis `origin/impl/socle` après la fusion de R-03) |
 | **Dernière mise à jour** | 2026-10-27 — Codex |
