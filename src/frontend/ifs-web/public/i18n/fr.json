@@ -113,6 +113,7 @@
       "invitationPreviewLoadError": "Cette invitation ne peut pas être affichée. Demandez à un administrateur de la renvoyer.",
       "invitationAcceptError": "Impossible d’accepter cette invitation. Réessayez.",
       "lastAdministratorError": "RG-ORG-05 — Le dernier administrateur ne peut pas partir, être retiré ou être rétrogradé.",
+      "lastProjectOwnerError": "RG-ORG-11 — Attribuez le rôle Propriétaire du projet à un autre membre avant de retirer cette personne.",
       "roleAdministrator": "Administrateur",
       "roleConnectionManager": "Gestionnaire des connexions",
       "roleAuditor": "Auditeur d'organisation",

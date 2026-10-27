@@ -34,6 +34,7 @@ public sealed class AuditEndpointTests(ApiFactory factory) : IClassFixture<ApiFa
             Content = JsonContent.Create(new { name = "Contoso Audit" })
         };
         createRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        createRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
         using var createResponse = await client.SendAsync(createRequest);
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
         var created = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
@@ -69,6 +70,26 @@ public sealed class AuditEndpointTests(ApiFactory factory) : IClassFixture<ApiFa
             change => change.GetProperty("name").GetString() == "name");
         Assert.Equal("Contoso Audit", nameChange.GetProperty("before").GetString());
         Assert.Equal("Contoso Audit Europe", nameChange.GetProperty("after").GetString());
+    }
+
+    [Fact]
+    public async Task AuditRejectsPagesWhoseOffsetCannotBeRepresented()
+    {
+        var token = TestTokens.CreateAccessToken(
+            objectId: Guid.NewGuid().ToString("D"),
+            displayName: "Alice Martin");
+        var organizationId = await CreateOrganizationAsync(token, "Contoso Audit Paging");
+
+        using var request = CreateOrganizationRequest(
+            HttpMethod.Get,
+            $"/v1/organizations/{organizationId:D}/audit?page={int.MaxValue}&pageSize=100",
+            token,
+            organizationId);
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("AUDIT_PAGE_INVALID", problem.GetProperty("code").GetString());
     }
 
     [Fact]
@@ -403,6 +424,7 @@ public sealed class AuditEndpointTests(ApiFactory factory) : IClassFixture<ApiFa
             Content = JsonContent.Create(new { name })
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
         using var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();

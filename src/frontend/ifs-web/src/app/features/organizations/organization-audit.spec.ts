@@ -21,6 +21,7 @@ const auditPage: AuditEventPageResponse = {
       action: 'organization.member.roles_changed',
       objectType: 'OrganizationMember',
       objectId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      projectId: null,
       diff: {
         changes: [
           {

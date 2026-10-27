@@ -113,6 +113,7 @@
       "invitationPreviewLoadError": "This invitation cannot be displayed. Ask an administrator to resend it.",
       "invitationAcceptError": "Unable to accept this invitation. Try again.",
       "lastAdministratorError": "RG-ORG-05 — The last administrator cannot leave, be removed, or be demoted.",
+      "lastProjectOwnerError": "RG-ORG-11 — Assign the project Owner role to another member before removing this person.",
       "roleAdministrator": "Administrator",
       "roleConnectionManager": "Connection manager",
       "roleAuditor": "Organization auditor",

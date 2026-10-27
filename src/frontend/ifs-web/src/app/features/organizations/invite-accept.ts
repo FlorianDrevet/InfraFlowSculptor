@@ -125,7 +125,7 @@ export class InviteAccept implements OnInit {
       INVITATION_EXPIRED: 'expired',
       INVITATION_REVOKED: 'revoked',
       INVITATION_ALREADY_ACCEPTED: 'alreadyAccepted',
-      'RG-ORG-06': 'tenantDenied',
+      'RG-ORG-06': 'generic',
     };
     return errors[error.code] ?? 'generic';
   }

@@ -58,3 +58,4 @@
 | 2026-10-27 | Codex | J0-03 — invitations à jeton empreint, contrôle d’adresse vérifiée, e-mail via outbox, adaptateurs MailPit/ACS, interface d’invitation et retour après connexion |
 | 2026-10-27 | Codex | J0-04 — journal append-only, purge bornée à 13 mois, consultation d’organisation et recette E2E desktop/mobile validée (18/18) |
 | 2026-10-27 | Codex | J0-05 — permissions et rôles de projet, agrégat `shop`, autorisation systématique, endpoints OpenAPI, attribution plafonnée, dernier propriétaire et audit ; 155 tests backend et 59 tests frontend passent |
+| 2026-10-27 | Codex | R-04 — revue de sécurité clôturée, idempotence transactionnelle isolée par utilisateur, protections d'audit renforcées et validation du jeton restaurée ; 205 tests .NET et 63 tests frontend verts, A14 Scalar validée ; conflit PostgreSQL et réponse 409 commitée après savepoint vérifiés ; écart E2E dû aux données persistantes consigné |

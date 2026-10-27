@@ -84,6 +84,7 @@ public sealed class OrganizationAggregate : AggregateRoot<OrganizationId>, IHasV
         }
 
         members.Add(new OrganizationMember(profileId, memberRoles.Value));
+        Version = checked(Version + 1);
         return Result.Success;
     }
 
@@ -109,6 +110,7 @@ public sealed class OrganizationAggregate : AggregateRoot<OrganizationId>, IHasV
         }
 
         member.ChangeRoles(normalizedRoles.Value);
+        Version = checked(Version + 1);
         return Result.Success;
     }
 
@@ -126,10 +128,15 @@ public sealed class OrganizationAggregate : AggregateRoot<OrganizationId>, IHasV
         }
 
         members.Remove(member);
+        Version = checked(Version + 1);
         return Result.Success;
     }
 
     public ErrorOr<Success> LeaveOrganization(UserProfileId profileId) => RemoveMember(profileId);
+
+    public void RecordProjectAuthorizationChange() => Version = checked(Version + 1);
+
+    public void RecordInvitationChange() => Version = checked(Version + 1);
 
     public ErrorOr<Success> UpdateAccessRestrictions(
         IEnumerable<string> emailDomains,
@@ -242,9 +249,11 @@ public sealed class OrganizationAggregate : AggregateRoot<OrganizationId>, IHasV
     private static ErrorOr<string> NormalizeAndValidateName(string name)
     {
         var normalizedName = name?.Trim() ?? string.Empty;
-        if (normalizedName.Length is < 2 or > 80)
+        if (normalizedName.Length is < 2 or > 80 || normalizedName.Any(char.IsControl))
         {
-            return Error.Validation("ORG_NAME_INVALID", "Organization name must contain between 2 and 80 characters.");
+            return Error.Validation(
+                "ORG_NAME_INVALID",
+                "Organization name must contain between 2 and 80 characters and cannot contain control characters.");
         }
 
         return normalizedName;

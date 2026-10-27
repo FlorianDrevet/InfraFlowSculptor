@@ -3,6 +3,7 @@ using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.UserProfileAggregate;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace InfraFlowSculptor.Api.Common;
 
@@ -36,7 +37,14 @@ public sealed class UserProfileSyncMiddleware(RequestDelegate next)
                 if (!created.IsError)
                 {
                     dbContext.Query<UserProfile>().Add(created.Value);
-                    await dbContext.SaveChangesAsync(context.RequestAborted);
+                    try
+                    {
+                        await dbContext.SaveChangesAsync(context.RequestAborted);
+                    }
+                    catch (DbUpdateException exception) when (IsConcurrentProfileCreation(exception))
+                    {
+                        dbContext.Query<UserProfile>().Remove(created.Value);
+                    }
                 }
             }
             else if (now - profile.LastSeenAt > SyncInterval)
@@ -48,4 +56,11 @@ public sealed class UserProfileSyncMiddleware(RequestDelegate next)
 
         await next(context);
     }
+
+    private static bool IsConcurrentProfileCreation(DbUpdateException exception) =>
+        exception.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.UniqueViolation,
+            ConstraintName: "ux_user_profiles_tenant_id_object_id"
+        };
 }

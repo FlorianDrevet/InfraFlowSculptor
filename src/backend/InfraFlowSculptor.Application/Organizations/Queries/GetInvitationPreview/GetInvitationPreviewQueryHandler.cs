@@ -17,6 +17,11 @@ public sealed class GetInvitationPreviewQueryHandler(
         GetInvitationPreviewQuery query,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(query.Token))
+        {
+            return Error.NotFound("NOT_FOUND", "The invitation was not found.");
+        }
+
         var tokenHash = InvitationAggregate.ComputeTokenHash(query.Token);
         var invitation = await dbContext.Query<InvitationAggregate>()
             .IgnoreQueryFilters()

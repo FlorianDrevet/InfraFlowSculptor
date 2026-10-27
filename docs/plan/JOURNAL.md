@@ -75,3 +75,5 @@
 | 2026-10-27 15:42 | Codex | `J0-04` reprise après recette autonome vérifiée |  |
 | 2026-10-27 15:42 | Codex | `J0-04` terminée | commit `b249f29` |
 | 2026-10-27 16:25 | Codex | `J0-05` terminée | commit `3e5fd64` |
+| 2026-10-27 17:53 | Codex | `R-04` blocage confirmé | docs/plan/revues/R-04-blocage-idempotence.md |
+| 2026-10-27 18:25 | Codex | `R-04` blocage résolu | docs/plan/revues/R-04-blocage-idempotence.md |

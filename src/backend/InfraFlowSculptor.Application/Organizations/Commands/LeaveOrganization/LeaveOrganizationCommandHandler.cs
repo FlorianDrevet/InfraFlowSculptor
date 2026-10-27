@@ -48,6 +48,16 @@ public sealed class LeaveOrganizationCommandHandler(
             return Error.Conflict("RG-ORG-11", "Assign another project owner before leaving the organization.");
         }
 
-        return organization.LeaveOrganization(profileId);
+        var left = organization.LeaveOrganization(profileId);
+        if (left.IsError)
+        {
+            return left.Errors;
+        }
+
+        return await ProjectRoleAssignmentCleanup.RemoveForMemberAsync(
+            dbContext,
+            organizationId,
+            profileId,
+            cancellationToken);
     }
 }

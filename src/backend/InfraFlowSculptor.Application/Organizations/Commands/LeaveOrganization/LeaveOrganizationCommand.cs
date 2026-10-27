@@ -6,4 +6,5 @@ using Mediator;
 namespace InfraFlowSculptor.Application.Organizations.Commands.LeaveOrganization;
 
 [Audited(AuditActions.OrganizationMemberLeft, ObjectType.OrganizationMember)]
+[Audited(AuditActions.ProjectRoleRemoved, ObjectType.ProjectRoleAssignment)]
 public sealed record LeaveOrganizationCommand(Guid OrganizationId) : ICommand<ErrorOr<Success>>;

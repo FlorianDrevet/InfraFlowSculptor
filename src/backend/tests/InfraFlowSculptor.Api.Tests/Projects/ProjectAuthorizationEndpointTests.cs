@@ -2,14 +2,17 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using InfraFlowSculptor.Api.Common;
 using InfraFlowSculptor.Api.Configuration;
 using InfraFlowSculptor.Api.Tests.Common;
+using InfraFlowSculptor.Domain.Common.Features;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.Common.Security;
 using InfraFlowSculptor.Domain.OrganizationAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace InfraFlowSculptor.Api.Tests.Projects;
@@ -17,6 +20,18 @@ namespace InfraFlowSculptor.Api.Tests.Projects;
 public sealed class ProjectAuthorizationEndpointTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
     private readonly HttpClient client = factory.CreateClient();
+
+    [Fact]
+    public void ProjectEndpointsRequireTheOrganizationsFeature()
+    {
+        var endpoints = factory.Services.GetRequiredService<EndpointDataSource>().Endpoints;
+        var endpoint = Assert.Single(endpoints, candidate =>
+            candidate.Metadata.GetMetadata<IEndpointNameMetadata>()?.EndpointName == "GetMyProjectPermissions");
+
+        Assert.Contains(
+            endpoint.Metadata.GetOrderedMetadata<RequiredFeature>(),
+            requirement => requirement.Key == Features.Organizations);
+    }
 
     [Fact]
     public async Task SeededShopProjectGivesAliceAllPermissionsAndChloeProjectRead()
@@ -110,6 +125,82 @@ public sealed class ProjectAuthorizationEndpointTests(ApiFactory factory) : ICla
     }
 
     [Fact]
+    public async Task RemovingOrganizationMemberAlsoRemovesTheirProjectRoles()
+    {
+        var scenario = await CreateProjectScenarioAsync();
+
+        using var request = CreateRequest(
+            HttpMethod.Delete,
+            $"/v1/organizations/{scenario.OrganizationId:D}/members/{scenario.ContributorId:D}",
+            scenario.OwnerToken,
+            scenario.OrganizationId);
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        var retainedAssignments = await dbContext.Projects
+            .IgnoreQueryFilters()
+            .Where(project => project.Id == new ProjectId(scenario.ProjectId))
+            .SelectMany(project => project.RoleAssignments)
+            .AnyAsync(assignment => assignment.Principal == new UserProfileId(scenario.ContributorId));
+
+        Assert.False(retainedAssignments);
+
+        using var auditRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/v1/organizations/{scenario.OrganizationId:D}/audit",
+            scenario.OwnerToken,
+            scenario.OrganizationId);
+        using var auditResponse = await client.SendAsync(auditRequest);
+        Assert.Equal(HttpStatusCode.OK, auditResponse.StatusCode);
+        var auditEvents = (await auditResponse.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("items").EnumerateArray().ToArray();
+        Assert.Contains(auditEvents, auditEvent =>
+            auditEvent.GetProperty("action").GetString() == "project.role.removed"
+            && auditEvent.GetProperty("projectId").GetGuid() == scenario.ProjectId);
+    }
+
+    [Fact]
+    public async Task LeavingOrganizationAlsoRemovesProjectRoles()
+    {
+        var scenario = await CreateProjectScenarioAsync();
+
+        using var request = CreateRequest(
+            HttpMethod.Post,
+            $"/v1/organizations/{scenario.OrganizationId:D}/leave",
+            scenario.ContributorToken,
+            scenario.OrganizationId);
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        var retainedAssignments = await dbContext.Projects
+            .IgnoreQueryFilters()
+            .Where(project => project.Id == new ProjectId(scenario.ProjectId))
+            .SelectMany(project => project.RoleAssignments)
+            .AnyAsync(assignment => assignment.Principal == new UserProfileId(scenario.ContributorId));
+
+        Assert.False(retainedAssignments);
+
+        using var auditRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/v1/organizations/{scenario.OrganizationId:D}/audit",
+            scenario.OwnerToken,
+            scenario.OrganizationId);
+        using var auditResponse = await client.SendAsync(auditRequest);
+        Assert.Equal(HttpStatusCode.OK, auditResponse.StatusCode);
+        var auditEvents = (await auditResponse.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("items").EnumerateArray().ToArray();
+        Assert.Contains(auditEvents, auditEvent =>
+            auditEvent.GetProperty("action").GetString() == "project.role.removed"
+            && auditEvent.GetProperty("projectId").GetGuid() == scenario.ProjectId);
+    }
+
+    [Fact]
     public async Task TakingOwnershipHidesProjectsFromUnassignedMembersAndForbidsNonAdministratorsWithAccess()
     {
         var scenario = await CreateProjectScenarioAsync(includeUnassignedMember: true);
@@ -155,6 +246,7 @@ public sealed class ProjectAuthorizationEndpointTests(ApiFactory factory) : ICla
             using var readerResponse = await client.SendAsync(readerRequest);
             Assert.Equal(HttpStatusCode.Forbidden, readerResponse.StatusCode);
             var problem = await readerResponse.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Equal("PROJECT_PERMISSION_REQUIRED", problem.GetProperty("code").GetString());
             Assert.Equal("members.manage", problem.GetProperty("permission").GetString());
         }
 
@@ -198,6 +290,137 @@ public sealed class ProjectAuthorizationEndpointTests(ApiFactory factory) : ICla
             auditEvent.GetProperty("action").GetString() == "project.role.assigned");
         Assert.Contains(auditEvents, auditEvent =>
             auditEvent.GetProperty("action").GetString() == "project.role.removed");
+    }
+
+    [Fact]
+    public async Task ProjectAdministratorCannotRemoveAnotherMembersOwnerRole()
+    {
+        var scenario = await CreateProjectScenarioAsync();
+        var permissions = await GetMyPermissionsAsync(scenario.ProjectId, scenario.OrganizationId, scenario.OwnerToken);
+        var projectVersion = permissions.GetProperty("version").GetInt32();
+
+        using (var ownerAssignmentRequest = CreateRequest(
+                   HttpMethod.Post,
+                   $"/v1/projects/{scenario.ProjectId:D}/members/{scenario.ReaderId:D}/roles",
+                   scenario.OwnerToken,
+                   scenario.OrganizationId,
+                   new { role = "Owner", scope = "Project", expectedVersion = projectVersion }))
+        {
+            ownerAssignmentRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var ownerAssignmentResponse = await client.SendAsync(ownerAssignmentRequest);
+            Assert.Equal(HttpStatusCode.OK, ownerAssignmentResponse.StatusCode);
+            projectVersion = (await ownerAssignmentResponse.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("version").GetInt32();
+        }
+
+        using (var administratorAssignmentRequest = CreateRequest(
+                   HttpMethod.Post,
+                   $"/v1/projects/{scenario.ProjectId:D}/members/{scenario.ContributorId:D}/roles",
+                   scenario.OwnerToken,
+                   scenario.OrganizationId,
+                   new { role = "ProjectAdministrator", scope = "Project", expectedVersion = projectVersion }))
+        {
+            administratorAssignmentRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var administratorAssignmentResponse = await client.SendAsync(administratorAssignmentRequest);
+            Assert.Equal(HttpStatusCode.OK, administratorAssignmentResponse.StatusCode);
+            projectVersion = (await administratorAssignmentResponse.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("version").GetInt32();
+        }
+
+        using var removeOwnerRequest = CreateRequest(
+            HttpMethod.Delete,
+            $"/v1/projects/{scenario.ProjectId:D}/members/{scenario.ReaderId:D}/roles/Owner?scope=Project&expectedVersion={projectVersion}",
+            scenario.ContributorToken,
+            scenario.OrganizationId);
+        removeOwnerRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var removeOwnerResponse = await client.SendAsync(removeOwnerRequest);
+
+        Assert.Equal(HttpStatusCode.Forbidden, removeOwnerResponse.StatusCode);
+        var problem = await removeOwnerResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("RG-ORG-23", problem.GetProperty("code").GetString());
+        Assert.Equal(Permission.ProjectAdminister, problem.GetProperty("permission").GetString());
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        var retainsOwnerRole = await dbContext.Projects
+            .IgnoreQueryFilters()
+            .Where(project => project.Id == new ProjectId(scenario.ProjectId))
+            .SelectMany(project => project.RoleAssignments)
+            .AnyAsync(assignment => assignment.Principal == new UserProfileId(scenario.ReaderId)
+                && assignment.Role == ProjectRole.Owner);
+        Assert.True(retainsOwnerRole);
+    }
+
+    [Fact]
+    public async Task ReaderCannotRemoveRolesWithoutMembersManagePermission()
+    {
+        var scenario = await CreateProjectScenarioAsync();
+        var ownerPermissions = await GetMyPermissionsAsync(
+            scenario.ProjectId,
+            scenario.OrganizationId,
+            scenario.OwnerToken);
+        var projectVersion = ownerPermissions.GetProperty("version").GetInt32();
+
+        using (var assignAuditorRequest = CreateRequest(
+                   HttpMethod.Post,
+                   $"/v1/projects/{scenario.ProjectId:D}/members/{scenario.ContributorId:D}/roles",
+                   scenario.OwnerToken,
+                   scenario.OrganizationId,
+                   new { role = "Auditor", scope = "Project", expectedVersion = projectVersion }))
+        {
+            assignAuditorRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var assignAuditorResponse = await client.SendAsync(assignAuditorRequest);
+            Assert.Equal(HttpStatusCode.OK, assignAuditorResponse.StatusCode);
+            projectVersion = (await assignAuditorResponse.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("version").GetInt32();
+        }
+
+        using var removeAuditorRequest = CreateRequest(
+            HttpMethod.Delete,
+            $"/v1/projects/{scenario.ProjectId:D}/members/{scenario.ContributorId:D}/roles/Auditor?scope=Project&expectedVersion={projectVersion}",
+            scenario.ReaderToken,
+            scenario.OrganizationId);
+        removeAuditorRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var removeAuditorResponse = await client.SendAsync(removeAuditorRequest);
+
+        Assert.Equal(HttpStatusCode.Forbidden, removeAuditorResponse.StatusCode);
+        var problem = await removeAuditorResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("PROJECT_PERMISSION_REQUIRED", problem.GetProperty("code").GetString());
+        Assert.Equal(Permission.MembersManage, problem.GetProperty("permission").GetString());
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        var retainsAuditorRole = await dbContext.Projects
+            .IgnoreQueryFilters()
+            .Where(project => project.Id == new ProjectId(scenario.ProjectId))
+            .SelectMany(project => project.RoleAssignments)
+            .AnyAsync(assignment => assignment.Principal == new UserProfileId(scenario.ContributorId)
+                && assignment.Role == ProjectRole.Auditor);
+        Assert.True(retainsAuditorRole);
+    }
+
+    [Fact]
+    public async Task AssigningProjectRoleAdvancesOrganizationAccessVersion()
+    {
+        var scenario = await CreateProjectScenarioAsync();
+        var projectPermissions = await GetMyPermissionsAsync(
+            scenario.ProjectId,
+            scenario.OrganizationId,
+            scenario.OwnerToken);
+        var projectVersion = projectPermissions.GetProperty("version").GetInt32();
+        var organizationVersion = await GetOrganizationVersionAsync(scenario.OrganizationId);
+
+        using var request = CreateRequest(
+            HttpMethod.Post,
+            $"/v1/projects/{scenario.ProjectId:D}/members/{scenario.ContributorId:D}/roles",
+            scenario.OwnerToken,
+            scenario.OrganizationId,
+            new { role = "Auditor", scope = "Project", expectedVersion = projectVersion });
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(organizationVersion + 1, await GetOrganizationVersionAsync(scenario.OrganizationId));
     }
 
     [Fact]
@@ -305,6 +528,7 @@ public sealed class ProjectAuthorizationEndpointTests(ApiFactory factory) : ICla
             contributor.Token,
             reader.Token,
             contributorId.Value,
+            readerId.Value,
             unassigned?.Token,
             organizationAdministrator?.Token);
     }
@@ -316,9 +540,21 @@ public sealed class ProjectAuthorizationEndpointTests(ApiFactory factory) : ICla
             Content = JsonContent.Create(new { name = $"Contoso {Guid.NewGuid():N}" })
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", owner.Token);
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
         using var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+    }
+
+    private async Task<int> GetOrganizationVersionAsync(Guid organizationId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        return await dbContext.Organizations
+            .AsNoTracking()
+            .Where(candidate => candidate.Id == new OrganizationId(organizationId))
+            .Select(candidate => candidate.Version)
+            .SingleAsync();
     }
 
     private async Task SynchronizeProfileAsync(string token)
@@ -385,6 +621,7 @@ public sealed class ProjectAuthorizationEndpointTests(ApiFactory factory) : ICla
         string ContributorToken,
         string ReaderToken,
         Guid ContributorId,
+        Guid ReaderId,
         string? UnassignedToken,
         string? OrganizationAdministratorToken);
 }

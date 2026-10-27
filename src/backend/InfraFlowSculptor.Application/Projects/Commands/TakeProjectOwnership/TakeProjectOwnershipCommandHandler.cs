@@ -48,19 +48,25 @@ public sealed class TakeProjectOwnershipCommandHandler(
             return Error.NotFound("NOT_FOUND", "The organization member was not found.");
         }
 
-        var belongsToOrganization = await dbContext.Query<OrganizationAggregate>()
-            .Where(candidate => candidate.Id == organizationId)
-            .SelectMany(candidate => candidate.Members)
-            .AnyAsync(member => member.UserProfileId == actor.Id, cancellationToken);
-        if (!belongsToOrganization)
+        var organization = await dbContext.Query<OrganizationAggregate>()
+            .Include(candidate => candidate.Members)
+            .SingleOrDefaultAsync(candidate => candidate.Id == organizationId, cancellationToken);
+        if (organization is null || project.OrganizationId != organizationId
+            || organization.Members.All(member => member.UserProfileId != actor.Id))
         {
             return Error.NotFound("NOT_FOUND", "The organization member was not found.");
         }
 
+        var alreadyOwner = project.HasRole(actor.Id, ProjectRole.Owner);
         var ownership = project.TakeOwnership(actor.Id);
         if (ownership.IsError)
         {
             return ownership.Errors;
+        }
+
+        if (!alreadyOwner)
+        {
+            organization.RecordProjectAuthorizationChange();
         }
 
         return new ProjectRoleAssignmentSummary(

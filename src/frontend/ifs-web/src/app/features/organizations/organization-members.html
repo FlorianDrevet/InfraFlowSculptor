@@ -160,6 +160,8 @@
     <p class="organization-members__error" role="alert">
       @if (lastAdministratorError()) {
         {{ 'organization.lastAdministratorError' | transloco }}
+      } @else if (lastProjectOwnerError()) {
+        {{ 'organization.lastProjectOwnerError' | transloco }}
       } @else {
         {{ 'organization.membersSaveError' | transloco }}
       }

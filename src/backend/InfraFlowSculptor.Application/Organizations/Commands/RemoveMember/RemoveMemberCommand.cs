@@ -9,4 +9,5 @@ namespace InfraFlowSculptor.Application.Organizations.Commands.RemoveMember;
 
 [RequiresOrganizationRole(OrganizationRole.Administrator)]
 [Audited(AuditActions.OrganizationMemberRemoved, ObjectType.OrganizationMember)]
+[Audited(AuditActions.ProjectRoleRemoved, ObjectType.ProjectRoleAssignment)]
 public sealed record RemoveMemberCommand(Guid OrganizationId, Guid MemberId) : ICommand<ErrorOr<Success>>;

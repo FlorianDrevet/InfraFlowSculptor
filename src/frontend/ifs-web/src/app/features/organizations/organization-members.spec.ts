@@ -1,9 +1,10 @@
 import { inputBinding } from '@angular/core';
 import { provideTransloco, TranslocoLoader, Translation } from '@jsverse/transloco';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/angular/zoneless';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import type { InvitationResponse, OrganizationMemberResponse, OrganizationSummaryResponse } from '../../core/api/generated';
+import { ApiError } from '../../core/http/api-error';
 import { OrganizationsService } from '../../core/organizations/organizations.service';
 import { OrganizationMembers } from './organization-members';
 
@@ -56,6 +57,7 @@ class StaticTranslationLoader implements TranslocoLoader {
         confirmRemoval: 'Confirmation',
         membersSaveError: 'Erreur de sauvegarde',
         lastAdministratorError: 'Dernier administrateur',
+        lastProjectOwnerError: 'RG-ORG-11 — Attribuez le rôle Propriétaire du projet à un autre membre avant de retirer cette personne.',
         saveAction: 'Enregistrer',
         outsideRestrictions: 'Hors restriction',
         invitationsTitle: 'Invitations en attente',
@@ -84,6 +86,51 @@ class StaticTranslationLoader implements TranslocoLoader {
 }
 
 describe('OrganizationMembers invitations', () => {
+  it('explains when removing a member would leave a project without an owner', async () => {
+    const service = {
+      get: vi.fn().mockReturnValue(of(organization)),
+      listMembers: vi.fn().mockReturnValue(of([member])),
+      listInvitations: vi.fn().mockReturnValue(of([])),
+      removeMember: vi.fn().mockReturnValue(throwError(() =>
+        new ApiError(409, 'RG-ORG-11', 'Assign another project owner before removing this member.'),
+      )),
+    };
+
+    await render(OrganizationMembers, {
+      bindings: [inputBinding('id', () => organizationId)],
+      providers: [
+        { provide: OrganizationsService, useValue: service },
+        provideTransloco({
+          config: {
+            availableLangs: ['fr'],
+            defaultLang: 'fr',
+            fallbackLang: 'fr',
+            reRenderOnLangChange: false,
+            prodMode: true,
+          },
+          loader: StaticTranslationLoader,
+        }),
+      ],
+    });
+
+    const row = await screen.findByRole('row', { name: /Alice Martin/ });
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+      configurable: true,
+      value(this: HTMLDialogElement) {
+        this.setAttribute('open', '');
+      },
+    });
+    fireEvent.click(within(row).getByRole('button', { name: 'Retirer' }));
+    const dialog = document.querySelector('dialog');
+    expect(dialog).not.toBeNull();
+    fireEvent.click(within(dialog!).getByRole('button', { name: 'Retirer' }));
+
+    const alert = await within(dialog!).findByRole('alert');
+    expect(alert.textContent).toContain(
+      'RG-ORG-11 — Attribuez le rôle Propriétaire du projet à un autre membre avant de retirer cette personne.',
+    );
+  });
+
   it('shows pending invitations on the organization members screen', async () => {
     const service = {
       get: vi.fn().mockReturnValue(of(organization)),

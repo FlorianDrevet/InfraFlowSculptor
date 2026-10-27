@@ -4,6 +4,7 @@ using InfraFlowSculptor.Infrastructure.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 namespace InfraFlowSculptor.Infrastructure.Email;
 
@@ -11,8 +12,10 @@ public static class EmailSenderRegistrationExtensions
 {
     public static IServiceCollection AddIfsEmailSender(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
+        ArgumentNullException.ThrowIfNull(environment);
         var connection = AzureConnectionResolver.Resolve(
             configuration,
             EmailConfigurationKeys.ConnectionName,
@@ -26,6 +29,12 @@ public static class EmailSenderRegistrationExtensions
 
         if (connection.Mode == AzureConnectionMode.ConnectionString)
         {
+            if (!IsSmtpConnectionAllowed(environment.EnvironmentName))
+            {
+                throw new InvalidOperationException(
+                    "SMTP email connections are only supported in Development or Testing.");
+            }
+
             var endpoint = MailPitSmtpEndpointParser.Parse(connection.ConnectionString!);
             services.TryAddSingleton<IEmailSender>(new SmtpEmailSender(endpoint));
             services.TryAddSingleton(new EmailSenderOptions(senderAddress));
@@ -37,4 +46,8 @@ public static class EmailSenderRegistrationExtensions
         services.TryAddSingleton(new EmailSenderOptions(senderAddress));
         return services;
     }
+
+    private static bool IsSmtpConnectionAllowed(string environmentName) =>
+        string.Equals(environmentName, "Development", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(environmentName, "Testing", StringComparison.OrdinalIgnoreCase);
 }

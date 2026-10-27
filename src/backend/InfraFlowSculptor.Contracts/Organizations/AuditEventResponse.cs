@@ -10,4 +10,5 @@ public sealed record AuditEventResponse(
     string Action,
     ObjectType ObjectType,
     Guid ObjectId,
+    Guid? ProjectId,
     AuditEventDiffResponse Diff);

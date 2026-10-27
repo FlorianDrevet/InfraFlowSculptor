@@ -5,6 +5,8 @@
 
   @if (loading()) {
     <p role="status">{{ 'organization.loading' | transloco }}</p>
+  } @else if (!loadSucceeded()) {
+    <p class="organization-form__error" role="alert">{{ 'organization.saveError' | transloco }}</p>
   } @else {
     <form (ngSubmit)="save()">
       <label for="organization-name">{{ 'organization.nameLabel' | transloco }}</label>

@@ -28,6 +28,7 @@
   `10-api-endpoints.md` et `13-integrations.md`.
 - **2026-10-27** : J0-04 est validée par la CI : audit append-only, interface et accès vérifiés ; 18/18 E2E. Les captures et l’écart pgweb/psql sont consignés dans `docs/plan/recettes/suivi.md`.
 - **2026-10-27** : J0-05 ajoute permissions et rôles de projet, l'agrégat minimal `shop`, les contrôles de sécurité, la migration et les endpoints. 155 tests backend et 59 frontend, build Release, lint et OpenAPI passent ; détails dans `.github/memory/03-domain-model.md`, `09-auth-and-build.md` et `10-api-endpoints.md`.
+- **2026-10-27** : R-04 termine la revue et la recette d'accès. Idempotence par utilisateur, transaction atomique, corrections d'audit et A14 Scalar (Alice : 15 permissions; Chloé : `project.read`). Tests .NET 205/205 et frontend 63/63 ; Release sans avertissement, lint et OpenAPI passent. Le conflit PostgreSQL d'appartenance est couvert avec un savepoint et une réponse 409 commitée. E2E Emma reste affecté par la base persistante. Détails et réserves dans `docs/plan/revues/R-04-autovalidation.md` et les mémoires thématiques.
 
 ## Fichiers thématiques
 

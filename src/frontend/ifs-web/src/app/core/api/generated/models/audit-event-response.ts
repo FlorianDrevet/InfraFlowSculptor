@@ -11,5 +11,6 @@ export interface AuditEventResponse {
   objectId: string;
   objectType: ObjectType;
   occurredAt: string;
+  projectId: (string | null);
   via: string;
 }

@@ -114,6 +114,25 @@ public sealed class ProjectAggregate : AggregateRoot<ProjectId>, IOrganizationOw
         return Result.Success;
     }
 
+    public ErrorOr<Success> RemoveAllRolesForMember(UserProfileId principal)
+    {
+        var assignments = roleAssignments.Where(assignment => assignment.Principal == principal).ToArray();
+        if (assignments.Length == 0)
+        {
+            return Result.Success;
+        }
+
+        var ownedAssignments = assignments.Count(assignment => assignment.Role == ProjectRole.Owner);
+        if (ownedAssignments > 0 && CountNamedOwners() <= ownedAssignments)
+        {
+            return Error.Conflict("RG-ORG-11", "A project must retain at least one named owner.");
+        }
+
+        roleAssignments.RemoveAll(assignment => assignment.Principal == principal);
+        Version = checked(Version + 1);
+        return Result.Success;
+    }
+
     public ErrorOr<Success> TakeOwnership(UserProfileId principal)
     {
         if (HasRole(principal, ProjectRole.Owner))

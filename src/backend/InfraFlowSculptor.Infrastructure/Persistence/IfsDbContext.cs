@@ -13,6 +13,7 @@ using InfraFlowSculptor.Infrastructure.Persistence.Identity;
 using InfraFlowSculptor.Infrastructure.Persistence.Auditing;
 using InfraFlowSculptor.Infrastructure.Persistence.Projects;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System.Reflection;
@@ -37,6 +38,8 @@ public class IfsDbContext(
     public DbSet<OutboxMessageEntity> OutboxMessages => Set<OutboxMessageEntity>();
 
     public DbSet<IdempotencyKeyEntity> IdempotencyKeys => Set<IdempotencyKeyEntity>();
+
+    public DbSet<UserIdempotencyKeyEntity> UserIdempotencyKeys => Set<UserIdempotencyKeyEntity>();
 
     public DbSet<ScheduledJobLeaseEntity> ScheduledJobLeases => Set<ScheduledJobLeaseEntity>();
 
@@ -64,8 +67,13 @@ public class IfsDbContext(
 
     public async Task<IIfsDbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
+        if (Database.CurrentTransaction is { } currentTransaction)
+        {
+            return new IfsDbTransaction(currentTransaction, isOwner: false);
+        }
+
         var transaction = await Database.BeginTransactionAsync(cancellationToken);
-        return new IfsDbTransaction(transaction);
+        return new IfsDbTransaction(transaction, isOwner: true);
     }
 
     public IReadOnlyCollection<IDomainEvent> GetDomainEvents() =>
@@ -81,6 +89,8 @@ public class IfsDbContext(
         }
     }
 
+    public void ClearTrackedChanges() => ChangeTracker.Clear();
+
     public IReadOnlyCollection<AuditEntityChange> GetAuditChanges()
     {
         var changes = new List<AuditEntityChange>();
@@ -95,6 +105,9 @@ public class IfsDbContext(
 
             var objectId = ReadGuid(entry.Property(auditObject.IdProperty).CurrentValue);
             var organizationId = ReadGuid(entry.Property(auditObject.OrganizationIdProperty).CurrentValue);
+            Guid? projectId = entry.Metadata.FindProperty(AuditObjectPropertyNames.ProjectId) is null
+                ? null
+                : ReadGuid(entry.Property(AuditObjectPropertyNames.ProjectId).CurrentValue);
             var primaryKeyNames = entry.Metadata.FindPrimaryKey()?.Properties
                 .Select(property => property.Name)
                 .ToHashSet(StringComparer.Ordinal) ?? [];
@@ -120,7 +133,8 @@ public class IfsDbContext(
                 auditObject.ObjectType,
                 objectId,
                 organizationId,
-                properties));
+                properties,
+                projectId));
         }
 
         return changes;
@@ -138,6 +152,10 @@ public class IfsDbContext(
             return await base.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException exception)
+        {
+            throw new ConcurrencyConflictException(exception);
+        }
+        catch (DbUpdateException exception) when (IsConcurrentOrganizationMembership(exception))
         {
             throw new ConcurrencyConflictException(exception);
         }
@@ -207,6 +225,11 @@ public class IfsDbContext(
             version.CurrentValue = checked((int)version.OriginalValue! + 1);
         }
     }
+
+    private static bool IsConcurrentOrganizationMembership(DbUpdateException exception) =>
+        exception.InnerException is PostgresException postgresException
+        && postgresException.SqlState == PostgresErrorCodes.UniqueViolation
+        && postgresException.ConstraintName == "pk_organization_members";
 
     private static Guid ReadGuid(object? value) => value switch
     {

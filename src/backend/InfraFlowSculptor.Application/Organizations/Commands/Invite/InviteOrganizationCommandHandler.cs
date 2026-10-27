@@ -85,6 +85,7 @@ public sealed class InviteOrganizationCommandHandler(
         }
 
         dbContext.Query<InvitationAggregate>().Add(created.Value);
+        organization.RecordInvitationChange();
         return InvitationSummary.From(created.Value, clock.GetUtcNow());
     }
 

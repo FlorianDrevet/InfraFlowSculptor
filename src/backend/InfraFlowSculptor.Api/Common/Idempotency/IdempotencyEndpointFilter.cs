@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
-using InfraFlowSculptor.Domain.Common.Identifiers;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Primitives;
 
@@ -10,7 +9,8 @@ namespace InfraFlowSculptor.Api.Common.Idempotency;
 
 public sealed class IdempotencyEndpointFilter(
     IIdempotencyStore store,
-    ICurrentOrganization currentOrganization)
+    ICurrentOrganization currentOrganization,
+    ICurrentUser currentUser)
 {
     public const string HeaderName = "Idempotency-Key";
 
@@ -33,17 +33,22 @@ public sealed class IdempotencyEndpointFilter(
                 "A valid UUID must be supplied in the Idempotency-Key header.");
         }
 
-        if (currentOrganization.Id is not { } organizationId)
+        var scope = currentUser.IsAuthenticated && !currentUser.Key.IsEmpty
+            ? currentOrganization.Id is { } organizationId
+                ? IdempotencyScope.ForOrganization(organizationId, currentUser.Key)
+                : IdempotencyScope.ForUser(currentUser.Key)
+            : null;
+        if (scope is null)
         {
             return Problem(
                 StatusCodes.Status403Forbidden,
-                "ORGANIZATION_CONTEXT_REQUIRED",
-                "An active organization is required for an idempotent write.");
+                "IDEMPOTENCY_SCOPE_REQUIRED",
+                "An authenticated user or active organization is required for an idempotent write.");
         }
 
         var requestHash = ComputeRequestHash(context, requestArgumentIndexes);
         var cancellationToken = context.HttpContext.RequestAborted;
-        var entry = await store.FindAsync(organizationId, key, cancellationToken);
+        var entry = await store.FindAsync(scope, key, cancellationToken);
         if (entry is not null)
         {
             var existingResult = ExistingEntryResult(entry, requestHash);
@@ -52,15 +57,15 @@ public sealed class IdempotencyEndpointFilter(
                 return existingResult;
             }
         }
-        else if (await store.TryStartAsync(organizationId, key, requestHash, cancellationToken))
+        else if (await TryStartAsync(context, next, scope, key, requestHash, cancellationToken) is { } result)
         {
-            return await WrapResponseAsync(context, next, organizationId, key);
+            return result;
         }
 
         for (var attempt = 0; attempt < PendingRequestAttempts; attempt++)
         {
             await Task.Delay(PendingRequestDelay, cancellationToken);
-            entry = await store.FindAsync(organizationId, key, cancellationToken);
+            entry = await store.FindAsync(scope, key, cancellationToken);
             if (entry is not null)
             {
                 var existingResult = ExistingEntryResult(entry, requestHash);
@@ -69,9 +74,9 @@ public sealed class IdempotencyEndpointFilter(
                     return existingResult;
                 }
             }
-            else if (await store.TryStartAsync(organizationId, key, requestHash, cancellationToken))
+            else if (await TryStartAsync(context, next, scope, key, requestHash, cancellationToken) is { } result)
             {
-                return await WrapResponseAsync(context, next, organizationId, key);
+                return result;
             }
         }
 
@@ -80,6 +85,32 @@ public sealed class IdempotencyEndpointFilter(
             StatusCodes.Status409Conflict,
             "IDEMPOTENCY_IN_PROGRESS",
             "A request with this idempotency key is still being processed.");
+    }
+
+    private async ValueTask<object?> TryStartAsync(
+        EndpointFilterInvocationContext context,
+        EndpointFilterDelegate next,
+        IdempotencyScope scope,
+        Guid key,
+        string requestHash,
+        CancellationToken cancellationToken)
+    {
+        var transaction = await store.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            if (!await store.TryStartAsync(scope, key, requestHash, cancellationToken))
+            {
+                await RollbackAndDisposeAsync(transaction);
+                return null;
+            }
+
+            return await WrapResponseAsync(context, next, scope, key, transaction);
+        }
+        catch
+        {
+            await RollbackAndDisposeAsync(transaction);
+            throw;
+        }
     }
 
     private static object? ExistingEntryResult(IdempotencyEntry entry, string requestHash)
@@ -98,17 +129,33 @@ public sealed class IdempotencyEndpointFilter(
     private async ValueTask<object?> WrapResponseAsync(
         EndpointFilterInvocationContext context,
         EndpointFilterDelegate next,
-        OrganizationId organizationId,
-        Guid key)
+        IdempotencyScope scope,
+        Guid key,
+        IIfsDbTransaction transaction)
     {
         var result = await next(context);
+
         if (result is not IResult httpResult)
         {
-            await store.DeleteAsync(organizationId, key, context.HttpContext.RequestAborted);
             throw new InvalidOperationException("Endpoints using WithIdempotency must return an IResult.");
         }
 
-        return new CaptureResponseResult(store, organizationId, key, httpResult);
+        return new CaptureResponseResult(store, scope, key, httpResult, transaction);
+    }
+
+    private static async Task RollbackAndDisposeAsync(IIfsDbTransaction transaction)
+    {
+        try
+        {
+            if (transaction.IsOwner)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+            }
+        }
+        finally
+        {
+            await transaction.DisposeAsync();
+        }
     }
 
     private static string ComputeRequestHash(
@@ -146,9 +193,10 @@ public sealed class IdempotencyEndpointFilter(
 
     private sealed class CaptureResponseResult(
         IIdempotencyStore store,
-        OrganizationId organizationId,
+        IdempotencyScope scope,
         Guid key,
-        IResult result) : IResult
+        IResult result,
+        IIfsDbTransaction transaction) : IResult
     {
         public async Task ExecuteAsync(HttpContext context)
         {
@@ -167,7 +215,8 @@ public sealed class IdempotencyEndpointFilter(
                     context.Response.ContentType,
                     CaptureHeaders(context.Response.Headers),
                     bodyBuffer.ToArray());
-                await store.CompleteAsync(organizationId, key, response, context.RequestAborted);
+                await store.CompleteAsync(scope, key, response, context.RequestAborted);
+                await transaction.CommitAsync(context.RequestAborted);
 
                 context.Features.Set(originalFeature);
                 bodyBuffer.Position = 0;
@@ -176,12 +225,21 @@ public sealed class IdempotencyEndpointFilter(
             catch
             {
                 context.Features.Set(originalFeature);
-                await store.DeleteAsync(organizationId, key, CancellationToken.None);
+                try
+                {
+                    await transaction.RollbackAsync(CancellationToken.None);
+                }
+                catch
+                {
+                    // The commit may have completed before the connection failed.
+                }
+
                 throw;
             }
             finally
             {
                 context.Features.Set(originalFeature);
+                await transaction.DisposeAsync();
             }
         }
 

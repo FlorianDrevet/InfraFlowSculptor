@@ -48,6 +48,7 @@ public sealed class EfAuditEventReader(IIfsDbContext dbContext) : IAuditEventRea
                 auditEvent.Action,
                 auditEvent.ObjectType,
                 auditEvent.ObjectId,
+                auditEvent.ProjectId,
                 auditEvent.Diff))
             .ToListAsync(cancellationToken);
 
@@ -81,6 +82,7 @@ public sealed class EfAuditEventReader(IIfsDbContext dbContext) : IAuditEventRea
                 auditEvent.Action,
                 auditEvent.ObjectType,
                 auditEvent.ObjectId,
+                auditEvent.ProjectId,
                 ReadDiff(auditEvent.Id, auditEvent.Diff, personalValues)))
             .ToArray();
 
@@ -162,5 +164,6 @@ public sealed class EfAuditEventReader(IIfsDbContext dbContext) : IAuditEventRea
         string Action,
         ObjectType ObjectType,
         Guid ObjectId,
+        Guid? ProjectId,
         string Diff);
 }

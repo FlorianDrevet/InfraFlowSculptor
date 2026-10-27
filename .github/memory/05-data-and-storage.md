@@ -12,21 +12,25 @@
   PostgreSQL 18.3 reste conservé. `EFCore.NamingConventions` applique `snake_case`.
 - `IfsDbContext` convertit les identifiants forts en `Guid`, filtre globalement `IOrganizationOwned` sur
   `ICurrentOrganization`, et utilise `Version` comme jeton de concurrence optimiste qu'il incrémente aux écritures.
-- Les tables transverses sont `outbox_messages`, `idempotency_keys` et `scheduled_job_leases`; la migration initiale
+- Les tables transverses sont `outbox_messages`, `idempotency_keys`, `user_idempotency_keys` et `scheduled_job_leases`; la migration initiale
   est `20261005144850_S_06_Socle`.
 - `UnitOfWorkBehavior` enveloppe les commandes d'une transaction, sauvegarde une fois et écrit les événements de
   domaine dans l'outbox dans cette transaction. Les conflits sont renvoyés en `CONFLICT_VERSION`.
-- L'idempotence est limitée à l'organisation et à la clé; le hash de requête détecte la réutilisation avec un autre
-  corps (422), et la réponse stockée permet le rejeu. La purge des clés expirées est sous `Persistence/Admin` et
-  utilise `IgnoreQueryFilters()` uniquement dans cette requête d'administration.
+- Les écritures idempotentes sont isolées par tenant, utilisateur et clé cliente. Pour `POST /v1/organizations`, exécuté
+  avant toute organisation active, `user_idempotency_keys` applique une contrainte sur les trois colonnes de portée ; la
+  migration est `20261027170637_R_04_UserIdempotencyKeys`. Dans une organisation, la clé persistée est dérivée de
+  `(tenantId, objectId, clientKey)` pour éviter de rejouer une réponse entre utilisateurs. Réservation, écriture métier
+  et réponse stockée partagent une transaction ; le hash détecte la réutilisation avec un autre corps (422) et
+  `IdempotencyKeyPurge` purge les deux tables après 24 h.
 - **Écart à valider à R-01 :** `ConcurrencyConflictException` est déclarée dans `Application.Common.Persistence`,
   pas dans Infrastructure comme écrit au plan, afin que `UnitOfWorkBehavior` puisse la traduire sans dépendance de
   l'Application vers Infrastructure.
 - Génération d'une migration : `dotnet ef migrations add <Nom> -p src/backend/InfraFlowSculptor.Infrastructure
   -s src/backend/InfraFlowSculptor.Api -o Persistence/Migrations`; la fabrique de conception emploie une chaîne
   locale factice.
-- J0-03 ajoute `organization_invitations` (adresse, rôles, expiration, état et `token_hash` unique) par la migration `J0_03_Invitations`. L'événement `InvitationCreated` passe par `outbox_messages` dans la transaction de la commande puis enfile un job `notifications`; le contenu d'outbox est vidé après envoi ou échec définitif.
+- J0-03 ajoute `organization_invitations` (adresse, rôles, expiration, état et `token_hash` unique) par la migration `J0_03_Invitations`. L'événement `InvitationCreated` passe par `outbox_messages` dans la transaction de la commande puis enfile un job `notifications`; le contenu d'outbox est vidé après envoi ou dix échecs. Le payload conserve le jeton brut pendant la livraison et n'est pas chiffré au niveau applicatif; R-04 consigne ce risque résiduel, car aucun mécanisme de clés partagé entre API et Worker n'est spécifié.
 - J0-04 ajoute `audit_events`, `audit_personal_data` et `audit_purge_requests` (migration `20261027122817_J0_04_AuditEvents`). Un déclencheur refuse `UPDATE`/`DELETE` sur `audit_events`; `purge_audit_events` passe par la table de requêtes et borne le cutoff à 13 mois. Les noms/adresses personnels sont séparés, l'acteur reste référencé par identifiant opaque. La recette CI #40522297231 valide l'écriture/lecture ; le déclencheur local a été vérifié par psql après que le profil pgweb sans connexion a empêché l'exécution dans son UI.
+- R-04 renforce le déclencheur : une suppression imbriquée exige le marqueur transactionnel posé par la fonction de purge. `PUBLIC` n'a pas `EXECUTE` sur `purge_audit_events`; avant l'appel depuis le Worker hébergé, J0-31 doit donner ce droit à l'identité Worker réellement utilisée. Le worker n'est pas déployé par R-04.
 
 ## Pilote Azure SQL — P-02 (2026-10-06)
 

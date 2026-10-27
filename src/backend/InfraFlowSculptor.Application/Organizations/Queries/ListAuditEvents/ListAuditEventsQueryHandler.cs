@@ -26,11 +26,14 @@ public sealed class ListAuditEventsQueryHandler(
             return Error.Validation("AUDIT_PERIOD_INVALID", "The start of the audit period must be before its end.");
         }
 
-        if (query.Page < 1 || query.PageSize is < 1 or > AuditPageLimits.MaximumPageSize)
+        var pageOffset = ((long)query.Page - 1) * query.PageSize;
+        if (query.Page < 1
+            || query.PageSize is < 1 or > AuditPageLimits.MaximumPageSize
+            || pageOffset > int.MaxValue)
         {
             return Error.Validation(
                 "AUDIT_PAGE_INVALID",
-                $"Page must be positive and page size must not exceed {AuditPageLimits.MaximumPageSize}.");
+                $"Page must be positive, its offset must be representable, and page size must not exceed {AuditPageLimits.MaximumPageSize}.");
         }
 
         return await auditEventReader.ListAsync(

@@ -102,8 +102,7 @@ public static class ProblemDetailsMapper
 
         if (statusCode == StatusCodes.Status403Forbidden)
         {
-            var forbiddenError = errors.FirstOrDefault(error => error.Type == ErrorType.Forbidden
-                && GetMetadataValue(error, ProblemMetadataKeys.Permission) is null);
+            var forbiddenError = errors.FirstOrDefault(error => error.Type == ErrorType.Forbidden);
             return string.IsNullOrWhiteSpace(forbiddenError.Code) ? "FORBIDDEN" : forbiddenError.Code;
         }
 

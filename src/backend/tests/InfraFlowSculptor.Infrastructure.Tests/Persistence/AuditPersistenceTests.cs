@@ -15,6 +15,27 @@ namespace InfraFlowSculptor.Infrastructure.Tests.Persistence;
 public sealed class AuditPersistenceTests(PostgreSqlFixture postgres) : IClassFixture<PostgreSqlFixture>
 {
     [Fact]
+    public async Task AuditPurgeFunctionCannotBeExecutedByPublic()
+    {
+        await using var dbContext = postgres.CreatePersistenceDbContext(new FixedOrganization(null));
+        await dbContext.Database.MigrateAsync();
+
+        var publicCanExecute = await dbContext.Database.SqlQuery<bool>($"""
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM pg_proc AS p
+                    CROSS JOIN LATERAL aclexplode(
+                        COALESCE(p.proacl, acldefault('f', p.proowner))) AS privilege
+                    WHERE p.oid = 'public.purge_audit_events(timestamptz)'::regprocedure
+                        AND privilege.grantee = 0::oid
+                        AND privilege.privilege_type = 'EXECUTE') AS "Value"
+                """)
+            .SingleAsync();
+
+        Assert.False(publicCanExecute);
+    }
+
+    [Fact]
     public async Task AuditEventsRejectDirectMutationAndOnlyPurgeRecordsOlderThanRetention()
     {
         var clock = TimeProvider.System;
@@ -73,6 +94,126 @@ public sealed class AuditPersistenceTests(PostgreSqlFixture postgres) : IClassFi
             .AnyAsync(auditEvent => auditEvent.Id == auditEventId));
         Assert.True(await dbContext.AuditEvents.IgnoreQueryFilters()
             .AnyAsync(auditEvent => auditEvent.Id == recentAuditEventId));
+    }
+
+    [Fact]
+    public async Task AuditEventsRejectNestedUpdatesFromDatabaseTriggers()
+    {
+        var now = TimeProvider.System.GetUtcNow();
+        var organizationId = new OrganizationId(Guid.CreateVersion7(now));
+        var auditEventId = Guid.CreateVersion7(now.AddTicks(1));
+        await using var dbContext = postgres.CreatePersistenceDbContext(new FixedOrganization(organizationId));
+        await dbContext.Database.MigrateAsync();
+
+        dbContext.Organizations.Add(OrganizationAggregate.Create(
+            organizationId,
+            "Contoso Nested Audit",
+            new UserProfileId(Guid.CreateVersion7(now.AddTicks(2)))).Value);
+        dbContext.AuditEvents.Add(new AuditEventEntity(
+            auditEventId,
+            organizationId,
+            now,
+            "user",
+            Guid.NewGuid().ToString("D"),
+            AuditVia.Screen,
+            "organization.renamed",
+            ObjectType.Organization,
+            organizationId.Value,
+            "{}"));
+        await dbContext.SaveChangesAsync();
+
+        var createTrigger = """
+            CREATE OR REPLACE FUNCTION public.test_nested_audit_update()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            AS $test$
+            BEGIN
+                UPDATE public.audit_events SET action = 'tampered' WHERE id = '{0}';
+                RETURN NEW;
+            END;
+            $test$;
+            CREATE TRIGGER trg_test_nested_audit_update
+            AFTER INSERT ON public.audit_purge_requests
+            FOR EACH ROW EXECUTE FUNCTION public.test_nested_audit_update();
+            """.Replace("{0}", auditEventId.ToString("D"), StringComparison.Ordinal);
+        await dbContext.Database.ExecuteSqlRawAsync(createTrigger);
+
+        try
+        {
+            var exception = await Assert.ThrowsAsync<PostgresException>(() =>
+                dbContext.Database.ExecuteSqlInterpolatedAsync(
+                    $"INSERT INTO public.audit_purge_requests (cutoff) VALUES ({now.AddYears(-2)})"));
+
+            Assert.Equal("55000", exception.SqlState);
+        }
+        finally
+        {
+            await dbContext.Database.ExecuteSqlRawAsync("""
+                DROP TRIGGER IF EXISTS trg_test_nested_audit_update ON public.audit_purge_requests;
+                DROP FUNCTION IF EXISTS public.test_nested_audit_update();
+                """);
+        }
+    }
+
+    [Fact]
+    public async Task AuditEventsRejectNestedDeletesOutsideTheAuthorizedPurge()
+    {
+        var now = TimeProvider.System.GetUtcNow();
+        var organizationId = new OrganizationId(Guid.CreateVersion7(now));
+        var auditEventId = Guid.CreateVersion7(now.AddTicks(1));
+        await using var dbContext = postgres.CreatePersistenceDbContext(new FixedOrganization(organizationId));
+        await dbContext.Database.MigrateAsync();
+
+        dbContext.Organizations.Add(OrganizationAggregate.Create(
+            organizationId,
+            "Contoso Nested Delete Audit",
+            new UserProfileId(Guid.CreateVersion7(now.AddTicks(2)))).Value);
+        dbContext.AuditEvents.Add(new AuditEventEntity(
+            auditEventId,
+            organizationId,
+            now,
+            "user",
+            Guid.NewGuid().ToString("D"),
+            AuditVia.Screen,
+            "organization.renamed",
+            ObjectType.Organization,
+            organizationId.Value,
+            "{}"));
+        await dbContext.SaveChangesAsync();
+
+        var createTrigger = """
+            CREATE OR REPLACE FUNCTION public.test_nested_audit_delete()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            AS $test$
+            BEGIN
+                DELETE FROM public.audit_events WHERE id = '{0}';
+                RETURN NEW;
+            END;
+            $test$;
+            CREATE TRIGGER trg_test_nested_audit_delete
+            AFTER INSERT ON public.audit_purge_requests
+            FOR EACH ROW EXECUTE FUNCTION public.test_nested_audit_delete();
+            """.Replace("{0}", auditEventId.ToString("D"), StringComparison.Ordinal);
+        await dbContext.Database.ExecuteSqlRawAsync(createTrigger);
+
+        try
+        {
+            var exception = await Assert.ThrowsAsync<PostgresException>(() =>
+                dbContext.Database.ExecuteSqlInterpolatedAsync(
+                    $"INSERT INTO public.audit_purge_requests (cutoff) VALUES ({now.AddYears(-2)})"));
+
+            Assert.Equal("55000", exception.SqlState);
+            Assert.True(await dbContext.AuditEvents.IgnoreQueryFilters()
+                .AnyAsync(auditEvent => auditEvent.Id == auditEventId));
+        }
+        finally
+        {
+            await dbContext.Database.ExecuteSqlRawAsync("""
+                DROP TRIGGER IF EXISTS trg_test_nested_audit_delete ON public.audit_purge_requests;
+                DROP FUNCTION IF EXISTS public.test_nested_audit_delete();
+                """);
+        }
     }
 
     [Fact]

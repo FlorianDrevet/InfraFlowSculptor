@@ -20,10 +20,10 @@ public sealed class EfAuditWriter(
 
     public async Task WriteAsync(AuditedAttribute audit, CancellationToken cancellationToken)
     {
-        var change = dbContext.GetAuditChanges()
+        var changes = dbContext.GetAuditChanges()
             .Where(candidate => candidate.ObjectType == audit.ObjectType)
-            .SingleOrDefault();
-        if (change is null)
+            .ToArray();
+        if (changes.Length == 0)
         {
             return;
         }
@@ -45,42 +45,46 @@ public sealed class EfAuditWriter(
         var via = currentUser.AuthenticationKind == AuthenticationKind.ApiToken
             ? AuditVia.Api
             : AuditVia.Screen;
-        var occurredAt = clock.GetUtcNow();
-        var eventId = Guid.CreateVersion7(occurredAt);
-        var auditEvent = new AuditEventEntity(
-            eventId,
-            new OrganizationId(change.OrganizationId),
-            occurredAt,
-            currentUser.AuthenticationKind == AuthenticationKind.ApiToken
-                ? AuditActorKinds.ApiToken
-                : AuditActorKinds.User,
-            actor.Id.Value.ToString("D"),
-            via,
-            audit.Action,
-            change.ObjectType,
-            change.ObjectId,
-            CreateDiff(change.Properties));
-        dbContext.Query<AuditEventEntity>().Add(auditEvent);
-
-        foreach (var property in change.Properties.Where(property => property.PersonalDataField is not null))
+        foreach (var change in changes)
         {
-            await AddPersonalDataAsync(eventId, actor.Id, property, cancellationToken);
-        }
+            var occurredAt = clock.GetUtcNow();
+            var eventId = Guid.CreateVersion7(occurredAt);
+            var auditEvent = new AuditEventEntity(
+                eventId,
+                new OrganizationId(change.OrganizationId),
+                occurredAt,
+                currentUser.AuthenticationKind == AuthenticationKind.ApiToken
+                    ? AuditActorKinds.ApiToken
+                    : AuditActorKinds.User,
+                actor.Id.Value.ToString("D"),
+                via,
+                audit.Action,
+                change.ObjectType,
+                change.ObjectId,
+                CreateDiff(change.Properties),
+                change.ProjectId);
+            dbContext.Query<AuditEventEntity>().Add(auditEvent);
 
-        if (audit.Action == AuditActions.InvitationAccepted && currentUser.VerifiedEmail is { } verifiedEmail)
-        {
-            await dbContext.Query<AuditPersonalDataEntity>()
-                .IgnoreQueryFilters()
-                .Where(personalData => personalData.Field.StartsWith(EmailFieldPrefix)
-                    && EF.Functions.ILike(
-                        personalData.Value,
-                        EscapeLikePattern(verifiedEmail.Value),
-                        LikeEscapeCharacter)
-                    && personalData.AuditEvent.OrganizationId == new OrganizationId(change.OrganizationId)
-                    && personalData.AuditEvent.ObjectId == change.ObjectId)
-                .ExecuteUpdateAsync(
-                    setters => setters.SetProperty(personalData => personalData.SubjectUserId, actor.Id),
-                    cancellationToken);
+            foreach (var property in change.Properties.Where(property => property.PersonalDataField is not null))
+            {
+                await AddPersonalDataAsync(eventId, actor.Id, property, cancellationToken);
+            }
+
+            if (audit.Action == AuditActions.InvitationAccepted && currentUser.VerifiedEmail is { } verifiedEmail)
+            {
+                await dbContext.Query<AuditPersonalDataEntity>()
+                    .IgnoreQueryFilters()
+                    .Where(personalData => personalData.Field.StartsWith(EmailFieldPrefix)
+                        && EF.Functions.ILike(
+                            personalData.Value,
+                            EscapeLikePattern(verifiedEmail.Value),
+                            LikeEscapeCharacter)
+                        && personalData.AuditEvent.OrganizationId == new OrganizationId(change.OrganizationId)
+                        && personalData.AuditEvent.ObjectId == change.ObjectId)
+                    .ExecuteUpdateAsync(
+                        setters => setters.SetProperty(personalData => personalData.SubjectUserId, actor.Id),
+                        cancellationToken);
+            }
         }
     }
 

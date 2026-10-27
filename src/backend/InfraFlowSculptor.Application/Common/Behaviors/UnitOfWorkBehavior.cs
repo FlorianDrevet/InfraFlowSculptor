@@ -33,8 +33,13 @@ public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
             var response = await next(message, cancellationToken);
             if (response is IErrorOr { IsError: true })
             {
-                await transaction.RollbackAsync(cancellationToken);
+                if (transaction.IsOwner)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                }
+
                 dbContext.ClearDomainEvents();
+                dbContext.ClearTrackedChanges();
                 return response;
             }
 
@@ -57,26 +62,40 @@ public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
                     CreatedAt: clock.GetUtcNow()));
             }
 
-            if (typeof(TMessage).GetCustomAttribute<AuditedAttribute>() is { } audit)
+            foreach (var audit in typeof(TMessage).GetCustomAttributes<AuditedAttribute>())
             {
                 await auditWriter.WriteAsync(audit, cancellationToken);
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            if (transaction.IsOwner)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+
             dbContext.ClearDomainEvents();
             return response;
         }
         catch (ConcurrencyConflictException)
         {
-            await transaction.RollbackAsync(CancellationToken.None);
+            if (transaction.IsOwner)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+            }
+
             dbContext.ClearDomainEvents();
+            dbContext.ClearTrackedChanges();
             return (dynamic)new List<Error> { Error.Conflict("CONFLICT_VERSION") };
         }
         catch
         {
-            await transaction.RollbackAsync(CancellationToken.None);
+            if (transaction.IsOwner)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+            }
+
             dbContext.ClearDomainEvents();
+            dbContext.ClearTrackedChanges();
             throw;
         }
     }

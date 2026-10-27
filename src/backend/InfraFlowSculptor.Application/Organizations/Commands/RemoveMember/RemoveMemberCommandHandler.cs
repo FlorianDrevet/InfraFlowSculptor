@@ -40,6 +40,16 @@ public sealed class RemoveMemberCommandHandler(
             return Error.Conflict("RG-ORG-11", "Assign another project owner before removing this member.");
         }
 
-        return organization.RemoveMember(memberProfileId);
+        var removed = organization.RemoveMember(memberProfileId);
+        if (removed.IsError)
+        {
+            return removed.Errors;
+        }
+
+        return await ProjectRoleAssignmentCleanup.RemoveForMemberAsync(
+            dbContext,
+            organizationId,
+            memberProfileId,
+            cancellationToken);
     }
 }

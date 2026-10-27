@@ -10,12 +10,12 @@
 | | |
 |---|---|
 | **Étape courante** | [`R-04`](docs/plan/02-jalon-0-pilote.md#-r-04--revue-de-sécurité-des-accès) — Revue de sécurité des accès |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`J0-05`](docs/plan/02-jalon-0-pilote.md#j0-05--permissions-rôles-de-projet-et-autorisation) — Permissions, rôles de projet et autorisation (commit `3e5fd64`) |
 | **Étape suivante** | `J0-06` — Catalogue du pilote |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-acces` (créée depuis `origin/impl/socle` après la fusion de R-03) |
-| **Dernière mise à jour** | 2026-10-27 — Codex |
+| **Dernière mise à jour** | 2026-10-27 — Codex (blocage résolu) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
@@ -67,17 +67,21 @@ L’omission initiale de `deploymentPrincipalId` avait détaché l’attribution
 | Secret de dépôt GitHub Actions `IFS_E2E_PASSWORD` | Configuré (valeur masquée) | 2026-10-06 |
 
 | Nettoyage résiduel Azure shop42 (demande de réduction des coûts) | Les trois groupes du kit encore présents ont été supprimés; C5 après opération : 135 ressources, 16 groupes, 0 pile, 30 rôles et 7 budgets. Recontrôle CLI du 2026-10-27 : 0 ressource correspondant aux noms/tags shop42/43/44 et 0 groupe de recette actif. Six coffres Key Vault standards restent en soft-delete jusqu’au 23–25 janvier 2027 ; ils ne génèrent pas de facturation d’usage en état supprimé. Voir [preuve](docs/plan/preuves/nettoyage-residuel-shop42-20261027.md). | 2026-10-27 |
-| Stack local J0-02 | AppHost Aspire en cours : web `http://localhost:4201`, API `http://localhost:7246`, Keycloak `http://localhost:8080`. Les paramètres de développement restent dans User Secrets. Le PostgreSQL local contient les données de recette J0-02 (organisations `Contoso Labs` horodatées et réglages de membres) ; ne pas réinitialiser la base. Aucun secret n’est consigné. | 2026-10-27 |
+| Stack local de recette | AppHost Aspire arrêté après les vérifications R-04 pour libérer les DLL ; relance : `cd src/backend; aspire run`. Les paramètres de développement restent dans User Secrets. Le PostgreSQL local garde les données des recettes, dont Emma membre de Contoso après une invitation précédente ; ne pas réinitialiser la base. Le scénario E2E « Emma sans organisation » échoue donc sur cet état persistant. Aucun secret n’est consigné. | 2026-10-27 |
 
 ## Recettes autonomes en attente de Codex
 
 - S-02 — [ouvrir `src/backend/InfraFlowSculptor.slnx` dans Rider](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) : vérifier les cinq projets et l'absence de références à `Web.Template.CQRS`.
 - S-03 — ouvrir `http://localhost:5257/v1/inexistant` dans un navigateur et vérifier le JSON 404 avec `traceId` ([étape](docs/plan/00-socle.md#s-03--moderniser-le-squelette-évolutions-de-vole-papillon-damour)); l'API a été vérifiée par HTTP, mais Chrome a bloqué la navigation directe.
 - S-04 — ouvrir la solution dans Rider, vérifier les cinq projets de test puis lancer *Run All* ([étape](docs/plan/00-socle.md#s-04--projets-de-tests-et-règles-darchitecture)); `dotnet test` passe, mais aucune fenêtre native n'est exposée à l'automatisation.
-- S-17 — sur un clone neuf, suivre [README — Démarrer](README.md#démarrer-windows) jusqu'à « Bonjour Alice Martin ». Les prérequis passent ; le démarrage du clone reste à vérifier quand les ports fixes 4200, 8080, 5257 et 3000 seront libres, car l'AppHost de travail reste actif.
+- S-17 — sur un clone neuf, suivre [README — Démarrer](README.md#démarrer-windows) jusqu'à « Bonjour Alice Martin ». Les prérequis passent ; le démarrage du clone reste à vérifier quand les ports fixes 4200, 8080, 5257 et 3000 seront libres.
 Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md), puis retire la ligne.
 
 ## Points ouverts et historique des décisions
+
+### R-04 — portée d’idempotence de création d’organisation — 2026-10-27
+
+R-04 : arbitrage de Florian reçu le 2026-10-27, clé distincte par tenant et utilisateur retenue. La création d'organisation utilise un magasin et une migration dédiés ; les écritures avec organisation dérivent leur clé de stockage avec l'identité utilisateur. Réservation, écriture métier et réponse sont transactionnelles. Les tests de rejeu, de corps différent, d’isolation entre utilisateurs et d'acceptation concurrente idempotente passent. A14 Scalar est passée avec Alice et Chloé. Avant l'appel de la purge d'audit par le Worker hébergé en J0-31, accorder `EXECUTE` à son identité. L'auto-validation est dans [la revue R-04](docs/plan/revues/R-04-autovalidation.md) ; le détail de l'arbitrage est dans [la résolution de l’idempotence](docs/plan/revues/R-04-blocage-idempotence.md).
 
 ### P-08 — réconciliation What-If et procédure T shop43 — 2026-10-26
 

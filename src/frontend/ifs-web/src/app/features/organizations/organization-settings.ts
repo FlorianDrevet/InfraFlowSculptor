@@ -19,6 +19,7 @@ export class OrganizationSettings implements OnInit {
   protected readonly allowedEmailDomains = signal('');
   protected readonly allowedTenantIds = signal('');
   protected readonly loading = signal(true);
+  protected readonly loadSucceeded = signal(false);
   protected readonly saving = signal(false);
   protected readonly hasError = signal(false);
 
@@ -28,7 +29,7 @@ export class OrganizationSettings implements OnInit {
 
   async save(): Promise<void> {
     const name = this.name().trim();
-    if (name.length < 2 || name.length > 80 || this.saving()) {
+    if (!this.loadSucceeded() || name.length < 2 || name.length > 80 || this.saving()) {
       this.hasError.set(true);
       return;
     }
@@ -55,6 +56,7 @@ export class OrganizationSettings implements OnInit {
       this.name.set(organization.name);
       this.allowedEmailDomains.set(organization.allowedEmailDomains.join('\n'));
       this.allowedTenantIds.set(organization.allowedTenantIds.join('\n'));
+      this.loadSucceeded.set(true);
     } catch {
       this.hasError.set(true);
     } finally {

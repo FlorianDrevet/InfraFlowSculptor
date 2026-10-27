@@ -167,7 +167,9 @@ test('Alice gère les membres, les rôles et les restrictions d’accès', async
   const removalDialog = page.getByRole('dialog', { name: /Retirer Alice Martin/ });
   await expect(removalDialog).toContainText("Le membre perdra l'accès à tous les projets de l'organisation.");
   await removalDialog.getByRole('button', { name: 'Retirer', exact: true }).click();
-  await expect(removalDialog.getByRole('alert')).toContainText('RG-ORG-05');
+  await expect(removalDialog.getByRole('alert')).toContainText(
+    'RG-ORG-11 — Attribuez le rôle Propriétaire du projet à un autre membre avant de retirer cette personne.',
+  );
   await removalDialog.getByRole('button', { name: 'Annuler', exact: true }).click();
 
   await openMobileMenu(page, testInfo.project.name);

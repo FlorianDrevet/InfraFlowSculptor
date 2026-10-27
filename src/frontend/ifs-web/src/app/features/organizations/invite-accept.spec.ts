@@ -1,13 +1,14 @@
 import { inputBinding } from '@angular/core';
 import { provideTransloco, TranslocoLoader, Translation } from '@jsverse/transloco';
 import { fireEvent, render, screen, waitFor } from '@testing-library/angular/zoneless';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import type {
   InvitationAcceptanceResponse,
   InvitationPreviewResponse,
 } from '../../core/api/generated';
 import { OrganizationsService } from '../../core/organizations/organizations.service';
+import { ApiError } from '../../core/http/api-error';
 import { InviteAccept } from './invite-accept';
 
 const token = 'a'.repeat(43);
@@ -59,10 +60,13 @@ class StaticTranslationLoader implements TranslocoLoader {
   }
 }
 
-function renderPage(preview: InvitationPreviewResponse) {
+function renderPage(
+  preview: InvitationPreviewResponse,
+  acceptInvitation = vi.fn().mockReturnValue(of(accepted)),
+) {
   const service = {
     getInvitationPreview: vi.fn().mockReturnValue(of(preview)),
-    acceptInvitation: vi.fn().mockReturnValue(of(accepted)),
+    acceptInvitation,
   };
 
   return render(InviteAccept, {
@@ -93,6 +97,19 @@ describe('InviteAccept', () => {
 
     await waitFor(() => expect(service.acceptInvitation).toHaveBeenCalledWith(token));
     expect(await screen.findByText('Vous avez rejoint Contoso.')).toBeDefined();
+  });
+
+  it('shows a generic access message when an invitation acceptance is rejected by RG-ORG-06', async () => {
+    const { service } = await renderPage(
+      basePreview,
+      vi.fn().mockReturnValue(throwError(() => new ApiError(403, 'RG-ORG-06', 'Access restrictions changed'))),
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Rejoindre Contoso' }));
+
+    expect((await screen.findByRole('alert')).textContent).toContain('Impossible d’accepter cette invitation.');
+    expect(screen.getByRole('alert').textContent).not.toContain('tenants autorisés');
+    expect(service.acceptInvitation).toHaveBeenCalledWith(token);
   });
 
   it.each([

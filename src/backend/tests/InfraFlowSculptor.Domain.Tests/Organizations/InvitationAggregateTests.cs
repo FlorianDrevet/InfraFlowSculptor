@@ -11,6 +11,14 @@ public sealed class InvitationAggregateTests
     private static readonly OrganizationRole[] Roles = [OrganizationRole.Member];
     private const string Token = "a-256-bit-random-url-safe-token-value";
 
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void ComputeTokenHashRejectsBlankTokens(string token)
+    {
+        Assert.Throws<ArgumentException>(() => InvitationAggregate.ComputeTokenHash(token));
+    }
+
     [Fact]
     public void CreateStoresOnlyTheTokenHashAndRaisesInvitationCreated()
     {

@@ -31,9 +31,18 @@ public static class DemoDataSeeder
         && string.Equals(args[0], "seed", StringComparison.OrdinalIgnoreCase)
         && string.Equals(args[1], "demo", StringComparison.OrdinalIgnoreCase);
 
+    public static bool IsAllowedEnvironment(string environmentName) =>
+        string.Equals(environmentName, "Development", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(environmentName, "Testing", StringComparison.OrdinalIgnoreCase);
+
     public static async Task RunAsync()
     {
         var builder = WebApplication.CreateBuilder([]);
+        if (!IsAllowedEnvironment(builder.Environment.EnvironmentName))
+        {
+            throw new InvalidOperationException("Demo data can only be seeded in Development or Testing.");
+        }
+
         var credential = new IfsAzureCredential();
         using var dataSource = PostgresDataSourceFactory.Create(builder.Configuration, "ifs", credential);
         var options = new DbContextOptionsBuilder<IfsDbContext>()

@@ -18,7 +18,7 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.AddServiceDefaults();
 builder.AddIfsDbContext("ifs");
 builder.Services.AddIfsServiceBusClient("servicebus");
-builder.Services.AddIfsEmailSender(builder.Configuration);
+builder.Services.AddIfsEmailSender(builder.Configuration, builder.Environment);
 builder.Services.TryAddSingleton<TimeProvider>(TimeProvider.System);
 builder.Services.AddApplication();
 builder.Services.AddWorkerSecurityContext();

@@ -43,7 +43,8 @@ public sealed class AuditEventEntity : IOrganizationOwned
         string action,
         ObjectType objectType,
         Guid objectId,
-        string diff)
+        string diff,
+        Guid? projectId = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -54,6 +55,7 @@ public sealed class AuditEventEntity : IOrganizationOwned
         Action = action;
         ObjectType = objectType;
         ObjectId = objectId;
+        ProjectId = projectId;
         Diff = diff;
     }
 }

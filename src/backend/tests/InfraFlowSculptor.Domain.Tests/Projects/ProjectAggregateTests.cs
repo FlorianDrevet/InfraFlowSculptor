@@ -32,6 +32,36 @@ public sealed class ProjectAggregateTests
     }
 
     [Fact]
+    public void RemovingAllRolesForMemberRemovesAssignmentsAndAdvancesVersion()
+    {
+        var ownerId = new UserProfileId(Guid.NewGuid());
+        var memberId = new UserProfileId(Guid.NewGuid());
+        var project = CreateProject(ownerId);
+        Assert.False(project.AssignRole(memberId, ProjectRole.Contributor).IsError);
+        Assert.False(project.AssignRole(memberId, ProjectRole.Auditor).IsError);
+        var previousVersion = project.Version;
+
+        var result = project.RemoveAllRolesForMember(memberId);
+
+        Assert.False(result.IsError);
+        Assert.DoesNotContain(project.RoleAssignments, assignment => assignment.Principal == memberId);
+        Assert.Equal(previousVersion + 1, project.Version);
+    }
+
+    [Fact]
+    public void RemovingAllRolesForLastOwnerIsRejected()
+    {
+        var ownerId = new UserProfileId(Guid.NewGuid());
+        var project = CreateProject(ownerId);
+
+        var result = project.RemoveAllRolesForMember(ownerId);
+
+        Assert.True(result.IsError);
+        Assert.Contains(result.Errors, error => error.Code == "RG-ORG-11");
+        Assert.True(project.HasRole(ownerId, ProjectRole.Owner));
+    }
+
+    [Fact]
     public void TakeOwnershipAddsOwnerWithoutRemovingCurrentOwnerAndIsIdempotent()
     {
         var currentOwnerId = new UserProfileId(Guid.NewGuid());

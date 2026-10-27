@@ -99,6 +99,7 @@ public sealed class JobsTestFixture : IAsyncLifetime
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
             "Bearer",
             CreateAccessToken());
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
 
         using var response = await Client.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();

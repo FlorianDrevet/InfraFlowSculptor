@@ -40,10 +40,8 @@ export class UserPreferencesService {
         }
       },
       error: () => {
-        this.loaded = true;
-        if (this.languageChanged || this.themeChanged) {
-          this.persist();
-        }
+        this.loaded = false;
+        this.loadStarted = false;
       },
     });
   }
@@ -63,6 +61,8 @@ export class UserPreferencesService {
   private persistWhenLoaded(): void {
     if (this.loaded) {
       this.persist();
+    } else if (!this.loadStarted) {
+      this.load();
     }
   }
 

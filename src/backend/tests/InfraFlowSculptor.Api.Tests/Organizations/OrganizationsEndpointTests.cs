@@ -28,6 +28,7 @@ public sealed class OrganizationsEndpointTests(ApiFactory factory) : IClassFixtu
             Content = JsonContent.Create(new { name = "Contoso Labs" })
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TestTokens.CreateAccessToken());
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
 
         using var response = await client.SendAsync(request);
 
@@ -38,6 +39,123 @@ public sealed class OrganizationsEndpointTests(ApiFactory factory) : IClassFixtu
         Assert.Contains(
             "Administrator",
             organization.GetProperty("roles").EnumerateArray().Select(role => role.GetString()));
+    }
+
+    [Fact]
+    public async Task OrganizationCreationReplaysTheSameResponseForAnIdempotencyKey()
+    {
+        var token = TestTokens.CreateAccessToken();
+        var key = Guid.NewGuid().ToString("N");
+        using var firstRequest = CreateRequest(
+            HttpMethod.Post,
+            "/v1/organizations",
+            token,
+            new { name = "Contoso Retry" });
+        firstRequest.Headers.Add("Idempotency-Key", key);
+        using var firstResponse = await client.SendAsync(firstRequest);
+        var firstOrganization = await firstResponse.Content.ReadFromJsonAsync<JsonElement>();
+
+        using var retryRequest = CreateRequest(
+            HttpMethod.Post,
+            "/v1/organizations",
+            token,
+            new { name = "Contoso Retry" });
+        retryRequest.Headers.Add("Idempotency-Key", key);
+        using var retryResponse = await client.SendAsync(retryRequest);
+        var retriedOrganization = await retryResponse.Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, retryResponse.StatusCode);
+        Assert.Equal(
+            firstOrganization.GetProperty("id").GetGuid(),
+            retriedOrganization.GetProperty("id").GetGuid());
+    }
+
+    [Fact]
+    public async Task OrganizationCreationRejectsAnIdempotencyKeyReusedWithAnotherBody()
+    {
+        var token = TestTokens.CreateAccessToken();
+        var key = Guid.NewGuid().ToString("N");
+        using var firstRequest = CreateRequest(
+            HttpMethod.Post,
+            "/v1/organizations",
+            token,
+            new { name = "Contoso First" });
+        firstRequest.Headers.Add("Idempotency-Key", key);
+        using var firstResponse = await client.SendAsync(firstRequest);
+
+        using var conflictingRequest = CreateRequest(
+            HttpMethod.Post,
+            "/v1/organizations",
+            token,
+            new { name = "Contoso Second" });
+        conflictingRequest.Headers.Add("Idempotency-Key", key);
+        using var conflictingResponse = await client.SendAsync(conflictingRequest);
+        var problem = await conflictingResponse.Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, conflictingResponse.StatusCode);
+        Assert.Equal("IDEMPOTENCY_KEY_REUSED", problem.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task OrganizationCreationUsesSeparateIdempotencyScopesForDifferentUsers()
+    {
+        var key = Guid.NewGuid().ToString("N");
+        var firstToken = TestTokens.CreateAccessToken(objectId: "aaaaaaaa-1111-4111-8111-111111111111");
+        var secondToken = TestTokens.CreateAccessToken(objectId: "bbbbbbbb-1111-4111-8111-111111111111");
+        using var firstRequest = CreateRequest(
+            HttpMethod.Post,
+            "/v1/organizations",
+            firstToken,
+            new { name = "Contoso First User" });
+        firstRequest.Headers.Add("Idempotency-Key", key);
+        using var firstResponse = await client.SendAsync(firstRequest);
+        var firstOrganization = await firstResponse.Content.ReadFromJsonAsync<JsonElement>();
+
+        using var secondRequest = CreateRequest(
+            HttpMethod.Post,
+            "/v1/organizations",
+            secondToken,
+            new { name = "Contoso Second User" });
+        secondRequest.Headers.Add("Idempotency-Key", key);
+        using var secondResponse = await client.SendAsync(secondRequest);
+        var secondOrganization = await secondResponse.Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, secondResponse.StatusCode);
+        Assert.NotEqual(
+            firstOrganization.GetProperty("id").GetGuid(),
+            secondOrganization.GetProperty("id").GetGuid());
+    }
+
+    [Fact]
+    public async Task ConcurrentFirstRequestsForAnIdentityCreateOneProfile()
+    {
+        var objectId = Guid.NewGuid();
+        var token = TestTokens.CreateAccessToken(
+            objectId: objectId.ToString("D"),
+            displayName: "Concurrent Alice");
+
+        var responses = await Task.WhenAll(Enumerable.Range(0, 32).Select(async _ =>
+        {
+            using var request = CreateRequest(HttpMethod.Get, "/v1/organizations", token);
+            return await client.SendAsync(request);
+        }));
+
+        foreach (var response in responses)
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("[]", await response.Content.ReadAsStringAsync());
+        }
+        foreach (var response in responses)
+        {
+            response.Dispose();
+        }
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        Assert.Equal(1, await dbContext.UserProfiles.CountAsync(profile => profile.ObjectId == objectId));
     }
 
     [Theory]
@@ -51,6 +169,7 @@ public sealed class OrganizationsEndpointTests(ApiFactory factory) : IClassFixtu
             Content = JsonContent.Create(new { name })
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TestTokens.CreateAccessToken());
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
 
         using var response = await client.SendAsync(request);
 
@@ -394,6 +513,7 @@ public sealed class OrganizationsEndpointTests(ApiFactory factory) : IClassFixtu
     private async Task<Guid> CreateOrganizationAsync(string token, string name)
     {
         using var request = CreateRequest(HttpMethod.Post, "/v1/organizations", token, new { name });
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
         using var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var organization = await response.Content.ReadFromJsonAsync<JsonElement>();

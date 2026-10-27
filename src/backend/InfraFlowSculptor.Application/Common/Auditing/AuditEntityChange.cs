@@ -6,4 +6,5 @@ public sealed record AuditEntityChange(
     ObjectType ObjectType,
     Guid ObjectId,
     Guid OrganizationId,
-    IReadOnlyList<AuditPropertyChange> Properties);
+    IReadOnlyList<AuditPropertyChange> Properties,
+    Guid? ProjectId = null);

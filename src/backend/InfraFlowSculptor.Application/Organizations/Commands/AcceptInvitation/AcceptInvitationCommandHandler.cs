@@ -59,6 +59,15 @@ public sealed class AcceptInvitationCommandHandler(
             return accepted.Errors;
         }
 
+        if (!wasAccepted
+            && currentUser.VerifiedEmail is { } verifiedEmail
+            && !organization.IsInvitationEmailAllowed(verifiedEmail.Value))
+        {
+            return Error.Forbidden(
+                "RG-ORG-06",
+                "The invited address does not meet the organization's domain restrictions.");
+        }
+
         if (wasAccepted)
         {
             if (!organization.Members.Any(member => member.UserProfileId == profile.Id))

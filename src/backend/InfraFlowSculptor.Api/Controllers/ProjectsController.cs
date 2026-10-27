@@ -7,6 +7,7 @@ using InfraFlowSculptor.Application.Projects.Commands.RemoveProjectRole;
 using InfraFlowSculptor.Application.Projects.Commands.TakeProjectOwnership;
 using InfraFlowSculptor.Application.Projects.Queries.GetEffectivePermissions;
 using InfraFlowSculptor.Contracts.Projects;
+using InfraFlowSculptor.Domain.Common.Features;
 using InfraFlowSculptor.Domain.OrganizationAggregate;
 using Mediator;
 
@@ -17,7 +18,8 @@ public static class ProjectsController
     public static RouteGroupBuilder MapProjectEndpoints(this RouteGroupBuilder v1)
     {
         var projects = v1.MapGroup("/projects")
-            .WithTags("Projects");
+            .WithTags("Projects")
+            .RequireFeature(Features.Organizations);
 
         projects.MapGet("/{id:guid}/permissions/me", async (
                 Guid id,

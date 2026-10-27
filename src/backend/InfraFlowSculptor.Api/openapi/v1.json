@@ -1777,6 +1777,7 @@
           "action",
           "objectType",
           "objectId",
+          "projectId",
           "diff"
         ],
         "type": "object",
@@ -1803,6 +1804,13 @@
           },
           "objectId": {
             "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           },
           "diff": {

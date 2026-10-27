@@ -55,6 +55,7 @@ public static class OrganizationsController
             .WithName(EndpointNames.CreateOrganization)
             .RequireAuthorization(AuthorizationPolicies.Member)
             .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
             .WithMetadata(new OrganizationAgnostic())
             .Produces<OrganizationSummaryResponse>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
@@ -260,6 +261,7 @@ public static class OrganizationsController
             auditEvent.Action,
             auditEvent.ObjectType,
             auditEvent.ObjectId,
+            auditEvent.ProjectId,
             new AuditEventDiffResponse(auditEvent.Diff.Changes.Select(change => new AuditPropertyChangeResponse(
                 change.Name,
                 change.Before,

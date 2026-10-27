@@ -12,6 +12,8 @@ public interface IIfsDbContext
 
     void ClearDomainEvents();
 
+    void ClearTrackedChanges();
+
     void AddOutboxMessage(OutboxMessageData message);
 
     IReadOnlyCollection<AuditEntityChange> GetAuditChanges();

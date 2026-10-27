@@ -9,6 +9,9 @@ import type { OrganizationMemberResponse, OrganizationRole, OrganizationSummaryR
 import { ApiError } from '../../core/http/api-error';
 import { OrganizationsService } from '../../core/organizations/organizations.service';
 
+const LAST_ADMINISTRATOR_ERROR_CODE = 'RG-ORG-05';
+const LAST_PROJECT_OWNER_ERROR_CODE = 'RG-ORG-11';
+
 @Component({
   selector: 'app-organization-members',
   imports: [DsButton, DsTextField, FormsModule, OrganizationInvitations, TranslocoPipe],
@@ -27,6 +30,7 @@ export class OrganizationMembers implements OnInit {
   protected readonly loadError = signal(false);
   protected readonly saveError = signal(false);
   protected readonly lastAdministratorError = signal(false);
+  protected readonly lastProjectOwnerError = signal(false);
   protected readonly search = signal('');
   protected readonly editingMemberId = signal<string | null>(null);
   protected readonly selectedRoles = signal<OrganizationRole[]>([]);
@@ -59,6 +63,7 @@ export class OrganizationMembers implements OnInit {
   protected editRoles(member: OrganizationMemberResponse): void {
     this.saveError.set(false);
     this.lastAdministratorError.set(false);
+    this.lastProjectOwnerError.set(false);
     this.selectedRoles.set([...member.roles]);
     this.editingMemberId.set(member.id);
   }
@@ -77,6 +82,7 @@ export class OrganizationMembers implements OnInit {
     this.selectedRoles.set([]);
     this.saveError.set(false);
     this.lastAdministratorError.set(false);
+    this.lastProjectOwnerError.set(false);
   }
 
   protected async saveRoles(member: OrganizationMemberResponse): Promise<void> {
@@ -87,6 +93,7 @@ export class OrganizationMembers implements OnInit {
     this.savingMemberId.set(member.id);
     this.saveError.set(false);
     this.lastAdministratorError.set(false);
+    this.lastProjectOwnerError.set(false);
     try {
       const updated = await firstValueFrom(
         this.organizations.changeMemberRoles(this.id(), member.id, this.selectedRoles()),
@@ -104,6 +111,7 @@ export class OrganizationMembers implements OnInit {
     this.pendingRemoval.set(member);
     this.saveError.set(false);
     this.lastAdministratorError.set(false);
+    this.lastProjectOwnerError.set(false);
     this.removeDialog?.nativeElement.showModal();
   }
 
@@ -114,6 +122,7 @@ export class OrganizationMembers implements OnInit {
     this.pendingRemoval.set(null);
     this.saveError.set(false);
     this.lastAdministratorError.set(false);
+    this.lastProjectOwnerError.set(false);
   }
 
   protected async confirmRemoval(): Promise<void> {
@@ -125,6 +134,7 @@ export class OrganizationMembers implements OnInit {
     this.savingMemberId.set(member.id);
     this.saveError.set(false);
     this.lastAdministratorError.set(false);
+    this.lastProjectOwnerError.set(false);
     try {
       await firstValueFrom(this.organizations.removeMember(this.id(), member.id));
       this.members.update(current => current.filter(item => item.id !== member.id));
@@ -157,9 +167,11 @@ export class OrganizationMembers implements OnInit {
     this.saveError.set(true);
     if (!(error instanceof ApiError)) {
       this.lastAdministratorError.set(false);
+      this.lastProjectOwnerError.set(false);
       return;
     }
 
-    this.lastAdministratorError.set(error.code === 'RG-ORG-05');
+    this.lastAdministratorError.set(error.code === LAST_ADMINISTRATOR_ERROR_CODE);
+    this.lastProjectOwnerError.set(error.code === LAST_PROJECT_OWNER_ERROR_CODE);
   }
 }

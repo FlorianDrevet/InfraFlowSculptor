@@ -3,13 +3,15 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace InfraFlowSculptor.Infrastructure.Persistence;
 
-internal sealed class IfsDbTransaction(IDbContextTransaction transaction) : IIfsDbTransaction
+internal sealed class IfsDbTransaction(IDbContextTransaction transaction, bool isOwner) : IIfsDbTransaction
 {
+    public bool IsOwner { get; } = isOwner;
+
     public Task CommitAsync(CancellationToken cancellationToken = default) =>
-        transaction.CommitAsync(cancellationToken);
+        IsOwner ? transaction.CommitAsync(cancellationToken) : Task.CompletedTask;
 
     public Task RollbackAsync(CancellationToken cancellationToken = default) =>
-        transaction.RollbackAsync(cancellationToken);
+        IsOwner ? transaction.RollbackAsync(cancellationToken) : Task.CompletedTask;
 
-    public ValueTask DisposeAsync() => transaction.DisposeAsync();
+    public ValueTask DisposeAsync() => IsOwner ? transaction.DisposeAsync() : ValueTask.CompletedTask;
 }

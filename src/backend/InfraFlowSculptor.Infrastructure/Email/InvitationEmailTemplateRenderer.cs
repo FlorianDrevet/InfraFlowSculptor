@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using System.Reflection;
 using System.Text.Encodings.Web;
 
@@ -11,6 +12,10 @@ public sealed class InvitationEmailTemplateRenderer
     private const string OrganizationNamePlaceholder = "{{organizationName}}";
     private const string InvitationUrlPlaceholder = "{{invitationUrl}}";
     private const string ExpirationPlaceholder = "{{expiresAt}}";
+
+    private static readonly Regex PlaceholderPattern = new(
+        @"\{\{(?<name>organizationName|invitationUrl|expiresAt)\}\}",
+        RegexOptions.CultureInvariant);
 
     private static readonly Dictionary<string, (string Subject, string HtmlResource, string TextResource)> Resources =
         new Dictionary<string, (string Subject, string HtmlResource, string TextResource)>(StringComparer.Ordinal)
@@ -35,6 +40,11 @@ public sealed class InvitationEmailTemplateRenderer
         ArgumentException.ThrowIfNullOrWhiteSpace(organizationName);
         ArgumentNullException.ThrowIfNull(invitationUrl);
 
+        if (organizationName.Any(char.IsControl))
+        {
+            throw new ArgumentException("The organization name cannot contain control characters.", nameof(organizationName));
+        }
+
         if (!invitationUrl.IsAbsoluteUri
             || (invitationUrl.Scheme != Uri.UriSchemeHttp && invitationUrl.Scheme != Uri.UriSchemeHttps))
         {
@@ -47,18 +57,24 @@ public sealed class InvitationEmailTemplateRenderer
         }
 
         var expiresAtText = expiresAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture);
-        var htmlBody = ReadResource(resourceNames.HtmlResource)
-            .Replace(OrganizationNamePlaceholder, HtmlEncoder.Default.Encode(organizationName), StringComparison.Ordinal)
-            .Replace(InvitationUrlPlaceholder, HtmlEncoder.Default.Encode(invitationUrl.AbsoluteUri), StringComparison.Ordinal)
-            .Replace(ExpirationPlaceholder, HtmlEncoder.Default.Encode(expiresAtText), StringComparison.Ordinal);
-        var textBody = ReadResource(resourceNames.TextResource)
-            .Replace(OrganizationNamePlaceholder, organizationName, StringComparison.Ordinal)
-            .Replace(InvitationUrlPlaceholder, invitationUrl.AbsoluteUri, StringComparison.Ordinal)
-            .Replace(ExpirationPlaceholder, expiresAtText, StringComparison.Ordinal);
-        var subject = resourceNames.Subject.Replace(
-            OrganizationNamePlaceholder,
+        var htmlBody = ReplacePlaceholders(
+            ReadResource(resourceNames.HtmlResource),
             organizationName,
-            StringComparison.Ordinal);
+            invitationUrl.AbsoluteUri,
+            expiresAtText,
+            HtmlEncoder.Default.Encode);
+        var textBody = ReplacePlaceholders(
+            ReadResource(resourceNames.TextResource),
+            organizationName,
+            invitationUrl.AbsoluteUri,
+            expiresAtText,
+            value => value);
+        var subject = ReplacePlaceholders(
+            resourceNames.Subject,
+            organizationName,
+            invitationUrl.AbsoluteUri,
+            expiresAtText,
+            value => value);
 
         return new RenderedEmailTemplate(subject, htmlBody, textBody);
     }
@@ -70,4 +86,18 @@ public sealed class InvitationEmailTemplateRenderer
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
     }
+
+    private static string ReplacePlaceholders(
+        string template,
+        string organizationName,
+        string invitationUrl,
+        string expiresAt,
+        Func<string, string> encode) =>
+        PlaceholderPattern.Replace(template, match => match.Groups["name"].Value switch
+        {
+            "organizationName" => encode(organizationName),
+            "invitationUrl" => encode(invitationUrl),
+            "expiresAt" => encode(expiresAt),
+            _ => match.Value
+        });
 }

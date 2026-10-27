@@ -107,6 +107,35 @@ public sealed class InvitationsEndpointTests(ApiFactory factory) : IClassFixture
     }
 
     [Fact]
+    public async Task InvitationPreviewWithMalformedTokenReturnsNotFound()
+    {
+        var userToken = TestTokens.CreateAccessToken(
+            objectId: Guid.NewGuid().ToString("D"),
+            displayName: "Invitation Preview User");
+
+        using var request = CreateRequest(HttpMethod.Get, "/v1/invitations/%20", userToken);
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("NOT_FOUND", problem.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task AcceptInvitationWithMalformedTokenReturnsBadRequest()
+    {
+        var userToken = TestTokens.CreateAccessToken(
+            objectId: Guid.NewGuid().ToString("D"),
+            displayName: "Invitation Accept User");
+
+        using var request = CreateRequest(HttpMethod.Post, "/v1/invitations/%20/accept", userToken);
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task TenantRestrictionRejectsPersonalAccountAndAcceptsItAfterRestrictionIsRemoved()
     {
         var ownerToken = TestTokens.CreateAccessToken(
@@ -119,7 +148,7 @@ public sealed class InvitationsEndpointTests(ApiFactory factory) : IClassFixture
             email: "emma@outlook.example");
         var organizationId = await CreateOrganizationAsync(ownerToken, "Contoso Tenant Gate");
         await SynchronizeProfileAsync(emmaToken);
-        await SetRestrictionsAsync(organizationId, ownerToken, [ContosoTenantId]);
+        await SetRestrictionsAsync(organizationId, ownerToken, [], [ContosoTenantId]);
 
         var rejected = await InviteAsync(organizationId, ownerToken, "emma@outlook.example", [OrganizationRole.Member]);
         var rejectedProblem = await rejected.Content.ReadFromJsonAsync<JsonElement>();
@@ -128,7 +157,7 @@ public sealed class InvitationsEndpointTests(ApiFactory factory) : IClassFixture
             await rejected.Content.ReadAsStringAsync());
         Assert.Equal("RG-ORG-06", rejectedProblem.GetProperty("code").GetString());
 
-        await SetRestrictionsAsync(organizationId, ownerToken, []);
+        await SetRestrictionsAsync(organizationId, ownerToken, [], []);
         var invited = await InviteAsync(organizationId, ownerToken, "emma@outlook.example", [OrganizationRole.Member]);
         Assert.Equal(HttpStatusCode.Created, invited.StatusCode);
         var invitation = await invited.Content.ReadFromJsonAsync<JsonElement>();
@@ -153,6 +182,26 @@ public sealed class InvitationsEndpointTests(ApiFactory factory) : IClassFixture
         Assert.Equal(InvitationStatus.Accepted, storedInvitation.Status);
         var emma = await dbContext.UserProfiles.SingleAsync(profile => profile.ObjectId == Guid.Parse("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"));
         Assert.Contains(organization.Members, member => member.UserProfileId == emma.Id);
+    }
+
+    [Fact]
+    public async Task TenantRestrictionRejectsRecipientWithoutKnownTenantProfile()
+    {
+        var ownerToken = TestTokens.CreateAccessToken(
+            objectId: Guid.NewGuid().ToString("D"),
+            displayName: "Invitation Owner");
+        var organizationId = await CreateOrganizationAsync(ownerToken, "Contoso Unknown Tenant");
+        await SetRestrictionsAsync(organizationId, ownerToken, [], [ContosoTenantId]);
+
+        var invited = await InviteAsync(
+            organizationId,
+            ownerToken,
+            $"new-user-{Guid.NewGuid():N}@contoso.example",
+            [OrganizationRole.Member]);
+
+        Assert.Equal(HttpStatusCode.Forbidden, invited.StatusCode);
+        var problem = await invited.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("RG-ORG-06", problem.GetProperty("code").GetString());
     }
 
     [Fact]
@@ -188,9 +237,141 @@ public sealed class InvitationsEndpointTests(ApiFactory factory) : IClassFixture
         Assert.Equal("INVITATION_REVOKED", problem.GetProperty("code").GetString());
     }
 
+    [Fact]
+    public async Task AcceptanceRechecksTheCurrentEmailDomainRestriction()
+    {
+        var ownerToken = TestTokens.CreateAccessToken(
+            objectId: Guid.NewGuid().ToString("D"),
+            displayName: "Invitation Owner");
+        var email = $"restricted-{Guid.NewGuid():N}@contoso.example";
+        var inviteeToken = TestTokens.CreateAccessToken(
+            objectId: Guid.NewGuid().ToString("D"),
+            displayName: "Restricted Invitee",
+            email: email);
+        var organizationId = await CreateOrganizationAsync(ownerToken, "Contoso Changed Domain Policy");
+        await SynchronizeProfileAsync(inviteeToken);
+        var invited = await InviteAsync(organizationId, ownerToken, email, [OrganizationRole.Member]);
+        Assert.Equal(HttpStatusCode.Created, invited.StatusCode);
+        var invitation = await invited.Content.ReadFromJsonAsync<JsonElement>();
+        var invitationId = invitation.GetProperty("id").GetGuid();
+        var token = await FindInvitationTokenAsync(organizationId, invitationId);
+
+        await SetRestrictionsAsync(organizationId, ownerToken, ["other.example"], []);
+        using var acceptRequest = CreateRequest(HttpMethod.Post, $"/v1/invitations/{token}/accept", inviteeToken);
+        using var response = await client.SendAsync(acceptRequest);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("RG-ORG-06", problem.GetProperty("code").GetString());
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        var storedInvitation = await dbContext.Invitations.IgnoreQueryFilters()
+            .SingleAsync(candidate => candidate.Id == new InvitationId(invitationId));
+        Assert.Equal(InvitationStatus.Pending, storedInvitation.Status);
+    }
+
+    [Fact]
+    public async Task ConcurrentInvitationsForSameAddressCreateOnlyOnePendingInvitation()
+    {
+        var ownerToken = TestTokens.CreateAccessToken(
+            objectId: "99999999-0201-4201-8201-000000000001",
+            displayName: "Alice Martin");
+        var email = $"concurrent-{Guid.NewGuid():N}@contoso.example";
+        var organizationId = await CreateOrganizationAsync(ownerToken, "Contoso Concurrent Invitations");
+        var responses = await Task.WhenAll(Enumerable.Range(0, 8)
+            .Select(_ => InviteAsync(organizationId, ownerToken, email, [OrganizationRole.Member])));
+
+        try
+        {
+            var responseSummaries = await Task.WhenAll(responses.Select(async response =>
+                $"{(int)response.StatusCode}: {await response.Content.ReadAsStringAsync()}"));
+            Assert.Single(responses, response => response.StatusCode == HttpStatusCode.Created);
+            Assert.True(
+                responses.Count(response => response.StatusCode == HttpStatusCode.Conflict) == 7,
+                string.Join(Environment.NewLine, responseSummaries));
+
+            using var scope = factory.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+            var pendingCount = await dbContext.Invitations.IgnoreQueryFilters()
+                .CountAsync(invitation => invitation.OrganizationId == new OrganizationId(organizationId)
+                    && invitation.Email == email
+                    && invitation.Status == InvitationStatus.Pending);
+            Assert.Equal(1, pendingCount);
+        }
+        finally
+        {
+            foreach (var response in responses)
+            {
+                response.Dispose();
+            }
+        }
+    }
+
+    [Fact]
+    public async Task ConcurrentAcceptanceOfOneInvitationReturnsOnlyExpectedOutcomes()
+    {
+        var ownerToken = TestTokens.CreateAccessToken(
+            objectId: Guid.NewGuid().ToString("D"),
+            displayName: "Invitation Owner");
+        var email = $"accept-{Guid.NewGuid():N}@contoso.example";
+        var inviteeObjectId = Guid.NewGuid();
+        var inviteeToken = TestTokens.CreateAccessToken(
+            objectId: inviteeObjectId.ToString("D"),
+            displayName: "Concurrent Invitee",
+            email: email);
+        var organizationId = await CreateOrganizationAsync(ownerToken, "Contoso Concurrent Acceptance");
+        await SynchronizeProfileAsync(inviteeToken);
+        var invited = await InviteAsync(
+            organizationId,
+            ownerToken,
+            email,
+            [OrganizationRole.Member]);
+        Assert.Equal(HttpStatusCode.Created, invited.StatusCode);
+        var invitation = await invited.Content.ReadFromJsonAsync<JsonElement>();
+        var invitationId = invitation.GetProperty("id").GetGuid();
+        var token = await FindInvitationTokenAsync(organizationId, invitationId);
+
+        var responses = await Task.WhenAll(Enumerable.Range(0, 2).Select(_ =>
+        {
+            var request = CreateRequest(HttpMethod.Post, $"/v1/invitations/{token}/accept", inviteeToken);
+            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
+            return client.SendAsync(request);
+        }));
+
+        try
+        {
+            Assert.Contains(responses, response => response.StatusCode == HttpStatusCode.OK);
+            var responseDetails = await Task.WhenAll(responses.Select(async response =>
+                $"{(int)response.StatusCode}: {await response.Content.ReadAsStringAsync()}"));
+            Assert.All(responses, response => Assert.True(
+                response.StatusCode is HttpStatusCode.OK or HttpStatusCode.Conflict,
+                string.Join(Environment.NewLine, responseDetails)));
+
+            using var scope = factory.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+            var storedInvitation = await dbContext.Invitations.IgnoreQueryFilters()
+                .SingleAsync(candidate => candidate.Id == new InvitationId(invitationId));
+            var organization = await dbContext.Organizations.IgnoreQueryFilters()
+                .Include(candidate => candidate.Members)
+                .SingleAsync(candidate => candidate.Id == new OrganizationId(organizationId));
+            var invitee = await dbContext.UserProfiles.SingleAsync(profile => profile.ObjectId == inviteeObjectId);
+
+            Assert.Equal(InvitationStatus.Accepted, storedInvitation.Status);
+            Assert.Single(organization.Members, member => member.UserProfileId == invitee.Id);
+        }
+        finally
+        {
+            foreach (var response in responses)
+            {
+                response.Dispose();
+            }
+        }
+    }
+
     private async Task<Guid> CreateOrganizationAsync(string token, string name)
     {
         using var request = CreateRequest(HttpMethod.Post, "/v1/organizations", token, new { name });
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
         using var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var organization = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -220,13 +401,17 @@ public sealed class InvitationsEndpointTests(ApiFactory factory) : IClassFixture
         return await client.SendAsync(request);
     }
 
-    private async Task SetRestrictionsAsync(Guid organizationId, string token, Guid[] tenantIds)
+    private async Task SetRestrictionsAsync(
+        Guid organizationId,
+        string token,
+        string[] emailDomains,
+        Guid[] tenantIds)
     {
         using var request = CreateRequest(
             HttpMethod.Put,
             $"/v1/organizations/{organizationId:D}/access-restrictions",
             token,
-            new { allowedEmailDomains = Array.Empty<string>(), allowedTenantIds = tenantIds });
+            new { allowedEmailDomains = emailDomains, allowedTenantIds = tenantIds });
         request.Headers.Add("X-Ifs-Organization", organizationId.ToString("D"));
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("D"));
         using var response = await client.SendAsync(request);

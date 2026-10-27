@@ -49,4 +49,32 @@ public sealed class InvitationEmailTemplateRendererTests
             new Uri("https://ifs.example/invitations/token-value"),
             Expiration));
     }
+
+    [Fact]
+    public void RenderInvitationRejectsControlCharactersInOrganizationName()
+    {
+        Assert.Throws<ArgumentException>(() => InvitationEmailTemplateRenderer.Render(
+            "en",
+            "Contoso\r\nBcc: attacker@example.test",
+            new Uri("https://ifs.example/invitations/token-value"),
+            Expiration));
+    }
+
+    [Fact]
+    public void RenderDoesNotReplacePlaceholdersContainedInOrganizationName()
+    {
+        const string organizationName = "Contoso {{invitationUrl}}";
+        var result = InvitationEmailTemplateRenderer.Render(
+            "en",
+            organizationName,
+            new Uri("https://ifs.example/invitations/token-value"),
+            Expiration);
+
+        Assert.Contains(organizationName, result.Subject, StringComparison.Ordinal);
+        Assert.Contains(organizationName, result.TextBody, StringComparison.Ordinal);
+        Assert.Equal(1, CountOccurrences(result.TextBody, "https://ifs.example/invitations/token-value"));
+    }
+
+    private static int CountOccurrences(string value, string searchValue) =>
+        value.Split(searchValue, StringSplitOptions.None).Length - 1;
 }

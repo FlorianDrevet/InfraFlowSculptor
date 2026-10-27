@@ -33,6 +33,35 @@ public sealed class OrganizationAggregateTests
         Assert.Equal("ORG_NAME_INVALID", result.FirstError.Code);
     }
 
+    [Theory]
+    [InlineData("Contoso\r\nBcc: attacker@example.test")]
+    [InlineData("Contoso\u007f")]
+    public void CreateRejectsControlCharactersInNames(string name)
+    {
+        var result = Organization.Create(
+            new OrganizationId(Guid.NewGuid()),
+            name,
+            new UserProfileId(Guid.NewGuid()));
+
+        Assert.True(result.IsError);
+        Assert.Equal("ORG_NAME_INVALID", result.FirstError.Code);
+    }
+
+    [Fact]
+    public void RenameRejectsControlCharactersInNames()
+    {
+        var organization = Organization.Create(
+            new OrganizationId(Guid.NewGuid()),
+            "Contoso",
+            new UserProfileId(Guid.NewGuid())).Value;
+
+        var result = organization.Rename("Updated\r\nBcc: attacker@example.test");
+
+        Assert.True(result.IsError);
+        Assert.Equal("ORG_NAME_INVALID", result.FirstError.Code);
+        Assert.Equal("Contoso", organization.Name);
+    }
+
     [Fact]
     public void CreateAddsTheCreatorAsAdministrator()
     {
@@ -45,6 +74,56 @@ public sealed class OrganizationAggregateTests
         Assert.Equal("Contoso", result.Value.Name);
         var creator = Assert.Single(result.Value.Members);
         Assert.Collection(creator.Roles, role => Assert.Equal(OrganizationRole.Administrator, role));
+    }
+
+    [Fact]
+    public void AddMemberAdvancesOrganizationVersion()
+    {
+        var organization = Organization.Create(
+            new OrganizationId(Guid.NewGuid()),
+            "Contoso",
+            new UserProfileId(Guid.NewGuid())).Value;
+
+        var result = organization.AddMember(new UserProfileId(Guid.NewGuid()), MemberRoles);
+
+        Assert.False(result.IsError);
+        Assert.Equal(2, organization.Version);
+    }
+
+    [Fact]
+    public void ChangeMemberRolesAdvancesOrganizationVersion()
+    {
+        var administratorId = new UserProfileId(Guid.NewGuid());
+        var memberId = new UserProfileId(Guid.NewGuid());
+        var organization = Organization.Create(
+            new OrganizationId(Guid.NewGuid()),
+            "Contoso",
+            administratorId).Value;
+        Assert.False(organization.AddMember(memberId, MemberRoles).IsError);
+        var previousVersion = organization.Version;
+
+        var result = organization.ChangeMemberRoles(memberId, ConnectionManagerRoles);
+
+        Assert.False(result.IsError);
+        Assert.Equal(previousVersion + 1, organization.Version);
+    }
+
+    [Fact]
+    public void RemoveMemberAdvancesOrganizationVersion()
+    {
+        var administratorId = new UserProfileId(Guid.NewGuid());
+        var memberId = new UserProfileId(Guid.NewGuid());
+        var organization = Organization.Create(
+            new OrganizationId(Guid.NewGuid()),
+            "Contoso",
+            administratorId).Value;
+        Assert.False(organization.AddMember(memberId, MemberRoles).IsError);
+        var previousVersion = organization.Version;
+
+        var result = organization.RemoveMember(memberId);
+
+        Assert.False(result.IsError);
+        Assert.Equal(previousVersion + 1, organization.Version);
     }
 
     [Fact]

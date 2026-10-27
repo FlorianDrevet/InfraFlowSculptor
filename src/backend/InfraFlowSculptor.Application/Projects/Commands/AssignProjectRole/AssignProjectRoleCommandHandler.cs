@@ -43,11 +43,11 @@ public sealed class AssignProjectRoleCommandHandler(
         }
 
         var memberId = new UserProfileId(command.MemberId);
-        var organizationContainsMember = await dbContext.Query<OrganizationAggregate>()
-            .Where(candidate => candidate.Id == organizationId)
-            .SelectMany(candidate => candidate.Members)
-            .AnyAsync(member => member.UserProfileId == memberId, cancellationToken);
-        if (!organizationContainsMember)
+        var organization = await dbContext.Query<OrganizationAggregate>()
+            .Include(candidate => candidate.Members)
+            .SingleOrDefaultAsync(candidate => candidate.Id == organizationId, cancellationToken);
+        if (organization is null || project.OrganizationId != organizationId
+            || organization.Members.All(member => member.UserProfileId != memberId))
         {
             return Error.NotFound("NOT_FOUND", "The organization member was not found.");
         }
@@ -79,6 +79,8 @@ public sealed class AssignProjectRoleCommandHandler(
         {
             return assigned.Errors;
         }
+
+        organization.RecordProjectAuthorizationChange();
 
         return new ProjectRoleAssignmentSummary(
             command.MemberId,
