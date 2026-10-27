@@ -321,10 +321,12 @@ function Test-ProofSensitiveKey {
 
 function Get-ProofRedactionToken {
     param(
-        [Parameter(Mandatory)][string] $Value,
+        [Parameter(Mandatory)][AllowEmptyString()][string] $Value,
         [Parameter(Mandatory)][string] $Prefix,
         [Parameter(Mandatory)][hashtable] $Context
     )
+
+    if ($Value.Length -eq 0) { return '' }
 
     $mapName = $Prefix + 'Map'
     if (-not $Context.ContainsKey($mapName)) { $Context[$mapName] = [ordered]@{} }
@@ -418,7 +420,7 @@ function Test-ProofResidualSensitiveValue {
 
 function ConvertTo-ProofRedactedValue {
     param(
-        [AllowNull()][object] $Value,
+        [AllowNull()][AllowEmptyString()][object] $Value,
         [AllowNull()][string] $Key,
         [Parameter(Mandatory)][hashtable] $Context,
         [bool] $IdentityContext = $false,
