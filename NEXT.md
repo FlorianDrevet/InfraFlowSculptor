@@ -10,12 +10,12 @@
 | | |
 |---|---|
 | **Étape courante** | [`J0-01`](docs/plan/02-jalon-0-pilote.md#j0-01--profils-dutilisateur-et-organisations) — Profils d'utilisateur et organisations |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`R-03`](docs/plan/01-preuves.md#-r-03--revue-des-preuves) — Revue des preuves (auto-validée) |
 | **Étape suivante** | `J0-02` — Membres et réglages d'accès de l'organisation |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-acces` (créée depuis `origin/impl/socle` après la fusion de R-03) |
-| **Dernière mise à jour** | 2026-10-27 — Codex (auto-validation R-03) |
+| **Dernière mise à jour** | 2026-10-27 — Codex |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
@@ -39,7 +39,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 | SDK .NET | `10.0.203` | Oui (`10.0.203`) |
 | Node | `24.15.0` | Oui (`24.15.0`) |
 | Docker | `27.0.0` | Oui (`29.4.3`, daemon répond ; prérequis vérifiés le 2026-10-27) |
-| CLI Aspire | `13.5.3` | Oui (`13.5.3`) |
+| CLI Aspire | `13.5.x` | Oui (`13.5.4`, DCP `0.22.11`; packages AppHost épinglés à `13.5.3`) |
 | Python | `3.11` | Oui (`3.14.4`) |
 | PowerShell 7 | `7.5.0` | Oui (`7.6.5`) |
 | Azure CLI | `2.90.0` | Oui (`2.91.0`, prérequis vérifiés le 2026-10-27) |

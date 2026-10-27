@@ -48,6 +48,23 @@
     "closeMenu": "Close",
     "chooseLanguage": "Language"
   },
+  "organization": {
+    "section": "Active organization",
+    "activeLabel": "Active organization",
+    "choose": "Choose an organization",
+    "createLink": "Create an organization",
+    "createTitle": "Create an organization",
+    "createDescription": "Choose a name for your organization.",
+    "createAction": "Create",
+    "creating": "Creating…",
+    "settingsLink": "Organization",
+    "settingsTitle": "Organization — plan and settings",
+    "nameLabel": "Organization name",
+    "loading": "Loading the organization…",
+    "saveAction": "Save",
+    "saving": "Saving…",
+    "saveError": "Unable to save. Check the name and try again."
+  },
   "error": {
     "title": "An error occurred.",
     "message": "The request could not be completed. Try again in a moment.",

@@ -1,6 +1,6 @@
 # 10 — Routes de l'API
 
-> S-14 implémenté le 2026-10-06 ; compléter aux étapes suivantes, d'après le code réel.
+> S-14 implémenté le 2026-10-06 ; J0-01 ajoute les routes d’organisation et de disponibilité des fonctions.
 > Cible : DT-05, DT-06. Chaque étape qui ajoute une route l'inscrit ici (méthode, chemin, nom, permission, portée de débit).
 
 ## Faits vérifiés
@@ -9,7 +9,14 @@
 - `GET /v1/version` — `GetVersion`, anonyme : version informative de l'assembly et environnement (`VersionResponse`).
 - Développement : OpenAPI `GET /openapi/v1.json`, Scalar `/scalar`, titre « InfraFlowSculptor API v1 ».
 - Routes inconnues : `application/problem+json`, statut 404 et `traceId` via ProblemDetails/status-code pages.
-- `GET /v1/me` — `GetMe`, authentification requise, limite `read` : `tenantId`, `objectId`, `displayName`, `verifiedEmail` dérivés de `ICurrentUser`.
+- `GET /v1/me` — `GetMe`, authentification requise, limite `read` : identité synchronisée et préférences de langue/thème du profil.
+- `PUT /v1/me/preferences` — `UpdateMePreferences`, authentification requise, limite `write`, route sans organisation ; valide `fr|en` et `system|dark|light`.
+- `GET /v1/organizations` — `ListMyOrganizations`, authentification requise, limite `read`, route sans organisation ; renvoie uniquement les appartenances de l’utilisateur.
+- `POST /v1/organizations` — `CreateOrganization`, authentification requise, limite `write`, route sans organisation ; le créateur devient administrateur.
+- `GET /v1/organizations/{id}` — `GetOrganization`, authentification requise, limite `read`, en-tête `X-Ifs-Organization` obligatoire et adhésion vérifiée.
+- `PUT /v1/organizations/{id}` — `RenameOrganization`, authentification requise, limite `write`, en-tête d’organisation et rôle `Administrator` obligatoires.
+- `GET /v1/features` — `GetFeatures`, authentification requise, limite `read`, route sans organisation ; liste les clés du catalogue, leur état et leur disponibilité pour l’organisation active.
+- Les routes `/v1/organizations` et `/v1/me` sont marquées `OrganizationAgnostic`; les routes détail/renommage masquent les organisations absentes ou étrangères derrière 404. Le middleware des fonctions renvoie également 404 quand une route requiert une fonction désactivée.
 - En développement et en test, `POST /v1/dev/ping-job` enfile un job authentifié et renvoie 202 ; `GET /v1/dev/ping-job/{jobId}` retourne son état pour l'organisation courante. Ces routes sont exclues du document OpenAPI.
 - Limites disponibles : `read` 600/min, `write` 120/min, `generate` 10/min, `publish` 5/min; partition `oid`, sinon adresse IP; rejet 429 avec `Retry-After` et ProblemDetails.
 - `ProblemDetailsMapper.ToProblem(List<Error>)` applique ErrorOr/metadata; les exceptions renvoient `code: INTERNAL` et `traceId` sans détail.

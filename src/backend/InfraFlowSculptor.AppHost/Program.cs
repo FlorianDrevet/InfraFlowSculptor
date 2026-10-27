@@ -8,6 +8,8 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var postgresPassword = builder.AddParameter("postgres-password", secret: true);
 var persistentContainers = builder.Configuration.GetValue<bool>("AppHost:PersistentContainers");
+var webPort = builder.Configuration.GetValue<int?>("AppHost:WebPort") ?? 4200;
+var webOrigin = $"http://localhost:{webPort}";
 var isTesting = builder.Environment.IsEnvironment("Testing");
 var enableDevelopmentExtras = builder.Configuration.GetValue<bool?>("AppHost:EnableDevelopmentExtras")
     ?? builder.Environment.IsDevelopment();
@@ -94,7 +96,7 @@ var api = builder
     .WithEnvironment("Auth__Authority", "https://localhost:8080/realms/ifs")
     .WithEnvironment("Auth__Audience", "ifs-api")
     .WithEnvironment("Auth__Provider", "Keycloak")
-    .WithEnvironment("Cors__AllowedOrigins__0", "http://localhost:4200")
+    .WithEnvironment("Cors__AllowedOrigins__0", webOrigin)
     .WithEnvironment("Ifs__Development__EnableGitea", enableDevelopmentExtras ? "true" : "false")
     .WithEnvironment("DOTNET_ENVIRONMENT", builder.Environment.EnvironmentName)
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", builder.Environment.EnvironmentName)
@@ -158,8 +160,8 @@ else
 
     builder.AddJavaScriptApp(ResourceNames.Web, "../../frontend/ifs-web")
         .WithRunScript("start")
-        .WithArgs("--", "--port", "4200")
-        .WithHttpEndpoint(port: 4200, targetPort: 4200, name: "http", isProxied: false)
+        .WithArgs("--", "--port", webPort.ToString(System.Globalization.CultureInfo.InvariantCulture))
+        .WithHttpEndpoint(port: webPort, targetPort: webPort, name: "http", isProxied: false)
         .WithEnvironment("IFS_API_URL", api.GetEndpoint("https"))
         .WithEnvironment("IFS_OIDC_PROVIDER", "keycloak")
         .WithEnvironment("IFS_OIDC_AUTHORITY", "https://localhost:8080/realms/ifs")

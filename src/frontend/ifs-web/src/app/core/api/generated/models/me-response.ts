@@ -4,6 +4,8 @@
 export interface MeResponse {
   displayName: string;
   objectId: string;
+  preferredLanguage: string;
+  preferredTheme: string;
   tenantId: string;
   verifiedEmail: (string | null);
 }

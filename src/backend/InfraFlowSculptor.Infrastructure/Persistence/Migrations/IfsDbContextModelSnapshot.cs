@@ -23,6 +23,84 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_organizations");
+
+                    b.ToTable("organizations", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.UserProfileAggregate.UserProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("display_name");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email");
+
+                    b.Property<DateTimeOffset>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_seen_at");
+
+                    b.Property<Guid>("ObjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("object_id");
+
+                    b.Property<string>("PreferredLanguage")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("preferred_language");
+
+                    b.Property<string>("PreferredTheme")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("preferred_theme");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_profiles");
+
+                    b.HasIndex("TenantId", "ObjectId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_user_profiles_tenant_id_object_id");
+
+                    b.ToTable("user_profiles", (string)null);
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Common.IdempotencyKeyEntity", b =>
                 {
                     b.Property<Guid>("OrganizationId")
@@ -193,6 +271,53 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasName("pk_scheduled_job_leases");
 
                     b.ToTable("scheduled_job_leases", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Identity.OrganizationFeatureAccessEntity", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("FeatureKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("feature_key");
+
+                    b.HasKey("OrganizationId", "FeatureKey")
+                        .HasName("pk_organization_feature_access");
+
+                    b.ToTable("organization_feature_access", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", b =>
+                {
+                    b.OwnsMany("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationMember", "Members", b1 =>
+                        {
+                            b1.Property<Guid>("OrganizationId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("organization_id");
+
+                            b1.Property<Guid>("UserProfileId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("user_profile_id");
+
+                            b1.PrimitiveCollection<int[]>("RoleValues")
+                                .IsRequired()
+                                .HasColumnType("integer[]")
+                                .HasColumnName("roles");
+
+                            b1.HasKey("OrganizationId", "UserProfileId")
+                                .HasName("pk_organization_members");
+
+                            b1.ToTable("organization_members", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("OrganizationId")
+                                .HasConstraintName("fk_organization_members_organizations_organization_id");
+                        });
+
+                    b.Navigation("Members");
                 });
 #pragma warning restore 612, 618
         }

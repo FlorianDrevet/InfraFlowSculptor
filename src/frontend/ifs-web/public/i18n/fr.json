@@ -48,6 +48,23 @@
     "closeMenu": "Fermer",
     "chooseLanguage": "Langue"
   },
+  "organization": {
+    "section": "Organisation active",
+    "activeLabel": "Organisation active",
+    "choose": "Choisir une organisation",
+    "createLink": "Créer une organisation",
+    "createTitle": "Créer une organisation",
+    "createDescription": "Choisissez le nom de votre organisation.",
+    "createAction": "Créer",
+    "creating": "Création…",
+    "settingsLink": "Organisation",
+    "settingsTitle": "Organisation — plan et paramètres",
+    "nameLabel": "Nom de l'organisation",
+    "loading": "Chargement de l’organisation…",
+    "saveAction": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saveError": "Impossible d’enregistrer. Vérifiez le nom et réessayez."
+  },
   "error": {
     "title": "Une erreur s'est produite.",
     "message": "La requête n'a pas pu aboutir. Réessayez dans quelques instants.",

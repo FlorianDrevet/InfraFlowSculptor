@@ -1,8 +1,8 @@
-import { HttpInterceptorFn, HttpRequest } from '@angular/common/http';
+import { HttpContextToken, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
 import { isApiRequest } from './is-api-request';
 
 const COMMAND_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-const requestKeys = new WeakMap<HttpRequest<unknown>, string>();
+const operationKeyContext = new HttpContextToken<string>(() => '');
 
 function createOperationId(): string {
   return (
@@ -16,13 +16,13 @@ function keyFor(request: HttpRequest<unknown>): string {
     return existing;
   }
 
-  const previous = requestKeys.get(request);
+  const previous = request.context.get(operationKeyContext);
   if (previous) {
     return previous;
   }
 
   const key = createOperationId();
-  requestKeys.set(request, key);
+  request.context.set(operationKeyContext, key);
   return key;
 }
 

@@ -16,6 +16,10 @@
 - **2026-10-27** : les preuves P1–P5 et P7–P9 sur la sortie écrite à la main sont prototypées. Le crochet P7
   `IFS_TEST_ABORT_AFTER` a été retiré de la sortie client ; voir `.github/memory/08-runtime-and-orchestration.md` et
   la revue R-03 pour l'écart de journalisation `revoke`.
+- **2026-10-27** : J0-01 est implémentée et validée localement : backend, isolation API, préférences, organisations,
+  fonctionnalités et interface. Les tests .NET, frontend et Playwright authentifiés (6/6 desktop/mobile), lint, builds
+  et OpenAPI passent ; le tiroir mobile a été corrigé. Voir `.github/memory/03-domain-model.md`, `04-frontend.md`,
+  `08-runtime-and-orchestration.md`, `09-auth-and-build.md` et `10-api-endpoints.md`.
 
 ## Fichiers thématiques
 

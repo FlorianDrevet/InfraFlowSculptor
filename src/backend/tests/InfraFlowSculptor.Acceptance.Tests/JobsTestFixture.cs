@@ -18,6 +18,8 @@ public sealed class JobsTestFixture : IAsyncLifetime
     private static readonly TimeSpan ServiceBusHealthTimeout = TimeSpan.FromMinutes(8);
     private readonly string signingKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
     private readonly string postgresPassword = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+    private readonly Guid tenantId = Guid.NewGuid();
+    private readonly Guid objectId = Guid.NewGuid();
 
     private DistributedApplication? application;
 
@@ -75,7 +77,7 @@ public sealed class JobsTestFixture : IAsyncLifetime
 
     private async Task WarmWorkerAsync(CancellationToken cancellationToken)
     {
-        var organizationId = Guid.NewGuid();
+        var organizationId = await CreateOrganizationAsync("Worker warmup", cancellationToken);
         using var request = CreateRequest(HttpMethod.Post, "/v1/dev/ping-job", organizationId);
         using var response = await Client.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -88,12 +90,30 @@ public sealed class JobsTestFixture : IAsyncLifetime
         await WaitForProcessedAsync(submission.JobId, organizationId, TimeSpan.FromSeconds(45), cancellationToken);
     }
 
+    public async Task<Guid> CreateOrganizationAsync(string name, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/v1/organizations")
+        {
+            Content = JsonContent.Create(new { name = $"{name} {Guid.NewGuid():N}" })
+        };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+            "Bearer",
+            CreateAccessToken());
+
+        using var response = await Client.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        var organization = await response.Content.ReadFromJsonAsync<OrganizationSummary>(cancellationToken);
+        return organization?.Id
+            ?? throw new InvalidOperationException("Organization creation did not return an organization ID.");
+    }
+
     private HttpRequestMessage CreateRequest(HttpMethod method, string path, Guid organizationId)
     {
         var request = new HttpRequestMessage(method, path);
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
             "Bearer",
-            CreateAccessToken(organizationId));
+            CreateAccessToken());
+        request.Headers.Add("X-Ifs-Organization", organizationId.ToString("D"));
         return request;
     }
 
@@ -279,13 +299,13 @@ public sealed class JobsTestFixture : IAsyncLifetime
             string.Join(Environment.NewLine, resourceStates.Select(state => $"- {state}"));
     }
 
-    public string CreateAccessToken(Guid tenantId)
+    public string CreateAccessToken()
     {
         var now = DateTimeOffset.UtcNow;
         var claims = new[]
         {
             new Claim("tid", tenantId.ToString("D")),
-            new Claim("oid", Guid.NewGuid().ToString("D")),
+            new Claim("oid", objectId.ToString("D")),
             new Claim("name", "Acceptance User")
         };
         var credentials = new SigningCredentials(
@@ -322,4 +342,6 @@ public sealed class JobsTestFixture : IAsyncLifetime
     private sealed record JobSubmission(Guid JobId);
 
     private sealed record JobStatus(Guid JobId, bool Processed, int ProcessedCount);
+
+    private sealed record OrganizationSummary(Guid Id);
 }

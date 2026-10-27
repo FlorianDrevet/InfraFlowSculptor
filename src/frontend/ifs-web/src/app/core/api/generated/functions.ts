@@ -5,3 +5,15 @@ export type { GetVersion$Params as GetVersion$Params } from './fn/infra-flow-scu
 export { getVersion as getVersion } from './fn/infra-flow-sculptor-api/get-version';
 export type { GetMe$Params as GetMe$Params } from './fn/infra-flow-sculptor-api/get-me';
 export { getMe as getMe } from './fn/infra-flow-sculptor-api/get-me';
+export type { UpdateMePreferences$Params as UpdateMePreferences$Params } from './fn/infra-flow-sculptor-api/update-me-preferences';
+export { updateMePreferences as updateMePreferences } from './fn/infra-flow-sculptor-api/update-me-preferences';
+export type { GetFeatures$Params as GetFeatures$Params } from './fn/infra-flow-sculptor-api/get-features';
+export { getFeatures as getFeatures } from './fn/infra-flow-sculptor-api/get-features';
+export type { ListMyOrganizations$Params as ListMyOrganizations$Params } from './fn/organizations/list-my-organizations';
+export { listMyOrganizations as listMyOrganizations } from './fn/organizations/list-my-organizations';
+export type { CreateOrganization$Params as CreateOrganization$Params } from './fn/organizations/create-organization';
+export { createOrganization as createOrganization } from './fn/organizations/create-organization';
+export type { GetOrganization$Params as GetOrganization$Params } from './fn/organizations/get-organization';
+export { getOrganization as getOrganization } from './fn/organizations/get-organization';
+export type { RenameOrganization$Params as RenameOrganization$Params } from './fn/organizations/rename-organization';
+export { renameOrganization as renameOrganization } from './fn/organizations/rename-organization';

@@ -17,8 +17,8 @@
         "pkce.code.challenge.method": "S256"
       },
       "rootUrl": "http://localhost:4200",
-      "redirectUris": ["http://localhost:4200/*"],
-      "webOrigins": ["http://localhost:4200"],
+      "redirectUris": ["http://localhost:4200/*", "http://localhost:4201/*"],
+      "webOrigins": ["http://localhost:4200", "http://localhost:4201"],
       "defaultClientScopes": ["web-origins", "acr", "roles", "basic", "profile", "email", "ifs-claims"],
       "optionalClientScopes": ["offline_access"]
     },

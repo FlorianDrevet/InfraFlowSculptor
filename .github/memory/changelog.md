@@ -53,3 +53,4 @@
 | 2026-10-27 | Codex | P-08 clôturé pour shop44 : piles et ressources de preuve retirées, baseline préservée, journaux copiés et vérifiés, C3/C5/coût final consignés ; contrôle quotidien par groupe indisponible sur HTTP 429, déviation acceptée par Florian. |
 | 2026-10-27 | Codex | R-03 — crochet d'interruption P7 retiré de la sortie publiée ; preuves P1–P5/P7–P9 prototypées et écart de journalisation `revoke` consigné. |
 | 2026-10-27 | Codex | Workflow — rétablir une revue de code Claude CLI en lecture seule à chaque verrou, avec vérification des constats et verdict final Codex. |
+| 2026-10-27 | Codex | J0-01 validée localement — backend, profils, organisations, isolation, préférences, disponibilité des fonctions, interface et recette authentifiée 6/6 desktop/mobile ; correctif du tiroir mobile |

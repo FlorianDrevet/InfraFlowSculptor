@@ -1,6 +1,6 @@
 # 04 — Frontend
 
-> S-14 implémenté le 2026-10-06 ; compléter aux étapes citées, d'après le code réel.
+> S-14 implémenté le 2026-10-06 ; J0-01 ajoute le choix d’organisation et ses pages.
 > Cible : `docs/technique/04-frontend.md`. Étapes S-09 à S-14, puis chaque étape UI.
 
 ## Faits vérifiés
@@ -16,3 +16,6 @@
 - Les intercepteurs `X-Ifs-Organization`, `Idempotency-Key` et `Accept-Language` sont limités aux requêtes de l'API `/v1/` sur son origine configurée; les échanges OIDC Keycloak ne reçoivent donc pas ces en-têtes. L'appel `/v1/me` expire après 10 s et affiche une référence d'erreur locale.
 - `npm run e2e` couvre les vues 1440×900 et 390×844, l'authentification locale, le tiroir mobile, le changement/persistance de langue, axe et la page d'erreur. Au 2026-10-06, 6 scénarios passent; `npm run lint`, `npm test`, `npm run build`, `npm run tokens:check` et `npx tsc --noEmit -p tsconfig.e2e.json` passent aussi.
 - S-14 utilise `ng-openapi-gen` 1.1.0 (Observables) depuis `openapi/v1.json`; `npm run api:generate` normalise les fins de ligne LF et la fin de fichier puis laisse les sorties ignorées par ESLint/Prettier. `npm run api:check` compare les sorties normalisées via un dossier temporaire et renvoie 1 en cas de dérive.
+- J0-01 ajoute `ActiveOrganizationStore` avec persistance locale, le sélecteur d’organisation dans la barre latérale, la page de création quand l’utilisateur n’a aucune organisation et les réglages limités au nom. `organizationMembershipGuard` masque une URL d’organisation étrangère ; `featureGuard` et `NavigationRegistry` filtrent selon `GET /v1/features`.
+- `UserPreferencesService` charge les préférences serveur dans le shell ; `LanguageService` et `ThemeService` appliquent ensuite la valeur du profil. `organization.spec.ts` couvre création, renommage, changement d’organisation, refus d’une organisation étrangère et utilisateur sans organisation.
+- Le 2026-10-27, lint, `npm test` (35 tests Angular, 3 tokens, 3 icônes), build, `api:check` et `organization.spec.ts` passent. L’E2E authentifié couvre Alice (création, renommage, sélection), David (seule Fabrikam, refus de l’URL Contoso) et Emma (aucune organisation) sur Chromium desktop 1440×900 et mobile 390×844 : 6/6. `AppHost:WebPort` garde 4200 par défaut et accepte 4201 pour éviter le projet externe qui occupe 4200. Le tiroir mobile force `.dialog-surface` à la largeur de son panneau ; capture vérifiée, bouton « Fermer » visible.

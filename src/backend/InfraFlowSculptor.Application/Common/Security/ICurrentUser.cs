@@ -1,3 +1,5 @@
+using InfraFlowSculptor.Domain.Common.Identifiers;
+
 namespace InfraFlowSculptor.Application.Common.Security;
 
 public interface ICurrentUser

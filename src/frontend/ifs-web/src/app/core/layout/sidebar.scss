@@ -25,6 +25,33 @@
   text-decoration: none;
 }
 
+.sidebar__organization {
+  display: grid;
+  gap: var(--ifs-space-2);
+  padding: var(--ifs-space-4) var(--ifs-space-2) 0;
+}
+
+.sidebar__organization-label {
+  color: var(--ifs-text-3);
+  font-size: 11px;
+}
+
+.sidebar__organization app-ds-select {
+  width: 100%;
+}
+
+.sidebar__organization-create {
+  width: fit-content;
+  color: var(--ifs-text-2);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.sidebar__organization-create:hover {
+  color: var(--ifs-text);
+  text-decoration: underline;
+}
+
 .sidebar__navigation {
   display: grid;
   gap: var(--ifs-space-1);

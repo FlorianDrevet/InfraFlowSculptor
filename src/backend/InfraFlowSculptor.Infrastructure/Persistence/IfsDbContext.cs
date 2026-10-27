@@ -2,7 +2,10 @@ using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.Common.Models;
+using InfraFlowSculptor.Domain.OrganizationAggregate;
+using InfraFlowSculptor.Domain.UserProfileAggregate;
 using InfraFlowSculptor.Infrastructure.Persistence.Common;
+using InfraFlowSculptor.Infrastructure.Persistence.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -26,6 +29,12 @@ public class IfsDbContext(
     public DbSet<ProcessedJobEntity> ProcessedJobs => Set<ProcessedJobEntity>();
 
     public DbSet<OrganizationJobBudgetEntity> OrganizationJobBudgets => Set<OrganizationJobBudgetEntity>();
+
+    public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
+
+    public DbSet<OrganizationAggregate> Organizations => Set<OrganizationAggregate>();
+
+    public DbSet<OrganizationFeatureAccessEntity> OrganizationFeatureAccess => Set<OrganizationFeatureAccessEntity>();
 
     public OrganizationId? CurrentOrganizationId => currentOrganization.Id;
 
@@ -90,6 +99,11 @@ public class IfsDbContext(
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
+            if (entityType.IsOwned())
+            {
+                continue;
+            }
+
             var entityBuilder = modelBuilder.Entity(entityType.ClrType);
 
             if (typeof(IOrganizationOwned).IsAssignableFrom(entityType.ClrType))

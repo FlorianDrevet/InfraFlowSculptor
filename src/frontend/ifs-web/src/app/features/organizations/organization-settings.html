@@ -1,0 +1,34 @@
+<section class="organization-form">
+  <header class="organization-form__header">
+    <h1>{{ 'organization.settingsTitle' | transloco }}</h1>
+  </header>
+
+  @if (loading()) {
+    <p role="status">{{ 'organization.loading' | transloco }}</p>
+  } @else {
+    <form (ngSubmit)="save()">
+      <label for="organization-name">{{ 'organization.nameLabel' | transloco }}</label>
+      <input
+        id="organization-name"
+        name="organizationName"
+        type="text"
+        required
+        minlength="2"
+        maxlength="80"
+        autocomplete="organization"
+        [ngModel]="name()"
+        (ngModelChange)="name.set($event)"
+      />
+      @if (hasError()) {
+        <p class="organization-form__error" role="alert">{{ 'organization.saveError' | transloco }}</p>
+      }
+      <app-ds-button variant="primary" type="submit" [disabled]="saving()">
+        @if (saving()) {
+          {{ 'organization.saving' | transloco }}
+        } @else {
+          {{ 'organization.saveAction' | transloco }}
+        }
+      </app-ds-button>
+    </form>
+  }
+</section>

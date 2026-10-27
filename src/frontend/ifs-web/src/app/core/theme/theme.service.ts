@@ -5,10 +5,12 @@ import {
   InjectionToken,
   OnDestroy,
   PLATFORM_ID,
+  effect,
   signal,
   computed,
 } from '@angular/core';
 import { AVAILABLE_THEMES, DEFAULT_THEME } from './themes.generated';
+import { UserPreferencesService } from '../preferences/user-preferences.service';
 
 export type ThemeName = 'dark' | 'light';
 export type ThemePreference = 'system' | ThemeName;
@@ -31,10 +33,19 @@ export class ThemeService implements OnDestroy {
   private readonly document = inject(DOCUMENT);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly themeNames = inject(AVAILABLE_THEME_NAMES);
+  private readonly preferences = inject(UserPreferencesService);
   private readonly preferenceState = signal<ThemePreference>('system');
   private readonly prefersDarkState = signal(false);
   private mediaQuery?: MediaQueryList;
   private initialized = false;
+  private readonly serverPreferenceEffect = effect(() => {
+    const preference = this.preferences.preferredTheme();
+    if (preference !== null) {
+      this.preferenceState.set(preference);
+      this.applyTheme();
+      this.storePreference(preference);
+    }
+  });
 
   readonly preference = this.preferenceState.asReadonly();
   readonly availableThemes = this.themeNames;
@@ -73,7 +84,16 @@ export class ThemeService implements OnDestroy {
   setPreference(preference: ThemePreference): void {
     this.preferenceState.set(preference);
     this.applyTheme();
+    this.preferences.setTheme(preference);
 
+    if (!this.isBrowser) {
+      return;
+    }
+
+    this.storePreference(preference);
+  }
+
+  private storePreference(preference: ThemePreference): void {
     if (!this.isBrowser) {
       return;
     }

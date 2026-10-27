@@ -1,7 +1,8 @@
 import { signal } from '@angular/core';
 import { fireEvent, render, screen } from '@testing-library/angular/zoneless';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LanguageService } from '../../i18n/language.service';
+import { UserPreferencesService } from '../../preferences/user-preferences.service';
 import { AVAILABLE_THEME_NAMES } from '../theme.service';
 import { ThemeSwitch } from './theme-switch';
 
@@ -17,6 +18,10 @@ describe('app-theme-switch', () => {
       providers: [
         { provide: AVAILABLE_THEME_NAMES, useValue: ['dark'] },
         { provide: LanguageService, useValue: { activeLanguage: signal('fr') } },
+        {
+          provide: UserPreferencesService,
+          useValue: { preferredTheme: signal(null), setTheme: vi.fn() },
+        },
       ],
     });
 
@@ -28,6 +33,10 @@ describe('app-theme-switch', () => {
       providers: [
         { provide: AVAILABLE_THEME_NAMES, useValue: ['dark', 'light'] },
         { provide: LanguageService, useValue: { activeLanguage: signal('fr') } },
+        {
+          provide: UserPreferencesService,
+          useValue: { preferredTheme: signal(null), setTheme: vi.fn() },
+        },
       ],
     });
 

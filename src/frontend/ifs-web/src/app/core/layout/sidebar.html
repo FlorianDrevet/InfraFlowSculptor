@@ -3,6 +3,30 @@
     <app-brand [compact]="true" />
   </a>
 
+  <section class="sidebar__organization" [attr.aria-label]="'organization.section' | transloco">
+    <span class="sidebar__organization-label">{{ 'organization.activeLabel' | transloco }}</span>
+    <app-ds-select
+      [ariaLabel]="'organization.activeLabel' | transloco"
+      [disabled]="organizations.loading() || organizations.organizations().length === 0"
+      (valueChange)="selectOrganization($event)"
+    >
+      <option value="" [selected]="!activeOrganization.organizationId()">
+        {{ 'organization.choose' | transloco }}
+      </option>
+      @for (organization of organizations.organizations(); track organization.id) {
+        <option
+          [value]="organization.id"
+          [selected]="organization.id === activeOrganization.organizationId()"
+        >
+          {{ organization.name }}
+        </option>
+      }
+    </app-ds-select>
+    <a class="sidebar__organization-create" routerLink="/organizations/new">
+      {{ 'organization.createLink' | transloco }}
+    </a>
+  </section>
+
   <nav class="sidebar__navigation" [attr.aria-label]="'shell.primaryNavigation' | transloco">
     @for (entry of navigation.entries(); track entry.id) {
       <a
@@ -11,8 +35,9 @@
         routerLinkActive="sidebar__link--active"
         [routerLinkActiveOptions]="{ exact: true }"
         ariaCurrentWhenActive="page"
+        [attr.aria-label]="entry.id === 'organization-settings' ? ('organization.settingsLink' | transloco) : null"
       >
-        <app-ds-icon name="home" [size]="16" />
+        <app-ds-icon [name]="entry.iconName ?? 'home'" [size]="16" />
         <span>{{ entry.labelKey | transloco }}</span>
       </a>
     }
