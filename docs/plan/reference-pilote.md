@@ -265,8 +265,9 @@ Ceux de [90 § 4](../specs/90-projet-de-reference.md) qui s'appliquent au catalo
 11. **Échec partiel (P5)** : `MAIN_PAYMENTS_API_KEY` vidée après l'approbation de `core` en prd : « partiellement
     appliquée » avec l'étape en échec ; après saisie, la relance termine sans doublon.
 12. **Interruption brutale (P7)** : l'agent est interrompu après la mise à jour de la pile et avant les
-    révocations (variable de test `IFS_TEST_ABORT_AFTER=deploy-unit`) ; la release suivante — même pour une
-    révision plus récente — reprend la révocation du journal en premier.
+    révocations. L'essai historique #933/#960 a repris les opérations rev2 `deploy-unit` et `data-access` sous
+    rev3 ; `revoke` était absent du journal initial et a été créé en rev3, donc sa reprise depuis un état en attente
+    n'a pas été démontrée. Le crochet d'interruption utilisé en #933 a été retiré de la sortie publiée au verrou R-03.
 13. **Livraison pendant une release (P8)** : une image livrée en prd pendant l'attente d'approbation de la
     release d'infrastructure d'`orders` est conservée ; l'empreinte approuvée égale l'empreinte appliquée.
 14. **Accès aux données entre composants (P9)** : le premier déploiement de `data` puis `orders` réussit ; le

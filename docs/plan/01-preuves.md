@@ -200,10 +200,7 @@ unité de déploiement dans une cible, reprenable à tout moment, sans doublon.
    | `Invoke-IfsSecretWrite` | 8, 11 | Écrit un secret seulement si la valeur a changé ; redémarre `restartOnSecretChange` |
    | `Invoke-IfsDataAccess` | 11 | Règle de pare-feu temporaire `ifs-temp-<runId>` si exposition restreinte (et nettoyage des `ifs-temp-*` > 2 h) ; jeton `az account get-access-token --resource https://database.windows.net/` ; exécute `data-access.sql` avec le module `SqlServer` (`Invoke-Sqlcmd -AccessToken`, version épinglée dans `pins.json`) ; réessais 10 min pour les droits tout juste attribués |
    | `Write-IfsReleaseReport` | 13 | `ifs-report.json` : schéma `ifs-report/v1` (révision et commit lus dans `.ifs/manifest.json`, empreinte du manifeste, cible, étapes, copie du journal, ressources détachées, accès révoqués, résultat) ; appelé dans un `finally` |
-2. Injection de panne **pour les preuves** : si la variable d'environnement `IFS_TEST_ABORT_AFTER` vaut
-   `deploy-unit`, le module termine le processus (`[Environment]::Exit(137)`) juste après l'étape 9, sans
-   rapport. Documenté dans l'aide comme « réservé aux tests ; sans effet si absent ». (Son maintien dans la
-   sortie générée sera tranché au verrou R-03.)
+2. Injection historique de panne P7 : le run #933 a utilisé `IFS_TEST_ABORT_AFTER=deploy-unit` pour ce seul essai et s'est arrêté après l'étape 9, sans rapport. Décision R-03 du 2026-10-27 : ce crochet de terminaison est retiré de la sortie publiée ; les captures #933/#960 sont conservées comme preuve. Il ne sera pas livré par IFS.
 3. Scripts appelés par les pipelines : `Invoke-IfsInfraPreview.ps1` (étapes 1–4, publie `ifs-preview` en
    artefact et le résumé dans le run), `Invoke-IfsInfraDeploy.ps1` (étapes 5–13). L'étape 5 a **deux** contrôles, dans cet ordre :
    (a) **révision plus récente** ([91 T04, variante](../specs/91-scenarios-critiques.md)) : lire `.ifs/manifest.json`

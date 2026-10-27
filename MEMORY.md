@@ -9,9 +9,13 @@
   OIDC Keycloak local, Angular 22, Strata, OpenAPI/client généré, CI et observabilité sont en place. Le run CI
   `37460726122` est vert ; détails et écarts de recette restent dans [`NEXT.md`](NEXT.md) et
   [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md).
-- **S-17 terminé le 2026-10-06** : mémoire vérifiée, graphe de code local et guide « Démarrer » ajoutés. Le contrôle de
-  prérequis passe; le parcours sur clone neuf reste en attente dans [`NEXT.md`](NEXT.md), car l'AppHost actif occupe les
-  ports fixes. Le verrou courant est R-01. Les moteurs/catalogues et intégrations métier restent des étapes futures.
+- **S-17 terminé le 2026-10-06** : mémoire vérifiée, graphe de code local et guide « Démarrer » ajoutés. À cette date, le
+  contrôle de prérequis passait; le parcours sur clone neuf restait en attente dans [`NEXT.md`](NEXT.md), car l'AppHost
+  actif occupait les ports fixes. Le verrou courant était R-01. Les moteurs/catalogues et intégrations métier étaient
+  des étapes futures.
+- **2026-10-27** : les preuves P1–P5 et P7–P9 sur la sortie écrite à la main sont prototypées. Le crochet P7
+  `IFS_TEST_ABORT_AFTER` a été retiré de la sortie client ; voir `.github/memory/08-runtime-and-orchestration.md` et
+  la revue R-03 pour l'écart de journalisation `revoke`.
 
 ## Fichiers thématiques
 

@@ -51,3 +51,4 @@
 | 2026-10-26 | Codex | P-08 T shop43 bloquée par les What-If (5/4/1 Modify) ; J+1 shop42 inconclusif, données Cost Management jusqu’au 24/10. Aucun deleteAll shop43 exécuté. |
 | 2026-10-26 | Codex | P-08 — diagnostic What-If exact : règle de réconciliation retenue ; différence de destination Log Analytics sur l’environnement Container Apps confirmée, nettoyage shop43 toujours suspendu. |
 | 2026-10-27 | Codex | P-08 clôturé pour shop44 : piles et ressources de preuve retirées, baseline préservée, journaux copiés et vérifiés, C3/C5/coût final consignés ; contrôle quotidien par groupe indisponible sur HTTP 429, déviation acceptée par Florian. |
+| 2026-10-27 | Codex | R-03 — crochet d'interruption P7 retiré de la sortie publiée ; preuves P1–P5/P7–P9 prototypées et écart de journalisation `revoke` consigné. |

@@ -595,47 +595,32 @@ Ne démarrer `shop44` qu'ensuite.
 
 **Durée indicative :** 1 à 2 heures.
 
-**État initial :** jeu de ressources de test propre où orders gère le rôle Log Analytics Reader en prd, aucune
-opération de révocation en attente. Pour garder l'overlay P2 indépendant du clone déjà utilisé pour P4, utiliser un
-projet/repo/clone isolé (code shop44) et exécuter son installation puis le baseline complet de P1. Depuis `$ifsRoot`,
-définir `$shopRepo = 'C:/src/shop44'` avant les commandes de cette section.
+**Résultat historique (2026-10-26/27) :** le baseline shop44 a été installé, l'overlay P2 appliqué en révision 2,
+puis la release #933 interrompue après `deploy-unit`. Cet essai unique a utilisé `IFS_TEST_ABORT_AFTER=deploy-unit` ;
+le crochet a été retiré de la sortie publiée au verrou R-03 du 2026-10-27.
 
-1. Dans ce clone neuf à la révision 1, appliquer l'overlay p2, créer une branche, committer les fichiers générés et
-   fusionner vers main.
-2. Lancer la release d'infrastructure orders en prd. Dans **Run pipeline → Variables**, définir
-    IFS_TEST_ABORT_AFTER à deploy-unit pour ce seul run. Si Azure DevOps refuse la variable à la file, autoriser
-    explicitement sa modification à la file dans les paramètres de la définition ; ne pas enregistrer de valeur
-    persistante. Cette valeur de test n'est pas un secret. Approuver le stage protégé prd pour que la tâche atteigne
-    l'étape deploy-unit ; l'arrêt brutal survient après le déploiement de la pile, avant la fermeture du journal.
-3. Après l'échec brutal de la tâche, ne pas modifier le journal Azure Storage ifs-operations et ne pas relancer
-   d'autre pipeline. Dans le compte de stockage stifsshop44prd, ouvrir Containers → ifs-operations → blob
-   ifs-shop44-orders-prd.json et relever l'opération encore à faire. Capturer le run (p7-aborted-run-<id>).
-   Le rapport final peut être absent parce que le processus s'est terminé avant son écriture ; conserver la timeline
-    et l'état du journal. Le journal doit montrer deploy-unit en Started, puis revoke et data-access en ToDo. Le processus
-    de renouvellement s'arrête quand son propriétaire disparaît, mais le bail Azure acquis pour 60 secondes subsiste jusqu'à expiration :
-    attendre 65 secondes après la fin du run avant la reprise.
-4. Dans le clone shop44, appliquer rev3 (elle attend le manifeste rev2), committer puis fusionner vers main :
+Le journal avant reprise montre `deploy-unit` rev2 à `Started` et `data-access` rev2 à `ToDo`. Il ne contenait pas
+encore `revoke`, contrairement à la séquence prévue dans cette recette. Le run #959 a échoué en `PartiallyApplied`
+sur `AuthorizationFailed` pendant la révocation. Après correction des droits temporaires, le run #960, approuvé en
+PRD sur CI #956 et le SHA attendu, a réussi en DEV/PRD sur la révision 3. Le journal final conserve les mêmes IDs
+rev2 `deploy-unit` et `data-access` à `Done`, sans doublon ; `revoke` a été créé puis terminé en rev3.
 
-        pwsh -File tools/proofs/New-ProofRevision.ps1 -RepositoryPath $shopRepo -Revision 3
+**Écart de preuve :** la reprise d'opérations déjà inscrites au journal à travers une révision plus récente est
+démontrée pour `deploy-unit` et `data-access`. La reprise d'une opération `revoke` déjà en attente n'a pas été
+démontrée, car elle était absente du journal avant la reprise. Cet écart reste visible dans les résultats et la
+revue R-03.
 
-    La release orders suivante doit rejouer les opérations rev2 encore pendantes dans l'ordre du journal, sous la
-    release approuvée rev3, puis produire son rapport avec la révision 3. Lancer cette release sans définir
-    IFS_TEST_ABORT_AFTER et capturer
-   (p7-resumed-newer-run-<id>).
-5. Relire le journal avant/après : deploy-unit, revoke et data-access de rev2 passent à Done, sans nouvel ID d'opération
-   pour la même action ; le manifeste et le rapport portent la révision 3. L'attribution Log Analytics Reader doit être absente.
+**Preuves :** timelines #933/#959/#960, CI #956, journal `ifs-shop44-orders-prd.json` avant/après, rapports DEV/PRD
+et captures des approbations sous `p7-aborted-run-933/` et `p7-psgallery-main-release-run960/`.
 
-**Résultat attendu :** le premier run laisse des opérations à reprendre ; après expiration du bail, le run approuvé
-rev3 les termine dans l'ordre du journal, sans créer de doublon, et le rapport final porte la révision 3. La variable
-d'arrêt n'est pas conservée après le run.
+**Ne pas relancer cette recette contre la sortie publiée actuelle.** Le crochet d'arrêt propre à cette preuve a été
+supprimé au verrou R-03.
 
-**Preuves :** deux timelines, captures des variables de file sans donnée secrète, état du journal ifs-operations
-avant/après, rapport de reprise, attribution absente dans Azure.
-
-**Nettoyage :** retirer la variable de test si elle a été enregistrée au niveau de la définition du pipeline.
-Avant toute suppression, copier **hors Azure** le blob `ifs-shop44-orders-prd.json` (avant/après) et les captures du journal,
-car le compte `stifsshop44prd` est supprimé avec le kit. **Dernière preuve de `shop44`** : P7 consignée → supprimer le jeu
-entier ([§ 10](#10-supprimer-les-ressources-azure-et-consigner-les-résultats)). Aucune ressource Azure ne subsiste ensuite.
+**Nettoyage historique :** la variable d'arrêt n'a été transmise qu'au run #933. Le 2026-10-27, les 17 définitions
+Azure Pipelines de `shop42` et la définition P7 115 de `shop44` ont été vérifiées : aucune ne contient
+`IFS_TEST_ABORT_AFTER` comme variable persistante. Avant la suppression des ressources shop44, le blob
+`ifs-shop44-orders-prd.json` et ses versions avaient été copiés hors Azure puis vérifiés par SHA-256. La procédure T
+shop44 est terminée ; aucune ressource Azure de preuve ne subsiste.
 
 ## 10. Supprimer les ressources Azure et consigner les résultats
 
@@ -709,6 +694,17 @@ liens/captures anonymisés, remarque. Pour chaque KO, conserver le message et le
 Ne pas arrêter les conteneurs Aspire locaux. Ne supprimer aucune ressource Azure **avant** la dernière preuve qui en dépend
 et la porte de la procédure T ; après, la suppression n'attend pas R-03. Le jalon 0 redéploie depuis des abonnements vides.
 À R-03 ne subsistent que les preuves Azure DevOps et resultats.md.
+
+### Résultat du nettoyage Azure DevOps au verrou R-03 — 2026-10-27
+
+- Dans `shop42`, `shop43` et `shop44`, les 17/16/16 définitions de pipeline sont toutes désactivées ; aucun build actif
+  ou en file, aucune PR active et aucune release classique active. Les historiques, notamment #933 et #960, sont
+  conservés comme preuves.
+- Les groupes de variables des trois projets ont été supprimés. Aucune valeur de secret n'a été lue.
+- Les connexions de service de `shop43` et `shop44` ont été supprimées. Les six connexions WIF de `shop42` restent
+  présentes ; la suppression standard de `ifs-shop42-dev` a été refusée par Azure DevOps à cause de credentials
+  fédérés existants dans Entra. Aucune option `--deep` n'a été utilisée ; aucun credential fédéré ni aucune inscription
+  d'application Entra n'a été modifié.
 
 Temps indicatifs hors files d'attente et délais de propagation. La recette n'a pas de durée maximale : le coût dépend de
 la durée de vie des ressources et doit rester sous le contrôle régulier du [§ 0.1](#01-surveillance-des-coûts-avant-toute-action-sur-les-ressources-azure).

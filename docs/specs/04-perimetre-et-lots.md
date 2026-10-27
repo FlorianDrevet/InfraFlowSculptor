@@ -196,15 +196,15 @@ Repos), depuis des abonnements de test vides :
 
 | Preuve | Ce qui doit être démontré | Statut |
 |---|---|---|
-| **P1 — Création depuis zéro** | Kit, puis releases de chaque composant dans l'ordre : succès en une seule exécution par composant, y compris coffre, droits, secret de pipeline, application et accès aux données ([DEC-86](03-decisions.md), [DEC-90](03-decisions.md)) | Spécifiée |
-| **P2 — Révocation en production** | Retrait d'une liaison d'accès en cible protégée par le refus `denyDelete` : l'attribution est supprimée par l'identité de déploiement, l'application perd l'accès après propagation, la ressource et ses données restent, et un autre principal ne peut toujours rien supprimer ([DEC-85](03-decisions.md), [DEC-99](03-decisions.md) ; T01) | Spécifiée |
-| **P3 — Aperçu puis approbation** | L'approbateur lit l'aperçu avant le stage protégé ; une modification concurrente entre aperçu et déploiement arrête la release sans rien modifier ([DEC-87](03-decisions.md)) | Spécifiée |
-| **P4 — Cible en retard** | Une cible qui saute une révision retire bien la ressource retirée entre-temps, et l'inventaire le reflète ([DEC-91](03-decisions.md)) | Spécifiée |
-| **P5 — Échec partiel et reprise** | Une étape d'écriture de plan de données échoue : l'état « partiellement appliquée » s'affiche, la relance termine sans doublon (T03) | Spécifiée |
+| **P1 — Création depuis zéro** | Kit, puis releases de chaque composant dans l'ordre : succès en une seule exécution par composant, y compris coffre, droits, secret de pipeline, application et accès aux données ([DEC-86](03-decisions.md), [DEC-90](03-decisions.md)) | Prototypée |
+| **P2 — Révocation en production** | Retrait d'une liaison d'accès en cible protégée par le refus `denyDelete` : l'attribution est supprimée par l'identité de déploiement, l'application perd l'accès après propagation, la ressource et ses données restent, et un autre principal ne peut toujours rien supprimer ([DEC-85](03-decisions.md), [DEC-99](03-decisions.md) ; T01) | Prototypée |
+| **P3 — Aperçu puis approbation** | L'approbateur lit l'aperçu avant le stage protégé ; une modification concurrente entre aperçu et déploiement arrête la release sans rien modifier ([DEC-87](03-decisions.md)) | Prototypée |
+| **P4 — Cible en retard** | Une cible qui saute une révision retire bien la ressource retirée entre-temps, et l'inventaire le reflète ([DEC-91](03-decisions.md)) | Prototypée |
+| **P5 — Échec partiel et reprise** | Une étape d'écriture de plan de données échoue : l'état « partiellement appliquée » s'affiche, la relance termine sans doublon (T03) | Prototypée |
 | P6 — Neutralité du plan | Les prototypes Terraform et GitHub Actions traduisent le sous-ensemble représentatif (section 1), aperçu GitHub compris (T14) | Spécifiée |
-| **P7 — Interruption brutale** | L'agent est tué après le déploiement de la pile et avant les révocations : la release suivante, même pour une révision plus récente, retrouve les opérations au journal et les termine ([DEC-100](03-decisions.md) ; T02, T16) | Spécifiée |
-| **P8 — Livraison pendant une release** | Une image livrée entre l'aperçu et le déploiement d'infrastructure est conservée, sans nouvelle approbation ; un changement d'effet arrête la release ([DEC-102](03-decisions.md) ; T04) | Spécifiée |
-| **P9 — Accès aux données entre composants** | Base dans un composant, application à identité système dans un autre : le premier déploiement réussit dans l'ordre publié ([DEC-103](03-decisions.md) ; T07) | Spécifiée |
+| **P7 — Interruption brutale** | L'agent est tué après le déploiement de la pile et avant les révocations : la release suivante, même pour une révision plus récente, retrouve les opérations au journal et les termine ([DEC-100](03-decisions.md) ; T02, T16) | Prototypée |
+| **P8 — Livraison pendant une release** | Une image livrée entre l'aperçu et le déploiement d'infrastructure est conservée, sans nouvelle approbation ; un changement d'effet arrête la release ([DEC-102](03-decisions.md) ; T04) | Prototypée |
+| **P9 — Accès aux données entre composants** | Base dans un composant, application à identité système dans un autre : le premier déploiement réussit dans l'ordre publié ([DEC-103](03-decisions.md) ; T07) | Prototypée |
 | P10 — Protection Terraform et Pulumi | Une protection Azure contre la suppression compatible avec la révocation existe pour ces langages, sinon la protection par l'outil est confirmée comme seule option (avant le lot 3) | Décidée |
 
 Les valeurs du catalogue (SKU, versions, longueurs de noms, codes de région, rôles) restent revérifiées
