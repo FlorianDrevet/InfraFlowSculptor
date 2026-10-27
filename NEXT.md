@@ -66,6 +66,8 @@ Première mise à jour core-prd à 12:48Z : `denySettings=none`, actions conserv
 | Protection de la branche `main` sur GitHub | À activer par vous dans *Settings → Branches* | 2026-10-06 |
 | Secret de dépôt GitHub Actions `IFS_E2E_PASSWORD` | Configuré (valeur masquée) | 2026-10-06 |
 
+| Nettoyage résiduel Azure shop42 (demande de réduction des coûts) | Les trois groupes du kit encore présents ont été supprimés; C5 après opération : 135 ressources, 16 groupes, 0 pile, 30 rôles et 7 budgets. Aucun identifiant du snapshot de recette ne reste actif. Voir [preuve](docs/plan/preuves/nettoyage-residuel-shop42-20261027.md) pour le coût global, les tombstones Key Vault et l’écart de baseline. | 2026-10-27 |
+
 ## Recettes autonomes en attente de Codex
 
 - S-02 — [ouvrir `src/backend/InfraFlowSculptor.slnx` dans Rider](docs/plan/00-socle.md#s-02--squelette-backend-généré-depuis-le-template-cqrs) : vérifier les cinq projets et l'absence de références à `Web.Template.CQRS`.
