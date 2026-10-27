@@ -51,6 +51,28 @@ export class Shell implements OnInit {
     );
   });
 
+  private readonly registerOrganizationAudit = effect(onCleanup => {
+    const organizationId = this.activeOrganization.organizationId();
+    const organization = this.organizations.organizations().find(item => item.id === organizationId);
+    const canReadAudit = organization?.roles.some(role =>
+      role === 'Administrator' || role === 'Auditor',
+    );
+    if (!organizationId || !canReadAudit) {
+      return;
+    }
+
+    onCleanup(
+      this.navigation.register({
+        id: 'organization-audit',
+        labelKey: 'organization.auditLink',
+        path: `/organizations/${organizationId}/audit`,
+        scope: 'organization',
+        featureKey: FEATURES.organizations,
+        iconName: 'clock',
+      }),
+    );
+  });
+
   private readonly registerOrganizationSettings = effect(onCleanup => {
     const organizationId = this.activeOrganization.organizationId();
     if (!organizationId) {

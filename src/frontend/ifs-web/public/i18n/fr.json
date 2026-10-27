@@ -58,6 +58,7 @@
     "createAction": "Créer",
     "creating": "Création…",
     "settingsLink": "Organisation",
+    "auditLink": "Journal d’audit",
     "settingsTitle": "Organisation — plan et paramètres",
     "nameLabel": "Nom de l'organisation",
       "membersLink": "Membres",
@@ -124,6 +125,65 @@
     "saveAction": "Enregistrer",
     "saving": "Enregistrement…",
       "saveError": "Impossible d’enregistrer les paramètres. Vérifiez les valeurs et réessayez."
+  },
+  "audit": {
+    "title": "Journal d’audit",
+    "description": "Toutes les actions sensibles, conservées 13 mois, sans modification possible. Les modifications du modèle renvoient à leur jeu de modifications.",
+    "period": "Période",
+    "periods": {
+      "today": "Aujourd’hui",
+      "sevenDays": "7 derniers jours",
+      "thirtyDays": "30 derniers jours",
+      "ninetyDays": "90 derniers jours"
+    },
+    "columns": {
+      "date": "Date (UTC)",
+      "actor": "Auteur",
+      "action": "Action",
+      "objectAndChanges": "Objet et différence",
+      "context": "Contexte"
+    },
+    "loading": "Chargement du journal d’audit…",
+    "loadError": "Impossible de charger le journal d’audit. Réessayez.",
+    "retry": "Réessayer",
+    "permissionDenied": "Accès refusé. Permission requise : audit.lire.",
+    "empty": "Aucun événement sur cette période.",
+    "pagination": "Pages du journal d’audit",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "pageStatus": "Page {{ page }} sur {{ pageCount }}",
+    "personalDataErased": "Donnée personnelle effacée",
+    "actions": {
+      "organizationCreated": "Organisation créée",
+      "organizationRenamed": "Nom de l’organisation modifié",
+      "memberRolesChanged": "Rôles du membre modifiés",
+      "memberRemoved": "Membre retiré",
+      "memberLeft": "Départ d’un membre",
+      "accessRestrictionsUpdated": "Restrictions d’accès modifiées",
+      "invitationSent": "Invitation envoyée",
+      "invitationResent": "Invitation renvoyée",
+      "invitationRevoked": "Invitation révoquée",
+      "invitationAccepted": "Invitation acceptée"
+    },
+    "fields": {
+      "name": "Nom",
+      "roles": "Rôles",
+      "allowedEmailDomains": "Domaines autorisés",
+      "allowedTenantIds": "Tenants autorisés",
+      "status": "Statut",
+      "email": "Adresse e-mail"
+    },
+    "objects": {
+      "organization": "Organisation",
+      "member": "Membre",
+      "invitation": "Invitation"
+    },
+    "via": {
+      "screen": "Écran",
+      "api": "API",
+      "mcp": "MCP",
+      "support": "Support"
+    }
   },
   "error": {
     "title": "Une erreur s'est produite.",

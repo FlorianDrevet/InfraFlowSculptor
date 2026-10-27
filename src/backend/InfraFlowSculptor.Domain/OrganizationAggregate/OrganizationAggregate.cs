@@ -1,10 +1,12 @@
 using ErrorOr;
+using InfraFlowSculptor.Domain.Common;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.Common.Models;
 using InfraFlowSculptor.Domain.UserProfileAggregate;
 
 namespace InfraFlowSculptor.Domain.OrganizationAggregate;
 
+[AuditedObject(ObjectType.Organization, nameof(OrganizationAggregate.Id), nameof(OrganizationAggregate.Id))]
 public sealed class OrganizationAggregate : AggregateRoot<OrganizationId>, IHasVersion
 {
     private readonly List<OrganizationMember> members = [];

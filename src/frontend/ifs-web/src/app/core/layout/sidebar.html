@@ -39,6 +39,8 @@
           ? ('organization.settingsLink' | transloco)
           : entry.id === 'organization-members'
             ? ('organization.membersLink' | transloco)
+            : entry.id === 'organization-audit'
+              ? ('organization.auditLink' | transloco)
             : null"
       >
         <app-ds-icon [name]="entry.iconName ?? 'home'" [size]="16" />

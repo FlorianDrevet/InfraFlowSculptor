@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
+  workers: process.env['IFS_E2E_PASSWORD'] ? 1 : undefined,
   forbidOnly: process.env['CI'] === 'true',
   retries: process.env['CI'] === 'true' ? 1 : 0,
   timeout: 60_000,

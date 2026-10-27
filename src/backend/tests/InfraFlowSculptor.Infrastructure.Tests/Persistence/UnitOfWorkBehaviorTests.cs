@@ -1,10 +1,12 @@
 using ErrorOr;
 using InfraFlowSculptor.Application.Common.Behaviors;
+using InfraFlowSculptor.Application.Common.Auditing;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using Microsoft.EntityFrameworkCore;
 using Mediator;
+using NSubstitute;
 
 namespace InfraFlowSculptor.Infrastructure.Tests.Persistence;
 
@@ -26,7 +28,8 @@ public sealed class UnitOfWorkBehaviorTests(PostgreSqlFixture postgres) : IClass
         var behavior = new UnitOfWorkBehavior<TestCommand, ErrorOr<string>>(
             context,
             currentOrganization,
-            TimeProvider.System);
+            TimeProvider.System,
+            Substitute.For<IAuditWriter>());
         var response = await behavior.Handle(
             new TestCommand(),
             (_, _) => ValueTask.FromResult<ErrorOr<string>>("complete"),
@@ -56,7 +59,8 @@ public sealed class UnitOfWorkBehaviorTests(PostgreSqlFixture postgres) : IClass
         var behavior = new UnitOfWorkBehavior<TestCommand, ErrorOr<string>>(
             context,
             currentOrganization,
-            TimeProvider.System);
+            TimeProvider.System,
+            Substitute.For<IAuditWriter>());
         var failure = Error.Validation("TEST_FAILURE", "The command failed.");
         var response = await behavior.Handle(
             new TestCommand(),

@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Reflection;
+using InfraFlowSculptor.Application.Common.Auditing;
 using ErrorOr;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
@@ -9,7 +11,8 @@ namespace InfraFlowSculptor.Application.Common.Behaviors;
 public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
     IIfsDbContext dbContext,
     ICurrentOrganization currentOrganization,
-    TimeProvider clock)
+    TimeProvider clock,
+    IAuditWriter auditWriter)
     : IPipelineBehavior<TMessage, TResponse>
     where TMessage : IMessage
 {
@@ -52,6 +55,11 @@ public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
                     Type: domainEvent.GetType().FullName ?? domainEvent.GetType().Name,
                     Payload: JsonSerializer.SerializeToElement(domainEvent, domainEvent.GetType()),
                     CreatedAt: clock.GetUtcNow()));
+            }
+
+            if (typeof(TMessage).GetCustomAttribute<AuditedAttribute>() is { } audit)
+            {
+                await auditWriter.WriteAsync(audit, cancellationToken);
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);

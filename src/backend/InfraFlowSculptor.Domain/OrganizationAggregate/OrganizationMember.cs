@@ -1,7 +1,13 @@
+using InfraFlowSculptor.Domain.Common;
 using InfraFlowSculptor.Domain.Common.Identifiers;
+using InfraFlowSculptor.Domain.Common.Models;
 
 namespace InfraFlowSculptor.Domain.OrganizationAggregate;
 
+[AuditedObject(
+    ObjectType.OrganizationMember,
+    nameof(OrganizationMember.UserProfileId),
+    AuditObjectPropertyNames.OrganizationId)]
 public sealed class OrganizationMember
 {
     private int[] roleValues = [];

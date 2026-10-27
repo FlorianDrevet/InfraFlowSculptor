@@ -24,19 +24,32 @@ public sealed class AuthorizationBehavior<TMessage, TResponse>(
             return await next(message, cancellationToken);
         }
 
-        if (currentOrganization.Id is not { } organizationId
-            || !await roleAuthorizer.HasRoleAsync(
-                currentUser.Key,
-                organizationId,
-                requirement.Role,
-                cancellationToken))
+        var hasRequiredRole = false;
+        if (currentOrganization.Id is { } organizationId)
         {
+            foreach (var role in requirement.Roles)
+            {
+                if (await roleAuthorizer.HasRoleAsync(
+                    currentUser.Key,
+                    organizationId,
+                    role,
+                    cancellationToken))
+                {
+                    hasRequiredRole = true;
+                    break;
+                }
+            }
+        }
+
+        if (!hasRequiredRole)
+        {
+            var permission = requirement.Permission ?? string.Join(", ", requirement.Roles);
             var errors = new List<Error>
             {
                 Error.Forbidden(
                     "ORG_ROLE_REQUIRED",
-                    $"The {requirement.Role} organization role is required.",
-                    new Dictionary<string, object> { ["permission"] = requirement.Role.ToString() })
+                    $"One of the following organization roles is required: {string.Join(", ", requirement.Roles)}.",
+                    new Dictionary<string, object> { ["permission"] = permission })
             };
             return (dynamic)errors;
         }

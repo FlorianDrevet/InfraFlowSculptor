@@ -174,6 +174,101 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.ToTable("user_profiles", (string)null);
                 });
 
+            modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Auditing.AuditEventEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("action");
+
+                    b.Property<string>("ActorKind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("actor_kind");
+
+                    b.Property<string>("ActorRef")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("actor_ref");
+
+                    b.Property<string>("Diff")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("diff");
+
+                    b.Property<Guid>("ObjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("object_id");
+
+                    b.Property<string>("ObjectType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("object_type");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("Via")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("via");
+
+                    b.HasKey("Id")
+                        .HasName("pk_audit_events");
+
+                    b.HasIndex("OrganizationId", "OccurredAt")
+                        .HasDatabaseName("ix_audit_events_organization_id_occurred_at");
+
+                    b.ToTable("audit_events", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Auditing.AuditPersonalDataEntity", b =>
+                {
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<string>("Field")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("field");
+
+                    b.Property<Guid?>("SubjectUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_user_id");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("value");
+
+                    b.HasKey("EventId", "Field")
+                        .HasName("pk_audit_personal_data");
+
+                    b.HasIndex("SubjectUserId")
+                        .HasDatabaseName("ix_audit_personal_data_subject_user_id");
+
+                    b.ToTable("audit_personal_data", (string)null);
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Common.IdempotencyKeyEntity", b =>
                 {
                     b.Property<Guid>("OrganizationId")
@@ -401,6 +496,34 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Auditing.AuditEventEntity", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_audit_events_organizations_organization_id");
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Auditing.AuditPersonalDataEntity", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Infrastructure.Persistence.Auditing.AuditEventEntity", "AuditEvent")
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_audit_personal_data_audit_events_event_id");
+
+                    b.HasOne("InfraFlowSculptor.Domain.UserProfileAggregate.UserProfile", null)
+                        .WithMany()
+                        .HasForeignKey("SubjectUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_audit_personal_data_user_profiles_subject_user_id");
+
+                    b.Navigation("AuditEvent");
                 });
 #pragma warning restore 612, 618
         }

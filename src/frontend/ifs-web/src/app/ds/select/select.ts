@@ -8,6 +8,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DsSelect {
+  readonly controlId = input<string>();
   readonly ariaLabel = input<string>();
   readonly disabled = input(false);
   readonly required = input(false);

@@ -60,6 +60,15 @@ export const routes: Routes = [
               ),
             title: 'Membres de l’organisation',
           },
+          {
+            path: 'audit',
+            canActivate: [featureGuard(FEATURES.organizations)],
+            loadComponent: () =>
+              import('./features/organizations/organization-audit').then(
+                (m) => m.OrganizationAudit,
+              ),
+            title: 'Journal d’audit',
+          },
         ],
       },
       {

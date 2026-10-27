@@ -1,6 +1,7 @@
 using InfraFlowSculptor.Api.Common;
 using InfraFlowSculptor.Api.Common.Idempotency;
 using InfraFlowSculptor.Api.Errors;
+using InfraFlowSculptor.Application.Common.Auditing;
 using InfraFlowSculptor.Application.Organizations.Commands.ChangeMemberRoles;
 using InfraFlowSculptor.Application.Organizations.Commands.CreateOrganization;
 using InfraFlowSculptor.Application.Organizations.Commands.LeaveOrganization;
@@ -10,6 +11,7 @@ using InfraFlowSculptor.Application.Organizations.Commands.UpdateAccessRestricti
 using InfraFlowSculptor.Application.Organizations;
 using InfraFlowSculptor.Application.Organizations.Queries.GetOrganization;
 using InfraFlowSculptor.Application.Organizations.Queries.ListOrganizationMembers;
+using InfraFlowSculptor.Application.Organizations.Queries.ListAuditEvents;
 using InfraFlowSculptor.Application.Organizations.Queries.ListMyOrganizations;
 using InfraFlowSculptor.Contracts.Organizations;
 using InfraFlowSculptor.Domain.Common.Features;
@@ -108,6 +110,40 @@ public static class OrganizationsController
             .RequireRateLimiting(RateLimitingPolicies.Read)
             .Produces<IReadOnlyList<OrganizationMemberResponse>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status404NotFound);
+
+        organizations.MapGet("/{id:guid}/audit", async (
+                Guid id,
+                DateTimeOffset? from,
+                DateTimeOffset? to,
+                int? page,
+                int? pageSize,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(
+                    new ListAuditEventsQuery(
+                        id,
+                        from,
+                        to,
+                        page ?? 1,
+                        pageSize ?? AuditPageLimits.DefaultPageSize),
+                    cancellationToken);
+                return result.Match<IResult>(
+                    auditPage => Results.Ok(new AuditEventPageResponse(
+                        auditPage.Items.Select(Map).ToArray(),
+                        auditPage.Page,
+                        auditPage.PageSize,
+                        auditPage.TotalCount)),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.ListOrganizationAuditEvents)
+            .WithSummary("Consulter le journal d’audit de l’organisation (UC-ORG-19)")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces<AuditEventPageResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesValidationProblem();
 
         organizations.MapPut("/{id:guid}/members/{memberId:guid}/roles", async (
                 Guid id,
@@ -214,4 +250,19 @@ public static class OrganizationsController
 
     private static OrganizationMemberResponse Map(OrganizationMemberSummary member) =>
         new(member.Id, member.DisplayName, member.Email, member.Roles, member.IsOutsideAccessRestrictions);
+
+    private static AuditEventResponse Map(AuditEventItem auditEvent) =>
+        new(
+            auditEvent.Id,
+            auditEvent.OccurredAt,
+            auditEvent.ActorDisplayName,
+            auditEvent.Via.ToString(),
+            auditEvent.Action,
+            auditEvent.ObjectType,
+            auditEvent.ObjectId,
+            new AuditEventDiffResponse(auditEvent.Diff.Changes.Select(change => new AuditPropertyChangeResponse(
+                change.Name,
+                change.Before,
+                change.After,
+                change.IsPersonalData)).ToArray()));
 }

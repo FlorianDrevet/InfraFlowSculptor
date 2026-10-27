@@ -7,6 +7,10 @@ export { RequestBuilder } from './request-builder';
 export type { StrictHttpResponse } from './strict-http-response';
 export { Api } from './api';
 
+export type { AuditEventDiffResponse } from './models/audit-event-diff-response';
+export type { AuditEventPageResponse } from './models/audit-event-page-response';
+export type { AuditEventResponse } from './models/audit-event-response';
+export type { AuditPropertyChangeResponse } from './models/audit-property-change-response';
 export type { ChangeOrganizationMemberRolesRequest } from './models/change-organization-member-roles-request';
 export type { CreateOrganizationRequest } from './models/create-organization-request';
 export type { FeatureAvailabilityResponse } from './models/feature-availability-response';
@@ -18,6 +22,7 @@ export type { InvitationStatus } from './models/invitation-status';
 export type { InviteOrganizationRequest } from './models/invite-organization-request';
 export type { MePreferencesResponse } from './models/me-preferences-response';
 export type { MeResponse } from './models/me-response';
+export type { ObjectType } from './models/object-type';
 export type { OrganizationMemberResponse } from './models/organization-member-response';
 export type { OrganizationRole } from './models/organization-role';
 export type { OrganizationSummaryResponse } from './models/organization-summary-response';
@@ -49,6 +54,8 @@ export type { RenameOrganization$Params as RenameOrganization$Params } from './f
 export { renameOrganization as renameOrganization } from './fn/organizations/rename-organization';
 export type { ListOrganizationMembers$Params as ListOrganizationMembers$Params } from './fn/organizations/list-organization-members';
 export { listOrganizationMembers as listOrganizationMembers } from './fn/organizations/list-organization-members';
+export type { ListOrganizationAuditEvents$Params as ListOrganizationAuditEvents$Params } from './fn/organizations/list-organization-audit-events';
+export { listOrganizationAuditEvents as listOrganizationAuditEvents } from './fn/organizations/list-organization-audit-events';
 export type { ChangeOrganizationMemberRoles$Params as ChangeOrganizationMemberRoles$Params } from './fn/organizations/change-organization-member-roles';
 export { changeOrganizationMemberRoles as changeOrganizationMemberRoles } from './fn/organizations/change-organization-member-roles';
 export type { RemoveOrganizationMember$Params as RemoveOrganizationMember$Params } from './fn/organizations/remove-organization-member';

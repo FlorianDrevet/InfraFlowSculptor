@@ -2,12 +2,14 @@ using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
 using ErrorOr;
+using InfraFlowSculptor.Domain.Common;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.Common.Models;
 using InfraFlowSculptor.Domain.OrganizationAggregate;
 
 namespace InfraFlowSculptor.Domain.Invitations;
 
+[AuditedObject(ObjectType.Invitation, nameof(InvitationAggregate.Id), nameof(InvitationAggregate.OrganizationId))]
 public sealed class InvitationAggregate : AggregateRoot<InvitationId>, IOrganizationOwned, IHasVersion
 {
     public const int ValidityDays = 7;
@@ -16,6 +18,7 @@ public sealed class InvitationAggregate : AggregateRoot<InvitationId>, IOrganiza
 
     public OrganizationId OrganizationId { get; private set; }
 
+    [PersonalData("email")]
     public string Email { get; private set; } = string.Empty;
 
     public string TokenHash { get; private set; } = string.Empty;

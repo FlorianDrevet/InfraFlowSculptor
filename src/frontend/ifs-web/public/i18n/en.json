@@ -58,6 +58,7 @@
     "createAction": "Create",
     "creating": "Creating…",
     "settingsLink": "Organization",
+    "auditLink": "Audit log",
     "settingsTitle": "Organization — plan and settings",
     "nameLabel": "Organization name",
       "membersLink": "Members",
@@ -124,6 +125,65 @@
     "saveAction": "Save",
     "saving": "Saving…",
       "saveError": "Unable to save the settings. Check the values and try again."
+  },
+  "audit": {
+    "title": "Audit log",
+    "description": "All sensitive actions, kept for 13 months and protected from changes. Model changes link to their change set.",
+    "period": "Period",
+    "periods": {
+      "today": "Today",
+      "sevenDays": "Last 7 days",
+      "thirtyDays": "Last 30 days",
+      "ninetyDays": "Last 90 days"
+    },
+    "columns": {
+      "date": "Date (UTC)",
+      "actor": "Author",
+      "action": "Action",
+      "objectAndChanges": "Object and difference",
+      "context": "Context"
+    },
+    "loading": "Loading the audit log…",
+    "loadError": "Unable to load the audit log. Try again.",
+    "retry": "Try again",
+    "permissionDenied": "Access denied. Required permission: audit.lire.",
+    "empty": "There are no events in this period.",
+    "pagination": "Audit log pages",
+    "previous": "Previous",
+    "next": "Next",
+    "pageStatus": "Page {{ page }} of {{ pageCount }}",
+    "personalDataErased": "Personal data erased",
+    "actions": {
+      "organizationCreated": "Organization created",
+      "organizationRenamed": "Organization name changed",
+      "memberRolesChanged": "Member roles changed",
+      "memberRemoved": "Member removed",
+      "memberLeft": "Member left",
+      "accessRestrictionsUpdated": "Access restrictions changed",
+      "invitationSent": "Invitation sent",
+      "invitationResent": "Invitation resent",
+      "invitationRevoked": "Invitation revoked",
+      "invitationAccepted": "Invitation accepted"
+    },
+    "fields": {
+      "name": "Name",
+      "roles": "Roles",
+      "allowedEmailDomains": "Allowed domains",
+      "allowedTenantIds": "Allowed tenants",
+      "status": "Status",
+      "email": "Email address"
+    },
+    "objects": {
+      "organization": "Organization",
+      "member": "Member",
+      "invitation": "Invitation"
+    },
+    "via": {
+      "screen": "Screen",
+      "api": "API",
+      "mcp": "MCP",
+      "support": "Support"
+    }
   },
   "error": {
     "title": "An error occurred.",

@@ -537,6 +537,117 @@
         ]
       }
     },
+    "/v1/organizations/{id}/audit": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Consulter le journal d’audit de l’organisation (UC-ORG-19)",
+        "operationId": "ListOrganizationAuditEvents",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventPageResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/organizations/{id}/members/{memberId}/roles": {
       "put": {
         "tags": [
@@ -1144,6 +1255,132 @@
   },
   "components": {
     "schemas": {
+      "AuditEventDiffResponse": {
+        "required": [
+          "changes"
+        ],
+        "type": "object",
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditPropertyChangeResponse"
+            }
+          }
+        }
+      },
+      "AuditEventPageResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEventResponse"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "AuditEventResponse": {
+        "required": [
+          "id",
+          "occurredAt",
+          "actorDisplayName",
+          "via",
+          "action",
+          "objectType",
+          "objectId",
+          "diff"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actorDisplayName": {
+            "type": "string"
+          },
+          "via": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "objectType": {
+            "$ref": "#/components/schemas/ObjectType"
+          },
+          "objectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "diff": {
+            "$ref": "#/components/schemas/AuditEventDiffResponse"
+          }
+        }
+      },
+      "AuditPropertyChangeResponse": {
+        "required": [
+          "name",
+          "before",
+          "after",
+          "isPersonalData"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "before": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "after": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isPersonalData": {
+            "type": "boolean"
+          }
+        }
+      },
       "ChangeOrganizationMemberRolesRequest": {
         "required": [
           "roles"
@@ -1428,6 +1665,24 @@
             "type": "string"
           }
         }
+      },
+      "ObjectType": {
+        "enum": [
+          "Organization",
+          "Project",
+          "Environment",
+          "Component",
+          "Resource",
+          "Link",
+          "AppSetting",
+          "Revision",
+          "Publication",
+          "Deployment",
+          "ApiToken",
+          "Invitation",
+          "OrganizationMember",
+          "AuditEvent"
+        ]
       },
       "OrganizationMemberResponse": {
         "required": [

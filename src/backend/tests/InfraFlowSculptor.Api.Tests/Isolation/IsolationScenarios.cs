@@ -61,6 +61,11 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 $"/v1/organizations/{ContosoOrganizationId}/members",
                 HttpStatusCode.NotFound),
+            ["ListOrganizationAuditEvents"] = OrganizationScenario(
+                "ListOrganizationAuditEvents",
+                HttpMethod.Get,
+                $"/v1/organizations/{ContosoOrganizationId}/audit",
+                HttpStatusCode.NotFound),
             ["ChangeOrganizationMemberRoles"] = OrganizationScenario(
                 "ChangeOrganizationMemberRoles",
                 HttpMethod.Put,

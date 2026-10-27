@@ -10,6 +10,7 @@ import {
   inviteOrganizationMember,
   leaveOrganization,
   listOrganizationMembers,
+  listOrganizationAuditEvents,
   listMyOrganizations,
   listOrganizationInvitations,
   removeOrganizationMember,
@@ -22,6 +23,8 @@ import type {
   InvitationAcceptanceResponse,
   InvitationPreviewResponse,
   InvitationResponse,
+  AuditEventPageResponse,
+  ListOrganizationAuditEvents$Params,
   OrganizationMemberResponse,
   OrganizationRole,
   OrganizationSummaryResponse,
@@ -95,6 +98,13 @@ export class OrganizationsService {
 
   listMembers(id: string): Observable<OrganizationMemberResponse[]> {
     return this.api.invoke(listOrganizationMembers, { id });
+  }
+
+  listAuditEvents(
+    id: string,
+    parameters: Omit<ListOrganizationAuditEvents$Params, 'id'>,
+  ): Observable<AuditEventPageResponse> {
+    return this.api.invoke(listOrganizationAuditEvents, { id, ...parameters });
   }
 
   changeMemberRoles(

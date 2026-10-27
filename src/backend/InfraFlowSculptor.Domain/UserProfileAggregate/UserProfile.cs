@@ -15,8 +15,10 @@ public sealed class UserProfile : AggregateRoot<UserProfileId>
 
     public UserKey UserKey => new(TenantId, ObjectId);
 
+    [PersonalData("displayName")]
     public string DisplayName { get; private set; } = string.Empty;
 
+    [PersonalData("email")]
     public string? Email { get; private set; }
 
     public string PreferredLanguage { get; private set; } = DefaultLanguage;

@@ -17,6 +17,18 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
 
     public async Task DisposeAsync() => await container.DisposeAsync();
 
+    internal string ConnectionString => container.GetConnectionString();
+
+    internal IfsDbContext CreatePersistenceDbContext(ICurrentOrganization currentOrganization)
+    {
+        var options = new DbContextOptionsBuilder<IfsDbContext>()
+            .UseNpgsql(ConnectionString)
+            .UseSnakeCaseNamingConvention()
+            .Options;
+
+        return new IfsDbContext(options, currentOrganization);
+    }
+
     internal TestIfsDbContext CreateDbContext(ICurrentOrganization currentOrganization)
     {
         var options = new DbContextOptionsBuilder<TestIfsDbContext>()

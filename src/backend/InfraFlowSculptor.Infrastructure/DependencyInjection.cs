@@ -12,6 +12,8 @@ using InfraFlowSculptor.Infrastructure.Azure;
 using InfraFlowSculptor.Infrastructure.Authentication;
 using InfraFlowSculptor.Infrastructure.Persistence;
 using InfraFlowSculptor.Infrastructure.Persistence.Admin;
+using InfraFlowSculptor.Infrastructure.Persistence.Auditing;
+using InfraFlowSculptor.Application.Common.Auditing;
 using InfraFlowSculptor.Infrastructure.Features;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -45,6 +47,9 @@ public static class DependencyInjection
         services.TryAddScoped<IOrganizationJobBudgetStore, EfOrganizationJobBudgetStore>();
         services.TryAddScoped<IScheduledJobLeaseStore, EfScheduledJobLeaseStore>();
         services.TryAddScoped<IJobProcessingStatusStore, EfJobProcessingStatusStore>();
+        services.TryAddScoped<IAuditWriter, EfAuditWriter>();
+        services.TryAddScoped<IAuditEventReader, EfAuditEventReader>();
+        services.TryAddScoped<IAuditEventPurger, EfAuditEventPurger>();
 
         var credential = new IfsAzureCredential();
         services.TryAddSingleton(credential);

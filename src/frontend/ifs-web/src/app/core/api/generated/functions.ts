@@ -23,6 +23,8 @@ export type { RenameOrganization$Params as RenameOrganization$Params } from './f
 export { renameOrganization as renameOrganization } from './fn/organizations/rename-organization';
 export type { ListOrganizationMembers$Params as ListOrganizationMembers$Params } from './fn/organizations/list-organization-members';
 export { listOrganizationMembers as listOrganizationMembers } from './fn/organizations/list-organization-members';
+export type { ListOrganizationAuditEvents$Params as ListOrganizationAuditEvents$Params } from './fn/organizations/list-organization-audit-events';
+export { listOrganizationAuditEvents as listOrganizationAuditEvents } from './fn/organizations/list-organization-audit-events';
 export type { ChangeOrganizationMemberRoles$Params as ChangeOrganizationMemberRoles$Params } from './fn/organizations/change-organization-member-roles';
 export { changeOrganizationMemberRoles as changeOrganizationMemberRoles } from './fn/organizations/change-organization-member-roles';
 export type { RemoveOrganizationMember$Params as RemoveOrganizationMember$Params } from './fn/organizations/remove-organization-member';
