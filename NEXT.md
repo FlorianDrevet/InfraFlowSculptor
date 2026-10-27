@@ -36,15 +36,15 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 
 | Outil | Version attendue | Posé ? |
 |---|---|---|
-| SDK .NET | `10.0.203` | Oui (`10.0.301`) |
-| Node | `24.15.0` | Oui (`24.19.0`) |
-| Docker | `27.0.0` | Oui (`29.5.3`, daemon répond) |
-| CLI Aspire | `13.5.3` | Oui (`13.6.0`) |
-| Python | `3.11` | Oui (`3.14.2`) |
-| PowerShell 7 | `7.5.0` | Oui (`7.6.6`) |
-| Azure CLI | `2.90.0` | Oui (`2.90.0`, vérifié par `pwsh tools/dev/check-prereqs.ps1` le 2026-10-06) |
+| SDK .NET | `10.0.203` | Oui (`10.0.203`) |
+| Node | `24.15.0` | Oui (`24.15.0`) |
+| Docker | `27.0.0` | Oui (`29.4.3`, daemon répond ; prérequis vérifiés le 2026-10-27) |
+| CLI Aspire | `13.5.3` | Oui (`13.5.3`) |
+| Python | `3.11` | Oui (`3.14.4`) |
+| PowerShell 7 | `7.5.0` | Oui (`7.6.5`) |
+| Azure CLI | `2.90.0` | Oui (`2.91.0`, prérequis vérifiés le 2026-10-27) |
 | Bicep CLI | `0.47.16` | Oui (`0.47.16`) |
-| Git / GitHub CLI | présence | Oui (`2.52.0` / `2.88.1`) |
+| Git / GitHub CLI | présence | Oui (`2.45.1` / `2.92.0`) |
 
 ## État hors dépôt 📌
 
