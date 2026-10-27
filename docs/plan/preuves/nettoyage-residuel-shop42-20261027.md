@@ -20,7 +20,7 @@ L’inventaire avant suppression était de 144 ressources, 19 groupes, 0 pile, 4
 
 Le snapshot reconstruit référence aussi `swa-sainte-fly` dans `rg-sainte-fly`, mais ce groupe était déjà vide à l’inventaire avant l’opération; `az resource show` retourne `ResourceNotFound`. La présente suppression n’a ciblé ni ce groupe ni cette ressource. Le snapshot indique `originalSnapshotFound=false`; cet écart doit être rapproché séparément avant de réutiliser cette référence comme baseline exhaustive.
 
-Six coffres Key Vault standards des recettes shop42/shop43/shop44 (`dev` et `prd`) sont encore en état soft-delete, sans coffre actif correspondant. Ils suivent leur échéance de purge Azure entre le 23 et le 25 janvier 2027. Ils n’ont pas été purgés manuellement.
+Six coffres Key Vault standards des recettes shop42/shop43/shop44 (`dev` et `prd`) sont encore en état soft-delete, sans coffre actif correspondant. Ils suivent leur échéance de purge Azure entre le 23 et le 25 janvier 2027. Ils n’ont pas été purgés manuellement : [Microsoft précise qu’un coffre standard en état supprimé n’occasionne pas de facturation d’usage](https://learn.microsoft.com/azure/key-vault/general/soft-delete-change) (les opérations de purge et de récupération sont facturées).
 
 ## Coûts et suite Azure DevOps
 
