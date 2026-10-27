@@ -125,7 +125,7 @@ async function selectFrench(page: Page): Promise<void> {
     await page.getByRole('button', { name: /Menu/ }).click();
   }
 
-  const languageSwitch = page.locator('app-language-switch [role="group"]:visible');
+  const languageSwitch = page.locator('app-language-switch').getByRole('group');
   const frenchButton = languageSwitch.getByRole('button', { name: 'FR', exact: true });
   const englishButton = languageSwitch.getByRole('button', { name: 'EN', exact: true });
   if ((await frenchButton.getAttribute('aria-pressed')) === 'true') {
