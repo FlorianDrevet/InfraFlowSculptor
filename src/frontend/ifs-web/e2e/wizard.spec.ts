@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { expect, test } from '@playwright/test';
+import { type Page, expect, test } from '@playwright/test';
 import { loginAsAlice } from './support/login';
 
 const CONTOSO_ID = '33333333-3333-4333-8333-333333333333';
@@ -14,6 +14,7 @@ test('Alice crée un projet et reprend son brouillon depuis un autre navigateur'
   test.skip(!process.env['IFS_E2E_PASSWORD'], 'Set IFS_E2E_PASSWORD for the local demo accounts.');
 
   await loginAsAlice(page);
+  await selectFrench(page);
   await page.goto(`/o/${CONTOSO_ID}/projects/new`);
   await expect(page.getByRole('heading', { name: 'Identité du projet' })).toBeVisible();
   await page.getByRole('button', { name: /Identité/ }).click();
@@ -71,6 +72,7 @@ test('Alice crée un projet et reprend son brouillon depuis un autre navigateur'
   });
   try {
     await loginAsAlice(resumePage);
+    await selectFrench(resumePage);
     await resumePage.goto(`/o/${CONTOSO_ID}/projects/new`);
     await expect(
       resumePage.getByRole('heading', { name: 'Où publier les fichiers' }),
@@ -107,3 +109,25 @@ test('Alice crée un projet et reprend son brouillon depuis un autre navigateur'
     await resumePage.close();
   }
 });
+
+async function selectFrench(page: Page): Promise<void> {
+  if ((page.viewportSize()?.width ?? 1440) <= 760) {
+    await page.getByRole('button', { name: /Menu/ }).click();
+  }
+
+  const preferenceSaved = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'PUT' &&
+      new URL(response.url()).pathname === '/v1/me/preferences',
+  );
+  await page
+    .locator('app-language-switch [role="group"]:visible')
+    .getByRole('button', { name: 'FR', exact: true })
+    .click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+  expect((await preferenceSaved).ok()).toBeTruthy();
+
+  if ((page.viewportSize()?.width ?? 1440) <= 760) {
+    await page.keyboard.press('Escape');
+  }
+}
