@@ -23,6 +23,9 @@
 - **2026-10-27** : J0-02 est validée localement : rôles et cycle de vie des membres, `RG-ORG-05`, restrictions tenant/domaine,
   API et interface. 104 tests .NET, 43 tests frontend, lint/build/OpenAPI et E2E authentifiés (16/16 desktop/mobile) passent.
   Voir `.github/memory/03-domain-model.md`, `04-frontend.md` et `10-api-endpoints.md`.
+- **2026-10-27** : J0-03 est validée localement : invitations, vérification d’adresse, outbox e-mail MailPit/ACS et acceptation.
+  Voir `.github/memory/03-domain-model.md`, `04-frontend.md`, `05-data-and-storage.md`, `09-auth-and-build.md`,
+  `10-api-endpoints.md` et `13-integrations.md`.
 
 ## Fichiers thématiques
 

@@ -170,6 +170,21 @@ public sealed class OrganizationAggregate : AggregateRoot<OrganizationId>, IHasV
                 StringComparer.OrdinalIgnoreCase);
     }
 
+    public bool IsInvitationEmailAllowed(string email)
+    {
+        if (allowedEmailDomains.Length == 0)
+        {
+            return true;
+        }
+
+        var separatorIndex = email?.LastIndexOf('@') ?? -1;
+        return separatorIndex >= 0
+            && allowedEmailDomains.Contains(email![(separatorIndex + 1)..], StringComparer.OrdinalIgnoreCase);
+    }
+
+    public bool IsInvitationTenantAllowed(Guid tenantId) =>
+        allowedTenantIds.Length == 0 || allowedTenantIds.Contains(tenantId);
+
     private int CountAdministrators() =>
         members.Count(member => member.Roles.Contains(OrganizationRole.Administrator));
 

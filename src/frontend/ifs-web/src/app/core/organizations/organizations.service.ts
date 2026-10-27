@@ -2,17 +2,30 @@ import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom, Observable, tap } from 'rxjs';
 import {
   Api,
+  acceptInvitation as acceptInvitationRequest,
   changeOrganizationMemberRoles,
   createOrganization,
   getOrganization,
+  getInvitationPreview,
+  inviteOrganizationMember,
   leaveOrganization,
   listOrganizationMembers,
   listMyOrganizations,
+  listOrganizationInvitations,
   removeOrganizationMember,
+  resendOrganizationInvitation,
+  revokeOrganizationInvitation,
   renameOrganization,
   updateOrganizationAccessRestrictions,
 } from '../api/generated';
-import type { OrganizationMemberResponse, OrganizationRole, OrganizationSummaryResponse } from '../api/generated';
+import type {
+  InvitationAcceptanceResponse,
+  InvitationPreviewResponse,
+  InvitationResponse,
+  OrganizationMemberResponse,
+  OrganizationRole,
+  OrganizationSummaryResponse,
+} from '../api/generated';
 import { ActiveOrganizationStore } from '../http/active-organization.store';
 
 @Injectable({ providedIn: 'root' })
@@ -94,6 +107,30 @@ export class OrganizationsService {
 
   removeMember(id: string, memberId: string): Observable<void> {
     return this.api.invoke(removeOrganizationMember, { id, memberId });
+  }
+
+  listInvitations(id: string): Observable<InvitationResponse[]> {
+    return this.api.invoke(listOrganizationInvitations, { id });
+  }
+
+  invite(id: string, email: string, roles: OrganizationRole[]): Observable<InvitationResponse> {
+    return this.api.invoke(inviteOrganizationMember, { id, body: { email, roles } });
+  }
+
+  resendInvitation(id: string, invitationId: string): Observable<InvitationResponse> {
+    return this.api.invoke(resendOrganizationInvitation, { id, invitationId });
+  }
+
+  revokeInvitation(id: string, invitationId: string): Observable<void> {
+    return this.api.invoke(revokeOrganizationInvitation, { id, invitationId });
+  }
+
+  getInvitationPreview(token: string): Observable<InvitationPreviewResponse> {
+    return this.api.invoke(getInvitationPreview, { token });
+  }
+
+  acceptInvitation(token: string): Observable<InvitationAcceptanceResponse> {
+    return this.api.invoke(acceptInvitationRequest, { token });
   }
 
   leave(id: string): Observable<void> {

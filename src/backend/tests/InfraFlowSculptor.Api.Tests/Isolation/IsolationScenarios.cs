@@ -17,6 +17,8 @@ public static class IsolationScenarios
     private const string ContosoOrganizationId = "33333333-3333-4333-8333-333333333333";
     private const string TestJobId = "55555555-5555-4555-8555-555555555555";
     private const string TestMemberId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    private const string TestInvitationId = "66666666-6666-4666-8666-666666666666";
+    private const string TestInvitationToken = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
     private static readonly string[] MemberRoles = ["Member"];
     private static readonly string[] AllowedEmailDomains = ["contoso.example"];
     private static readonly string[] AllowedTenantIds = ["11111111-1111-4111-8111-111111111111"];
@@ -81,6 +83,37 @@ public static class IsolationScenarios
                 $"/v1/organizations/{ContosoOrganizationId}/access-restrictions",
                 HttpStatusCode.NotFound,
                 new { allowedEmailDomains = AllowedEmailDomains, allowedTenantIds = AllowedTenantIds }),
+            ["ListOrganizationInvitations"] = OrganizationScenario(
+                "ListOrganizationInvitations",
+                HttpMethod.Get,
+                $"/v1/organizations/{ContosoOrganizationId}/invitations",
+                HttpStatusCode.NotFound),
+            ["InviteOrganizationMember"] = OrganizationScenario(
+                "InviteOrganizationMember",
+                HttpMethod.Post,
+                $"/v1/organizations/{ContosoOrganizationId}/invitations",
+                HttpStatusCode.NotFound,
+                new { email = "new@contoso.example", roles = MemberRoles }),
+            ["ResendOrganizationInvitation"] = OrganizationScenario(
+                "ResendOrganizationInvitation",
+                HttpMethod.Post,
+                $"/v1/organizations/{ContosoOrganizationId}/invitations/{TestInvitationId}/resend",
+                HttpStatusCode.NotFound),
+            ["RevokeOrganizationInvitation"] = OrganizationScenario(
+                "RevokeOrganizationInvitation",
+                HttpMethod.Delete,
+                $"/v1/organizations/{ContosoOrganizationId}/invitations/{TestInvitationId}",
+                HttpStatusCode.NotFound),
+            ["AcceptInvitation"] = AuthenticatedScenario(
+                "AcceptInvitation",
+                HttpMethod.Post,
+                $"/v1/invitations/{TestInvitationToken}/accept",
+                HttpStatusCode.NotFound),
+            ["GetInvitationPreview"] = AuthenticatedScenario(
+                "GetInvitationPreview",
+                HttpMethod.Get,
+                $"/v1/invitations/{TestInvitationToken}",
+                HttpStatusCode.NotFound),
             ["GetFeatures"] = AuthenticatedScenario("GetFeatures", HttpMethod.Get, "/v1/features", HttpStatusCode.OK),
             ["EnqueueDevelopmentPingJob"] = OrganizationScenario(
                 "EnqueueDevelopmentPingJob",

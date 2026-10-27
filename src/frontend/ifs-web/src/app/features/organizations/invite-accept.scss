@@ -1,0 +1,155 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+
+.invite-accept {
+  display: grid;
+  width: min(100% - var(--ifs-space-8), 560px);
+  gap: var(--ifs-space-5);
+  margin: 0 auto;
+  padding-block: clamp(var(--ifs-space-8), 8vh, 64px);
+}
+
+.invite-accept__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--ifs-space-2);
+}
+
+.invite-accept__card {
+  display: grid;
+  gap: var(--ifs-space-5);
+  padding: var(--ifs-space-7);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-xl);
+  background: var(--ifs-surface-1);
+  box-shadow: var(--ifs-shadow-overlay);
+}
+
+.invite-accept__card > h1,
+.invite-accept__header h1,
+.invite-accept__header h2,
+.invite-accept__header p,
+.invite-accept__benefits h3 {
+  margin: 0;
+}
+
+.invite-accept__card > h1,
+.invite-accept__header h1 {
+  font-size: 22px;
+  line-height: 28px;
+}
+
+.invite-accept__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--ifs-space-4);
+}
+
+.invite-accept__header h2 {
+  margin-top: var(--ifs-space-1);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.invite-accept__header p {
+  margin-top: var(--ifs-space-2);
+  color: var(--ifs-text-2);
+}
+
+.invite-accept__avatar {
+  display: grid;
+  width: 48px;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-2);
+  color: var(--ifs-signal);
+  font-family: var(--ifs-font-mono);
+  font-size: 14px;
+}
+
+.invite-accept__benefits {
+  display: grid;
+  gap: var(--ifs-space-2);
+}
+
+.invite-accept__benefits h3 {
+  color: var(--ifs-text-2);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.invite-accept__benefits dl {
+  margin: 0;
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-md);
+}
+
+.invite-accept__benefits dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ifs-space-3);
+  padding: var(--ifs-space-3) var(--ifs-space-4);
+}
+
+.invite-accept__benefits dl > div + div {
+  border-top: 1px solid var(--ifs-line);
+}
+
+.invite-accept__benefits dd {
+  margin: 0;
+  color: var(--ifs-text-2);
+  text-align: end;
+}
+
+.invite-accept__banner {
+  display: grid;
+  gap: var(--ifs-space-1);
+  padding: var(--ifs-space-4);
+  border: 1px solid var(--ifs-signal);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-2);
+}
+
+.invite-accept__banner-title {
+  font-weight: 600;
+}
+
+.invite-accept__error {
+  margin: 0;
+  color: var(--ifs-danger-text);
+}
+
+.invite-accept__success {
+  margin: 0;
+  color: var(--ifs-success-text);
+}
+
+.invite-accept__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.invite-accept__status {
+  margin: 0;
+  color: var(--ifs-text-2);
+}
+
+@media (max-width: 480px) {
+  .invite-accept {
+    width: min(100% - var(--ifs-space-4), 560px);
+    gap: var(--ifs-space-4);
+  }
+
+  .invite-accept__card {
+    padding: var(--ifs-space-5);
+  }
+
+  .invite-accept__header {
+    grid-template-columns: 1fr;
+  }
+}

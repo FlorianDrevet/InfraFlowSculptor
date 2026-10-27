@@ -10,6 +10,12 @@ import {
 
 export const routes: Routes = [
   {
+    path: 'invitations/:token',
+    canActivate: [authenticatedGuard],
+    loadComponent: () => import('./features/organizations/invite-accept').then(m => m.InviteAccept),
+    title: 'Accepter une invitation',
+  },
+  {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
     title: 'InfraFlowSculptor — Connexion',

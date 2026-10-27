@@ -3,6 +3,7 @@ using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.Common.Models;
 using InfraFlowSculptor.Domain.OrganizationAggregate;
+using InfraFlowSculptor.Domain.Invitations;
 using InfraFlowSculptor.Domain.UserProfileAggregate;
 using InfraFlowSculptor.Infrastructure.Persistence.Common;
 using InfraFlowSculptor.Infrastructure.Persistence.Identity;
@@ -33,6 +34,8 @@ public class IfsDbContext(
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
 
     public DbSet<OrganizationAggregate> Organizations => Set<OrganizationAggregate>();
+
+    public DbSet<InvitationAggregate> Invitations => Set<InvitationAggregate>();
 
     public DbSet<OrganizationFeatureAccessEntity> OrganizationFeatureAccess => Set<OrganizationFeatureAccessEntity>();
 

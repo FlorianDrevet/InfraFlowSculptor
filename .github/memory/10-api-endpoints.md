@@ -29,3 +29,4 @@
 - `DELETE /v1/organizations/{id}/members/{memberId}` — `RemoveOrganizationMember`, administrateur, limite `write`, idempotence ; protège la dernière administratrice.
 - `POST /v1/organizations/{id}/leave` — `LeaveOrganization`, membre, limite `write`, idempotence ; protège la dernière administratrice.
 - `PUT /v1/organizations/{id}/access-restrictions` — `UpdateOrganizationAccessRestrictions`, administrateur, limite `write`, idempotence ; enregistre domaines et tenants autorisés.
+- J0-03 — `GET /v1/invitations/{token}` (`GetInvitationPreview`) et `POST /v1/invitations/{token}/accept` (`AcceptInvitation`) sont authentifiés, limités à `read`/`write` et marqués `OrganizationAgnostic`. Sous `/v1/organizations/{id}/invitations` : `GET` liste, `POST` invite, `POST /{invitationId}/resend` renvoie et `DELETE /{invitationId}` révoque ; les commandes de gestion exigent `Administrator`, sont limitées à `read`/`write` et idempotentes pour les écritures.

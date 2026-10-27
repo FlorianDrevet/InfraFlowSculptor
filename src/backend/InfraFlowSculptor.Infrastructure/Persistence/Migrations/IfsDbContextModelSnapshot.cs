@@ -23,6 +23,69 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("InfraFlowSculptor.Domain.Invitations.InvitationAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("language");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.PrimitiveCollection<int[]>("RoleValues")
+                        .IsRequired()
+                        .HasColumnType("integer[]")
+                        .HasColumnName("roles");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("token_hash");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_organization_invitations");
+
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_organization_invitations_organization_id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ux_organization_invitations_token_hash");
+
+                    b.ToTable("organization_invitations", (string)null);
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -298,6 +361,16 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasName("pk_organization_feature_access");
 
                     b.ToTable("organization_feature_access", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.Invitations.InvitationAggregate", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_organization_invitations_organizations_organization_id");
                 });
 
             modelBuilder.Entity("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", b =>

@@ -1,6 +1,6 @@
 # 05 — Données et stockage
 
-> **État vérifié au 2026-10-05.** À compléter aux étapes citées, d'après le code réel.
+> **État initial vérifié au 2026-10-05**, complété par les étapes ci-dessous d'après le code réel.
 > Cible : `docs/technique/02-backend.md` § 4, DT-04, DT-09, DT-25, DT-31, DT-32. Étapes S-06, S-08, J0-04.
 
 ## Faits vérifiés
@@ -25,6 +25,7 @@
 - Génération d'une migration : `dotnet ef migrations add <Nom> -p src/backend/InfraFlowSculptor.Infrastructure
   -s src/backend/InfraFlowSculptor.Api -o Persistence/Migrations`; la fabrique de conception emploie une chaîne
   locale factice.
+- J0-03 ajoute `organization_invitations` (adresse, rôles, expiration, état et `token_hash` unique) par la migration `J0_03_Invitations`. L'événement `InvitationCreated` passe par `outbox_messages` dans la transaction de la commande puis enfile un job `notifications`; le contenu d'outbox est vidé après envoi ou échec définitif.
 
 ## Pilote Azure SQL — P-02 (2026-10-06)
 

@@ -4,13 +4,14 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { DsButton } from '../../ds/button/button';
 import { DsTextField } from '../../ds/text-field/text-field';
+import { OrganizationInvitations } from './organization-invitations';
 import type { OrganizationMemberResponse, OrganizationRole, OrganizationSummaryResponse } from '../../core/api/generated';
 import { ApiError } from '../../core/http/api-error';
 import { OrganizationsService } from '../../core/organizations/organizations.service';
 
 @Component({
   selector: 'app-organization-members',
-  imports: [DsButton, DsTextField, FormsModule, TranslocoPipe],
+  imports: [DsButton, DsTextField, FormsModule, OrganizationInvitations, TranslocoPipe],
   templateUrl: './organization-members.html',
   styleUrl: './organization-members.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

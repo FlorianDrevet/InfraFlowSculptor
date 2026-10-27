@@ -5,6 +5,11 @@ export type { ChangeOrganizationMemberRolesRequest } from './models/change-organ
 export type { CreateOrganizationRequest } from './models/create-organization-request';
 export type { FeatureAvailabilityResponse } from './models/feature-availability-response';
 export type { HttpValidationProblemDetails } from './models/http-validation-problem-details';
+export type { InvitationAcceptanceResponse } from './models/invitation-acceptance-response';
+export type { InvitationPreviewResponse } from './models/invitation-preview-response';
+export type { InvitationResponse } from './models/invitation-response';
+export type { InvitationStatus } from './models/invitation-status';
+export type { InviteOrganizationRequest } from './models/invite-organization-request';
 export type { MePreferencesResponse } from './models/me-preferences-response';
 export type { MeResponse } from './models/me-response';
 export type { OrganizationMemberResponse } from './models/organization-member-response';

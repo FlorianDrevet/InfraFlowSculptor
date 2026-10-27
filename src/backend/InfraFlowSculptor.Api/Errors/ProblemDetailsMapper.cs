@@ -85,6 +85,7 @@ public static class ProblemDetailsMapper
         return errors.First().Type switch
         {
             ErrorType.Conflict => StatusCodes.Status409Conflict,
+            ErrorType.Forbidden => StatusCodes.Status403Forbidden,
             ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
             ErrorType.NotFound => StatusCodes.Status404NotFound,
             ErrorType.Validation => StatusCodes.Status400BadRequest,
@@ -101,7 +102,9 @@ public static class ProblemDetailsMapper
 
         if (statusCode == StatusCodes.Status403Forbidden)
         {
-            return "FORBIDDEN";
+            var forbiddenError = errors.FirstOrDefault(error => error.Type == ErrorType.Forbidden
+                && GetMetadataValue(error, ProblemMetadataKeys.Permission) is null);
+            return string.IsNullOrWhiteSpace(forbiddenError.Code) ? "FORBIDDEN" : forbiddenError.Code;
         }
 
         if (statusCode == StatusCodes.Status402PaymentRequired)

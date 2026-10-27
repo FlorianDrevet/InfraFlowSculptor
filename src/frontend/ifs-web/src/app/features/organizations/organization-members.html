@@ -137,6 +137,12 @@
         }
       </p>
     }
+
+    <app-organization-invitations
+      [id]="id()"
+      [canManage]="isAdministrator()"
+      [allowedEmailDomains]="organization()?.allowedEmailDomains ?? []"
+    />
   }
 </section>
 

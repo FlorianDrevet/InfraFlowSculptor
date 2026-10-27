@@ -83,6 +83,10 @@ if (enableDevelopmentExtras)
     redis = redis.WithRedisInsight();
 }
 
+var mailpit = enableDevelopmentExtras || isTesting
+    ? builder.AddMailPit(ResourceNames.MailPit).WithLifetime(containerLifetime)
+    : null;
+
 var api = builder
     .AddProject<Projects.InfraFlowSculptor_Api>(ResourceNames.Api)
     .WithReference(database)
@@ -111,14 +115,6 @@ if (isTesting)
 }
 else
 {
-    if (enableDevelopmentExtras)
-    {
-        var mailpit = builder
-            .AddMailPit(ResourceNames.MailPit)
-            .WithLifetime(containerLifetime);
-        api = api.WithReference(mailpit).WaitFor(mailpit);
-    }
-
     var keycloakAdminPassword = builder.AddParameter("keycloak-admin-password", secret: true);
     var keycloakBuilder = builder
         .AddKeycloak(ResourceNames.Keycloak, port: 8080, adminPassword: keycloakAdminPassword);
@@ -177,7 +173,15 @@ var worker = builder.AddProject<Projects.InfraFlowSculptor_Worker>(ResourceNames
     .WaitFor(postgres)
     .WaitFor(serviceBus)
     .WithEnvironment("DOTNET_ENVIRONMENT", builder.Environment.EnvironmentName)
+    .WithEnvironment("Invitations__BaseUrl", webOrigin)
     .WithEnvironment("Ifs__ServiceBus__IsEmulator", "true");
+if (mailpit is not null)
+{
+    worker = worker
+        .WithReference(mailpit, "email")
+        .WithEnvironment("Email__SenderAddress", "no-reply@infraflowsculptor.local")
+        .WaitFor(mailpit);
+}
 var configuredMaxConcurrentSessions = builder.Configuration.GetValue<int?>("Jobs:MaxConcurrentSessions");
 if (isTesting || configuredMaxConcurrentSessions.HasValue)
 {

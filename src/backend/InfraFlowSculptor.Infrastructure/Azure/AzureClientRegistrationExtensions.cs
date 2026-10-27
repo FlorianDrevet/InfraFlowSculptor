@@ -1,4 +1,5 @@
 using Azure.Messaging.ServiceBus;
+using Azure.Communication.Email;
 using Azure.Core;
 using Azure.Storage.Blobs;
 using Microsoft.Azure.StackExchangeRedis;
@@ -12,6 +13,23 @@ namespace InfraFlowSculptor.Infrastructure.Azure;
 
 public static class AzureClientRegistrationExtensions
 {
+    public static IServiceCollection AddIfsEmailClient(this IServiceCollection services, string name)
+    {
+        services.AddAzureConnection(name);
+        services.AddSingleton(serviceProvider =>
+        {
+            var connection = serviceProvider.GetRequiredKeyedService<AzureConnection>(name);
+            if (connection.Mode != AzureConnectionMode.ManagedIdentity)
+            {
+                throw new InvalidOperationException($"EmailClient requires managed identity for '{name}'.");
+            }
+
+            return new EmailClient(connection.Endpoint!, connection.Credential!);
+        });
+
+        return services;
+    }
+
     public static IServiceCollection AddIfsBlobServiceClient(this IServiceCollection services, string name)
     {
         services.AddAzureConnection(name);

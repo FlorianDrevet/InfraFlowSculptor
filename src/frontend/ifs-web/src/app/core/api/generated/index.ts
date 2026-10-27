@@ -11,6 +11,11 @@ export type { ChangeOrganizationMemberRolesRequest } from './models/change-organ
 export type { CreateOrganizationRequest } from './models/create-organization-request';
 export type { FeatureAvailabilityResponse } from './models/feature-availability-response';
 export type { HttpValidationProblemDetails } from './models/http-validation-problem-details';
+export type { InvitationAcceptanceResponse } from './models/invitation-acceptance-response';
+export type { InvitationPreviewResponse } from './models/invitation-preview-response';
+export type { InvitationResponse } from './models/invitation-response';
+export type { InvitationStatus } from './models/invitation-status';
+export type { InviteOrganizationRequest } from './models/invite-organization-request';
 export type { MePreferencesResponse } from './models/me-preferences-response';
 export type { MeResponse } from './models/me-response';
 export type { OrganizationMemberResponse } from './models/organization-member-response';
@@ -28,6 +33,10 @@ export type { GetMe$Params as GetMe$Params } from './fn/infra-flow-sculptor-api/
 export { getMe as getMe } from './fn/infra-flow-sculptor-api/get-me';
 export type { UpdateMePreferences$Params as UpdateMePreferences$Params } from './fn/infra-flow-sculptor-api/update-me-preferences';
 export { updateMePreferences as updateMePreferences } from './fn/infra-flow-sculptor-api/update-me-preferences';
+export type { GetInvitationPreview$Params as GetInvitationPreview$Params } from './fn/infra-flow-sculptor-api/get-invitation-preview';
+export { getInvitationPreview as getInvitationPreview } from './fn/infra-flow-sculptor-api/get-invitation-preview';
+export type { AcceptInvitation$Params as AcceptInvitation$Params } from './fn/infra-flow-sculptor-api/accept-invitation';
+export { acceptInvitation as acceptInvitation } from './fn/infra-flow-sculptor-api/accept-invitation';
 export type { GetFeatures$Params as GetFeatures$Params } from './fn/infra-flow-sculptor-api/get-features';
 export { getFeatures as getFeatures } from './fn/infra-flow-sculptor-api/get-features';
 export type { ListMyOrganizations$Params as ListMyOrganizations$Params } from './fn/organizations/list-my-organizations';
@@ -48,3 +57,11 @@ export type { LeaveOrganization$Params as LeaveOrganization$Params } from './fn/
 export { leaveOrganization as leaveOrganization } from './fn/organizations/leave-organization';
 export type { UpdateOrganizationAccessRestrictions$Params as UpdateOrganizationAccessRestrictions$Params } from './fn/organizations/update-organization-access-restrictions';
 export { updateOrganizationAccessRestrictions as updateOrganizationAccessRestrictions } from './fn/organizations/update-organization-access-restrictions';
+export type { ListOrganizationInvitations$Params as ListOrganizationInvitations$Params } from './fn/organizations/list-organization-invitations';
+export { listOrganizationInvitations as listOrganizationInvitations } from './fn/organizations/list-organization-invitations';
+export type { InviteOrganizationMember$Params as InviteOrganizationMember$Params } from './fn/organizations/invite-organization-member';
+export { inviteOrganizationMember as inviteOrganizationMember } from './fn/organizations/invite-organization-member';
+export type { ResendOrganizationInvitation$Params as ResendOrganizationInvitation$Params } from './fn/organizations/resend-organization-invitation';
+export { resendOrganizationInvitation as resendOrganizationInvitation } from './fn/organizations/resend-organization-invitation';
+export type { RevokeOrganizationInvitation$Params as RevokeOrganizationInvitation$Params } from './fn/organizations/revoke-organization-invitation';
+export { revokeOrganizationInvitation as revokeOrganizationInvitation } from './fn/organizations/revoke-organization-invitation';

@@ -130,4 +130,19 @@ public sealed class OrganizationAggregateTests
 
         Assert.True(organization.IsOutsideAccessRestrictions(outsideProfile));
     }
+
+    [Fact]
+    public void InvitationEmailAndTenantMustMatchOrganizationRestrictions()
+    {
+        var organization = Organization.Create(
+            new OrganizationId(Guid.NewGuid()),
+            "Contoso",
+            new UserProfileId(Guid.NewGuid())).Value;
+        Assert.False(organization.UpdateAccessRestrictions(ContosoEmailDomains, ContosoTenantIds).IsError);
+
+        Assert.True(organization.IsInvitationEmailAllowed("nina@contoso.example"));
+        Assert.False(organization.IsInvitationEmailAllowed("emma@outlook.example"));
+        Assert.True(organization.IsInvitationTenantAllowed(ContosoTenantIds[0]));
+        Assert.False(organization.IsInvitationTenantAllowed(Guid.Parse("9188040d-6c67-4c5b-b112-36a304b66dad")));
+    }
 }

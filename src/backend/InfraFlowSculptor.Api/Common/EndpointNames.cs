@@ -14,5 +14,11 @@ public static class EndpointNames
     public const string RemoveOrganizationMember = "RemoveOrganizationMember";
     public const string LeaveOrganization = "LeaveOrganization";
     public const string UpdateOrganizationAccessRestrictions = "UpdateOrganizationAccessRestrictions";
+    public const string ListOrganizationInvitations = "ListOrganizationInvitations";
+    public const string InviteOrganizationMember = "InviteOrganizationMember";
+    public const string ResendOrganizationInvitation = "ResendOrganizationInvitation";
+    public const string RevokeOrganizationInvitation = "RevokeOrganizationInvitation";
+    public const string AcceptInvitation = "AcceptInvitation";
+    public const string GetInvitationPreview = "GetInvitationPreview";
     public const string GetFeatures = "GetFeatures";
 }
