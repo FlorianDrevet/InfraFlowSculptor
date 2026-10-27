@@ -32,13 +32,16 @@ test('Alice crée un projet et reprend son brouillon depuis un autre navigateur'
   await expect(page.getByText('Terraform', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Continuer : environnements' }).click();
 
-  const environmentCount = await page.locator('.wizard-environment').count();
+  const environments = page.locator('.wizard-environment');
+  await expect(environments.first()).toBeVisible();
+  const environmentCount = await environments.count();
   for (let index = environmentCount; index > 2; index -= 1) {
     await page.getByRole('button', { name: `Supprimer l’environnement ${index}` }).click();
   }
   for (let index = environmentCount; index < 2; index += 1) {
     await page.getByRole('button', { name: 'Ajouter un environnement' }).click();
   }
+  await expect(environments).toHaveCount(2);
 
   await page.locator('input[name="environmentName0"]').fill('Développement');
   await page.locator('input[name="environmentCode0"]').fill('dev');
