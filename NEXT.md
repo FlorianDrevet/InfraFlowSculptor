@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`R-04`](docs/plan/02-jalon-0-pilote.md#-r-04--revue-de-sécurité-des-accès) — Revue de sécurité des accès |
-| **Statut** | `EN_COURS` |
-| **Dernière étape terminée** | [`J0-05`](docs/plan/02-jalon-0-pilote.md#j0-05--permissions-rôles-de-projet-et-autorisation) — Permissions, rôles de projet et autorisation (commit `3e5fd64`) |
-| **Étape suivante** | `J0-06` — Catalogue du pilote |
+| **Étape courante** | [`J0-06`](docs/plan/02-jalon-0-pilote.md#j0-06--catalogue-du-pilote) — Catalogue du pilote |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`R-04`](docs/plan/02-jalon-0-pilote.md#-r-04--revue-de-sécurité-des-accès) — Revue de sécurité des accès (auto-validée) |
+| **Étape suivante** | `J0-07` — Projets et environnements (API) |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-acces` (créée depuis `origin/impl/socle` après la fusion de R-03) |
-| **Dernière mise à jour** | 2026-10-27 — Codex (blocage résolu) |
+| **Dernière mise à jour** | 2026-10-27 — Codex (auto-validation R-04) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
@@ -81,7 +81,7 @@ Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suiv
 
 ### R-04 — portée d’idempotence de création d’organisation — 2026-10-27
 
-R-04 : arbitrage de Florian reçu le 2026-10-27, clé distincte par tenant et utilisateur retenue. La création d'organisation utilise un magasin et une migration dédiés ; les écritures avec organisation dérivent leur clé de stockage avec l'identité utilisateur. Réservation, écriture métier et réponse sont transactionnelles. Les tests de rejeu, de corps différent, d’isolation entre utilisateurs et d'acceptation concurrente idempotente passent. A14 Scalar est passée avec Alice et Chloé. Avant l'appel de la purge d'audit par le Worker hébergé en J0-31, accorder `EXECUTE` à son identité. L'auto-validation est dans [la revue R-04](docs/plan/revues/R-04-autovalidation.md) ; le détail de l'arbitrage est dans [la résolution de l’idempotence](docs/plan/revues/R-04-blocage-idempotence.md).
+R-04 : arbitrage de Florian reçu le 2026-10-27, clé distincte par tenant et utilisateur retenue. La création d'organisation utilise un magasin et une migration dédiés ; les écritures avec organisation dérivent leur clé de stockage avec l'identité utilisateur. Réservation, écriture métier et réponse sont transactionnelles. Les tests de rejeu, de corps différent, d’isolation entre utilisateurs, de conflit PostgreSQL au savepoint et d'acceptation concurrente idempotente passent. A14 Scalar est passée avec Alice et Chloé. [PR #4](https://github.com/FlorianDrevet/InfraFlowSculptor/pull/4) est ouverte vers `impl/socle`. Avant l'appel de la purge d'audit par le Worker hébergé en J0-31, accorder `EXECUTE` à son identité. L'auto-validation est dans [la revue R-04](docs/plan/revues/R-04-autovalidation.md) ; le détail de l'arbitrage est dans [la résolution de l’idempotence](docs/plan/revues/R-04-blocage-idempotence.md).
 
 ### P-08 — réconciliation What-If et procédure T shop43 — 2026-10-26
 

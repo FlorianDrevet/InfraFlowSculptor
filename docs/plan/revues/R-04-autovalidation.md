@@ -3,7 +3,7 @@
 Verdict : VALIDÉ
 
 - **Segment** : J0-01 à J0-05 — isolation, identité, organisations, invitations, audit, rôles et permissions projet.
-- **Branche / pull request** : `impl/j0-acces` → `impl/socle` (PR à ouvrir après le push).
+- **Branche / pull request** : `impl/j0-acces` → `impl/socle` — [PR #4](https://github.com/FlorianDrevet/InfraFlowSculptor/pull/4), ouverte.
 - **Revue Claude CLI** : diff depuis `origin/impl/j0-acces` (`cb86d7c7591df75db2af6df909aa5448b1f3e0e5`).
 
 ## Vérifications exécutées
