@@ -17,6 +17,7 @@ module.exports = defineConfig([
             'e2e/shell.spec.ts',
             'e2e/organization.spec.ts',
             'e2e/organization-audit.spec.ts',
+            'e2e/wizard.spec.ts',
             'e2e/support/login.ts',
             'playwright.config.ts',
           ],

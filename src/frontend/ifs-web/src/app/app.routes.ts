@@ -12,7 +12,8 @@ export const routes: Routes = [
   {
     path: 'invitations/:token',
     canActivate: [authenticatedGuard],
-    loadComponent: () => import('./features/organizations/invite-accept').then(m => m.InviteAccept),
+    loadComponent: () =>
+      import('./features/organizations/invite-accept').then((m) => m.InviteAccept),
     title: 'Accepter une invitation',
   },
   {
@@ -68,6 +69,22 @@ export const routes: Routes = [
                 (m) => m.OrganizationAudit,
               ),
             title: 'Journal d’audit',
+          },
+        ],
+      },
+      {
+        path: 'o/:orgId',
+        canActivate: [organizationMembershipGuard],
+        children: [
+          {
+            path: 'projects/new',
+            canActivate: [
+              featureGuard(FEATURES.organizations),
+              featureGuard(FEATURES.projectSetup),
+            ],
+            loadComponent: () =>
+              import('./features/projects/project-wizard').then((m) => m.ProjectWizard),
+            title: 'Assistant de création de projet',
           },
         ],
       },

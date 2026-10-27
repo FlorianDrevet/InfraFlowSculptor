@@ -63,6 +63,14 @@ export type { RemoveProjectRole$Params as RemoveProjectRole$Params } from './fn/
 export { removeProjectRole as removeProjectRole } from './fn/projects/remove-project-role';
 export type { TakeProjectOwnership$Params as TakeProjectOwnership$Params } from './fn/projects/take-project-ownership';
 export { takeProjectOwnership as takeProjectOwnership } from './fn/projects/take-project-ownership';
+export type { GetWizardDraft$Params as GetWizardDraft$Params } from './fn/projects/get-wizard-draft';
+export { getWizardDraft as getWizardDraft } from './fn/projects/get-wizard-draft';
+export type { SaveWizardDraft$Params as SaveWizardDraft$Params } from './fn/projects/save-wizard-draft';
+export { saveWizardDraft as saveWizardDraft } from './fn/projects/save-wizard-draft';
+export type { DiscardWizardDraft$Params as DiscardWizardDraft$Params } from './fn/projects/discard-wizard-draft';
+export { discardWizardDraft as discardWizardDraft } from './fn/projects/discard-wizard-draft';
+export type { CreateProjectFromWizard$Params as CreateProjectFromWizard$Params } from './fn/projects/create-project-from-wizard';
+export { createProjectFromWizard as createProjectFromWizard } from './fn/projects/create-project-from-wizard';
 export type { ListProjectEnvironments$Params as ListProjectEnvironments$Params } from './fn/project-environments/list-project-environments';
 export { listProjectEnvironments as listProjectEnvironments } from './fn/project-environments/list-project-environments';
 export type { AddProjectEnvironment$Params as AddProjectEnvironment$Params } from './fn/project-environments/add-project-environment';
@@ -73,6 +81,8 @@ export type { DeleteProjectEnvironment$Params as DeleteProjectEnvironment$Params
 export { deleteProjectEnvironment as deleteProjectEnvironment } from './fn/project-environments/delete-project-environment';
 export type { MoveProjectEnvironment$Params as MoveProjectEnvironment$Params } from './fn/project-environments/move-project-environment';
 export { moveProjectEnvironment as moveProjectEnvironment } from './fn/project-environments/move-project-environment';
+export type { PreviewNaming$Params as PreviewNaming$Params } from './fn/naming/preview-naming';
+export { previewNaming as previewNaming } from './fn/naming/preview-naming';
 export type { GetCatalogVersions$Params as GetCatalogVersions$Params } from './fn/catalog/get-catalog-versions';
 export { getCatalogVersions as getCatalogVersions } from './fn/catalog/get-catalog-versions';
 export type { GetCatalogTypes$Params as GetCatalogTypes$Params } from './fn/catalog/get-catalog-types';

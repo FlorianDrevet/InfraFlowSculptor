@@ -1,0 +1,225 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.wizard-exit,
+.wizard-steps button,
+.wizard-remove,
+.wizard-review-list button {
+  min-height: var(--ifs-control-height);
+  padding-inline: var(--ifs-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--ifs-radius-md);
+  background: transparent;
+  color: var(--ifs-text-2);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wizard-exit {
+  align-self: flex-start;
+}
+
+.wizard-steps button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--ifs-space-2);
+  font-size: var(--ifs-text-body-dense);
+  white-space: nowrap;
+}
+
+.wizard-steps button:hover,
+.wizard-exit:hover,
+.wizard-remove:hover {
+  background: var(--ifs-surface-active);
+  color: var(--ifs-text);
+}
+
+.wizard-steps button[aria-current='step'] {
+  border-color: var(--ifs-line-strong);
+  background: var(--ifs-surface-2);
+  color: var(--ifs-text);
+}
+
+.wizard-steps button[aria-current='step'] .wizard-step-number {
+  border-color: var(--ifs-signal);
+  background: var(--ifs-signal-soft);
+  color: var(--ifs-signal-text);
+}
+
+.wizard-heading > * {
+  margin: 0;
+}
+
+.wizard-eyebrow,
+.wizard-facts dt,
+.wizard-review-list dt {
+  color: var(--ifs-text-3);
+  font-size: var(--ifs-text-caption);
+}
+
+.wizard-heading h1,
+.wizard-message h1 {
+  margin: 0;
+  font-size: var(--ifs-text-page-title);
+  font-weight: var(--ifs-font-weight-page-title);
+  letter-spacing: var(--ifs-letter-spacing-page-title);
+  line-height: var(--ifs-line-height-page-title);
+  text-wrap: balance;
+}
+
+.wizard-heading > p:last-child,
+.wizard-hint {
+  max-width: 72ch;
+  color: var(--ifs-text-2);
+  line-height: 1.5;
+}
+
+.wizard-panel h2,
+.wizard-panel h3,
+.wizard-preview h3,
+.wizard-environment-heading h3 {
+  margin: 0;
+  font-size: var(--ifs-text-section-title);
+  font-weight: 600;
+}
+
+.wizard-field-label {
+  margin-bottom: calc(var(--ifs-space-2) * -1);
+  color: var(--ifs-text-2);
+  font-size: var(--ifs-text-body-dense);
+}
+
+.wizard-inline-error {
+  margin: 0;
+  color: var(--ifs-danger-text);
+  font-size: var(--ifs-text-caption);
+}
+
+.wizard-panel textarea,
+.wizard-select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--ifs-control-height);
+  padding: var(--ifs-space-2) var(--ifs-space-3);
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-1);
+  color: var(--ifs-text);
+  font: inherit;
+  caret-color: var(--ifs-signal-text);
+}
+
+.wizard-panel textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.wizard-select option {
+  background: var(--ifs-surface-1);
+  color: var(--ifs-text);
+}
+
+.project-wizard :focus-visible {
+  outline: 2px solid var(--ifs-signal);
+}
+
+.wizard-code-preview {
+  color: var(--ifs-text-2);
+}
+
+.wizard-code-preview code,
+.wizard-mono,
+.wizard-review-list code,
+.wizard-preset code,
+.wizard-preview-list code {
+  color: var(--ifs-text);
+  font-family: var(--ifs-font-mono);
+  font-size: var(--ifs-text-mono);
+  overflow-wrap: anywhere;
+}
+
+.wizard-choice h3 {
+  color: var(--ifs-text-2);
+  font-size: var(--ifs-text-caption);
+}
+
+.wizard-choice p,
+.wizard-preset > span {
+  margin: 0;
+  color: var(--ifs-text-2);
+  font-size: var(--ifs-text-body-dense);
+}
+
+.wizard-facts dd,
+.wizard-review-list dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.wizard-environment-heading > div {
+  min-width: 0;
+}
+
+.wizard-environment-heading h3 {
+  overflow-wrap: anywhere;
+}
+
+.wizard-preset {
+  font: inherit;
+  cursor: pointer;
+}
+
+.wizard-preset:hover {
+  background: var(--ifs-surface-3);
+}
+
+.wizard-preset--selected {
+  border-color: var(--ifs-signal);
+  background: var(--ifs-signal-soft);
+}
+
+.wizard-review-list dd ul {
+  margin: 0;
+  padding-left: var(--ifs-space-4);
+}
+
+.wizard-review-list button {
+  min-height: 28px;
+  color: var(--ifs-signal-text);
+  font-size: var(--ifs-text-caption);
+}
+
+.wizard-message {
+  display: grid;
+  width: min(100% - 32px, 680px);
+  gap: var(--ifs-space-4);
+  margin: var(--ifs-space-12) auto;
+  padding: var(--ifs-space-6);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-xl);
+  background: var(--ifs-surface-1);
+}
+
+.wizard-message p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ifs-text-2);
+}
+
+.wizard-status {
+  width: min(100% - 32px, 680px);
+  margin: var(--ifs-space-12) auto;
+  color: var(--ifs-text-2);
+}
+
+@media (max-width: 760px) {
+  .wizard-review-list dt {
+    grid-column: 1 / -1;
+  }
+}

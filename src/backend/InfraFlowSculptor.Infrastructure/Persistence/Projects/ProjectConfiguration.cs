@@ -22,6 +22,10 @@ public sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectAggre
         builder.Property(project => project.CiPlatform).HasMaxLength(32).HasDefaultValue("AzureDevOps").IsRequired();
         builder.Property(project => project.ModuleSource).HasMaxLength(100).HasDefaultValue("AVM registre public").IsRequired();
         builder.Property(project => project.CatalogVersion).HasMaxLength(64).IsRequired();
+        builder.Property(project => project.NamingPreset).HasMaxLength(16).HasDefaultValue(ProjectNamingPresets.Compact).IsRequired();
+        builder.Property(project => project.DefaultNameTemplate).HasMaxLength(200).HasDefaultValue("{abbr}-{project}-{name}-{env}").IsRequired();
+        builder.Property(project => project.ResourceGroupNameTemplate).HasMaxLength(200).HasDefaultValue("rg-{project}-{component}-{name}-{env}").IsRequired();
+        builder.Property(project => project.PublishingPreset).HasMaxLength(32);
         builder.Property(project => project.SystemTagsEnabled).HasDefaultValue(true).IsRequired();
         builder.Property(project => project.ModelVersion).HasDefaultValue(0).IsRequired();
         builder.Property(project => project.FirstPublishedAt);

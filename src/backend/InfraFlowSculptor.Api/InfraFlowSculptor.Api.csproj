@@ -40,5 +40,6 @@
         <ProjectReference Include="..\InfraFlowSculptor.Application\InfraFlowSculptor.Application.csproj" />
         <ProjectReference Include="..\InfraFlowSculptor.Infrastructure\InfraFlowSculptor.Infrastructure.csproj" />
         <ProjectReference Include="..\InfraFlowSculptor.Catalog\InfraFlowSculptor.Catalog.csproj" />
+        <ProjectReference Include="..\InfraFlowSculptor.Engine\InfraFlowSculptor.Engine.csproj" />
     </ItemGroup>
 </Project>

@@ -149,17 +149,27 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("coordinator_user_profile_id");
 
-                    b.Property<string[]>("DefaultReviewers")
+                    b.Property<string>("DefaultNameTemplate")
                         .IsRequired()
-                        .HasColumnType("text[]")
-                        .HasDefaultValueSql("ARRAY[]::text[]")
-                        .HasColumnName("default_reviewers");
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasDefaultValue("{abbr}-{project}-{name}-{env}")
+                        .HasColumnName("default_name_template");
 
-                    b.Property<string[]>("DefaultRunners")
+                    b.PrimitiveCollection<string[]>("DefaultReviewers")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("text[]")
-                        .HasDefaultValueSql("ARRAY[]::text[]")
-                        .HasColumnName("default_runners");
+                        .HasColumnName("default_reviewers")
+                        .HasDefaultValueSql("ARRAY[]::text[]");
+
+                    b.PrimitiveCollection<string[]>("DefaultRunners")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text[]")
+                        .HasColumnName("default_runners")
+                        .HasDefaultValueSql("ARRAY[]::text[]");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
@@ -203,9 +213,30 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(80)")
                         .HasColumnName("name");
 
+                    b.Property<string>("NamingPreset")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("Compact")
+                        .HasColumnName("naming_preset");
+
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
+
+                    b.Property<string>("PublishingPreset")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("publishing_preset");
+
+                    b.Property<string>("ResourceGroupNameTemplate")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasDefaultValue("rg-{project}-{component}-{name}-{env}")
+                        .HasColumnName("resource_group_name_template");
 
                     b.Property<bool>("SystemTagsEnabled")
                         .ValueGeneratedOnAdd()
@@ -229,6 +260,37 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_projects_organization_id");
 
                     b.ToTable("projects", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.ProjectWizardDraft", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("UserProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_profile_id");
+
+                    b.Property<string>("ContentJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("content_json");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.HasKey("OrganizationId", "UserProfileId")
+                        .HasName("pk_project_wizard_drafts");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_project_wizard_drafts_expires_at");
+
+                    b.HasIndex("UserProfileId")
+                        .HasDatabaseName("ix_project_wizard_drafts_user_profile_id");
+
+                    b.ToTable("project_wizard_drafts", (string)null);
                 });
 
             modelBuilder.Entity("InfraFlowSculptor.Domain.UserProfileAggregate.UserProfile", b =>
@@ -729,7 +791,6 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                                 .HasColumnName("project_id");
 
                             b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
                                 .HasColumnType("uuid")
                                 .HasColumnName("environment_id");
 
@@ -841,6 +902,23 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.Navigation("RoleAssignments");
 
                     b.Navigation("Tags");
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.ProjectWizardDraft", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_wizard_drafts_organizations_organization_id");
+
+                    b.HasOne("InfraFlowSculptor.Domain.UserProfileAggregate.UserProfile", null)
+                        .WithMany()
+                        .HasForeignKey("UserProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_wizard_drafts_user_profiles_user_profile_id");
                 });
 
             modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Auditing.AuditEventEntity", b =>

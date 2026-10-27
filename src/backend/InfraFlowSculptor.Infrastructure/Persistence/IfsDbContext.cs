@@ -54,6 +54,8 @@ public class IfsDbContext(
 
     public DbSet<ProjectAggregate> Projects => Set<ProjectAggregate>();
 
+    public DbSet<ProjectWizardDraft> ProjectWizardDrafts => Set<ProjectWizardDraft>();
+
     public DbSet<InvitationAggregate> Invitations => Set<InvitationAggregate>();
 
     public DbSet<AuditEventEntity> AuditEvents => Set<AuditEventEntity>();

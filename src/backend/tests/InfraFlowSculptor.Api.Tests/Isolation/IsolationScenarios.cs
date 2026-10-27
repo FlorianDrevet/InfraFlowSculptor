@@ -180,6 +180,63 @@ public static class IsolationScenarios
                 "/v1/projects",
                 HttpStatusCode.NotFound,
                 new { name = "Isolated Project", code = "isolated", tenantId = Guid.NewGuid(), description = "" }),
+            ["GetWizardDraft"] = OrganizationScenario(
+                "GetWizardDraft",
+                HttpMethod.Get,
+                "/v1/projects/wizard-draft",
+                HttpStatusCode.NotFound),
+            ["SaveWizardDraft"] = OrganizationScenario(
+                "SaveWizardDraft",
+                HttpMethod.Put,
+                "/v1/projects/wizard-draft",
+                HttpStatusCode.NotFound,
+                new { content = new { step = 1 } }),
+            ["DiscardWizardDraft"] = OrganizationScenario(
+                "DiscardWizardDraft",
+                HttpMethod.Delete,
+                "/v1/projects/wizard-draft",
+                HttpStatusCode.NotFound),
+            ["CreateProjectFromWizard"] = new IsolationScenario(
+                "CreateProjectFromWizard",
+                _ =>
+                {
+                    var request = CreateRequest(
+                        HttpMethod.Post,
+                        "/v1/projects/from-wizard",
+                        CreateDavidToken(),
+                        new
+                        {
+                            name = "Isolated Wizard Project",
+                            code = "isolated",
+                            tenantId = Guid.NewGuid(),
+                            description = "",
+                            namingPreset = "Compact",
+                            defaultNameTemplate = "{abbr}-{project}-{name}-{env}",
+                            resourceGroupNameTemplate = "rg-{project}-{component}-{name}-{env}",
+                            environments = new[] { new { name = "Development", code = "dev", subscriptionId = Guid.NewGuid(), region = "francecentral", isProtected = false, approvers = Array.Empty<string>(), description = "" } },
+                            tags = new Dictionary<string, string>(),
+                            publishingPreset = (string?)null
+                        });
+                    request.Headers.Add("X-Ifs-Organization", ContosoOrganizationId);
+                    request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+                    return request;
+                },
+                HttpStatusCode.NotFound),
+            ["PreviewNaming"] = OrganizationScenario(
+                "PreviewNaming",
+                HttpMethod.Post,
+                "/v1/naming/preview",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    projectName = "Isolated",
+                    projectCode = "isolated",
+                    namingPreset = "Compact",
+                    defaultNameTemplate = "{abbr}-{project}-{name}-{env}",
+                    resourceGroupNameTemplate = "rg-{project}-{component}-{name}-{env}",
+                    environments = new[] { new { code = "dev", region = "francecentral" } },
+                    tags = new Dictionary<string, string>()
+                }),
             ["GetProject"] = OrganizationScenario(
                 "GetProject",
                 HttpMethod.Get,

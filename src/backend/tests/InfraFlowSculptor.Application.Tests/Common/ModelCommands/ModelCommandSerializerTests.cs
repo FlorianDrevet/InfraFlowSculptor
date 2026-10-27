@@ -44,8 +44,11 @@ public sealed class ModelCommandSerializerTests
     }
 
     private static object? CreateValue(ParameterInfo parameter)
+        => CreateValue(parameter.ParameterType, parameter.Name);
+
+    private static object? CreateValue(Type parameterType, string? parameterName)
     {
-        var type = Nullable.GetUnderlyingType(parameter.ParameterType) ?? parameter.ParameterType;
+        var type = Nullable.GetUnderlyingType(parameterType) ?? parameterType;
         if (type == typeof(Guid))
         {
             return Guid.NewGuid();
@@ -53,7 +56,7 @@ public sealed class ModelCommandSerializerTests
 
         if (type == typeof(string))
         {
-            return parameter.Name is "Code" ? "shop" : "value";
+            return parameterName is "Code" ? "shop" : "value";
         }
 
         if (type == typeof(int))
@@ -66,9 +69,14 @@ public sealed class ModelCommandSerializerTests
             return true;
         }
 
-        if (type == typeof(IReadOnlyList<string>))
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IReadOnlyList<>))
         {
-            return new[] { "alice@contoso.example" };
+            var itemType = type.GetGenericArguments()[0];
+            var values = Array.CreateInstance(itemType, 1);
+            values.SetValue(
+                itemType == typeof(string) ? "alice@contoso.example" : CreateValue(itemType, null),
+                0);
+            return values;
         }
 
         if (type == typeof(IReadOnlyDictionary<string, string>))
@@ -76,6 +84,13 @@ public sealed class ModelCommandSerializerTests
             return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["team"] = "platform" };
         }
 
-        throw new InvalidOperationException($"A sample value for {parameter.ParameterType.Name} is required.");
+        var constructor = type.GetConstructors().SingleOrDefault();
+        if (constructor is not null)
+        {
+            var arguments = constructor.GetParameters().Select(CreateValue).ToArray();
+            return Activator.CreateInstance(type, arguments);
+        }
+
+        throw new InvalidOperationException($"A sample value for {parameterType.Name} is required.");
     }
 }

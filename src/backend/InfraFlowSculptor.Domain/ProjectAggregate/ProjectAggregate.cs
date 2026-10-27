@@ -42,6 +42,14 @@ public sealed partial class ProjectAggregate : AggregateRoot<ProjectId>, IOrgani
 
     public string CatalogVersion { get; private set; } = string.Empty;
 
+    public string NamingPreset { get; private set; } = ProjectNamingPresets.Compact;
+
+    public string DefaultNameTemplate { get; private set; } = ProjectNamingPresets.CompactDefaultTemplate;
+
+    public string ResourceGroupNameTemplate { get; private set; } = ProjectNamingPresets.CompactResourceGroupTemplate;
+
+    public string? PublishingPreset { get; private set; }
+
     public bool SystemTagsEnabled { get; private set; } = true;
 
     public int ModelVersion { get; private set; }
@@ -340,6 +348,42 @@ public sealed partial class ProjectAggregate : AggregateRoot<ProjectId>, IOrgani
         }
 
         ReplaceTags(tags, validated.Value);
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> ConfigureNaming(string preset, string defaultNameTemplate, string resourceGroupNameTemplate)
+    {
+        var normalizedPreset = preset?.Trim() ?? string.Empty;
+        var normalizedDefaultTemplate = defaultNameTemplate?.Trim() ?? string.Empty;
+        var normalizedResourceGroupTemplate = resourceGroupNameTemplate?.Trim() ?? string.Empty;
+        if (!new[] { ProjectNamingPresets.Compact, ProjectNamingPresets.Caf, ProjectNamingPresets.Custom }
+                .Contains(normalizedPreset, StringComparer.OrdinalIgnoreCase))
+        {
+            return Error.Validation("PROJECT_NAMING_PRESET_INVALID", "The naming preset must be Compact, CAF, or Custom.");
+        }
+
+        if (normalizedDefaultTemplate.Length is < 1 or > 200
+            || normalizedResourceGroupTemplate.Length is < 1 or > 200)
+        {
+            return Error.Validation("PROJECT_NAMING_TEMPLATE_INVALID", "Naming templates must contain between 1 and 200 characters.");
+        }
+
+        NamingPreset = normalizedPreset;
+        DefaultNameTemplate = normalizedDefaultTemplate;
+        ResourceGroupNameTemplate = normalizedResourceGroupTemplate;
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> ConfigurePublishing(string? preset)
+    {
+        var normalizedPreset = preset?.Trim();
+        if (normalizedPreset is not null
+            && !string.Equals(normalizedPreset, "MonoRepo", StringComparison.Ordinal))
+        {
+            return Error.Validation("PROJECT_PUBLISHING_PRESET_INVALID", "Only the MonoRepo publishing preset is available in this plan step.");
+        }
+
+        PublishingPreset = normalizedPreset;
         return Result.Success;
     }
 

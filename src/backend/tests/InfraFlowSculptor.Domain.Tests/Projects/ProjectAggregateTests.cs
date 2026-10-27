@@ -191,6 +191,33 @@ public sealed class ProjectAggregateTests
     }
 
     [Fact]
+    public void ProjectStartsWithCompactNamingAndNoPublishingPlan()
+    {
+        var project = CreateProject(new UserProfileId(Guid.NewGuid()));
+
+        Assert.Equal("Compact", project.NamingPreset);
+        Assert.Equal("{abbr}-{project}-{name}-{env}", project.DefaultNameTemplate);
+        Assert.Equal("rg-{project}-{component}-{name}-{env}", project.ResourceGroupNameTemplate);
+        Assert.Null(project.PublishingPreset);
+    }
+
+    [Fact]
+    public void WizardCanStoreCustomNamingAndOptionalMonoRepositoryPreset()
+    {
+        var project = CreateProject(new UserProfileId(Guid.NewGuid()));
+
+        var naming = project.ConfigureNaming("Custom", "{name}-{region}", "rg-{name}-{region}");
+        var publishing = project.ConfigurePublishing("MonoRepo");
+
+        Assert.False(naming.IsError);
+        Assert.False(publishing.IsError);
+        Assert.Equal("Custom", project.NamingPreset);
+        Assert.Equal("{name}-{region}", project.DefaultNameTemplate);
+        Assert.Equal("rg-{name}-{region}", project.ResourceGroupNameTemplate);
+        Assert.Equal("MonoRepo", project.PublishingPreset);
+    }
+
+    [Fact]
     public void ProjectNormalizesDefaultRunnersAndReviewers()
     {
         var project = Project.Create(

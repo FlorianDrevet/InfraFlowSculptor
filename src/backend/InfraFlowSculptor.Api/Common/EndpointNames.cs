@@ -26,6 +26,11 @@ public static class EndpointNames
     public const string GetProjectMemberPermissions = "GetProjectMemberPermissions";
     public const string ListProjects = "ListProjects";
     public const string CreateProject = "CreateProject";
+    public const string GetWizardDraft = "GetWizardDraft";
+    public const string SaveWizardDraft = "SaveWizardDraft";
+    public const string DiscardWizardDraft = "DiscardWizardDraft";
+    public const string CreateProjectFromWizard = "CreateProjectFromWizard";
+    public const string PreviewNaming = "PreviewNaming";
     public const string GetProject = "GetProject";
     public const string AddProjectEnvironment = "AddProjectEnvironment";
     public const string ListProjectEnvironments = "ListProjectEnvironments";

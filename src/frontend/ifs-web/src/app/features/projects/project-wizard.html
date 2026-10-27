@@ -1,0 +1,562 @@
+@if (loading()) {
+  <p class="wizard-status" role="status">{{ 'projectWizard.loading' | transloco }}</p>
+} @else if (loadError()) {
+  <section class="wizard-message" role="alert">
+    <h1>{{ 'projectWizard.loadError' | transloco }}</h1>
+    <app-ds-button variant="secondary" (click)="retryLoad()">{{
+      'projectWizard.retry' | transloco
+    }}</app-ds-button>
+  </section>
+} @else if (createdProject(); as project) {
+  <section class="wizard-message wizard-message--success" role="status">
+    <h1>{{ 'projectWizard.createdHeading' | transloco }}</h1>
+    <p>
+      {{
+        'projectWizard.createdDescription' | transloco: { name: project.name, code: project.code }
+      }}
+    </p>
+    <p class="wizard-mono">{{ project.id }}</p>
+    <app-ds-button variant="primary" (click)="exitAssistant()">{{
+      'projectWizard.returnHome' | transloco
+    }}</app-ds-button>
+  </section>
+} @else {
+  <div
+    class="project-wizard grid min-h-full grid-cols-[minmax(208px,var(--ifs-sidebar-width))_minmax(0,1fr)] text-text max-[760px]:grid-cols-1"
+  >
+    <aside
+      class="wizard-rail sticky top-0 flex min-h-screen flex-col gap-4 border-r border-line bg-surface-sidebar p-4 max-[760px]:static max-[760px]:min-h-0 max-[760px]:gap-2 max-[760px]:border-r-0 max-[760px]:border-b max-[760px]:p-3"
+      [attr.aria-label]="'projectWizard.navigation' | transloco"
+    >
+      <button class="wizard-exit" type="button" (click)="exitAssistant()">
+        {{ 'projectWizard.quit' | transloco }}
+      </button>
+      <div class="wizard-project-label grid gap-1 p-2 text-caption text-text-3 max-[760px]:hidden">
+        <span>{{ 'projectWizard.newProject' | transloco }}</span>
+        <strong class="break-words text-body font-semibold text-text">{{
+          state().name || ('projectWizard.untitled' | transloco)
+        }}</strong>
+      </div>
+      @if (saving()) {
+        <p class="wizard-draft-status m-0 px-2 text-caption text-text-2" role="status">
+          {{ 'projectWizard.savingDraft' | transloco }}
+        </p>
+      } @else if (!saveError() && draftSaved()) {
+        <p class="wizard-draft-status m-0 px-2 text-caption text-text-2" role="status">
+          {{ 'projectWizard.savedDraft' | transloco }}
+        </p>
+      }
+      @if (saveError()) {
+        <p class="wizard-inline-error m-0 px-2 text-caption text-danger-text" role="alert">
+          {{ 'projectWizard.saveError' | transloco }}
+        </p>
+      }
+      <nav class="min-w-0 overflow-x-auto">
+        <ol class="wizard-steps m-0 grid list-none gap-1 p-0 max-[760px]:flex max-[760px]:w-max">
+          @for (step of steps; track step.value) {
+            <li>
+              <button
+                type="button"
+                [class.wizard-step--active]="state().step === step.value"
+                [attr.aria-current]="state().step === step.value ? 'step' : null"
+                (click)="goToStep(step.value)"
+              >
+                <span
+                  class="wizard-step-number grid size-6 flex-none place-items-center rounded-full border border-line-strong font-mono text-caption text-text-2"
+                  >{{ step.value }}</span
+                >
+                <span>{{ step.labelKey | transloco }}</span>
+              </button>
+            </li>
+          }
+        </ol>
+      </nav>
+    </aside>
+
+    <main
+      class="wizard-main mx-auto grid w-full max-w-5xl content-start gap-6 px-8 py-8 max-[760px]:w-auto max-[760px]:px-4 max-[760px]:py-6"
+    >
+      <header class="wizard-heading grid gap-2">
+        @if (state().step === 5) {
+          <p class="wizard-eyebrow">{{ 'projectWizard.optionalStep' | transloco }}</p>
+        } @else {
+          <p class="wizard-eyebrow">
+            {{ 'projectWizard.stepCount' | transloco: { step: state().step } }}
+          </p>
+        }
+        <h1 id="wizard-title">{{ stepTitleKey() | transloco }}</h1>
+        @if (state().step === 1) {
+          <p>{{ 'projectWizard.identityHelper' | transloco }}</p>
+        } @else if (state().step === 2) {
+          <p>{{ 'projectWizard.toolsHelper' | transloco }}</p>
+        } @else if (state().step === 3) {
+          <p>{{ 'projectWizard.environmentsHelper' | transloco }}</p>
+        } @else if (state().step === 4) {
+          <p>{{ 'projectWizard.namingHelper' | transloco }}</p>
+        } @else if (state().step === 5) {
+          <p>{{ 'projectWizard.publishingHelper' | transloco }}</p>
+        } @else {
+          <p>{{ 'projectWizard.noExternalChanges' | transloco }}</p>
+        }
+      </header>
+
+      <form class="wizard-form grid min-w-0 gap-4" (submit)="submitStep($event)" novalidate>
+        @switch (state().step) {
+          @case (1) {
+            <section
+              class="wizard-panel wizard-identity grid min-w-0 gap-4 rounded-xl border border-line bg-surface-1 p-4 md:p-6"
+            >
+              <app-ds-text-field
+                [label]="'projectWizard.projectName' | transloco"
+                [hint]="
+                  'projectWizard.projectNameHint' | transloco: { organization: organizationName() }
+                "
+                [value]="state().name"
+                name="projectName"
+                [required]="true"
+                (valueChange)="updateName($event)"
+              />
+              <app-ds-text-field
+                [label]="'projectWizard.projectCode' | transloco"
+                [hint]="'projectWizard.projectCodeHint' | transloco"
+                [value]="state().code"
+                name="projectCode"
+                [mono]="true"
+                [required]="true"
+                (valueChange)="updateCode($event)"
+              />
+              <label class="wizard-field-label" for="project-description">{{
+                'projectWizard.description' | transloco
+              }}</label>
+              <textarea
+                id="project-description"
+                name="projectDescription"
+                rows="3"
+                maxlength="1000"
+                [value]="state().description"
+                (input)="changeDescription($event)"
+              ></textarea>
+              @if (state().code) {
+                <div
+                  class="wizard-code-preview flex items-center justify-between border-t border-line pt-3"
+                >
+                  <span>{{ 'projectWizard.previewWithCode' | transloco }}</span>
+                  <code>{{ state().code }}</code>
+                </div>
+              }
+              @if (validationError() === 'identity') {
+                <p class="wizard-inline-error" role="alert">
+                  {{ 'projectWizard.identityValidation' | transloco }}
+                </p>
+              }
+            </section>
+          }
+          @case (2) {
+            <section
+              class="wizard-panel grid min-w-0 gap-4 rounded-xl border border-line bg-surface-1 p-4 md:p-6"
+            >
+              <div class="wizard-tool-grid grid grid-cols-2 gap-3 max-[760px]:grid-cols-1">
+                <article
+                  class="wizard-choice wizard-choice--selected grid min-w-0 gap-3 rounded-lg border border-signal bg-signal-soft p-4"
+                >
+                  <div class="grid min-w-0 gap-2">
+                    <h3>{{ 'projectWizard.infrastructureLanguage' | transloco }}</h3>
+                    <strong>Bicep</strong>
+                    <p>{{ 'projectWizard.bicepDescription' | transloco }}</p>
+                  </div>
+                </article>
+                <article
+                  class="wizard-choice wizard-choice--selected grid min-w-0 gap-3 rounded-lg border border-signal bg-signal-soft p-4"
+                >
+                  <div class="grid min-w-0 gap-2">
+                    <h3>{{ 'projectWizard.ciPlatform' | transloco }}</h3>
+                    <strong>Azure DevOps Pipelines</strong>
+                    <p>{{ 'projectWizard.azureDevOpsDescription' | transloco }}</p>
+                  </div>
+                </article>
+              </div>
+              <dl
+                class="wizard-facts m-0 grid grid-cols-2 gap-3 border-t border-line pt-3 max-[760px]:grid-cols-1"
+              >
+                <div>
+                  <dt>{{ 'projectWizard.moduleSource' | transloco }}</dt>
+                  <dd>{{ 'projectWizard.avmPublic' | transloco }}</dd>
+                </div>
+                <div>
+                  <dt>{{ 'projectWizard.catalogVersion' | transloco }}</dt>
+                  <dd class="wizard-mono">{{ catalogVersion() }}</dd>
+                </div>
+              </dl>
+            </section>
+          }
+          @case (3) {
+            <section class="wizard-environments grid min-w-0 gap-4">
+              @for (environment of state().environments; track $index) {
+                <article
+                  class="wizard-panel wizard-environment grid min-w-0 gap-4 rounded-xl border border-line bg-surface-1 p-4 md:p-6"
+                >
+                  <header class="wizard-environment-heading flex min-w-0 items-center gap-3">
+                    <div class="flex min-w-0 items-center gap-3">
+                      <span
+                        class="grid size-6 flex-none place-items-center rounded-full border border-line-strong font-mono text-caption text-text-2"
+                        >{{ $index + 1 }}</span
+                      >
+                      <h3>
+                        {{
+                          environment.name ||
+                            ('projectWizard.environmentFallback' | transloco: { index: $index + 1 })
+                        }}
+                      </h3>
+                    </div>
+                    @if (state().environments.length > 1) {
+                      <button
+                        class="wizard-remove ml-auto min-h-8 rounded-md px-2 text-caption text-danger-text"
+                        type="button"
+                        [attr.aria-label]="
+                          'projectWizard.removeEnvironment' | transloco: { index: $index + 1 }
+                        "
+                        (click)="removeEnvironment($index)"
+                      >
+                        {{ 'projectWizard.remove' | transloco }}
+                      </button>
+                    }
+                  </header>
+                  <div class="wizard-field-grid grid grid-cols-2 gap-3 max-[760px]:grid-cols-1">
+                    <app-ds-text-field
+                      [label]="'projectWizard.environmentName' | transloco"
+                      [value]="environment.name"
+                      [name]="'environmentName' + $index"
+                      [required]="true"
+                      (valueChange)="updateEnvironment($index, { name: $event })"
+                    />
+                    <app-ds-text-field
+                      [label]="'projectWizard.environmentCode' | transloco"
+                      [hint]="'projectWizard.environmentCodeHint' | transloco"
+                      [value]="environment.code"
+                      [name]="'environmentCode' + $index"
+                      [mono]="true"
+                      [required]="true"
+                      (valueChange)="updateEnvironment($index, { code: $event })"
+                    />
+                    <label class="wizard-field-label" [for]="'environment-region-' + $index">{{
+                      'projectWizard.region' | transloco
+                    }}</label>
+                    <select
+                      class="wizard-select"
+                      [id]="'environment-region-' + $index"
+                      [name]="'environmentRegion' + $index"
+                      [value]="environment.region"
+                      [required]="true"
+                      (change)="changeRegion($index, $event)"
+                    >
+                      <option value="">{{ 'projectWizard.chooseRegion' | transloco }}</option>
+                      @for (region of regions(); track region.name) {
+                        <option [value]="region.name">{{ region.name }}</option>
+                      }
+                    </select>
+                    <app-ds-text-field
+                      [label]="'projectWizard.subscription' | transloco"
+                      [hint]="'projectWizard.subscriptionHint' | transloco"
+                      [value]="environment.subscriptionId"
+                      [name]="'environmentSubscription' + $index"
+                      [mono]="true"
+                      [required]="true"
+                      (valueChange)="updateEnvironment($index, { subscriptionId: $event })"
+                    />
+                  </div>
+                  <app-ds-toggle
+                    [label]="'projectWizard.protectedEnvironment' | transloco"
+                    [checked]="environment.isProtected"
+                    (checkedChange)="updateEnvironment($index, { isProtected: $event })"
+                  />
+                  @if (environment.isProtected) {
+                    <app-ds-text-field
+                      [label]="'projectWizard.approvers' | transloco"
+                      [hint]="'projectWizard.approversHint' | transloco"
+                      [value]="environment.approvers"
+                      [name]="'environmentApprovers' + $index"
+                      (valueChange)="updateEnvironment($index, { approvers: $event })"
+                    />
+                  }
+                </article>
+              }
+              <app-ds-button variant="secondary" (click)="addEnvironment()">
+                {{ 'projectWizard.addEnvironment' | transloco }}
+              </app-ds-button>
+              @if (validationError() === 'environments') {
+                <p class="wizard-inline-error" role="alert">
+                  {{ 'projectWizard.environmentValidation' | transloco }}
+                </p>
+              }
+            </section>
+          }
+          @case (4) {
+            <section
+              class="wizard-panel grid min-w-0 gap-4 rounded-xl border border-line bg-surface-1 p-4 md:p-6"
+              aria-labelledby="wizard-naming-heading"
+            >
+              <h2 id="wizard-naming-heading">{{ 'projectWizard.namingPreset' | transloco }}</h2>
+              <div
+                class="wizard-preset-grid grid grid-cols-2 gap-3 max-[760px]:grid-cols-1"
+                role="group"
+                [attr.aria-label]="'projectWizard.namingPreset' | transloco"
+              >
+                @for (preset of namingPresets; track preset) {
+                  <button
+                    class="wizard-preset grid min-w-0 content-start gap-2 rounded-lg border border-line-strong bg-surface-2 p-3 text-left text-text"
+                    [class.wizard-preset--selected]="state().namingPreset === preset"
+                    type="button"
+                    [attr.aria-pressed]="state().namingPreset === preset"
+                    (click)="selectNamingPreset(preset)"
+                  >
+                    <strong>{{ presetButtonLabel(preset) | transloco }}</strong>
+                    @if (preset === 'Compact') {
+                      <code>{{ '{abbr}-{project}-{name}-{env}' }}</code>
+                    } @else if (preset === 'CAF') {
+                      <code>{{ '{abbr}-{project}-{name}-{env}-{region}' }}</code>
+                    } @else {
+                      <span>{{ 'projectWizard.customPresetDescription' | transloco }}</span>
+                    }
+                  </button>
+                }
+              </div>
+              <app-ds-text-field
+                [label]="'projectWizard.defaultTemplate' | transloco"
+                [hint]="'projectWizard.namingTokens' | transloco"
+                [value]="state().defaultNameTemplate"
+                name="defaultNameTemplate"
+                [mono]="true"
+                (valueChange)="updateTemplate('defaultNameTemplate', $event)"
+              />
+              <app-ds-text-field
+                [label]="'projectWizard.resourceGroupTemplate' | transloco"
+                [value]="state().resourceGroupNameTemplate"
+                name="resourceGroupNameTemplate"
+                [mono]="true"
+                (valueChange)="updateTemplate('resourceGroupNameTemplate', $event)"
+              />
+              <p class="wizard-hint">{{ 'projectWizard.simpleNamingHint' | transloco }}</p>
+              <section
+                class="wizard-preview grid min-w-0 gap-3 border-t border-line pt-4"
+                aria-live="polite"
+              >
+                <h3>{{ 'projectWizard.example' | transloco }}</h3>
+                @if (previewing()) {
+                  <p role="status">{{ 'projectWizard.previewLoading' | transloco }}</p>
+                } @else if (previewError()) {
+                  <p class="wizard-inline-error" role="alert">
+                    {{ 'projectWizard.previewError' | transloco }}
+                  </p>
+                } @else if (preview(); as namingPreview) {
+                  @if (namingPreview.issues.length > 0) {
+                    <ul class="wizard-inline-error" role="alert">
+                      @for (issue of namingPreview.issues; track issue.code + issue.message) {
+                        <li>{{ issue.message }}</li>
+                      }
+                    </ul>
+                  } @else {
+                    <ul class="wizard-preview-list m-0 grid min-w-0 list-none gap-3 p-0">
+                      @for (item of namingPreview.items; track item.environmentCode) {
+                        <li
+                          class="grid grid-cols-[minmax(48px,auto)_minmax(0,1fr)_minmax(0,1fr)] items-baseline gap-3 border-b border-line-subtle py-2 max-[760px]:grid-cols-1 max-[760px]:gap-1"
+                        >
+                          <span>{{ item.environmentCode }}</span>
+                          <code>{{ item.resourceName }}</code>
+                          <code>{{ item.resourceGroupName }}</code>
+                        </li>
+                      }
+                    </ul>
+                  }
+                }
+              </section>
+              @if (validationError() === 'naming') {
+                <p class="wizard-inline-error" role="alert">
+                  {{ 'projectWizard.namingValidation' | transloco }}
+                </p>
+              }
+            </section>
+          }
+          @case (5) {
+            <section
+              class="wizard-panel grid min-w-0 gap-4 rounded-xl border border-line bg-surface-1 p-4 md:p-6"
+              aria-labelledby="wizard-publishing-heading"
+            >
+              <h2 id="wizard-publishing-heading">
+                {{ 'projectWizard.publishingPreset' | transloco }}
+              </h2>
+              <p class="wizard-hint">{{ 'projectWizard.monoRepoDescription' | transloco }}</p>
+              <button
+                class="wizard-preset wizard-preset--wide grid w-full min-w-0 content-start gap-2 rounded-lg border border-line-strong bg-surface-2 p-3 text-left text-text"
+                [class.wizard-preset--selected]="state().publishingPreset === 'MonoRepo'"
+                type="button"
+                [attr.aria-pressed]="state().publishingPreset === 'MonoRepo'"
+                (click)="selectPublishingPreset()"
+              >
+                <strong>{{ 'projectWizard.monoRepoPreset' | transloco }}</strong>
+                <span>{{ 'projectWizard.monoRepoDetails' | transloco }}</span>
+              </button>
+              <p class="wizard-hint">{{ 'projectWizard.repositoriesUnavailable' | transloco }}</p>
+            </section>
+          }
+          @case (6) {
+            <section class="wizard-review grid min-w-0 gap-4">
+              <dl class="wizard-review-list m-0 grid min-w-0 gap-3">
+                <div
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                >
+                  <dt>{{ 'projectWizard.nameAndCode' | transloco }}</dt>
+                  <dd>
+                    {{ state().name }} · <code>{{ state().code }}</code>
+                  </dd>
+                  <button type="button" (click)="goToStep(1)">
+                    {{ 'projectWizard.edit' | transloco }}
+                  </button>
+                </div>
+                <div
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                >
+                  <dt>{{ 'projectWizard.infrastructureLanguage' | transloco }}</dt>
+                  <dd>
+                    Bicep · {{ 'projectWizard.avmPublic' | transloco }} ·
+                    {{ 'projectWizard.catalogVersion' | transloco }} {{ catalogVersion() }}
+                  </dd>
+                  <button type="button" (click)="goToStep(2)">
+                    {{ 'projectWizard.edit' | transloco }}
+                  </button>
+                </div>
+                <div
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                >
+                  <dt>{{ 'projectWizard.ciPlatform' | transloco }}</dt>
+                  <dd>Azure DevOps Pipelines</dd>
+                  <button type="button" (click)="goToStep(2)">
+                    {{ 'projectWizard.edit' | transloco }}
+                  </button>
+                </div>
+                <div
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                >
+                  <dt>{{ 'projectWizard.environments' | transloco }}</dt>
+                  <dd>
+                    <ul>
+                      @for (environment of state().environments; track $index) {
+                        <li>
+                          <code>{{ environment.code }}</code> · {{ environment.region || '—' }} ·
+                          {{
+                            (environment.isProtected
+                              ? 'projectWizard.protected'
+                              : 'projectWizard.unprotected'
+                            ) | transloco
+                          }}
+                          @if (environment.isProtected && environment.approvers) {
+                            ({{ environment.approvers }})
+                          }
+                        </li>
+                      }
+                    </ul>
+                  </dd>
+                  <button type="button" (click)="goToStep(3)">
+                    {{ 'projectWizard.edit' | transloco }}
+                  </button>
+                </div>
+                <div
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                >
+                  <dt>{{ 'projectWizard.defaultTemplate' | transloco }}</dt>
+                  <dd>
+                    <code>{{ state().defaultNameTemplate }}</code>
+                  </dd>
+                  <button type="button" (click)="goToStep(4)">
+                    {{ 'projectWizard.edit' | transloco }}
+                  </button>
+                </div>
+                <div
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                >
+                  <dt>{{ 'projectWizard.resourceGroupTemplate' | transloco }}</dt>
+                  <dd>
+                    <code>{{ state().resourceGroupNameTemplate }}</code>
+                  </dd>
+                  <button type="button" (click)="goToStep(4)">
+                    {{ 'projectWizard.edit' | transloco }}
+                  </button>
+                </div>
+                <div
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                >
+                  <dt>{{ 'projectWizard.publishingPlan' | transloco }}</dt>
+                  <dd>
+                    {{
+                      (state().publishingPreset
+                        ? 'projectWizard.monoRepoPreset'
+                        : 'projectWizard.noPublishingPlan'
+                      ) | transloco
+                    }}
+                  </dd>
+                  <button type="button" (click)="goToStep(5)">
+                    {{ 'projectWizard.edit' | transloco }}
+                  </button>
+                </div>
+                <div
+                  class="wizard-review-row grid min-w-0 grid-cols-[minmax(130px,0.7fr)_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b border-line-subtle py-3 max-[760px]:grid-cols-[minmax(0,1fr)_auto]"
+                >
+                  <dt>{{ 'projectWizard.systemTags' | transloco }}</dt>
+                  <dd>
+                    <code>ifs-project</code>, <code>ifs-component</code>,
+                    <code>ifs-environment</code>, <code>managed-by</code>
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          }
+        }
+
+        @if (createError()) {
+          <p class="wizard-inline-error" role="alert">
+            {{ 'projectWizard.createError' | transloco }}
+          </p>
+        }
+
+        <footer class="wizard-actions flex flex-wrap items-center gap-3 border-t border-line pt-4">
+          <app-ds-button
+            variant="secondary"
+            type="button"
+            [disabled]="state().step === 1 || creating()"
+            (click)="previousStep()"
+          >
+            {{ 'projectWizard.back' | transloco }}
+          </app-ds-button>
+          <span class="wizard-actions-spacer flex-1"></span>
+          @if (state().step === 5) {
+            <app-ds-button
+              variant="secondary"
+              type="button"
+              [disabled]="creating()"
+              (click)="skipPublishing()"
+            >
+              {{ 'projectWizard.skip' | transloco }}
+            </app-ds-button>
+          }
+          @if (state().step === 6) {
+            <app-ds-button
+              variant="primary"
+              type="button"
+              [disabled]="creating()"
+              (click)="createProject()"
+            >
+              @if (creating()) {
+                {{ 'projectWizard.creating' | transloco }}
+              } @else {
+                {{ 'projectWizard.create' | transloco }}
+              }
+            </app-ds-button>
+          } @else {
+            <app-ds-button variant="primary" type="submit" [disabled]="saving()">
+              {{ continueLabelKey() | transloco }}
+            </app-ds-button>
+          }
+        </footer>
+      </form>
+    </main>
+  </div>
+}

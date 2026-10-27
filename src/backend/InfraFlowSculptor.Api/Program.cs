@@ -133,6 +133,8 @@ v1.MapMeEndpoints();
 v1.MapOrganizationEndpoints();
 v1.MapInvitationEndpoints();
 v1.MapProjectEndpoints();
+v1.MapProjectWizardEndpoints();
+v1.MapNamingEndpoints();
 v1.MapFeatureEndpoints();
 v1.MapCatalogEndpoints();
 if (!isOpenApiBuild && (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing")))
