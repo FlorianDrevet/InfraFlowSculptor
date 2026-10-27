@@ -1703,3 +1703,14 @@ Describe "Inscription du dépôt du module SQL" {
         }
     }
 }
+
+Describe "Révocation d'accès RBAC" {
+    It "supprime les attributions par la commande Azure RBAC" {
+        InModuleScope IfsRelease {
+            $assignmentId = '/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-test/providers/Microsoft.OperationalInsights/workspaces/log-test/providers/Microsoft.Authorization/roleAssignments/22222222-2222-2222-2222-222222222222'
+            $arguments = @(Get-IfsAccessDeleteArguments -ObjectId $assignmentId)
+
+            ($arguments -join ' ') | Should -Be "role assignment delete --ids $assignmentId --output none"
+        }
+    }
+}
