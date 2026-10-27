@@ -14,7 +14,7 @@
 | **Dernière étape terminée** | [`R-03`](docs/plan/01-preuves.md#-r-03--revue-des-preuves) — Revue des preuves (auto-validée) |
 | **Étape suivante** | `J0-02` — Membres et réglages d'accès de l'organisation |
 | **Verrou** | aucun |
-| **Branche** | `impl/preuves` (empilée sur `impl/socle` jusqu’à sa fusion) |
+| **Branche** | `impl/j0-acces` (créée depuis `origin/impl/socle` après la fusion de R-03) |
 | **Dernière mise à jour** | 2026-10-27 — Codex (auto-validation R-03) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
