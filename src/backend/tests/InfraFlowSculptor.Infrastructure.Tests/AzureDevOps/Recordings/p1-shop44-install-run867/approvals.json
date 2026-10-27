@@ -1,0 +1,10 @@
+{
+  "captureScope": "Project approvals snapshot at capture time; the API response does not identify a build or pipeline run.",
+  "runIdContext": 867,
+  "queueTimeUtc": "2026-10-26T13:48:17.1702323+00:00",
+  "finishTimeUtc": "2026-10-26T13:55:23.4568873+00:00",
+  "captureTimeUtc": "2026-10-26T13:57:06.4201817Z",
+  "count": 0,
+  "possiblyTruncated": false,
+  "value": []
+}

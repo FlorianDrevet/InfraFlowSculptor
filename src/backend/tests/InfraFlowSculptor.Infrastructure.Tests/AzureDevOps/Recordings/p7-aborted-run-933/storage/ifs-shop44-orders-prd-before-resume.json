@@ -1,0 +1,40 @@
+{
+  "schema": "ifs-operation-journal/v1",
+  "unit": "ifs-shop44-orders-prd",
+  "target": "prd",
+  "operations": [
+    {
+      "id": "dce21d73378a314fa34845b0758e508d4181814b1114263d7bdbe0d87e74902a",
+      "revision": 2,
+      "commit": "9d3422adcc42e7054edbe683184cf0c9789a5abb",
+      "kind": "deploy-unit",
+      "objectId": "ifs-shop44-orders-prd",
+      "state": "Started",
+      "createdAt": "2026-10-26T20:07:41.5740932Z",
+      "updatedAt": "2026-10-26T21:47:30.0170246Z",
+      "note": null,
+      "details": null
+    },
+    {
+      "id": "ca8386ff67313dcd77221069749326839710d41256a708ace5509bdd8c6c4cee",
+      "revision": 2,
+      "commit": "9d3422adcc42e7054edbe683184cf0c9789a5abb",
+      "kind": "data-access",
+      "objectId": "sql-shop44-orders-prd.database.windows.net/sqldb-shop44-orders-prd//subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-prd/providers/Microsoft.App/containerApps/ca-shop44-api-prd",
+      "state": "ToDo",
+      "createdAt": "2026-10-26T20:07:42.4329373Z",
+      "updatedAt": "2026-10-26T21:47:29.0726479Z",
+      "note": null,
+      "details": {
+        "server": "sql-shop44-orders-prd.database.windows.net",
+        "database": "sqldb-shop44-orders-prd",
+        "principal": {
+          "resourceId": "/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-prd/providers/Microsoft.App/containerApps/ca-shop44-api-prd",
+          "kind": "systemAssigned"
+        },
+        "level": "ReadWrite",
+        "exposure": "Public"
+      }
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "captureScope": "Project approvals snapshot at capture time; the API response does not identify a build or pipeline run.",
+  "runIdContext": 904,
+  "queueTimeUtc": "2026-10-26T18:10:09.1279424+00:00",
+  "finishTimeUtc": null,
+  "captureTimeUtc": "2026-10-26T18:17:07.2477208Z",
+  "count": 1,
+  "possiblyTruncated": false,
+  "value": [
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_010?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T18:13:58.17Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_010",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T18:13:58.1697255Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "109",
+        "name": "project-redacted � core � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/904"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=904"
+            }
+          },
+          "id": 904,
+          "name": "20261026.5"
+        }
+      },
+      "status": "pending",
+      "steps": [
+        {
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_003"
+          },
+          "history": [],
+          "initiatedOn": "2026-10-26T18:13:58.1697255Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_004",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_003",
+            "uniqueName": "ADDRESS_004"
+          },
+          "lastModifiedOn": "2026-10-26T18:13:58.1697255Z",
+          "order": 1,
+          "status": "pending"
+        }
+      ]
+    }
+  ]
+}

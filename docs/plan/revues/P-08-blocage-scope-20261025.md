@@ -32,7 +32,9 @@ Les lectures `az devops project list` et `az repos list --project shop42` montre
 
 ## Résolution de la portée
 
-L’option d’extension est choisie par l’autorisation explicite ci-dessus. P2/P4/P5 dans `shop43` et P7 dans `shop44` restent dans l’ordre et selon la recette écrite ; aucune adaptation du plan n’est nécessaire. L’autorisation ne lève pas le verrou de coût : aucune écriture Azure facturable ne sera faite avant le contrôle J+1 du 2026-10-26, une estimation complète et fraîche, et un plafond explicite si le surcoût demeure important.
+L’option d’extension est choisie par l’autorisation explicite ci-dessus. P2/P4/P5 dans `shop43` et P7 dans `shop44` restent dans l’ordre et selon la recette écrite ; aucune adaptation du plan n’est nécessaire.
+
+Le 2026-10-25, Florian confirme de poursuivre immédiatement sans plafond de coût à demander, tout en gardant les ressources au profil minimal et en les supprimant après leur dernière preuve. Cette instruction lève le point de coût qui empêchait le démarrage des essais facturables ; les relevés et l’estimation marginale sont actualisés avant les déploiements et après les nettoyages. Le contrôle J+1 de `shop42` reste dû le 2026-10-26 et sera exécuté après le nettoyage, avant la clôture de P-08 ; il ne retarde plus les étapes indépendantes restantes.
 
 ## Vérifications effectuées
 
@@ -51,4 +53,4 @@ L’option d’extension est choisie par l’autorisation explicite ci-dessus. P
 
 ## Suite
 
-Continuer les seuls préflights en lecture seule et la préparation locale/ADO. Le contrôle J+1 du 2026-10-26 reste requis. Avant toute écriture Azure facturable, actualiser les coûts et terminer l’estimation complète ; demander un plafond précis si le coût demeure important, puis exécuter seulement dans la portée et sous le plafond confirmé.
+Poursuivre les étapes de recette dans l’ordre P2/P4/P5 puis P7. Avant chaque écriture Azure facturable, actualiser les coûts et l’estimation de l’essai en profil minimal ; l’autorisation sans plafond est consignée ci-dessus. Relever les coûts après le déploiement et après chaque nettoyage. Exécuter le contrôle J+1 `shop42` le 2026-10-26 après suppression des ressources de preuve, puis terminer les vérifications de clôture P-08.

@@ -1,0 +1,780 @@
+{
+  "captureScope": "Project approvals snapshot at capture time; the API response does not identify a build or pipeline run.",
+  "runIdContext": 950,
+  "queueTimeUtc": "2026-10-26T22:53:55.6062640+00:00",
+  "finishTimeUtc": null,
+  "captureTimeUtc": "2026-10-26T23:00:10.3943072Z",
+  "count": 13,
+  "possiblyTruncated": false,
+  "value": [
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_067?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T22:58:23.307Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_067",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T22:58:23.3057851Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "115",
+        "name": "project-redacted � orders � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/950"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=950"
+            }
+          },
+          "id": 950,
+          "name": "20261026.13"
+        }
+      },
+      "status": "pending",
+      "steps": [
+        {
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_004",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_004",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "history": [],
+          "initiatedOn": "2026-10-26T22:58:23.3057851Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_002",
+            "displayName": "PERSON_001",
+            "id": "OBJECT_ID_001",
+            "uniqueName": "ADDRESS_002"
+          },
+          "lastModifiedOn": "2026-10-26T22:58:23.3057851Z",
+          "order": 1,
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_068?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T22:28:53.18Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_068",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T22:34:48.7153802Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "115",
+        "name": "project-redacted � orders � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/943"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=943"
+            }
+          },
+          "id": 943,
+          "name": "20261026.12"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_004",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_004",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "comment": "P7 rev3 : aper�u PRD relu, empreinte 131bfb5570300b8b31bb43c116248032881de352379177ba89132a132d4f81ba v�rifi�e; changements pr�vus et r�vocation Log Analytics Reader contr�l�s.",
+          "history": [],
+          "initiatedOn": "2026-10-26T22:28:53.1811788Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "lastModifiedOn": "2026-10-26T22:34:48.7153802Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    },
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_069?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T21:44:55.79Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_069",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T21:46:05.4528689Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "115",
+        "name": "project-redacted � orders � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/933"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=933"
+            }
+          },
+          "id": 933,
+          "name": "20261026.8"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_004",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_004",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "comment": "P7 preview PRD approved for run 933.",
+          "history": [],
+          "initiatedOn": "2026-10-26T21:44:55.7914476Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "lastModifiedOn": "2026-10-26T21:46:05.4528689Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    },
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_070?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T21:36:48.06Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_070",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T21:37:34.7105543Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "115",
+        "name": "project-redacted � orders � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/932"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=932"
+            }
+          },
+          "id": 932,
+          "name": "20261026.7"
+        }
+      },
+      "status": "canceled",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_002",
+            "displayName": "PERSON_001",
+            "id": "OBJECT_ID_001",
+            "uniqueName": "ADDRESS_002"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_004",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_004",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "history": [],
+          "initiatedOn": "2026-10-26T21:36:48.0591931Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_002",
+            "displayName": "PERSON_001",
+            "id": "OBJECT_ID_001",
+            "uniqueName": "ADDRESS_002"
+          },
+          "lastModifiedOn": "2026-10-26T21:37:34.7105543Z",
+          "order": 1,
+          "status": "canceled"
+        }
+      ]
+    },
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_071?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T21:01:12.18Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_071",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T21:05:42.8855075Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "118",
+        "name": "project-redacted � orders � api � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/929"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=929"
+            }
+          },
+          "id": 929,
+          "name": "20261026.1"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_004",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_004",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "history": [],
+          "initiatedOn": "2026-10-26T21:01:12.1784476Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "lastModifiedOn": "2026-10-26T21:05:42.8855075Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    },
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_072?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T21:01:12.18Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_072",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T21:05:42.8855075Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "118",
+        "name": "project-redacted � orders � api � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/929"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=929"
+            }
+          },
+          "id": 929,
+          "name": "20261026.1"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_004",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_004",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "history": [],
+          "initiatedOn": "2026-10-26T21:01:12.1784476Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "lastModifiedOn": "2026-10-26T21:05:42.8855075Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    },
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_073?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T20:53:27.347Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_073",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T20:57:39.5991608Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "116",
+        "name": "project-redacted � orders � api � CI",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/928"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=928"
+            }
+          },
+          "id": 928,
+          "name": "20261026.1"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_004",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_004",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "comment": "CI P1 project-redacted run 928 on e403f76: build and publish witness image.",
+          "history": [],
+          "initiatedOn": "2026-10-26T20:53:27.3452208Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "lastModifiedOn": "2026-10-26T20:57:39.5991608Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    },
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_074?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T20:46:01.497Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_074",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T20:49:13.483428Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "115",
+        "name": "project-redacted � orders � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/927"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=927"
+            }
+          },
+          "id": 927,
+          "name": "20261026.6"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_004",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_004",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "comment": "Pr�flight PRD #927 v�rifi� : aper�u relu, op�ration data-access Started confirm�e, C5/C3 et co�t actualis�s.",
+          "history": [],
+          "initiatedOn": "2026-10-26T20:46:01.4971245Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "lastModifiedOn": "2026-10-26T20:49:13.483428Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    },
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_075?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T20:35:29.437Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_075",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T20:37:25.826675Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "115",
+        "name": "project-redacted � orders � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/926"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=926"
+            }
+          },
+          "id": 926,
+          "name": "20261026.5"
+        }
+      },
+      "status": "canceled",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_002",
+            "displayName": "PERSON_001",
+            "id": "OBJECT_ID_001",
+            "uniqueName": "ADDRESS_002"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_004",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_004",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "history": [],
+          "initiatedOn": "2026-10-26T20:35:29.4356714Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_002",
+            "displayName": "PERSON_001",
+            "id": "OBJECT_ID_001",
+            "uniqueName": "ADDRESS_002"
+          },
+          "lastModifiedOn": "2026-10-26T20:37:25.826675Z",
+          "order": 1,
+          "status": "canceled"
+        }
+      ]
+    },
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_076?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T20:02:11.507Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_076",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T20:05:53.2607344Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "115",
+        "name": "project-redacted � orders � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/919"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=919"
+            }
+          },
+          "id": 919,
+          "name": "20261026.4"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_004",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_004",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "comment": "P1 orders PRD : aper�u relu, 6 cr�ations, 0 modification/suppression/r�vocation; estimation compl�te P1+P7 189,003392 EUR HT.",
+          "history": [],
+          "initiatedOn": "2026-10-26T20:02:11.5056748Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "lastModifiedOn": "2026-10-26T20:05:53.2607344Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    },
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_077?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T18:55:02.197Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_077",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T18:56:18.4301166Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "121",
+        "name": "project-redacted � platform � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/908"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=908"
+            }
+          },
+          "id": 908,
+          "name": "20261026.1"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_004",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_004",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "comment": "P1 platform project-redacted shared : apercu #908 relu (registre et role crees, aucune autre mutation).",
+          "history": [],
+          "initiatedOn": "2026-10-26T18:55:02.1976224Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "lastModifiedOn": "2026-10-26T18:56:18.4301166Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    },
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_078?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T18:38:29.46Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_078",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T18:42:45.1208188Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "112",
+        "name": "project-redacted � data � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/906"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=906"
+            }
+          },
+          "id": 906,
+          "name": "20261026.1"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_004",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_004",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "comment": "P1 data project-redacted PRD : apercu #906 relu (7 creations, aucun changement ni retrait).",
+          "history": [],
+          "initiatedOn": "2026-10-26T18:38:29.4591464Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "lastModifiedOn": "2026-10-26T18:42:45.1208188Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    },
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_079?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T18:13:58.17Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_079",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T18:21:24.2043942Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "109",
+        "name": "project-redacted � core � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/904"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=904"
+            }
+          },
+          "id": 904,
+          "name": "20261026.5"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_004",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_004",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "comment": "P1 core project-redacted PRD : aper�u #904 v�rifi� (6 cr�ations, aucune modification ni retrait).",
+          "history": [],
+          "initiatedOn": "2026-10-26T18:13:58.1697255Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "lastModifiedOn": "2026-10-26T18:21:24.2043942Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    }
+  ]
+}

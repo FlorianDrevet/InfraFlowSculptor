@@ -1,0 +1,191 @@
+{
+  "captureScope": "Project approvals snapshot at capture time; the API response does not identify a build or pipeline run.",
+  "runIdContext": 913,
+  "queueTimeUtc": "2026-10-26T19:30:34.7034744+00:00",
+  "finishTimeUtc": "2026-10-26T19:33:06.6352495+00:00",
+  "captureTimeUtc": "2026-10-26T19:34:20.4190867Z",
+  "count": 3,
+  "possiblyTruncated": false,
+  "value": [
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_018?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T18:55:02.197Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_018",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T18:56:18.4301166Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "121",
+        "name": "project-redacted � platform � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/908"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=908"
+            }
+          },
+          "id": 908,
+          "name": "20261026.1"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_002",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_003",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "comment": "P1 platform project-redacted shared : apercu #908 relu (registre et role crees, aucune autre mutation).",
+          "history": [],
+          "initiatedOn": "2026-10-26T18:55:02.1976224Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_002",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "lastModifiedOn": "2026-10-26T18:56:18.4301166Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    },
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_019?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T18:38:29.46Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_019",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T18:42:45.1208188Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "112",
+        "name": "project-redacted � data � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/906"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=906"
+            }
+          },
+          "id": 906,
+          "name": "20261026.1"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_002",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_003",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "comment": "P1 data project-redacted PRD : apercu #906 relu (7 creations, aucun changement ni retrait).",
+          "history": [],
+          "initiatedOn": "2026-10-26T18:38:29.4591464Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_002",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "lastModifiedOn": "2026-10-26T18:42:45.1208188Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    },
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/pipelines/approvals/GUID_020?%24expand=1"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T18:13:58.17Z",
+      "executionOrder": "anyOrder",
+      "id": "GUID_020",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T18:21:24.2043942Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "109",
+        "name": "project-redacted � core � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/Builds/904"
+            },
+            "web": {
+              "href": "https://dev.azure.com/org-redacted/GUID_001/_build/results?buildId=904"
+            }
+          },
+          "id": 904,
+          "name": "20261026.5"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_002",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "assignedApprover": {
+            "descriptor": "IDENTITY_DESCRIPTOR_003",
+            "displayName": "PERSON_003",
+            "id": "OBJECT_ID_003",
+            "isContainer": true,
+            "uniqueName": "ADDRESS_004"
+          },
+          "comment": "P1 core project-redacted PRD : aper�u #904 v�rifi� (6 cr�ations, aucune modification ni retrait).",
+          "history": [],
+          "initiatedOn": "2026-10-26T18:13:58.1697255Z",
+          "lastModifiedBy": {
+            "descriptor": "IDENTITY_DESCRIPTOR_002",
+            "displayName": "PERSON_002",
+            "id": "OBJECT_ID_002",
+            "uniqueName": "ADDRESS_003"
+          },
+          "lastModifiedOn": "2026-10-26T18:21:24.2043942Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    }
+  ]
+}

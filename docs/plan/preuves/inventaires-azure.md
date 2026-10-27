@@ -4,6 +4,12 @@ Ce registre sépare les ressources préexistantes de celles créées par Luna. U
 à autoriser une suppression. Les suppressions ciblent uniquement des IDs exacts consignés comme créés par Luna et absents
 de l'inventaire de référence.
 
+## Préflight de reprise le 2026-10-25
+
+- Florian autorise l'exécution immédiate des preuves restantes shop43/shop44 sans plafond de coût ; appliquer le profil minimal et supprimer chaque jeu après sa dernière preuve. Le contrôle J+1 de shop42 du lendemain reste dû.
+- C5 comparé par ID aux cinq collections le `2026-10-25T10:07Z` : 142 ressources, 19 groupes, 0 pile, 38 rôles, 7 budgets. Aucune addition depuis le relevé de 00:28Z. Un déploiementScript préexistant du projet VPD a disparu ; les autres IDs sont identiques. L'ID exact et les listes sont dans `%LOCALAPPDATA%\InfraFlowSculptor\P08\session-20261025T095735Z\c5-current.json`, hors dépôt.
+- Dans le C5 de référence, avant l'installation des kits et le début des déploiements de preuve, aucun groupe ni ressource Azure shop43/shop44 n'existait. Les groupes, rôles et ressources du kit shop43 ajoutés depuis sont détaillés ci-dessous ; les définitions de pipeline Azure DevOps sont suivies séparément. La dernière estimation et les réponses de coût sont consignées dans [P-08-preflight-20261025](../revues/P-08-preflight-20261025.md) et dans `%LOCALAPPDATA%\InfraFlowSculptor\P08\session-20261025T095735Z\`.
+
 ## État au 2026-10-08
 
 - Souscription de preuve : ID fourni par l'utilisateur lors du préflight, non recopié dans le dépôt.
@@ -72,6 +78,18 @@ la capture se fait à la fin de l'opération, puis les IDs obtenus de `az stack 
 | 2026-10-25T00:06:45Z | P-08, C5 après suppression `core-prd` | Ressources, groupes, piles, rôles, budgets | Snapshot exact hors dépôt : `%LOCALAPPDATA%\InfraFlowSculptor\P08\core-prd-reconcile\c5-after-core-prd-delete-20261025T000645Z.json` ; contrôle exact : `core-prd-reconcile\postcheck-verified.json` | 3 groupes Shop42/IFS restants, ressources en francecentral | 0 pile de souscription | 143 ressources, 19 groupes, 0 pile, 38 rôles et 7 budgets ; deltas exacts −4 ressources, −1 groupe, −1 pile, −3 rôles, sans ajout ni budget modifié. |
 | 2026-10-25T00:11:18Z | P-08, rafraîchissement final C5 en lecture seule | Ressources, groupes, piles, rôles, budgets | Snapshot exact hors dépôt : `%LOCALAPPDATA%\InfraFlowSculptor\P08\final-c5-refresh-20261025T001110Z\c5-final.json` ; comparé au C5 post-`core-prd` | Aucun groupe/pile Shop42 de preuve | 0 pile de souscription | Cinq collections identiques au C5 de 00:06:45Z : 143 ressources, 19 groupes, 0 pile, 38 rôles et 7 budgets ; aucune écriture Azure. |
 | 2026-10-25T00:28:36Z | P-08, contrôle C5 après nettoyage, lecture seule | Ressources, groupes, piles, rôles, budgets | Snapshot exact hors dépôt : `%LOCALAPPDATA%\InfraFlowSculptor\P08\session-preflight-20261025T002809Z\c5-current.json` ; cinq collections comparées au contrôle précédent | Aucun groupe/pile Shop42 de preuve | 0 pile de souscription | Cinq collections inchangées : 143 ressources, 19 groupes, 0 pile, 38 rôles et 7 budgets. Aucun ajout, retrait ou changement depuis le contrôle de 00:11:18Z. |
+| 2026-10-25T10:18:56Z | Shop43, kit Azure après l'installation #782 | Ressources, groupes, rôles, budgets | Diff exact hors dépôt : `%LOCALAPPDATA%\InfraFlowSculptor\P08\shop43-setup-20261025T101845Z\diff-from-pre-setup.json` ; C5 après installation dans le même dossier | Trois groupes `rg-ifs-shop43-*` et cinq groupes de composants `shop43`, tous France Central | Aucune pile | Par rapport à la référence 142/19/0/38/7 : 151 ressources, 27 groupes, 0 pile, 54 rôles et 7 budgets. Neuf ressources (identités managées et stockages de journalisation), huit groupes et seize attributions de rôle ajoutés par le kit ; budgets inchangés. Les IDs exacts sont conservés hors dépôt. |
+| 2026-10-25T10:56:43Z | Shop43 P1, Core DEV — run #791 | Ressources, groupes, piles, rôles, budgets | C5 exact hors dépôt : `%LOCALAPPDATA%\InfraFlowSculptor\P08\after-shop43-core-dev-20261025T105631Z\c5-current.json` | Groupes Core DEV/PRD déjà créés par le kit, France Central | 1 pile | 154 ressources, 27 groupes, 1 pile, 55 rôles et 7 budgets. Trois ressources Core DEV et une attribution Key Vault sont ajoutées ; aucun retrait ni changement de groupe ou budget. |
+| 2026-10-25T11:05:38Z | Shop43 P1, Core PRD — run #791 | Ressources, groupes, piles, rôles, budgets | C5 exact hors dépôt : `%LOCALAPPDATA%\InfraFlowSculptor\P08\after-shop43-core-prd-run791-20261025T110530Z\c5-current.json` | Groupe Core PRD déjà créé par le kit, France Central | 2 piles | 158 ressources, 27 groupes, 2 piles, 56 rôles et 7 budgets. Trois ressources Core PRD, une règle Smart Detector automatique liée à Application Insights, une pile et une attribution Key Vault ajoutées ; aucun retrait ni budget modifié. Les rapports DEV/PRD du run #791 sont `Succeeded`. |
+| 2026-10-25T11:15:59Z | Shop43 P1, Data DEV — run #793, avant PRD | Ressources, groupes, piles, rôles, budgets | C5 exact hors dépôt : `%LOCALAPPDATA%\InfraFlowSculptor\P08\pre-shop43-data-prd-20261025-20261025T111550Z\c5-current.json` | Groupe Data DEV ajouté, France Central | 3 piles | 162 ressources, 28 groupes, 3 piles, 56 rôles et 7 budgets. Le serveur SQL, `master`, la base témoin, le groupe Data DEV et la pile DEV sont présents ; la règle Smart Detector PRD liée à Application Insights est aussi apparue après la capture Core PRD. Le rapport DEV #793 est `Succeeded`. |
+| 2026-10-25T11:23:40Z | Shop43 P1, Data PRD — run #793 | Ressources, groupes, piles, rôles, budgets | C5 exact hors dépôt : `%LOCALAPPDATA%\InfraFlowSculptor\P08\post-data-run793-20261025T112332Z\c5-current.json` | Groupe Data PRD ajouté, France Central | 4 piles | 165 ressources, 29 groupes, 4 piles, 56 rôles et 7 budgets. Le serveur SQL PRD, `master`, la base témoin, le groupe Data PRD et la pile PRD sont présents ; aucun retrait, rôle ou budget modifié. Les deux règles firewall `/32` temporaires utilisées pour appliquer le schéma SQL ont été supprimées et leur absence vérifiée avant le C5. Le rapport PRD #793 est `Succeeded`. |
+| 2026-10-25T11:35:24Z | Shop43 P1, Platform shared — run #795 | Ressources, groupes, piles, rôles, budgets | C5 exact hors dépôt : `%LOCALAPPDATA%\InfraFlowSculptor\P08\post-platform-run795-20261025T113516Z\c5-current.json` | Groupe Platform shared créé par le kit, France Central | 5 piles | 166 ressources, 29 groupes, 5 piles, 57 rôles et 7 budgets. ACR Basic, pile shared et attribution de rôle ACR ajoutés ; aucun retrait, groupe ou budget modifié. Le rapport #795 est `Succeeded`. |
+
+| 2026-10-25T12:38:25Z | Shop43 P1, orders infra PRD #804 partiellement appliquée | Ressources, groupes, piles, rôles, budgets | C5 exact hors dépôt : %LOCALAPPDATA%/InfraFlowSculptor/P08/after-orders-prd-804-20261025T123825Z/c5-current.json | Groupe orders PRD, France Central | 7 piles | 172 ressources, 29 groupes, 7 piles, 65 rôles et 7 budgets ; delta depuis l’avant PRD : +3 ressources (UAMI API PRD, environnement Container Apps PRD, Container App PRD), +1 pile et +4 rôles. Aucun groupe ni budget modifié. Rapport PRD PartiallyApplied : deploy-unit=Done, data-access=Started, faute de Client ID Graph pré-résolu. |
+| 2026-10-25T12:52:07Z | Shop43 P1, orders infra PRD #805 réussi | Ressources, groupes, piles, rôles, budgets | C5 exact hors dépôt : %LOCALAPPDATA%/InfraFlowSculptor/P08/after-orders-prd-805-20261025T125207Z/c5-current.json ; comparaison au C5 post-#804 | Groupes orders DEV/PRD, France Central | 7 piles | 172 ressources, 29 groupes, 7 piles, 65 rôles et 7 budgets ; aucun ID ajouté ou retiré. Les rapports DEV/PRD sont Succeeded, deploy-unit et data-access sont Done, sans révocation ni détachement. |
+| 2026-10-25T12:58:31Z | Shop43 P1, orders API CI #806 | Ressources, groupes, piles, rôles, budgets | C5 exact hors dépôt : %LOCALAPPDATA%/InfraFlowSculptor/P08/after-orders-api-ci806-20261025T125831Z/c5-current.json | Registre ACR Basic partagé, France Central | 7 piles | 172 ressources, 29 groupes, 7 piles, 65 rôles et 7 budgets ; aucun ID changé. Le pipeline publie l’artifact d’image immuable image, consommé par le run release #807. |
+| 2026-10-25T13:05:28Z | Shop43 P1, API release #807 DEV/PRD | Ressources, groupes, piles, rôles, budgets | C5 exact hors dépôt : %LOCALAPPDATA%/InfraFlowSculptor/P08/after-orders-api-release807-20261025T130528Z/c5-current.json ; avant l’approbation PRD : %LOCALAPPDATA%/InfraFlowSculptor/P08/before-orders-api-prd-807-20261025T130247Z/c5-current.json | Applications orders DEV/PRD, France Central | 7 piles | 172 ressources, 29 groupes, 7 piles, 65 rôles et 7 budgets ; aucun ID ajouté ou retiré. Les rapports API DEV/PRD sont Succeeded sur le même digest ; minReplicas=0 et maxReplicas=1. |
+| 2026-10-25T13:14:38Z | Shop43 P1, C5 après contrôles santé à froid | Ressources, groupes, piles, rôles, budgets | C5 exact hors dépôt : %LOCALAPPDATA%/InfraFlowSculptor/P08/after-shop43-p1-20261025T131438Z/c5-current.json ; contrôles /health et /health/dependencies dans after-orders-api-release807-20261025T130528Z/health/ | Shop43 DEV/PRD, France Central | 7 piles | 172 ressources, 29 groupes, 7 piles, 65 rôles et 7 budgets ; aucun ID ajouté ou retiré pendant les contrôles. SQL serverless GP_S_Gen5, autopause 15 min ; les deux bases étaient Paused avant les contrôles de dépendances. |
 
 Inclure les groupes de ressources, piles, identités, ressources détachées et attributions de rôle. Pour les piles, conserver
 le commit source, les paramètres sans secret, la liste des principaux exclus de `denySettings`, ainsi que les IDs de toutes
@@ -99,6 +117,10 @@ la procédure d'urgence ci-dessous.
 
 | Date UTC | Étape / opération | Coût réel affiché | Prévision affichée | Plafond confirmé | IDs contrôlés | Décision / action |
 |---|---|---:|---:|---:|---|---|
+| 2026-10-26T12:11Z | Préflight avant suppression `ifs-shop43-core-dev` | 148,565572 EUR ActualCost MTD, UsageDate jusqu’au 25/10 (dernière lecture réussie 11:50Z) | Forecast 27,519768 EUR du 26–31/10 ; projection 176,085340 EUR ; P7 haute +11,0748 EUR ; avec réserve complète 22,15 EUR : 198,235340 EUR HT | Aucun plafond personnel ; poursuite profil minimal ; alerte préexistante 200 EUR seulement | C5 `pre-core-dev-delete-20261026T121122Z` : 159/24/2/51/7, exact IDs du groupe et de la pile core-dev comparés à la capture post-P1 ; C3 : 223 runs lus, zéro actif/en file/PR active | Refresh ActualCost 12:12Z HTTP 429, erreur archivée ; réutilisation du dernier ActualCost/Forecast réussi. Snapshot et What-If exact hors dépôt sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\pre-core-dev-delete-20261026T121122Z`. Aucun budget ou coût prévisionnel n’est traité comme un plafond. |
+| 2026-10-25T21:23Z | Avant P4 rev3, lecture Cost Analysis portail | 142,25 EUR (ActualCost MTD, affichage portail) | 178,99 EUR prévus pour octobre ; dernière API réussie à 21:08 : forecast restant 31,972886 EUR, projection 174,224342 EUR | Aucun plafond fixé ; poursuite autorisée au profil minimal ; budget 200 EUR = alerte | C5 de 21:19:17Z : 172 ressources, 29 groupes, 7 piles, 63 rôles, 7 budgets ; zéro ID ajouté/retiré depuis après P2 | Les appels Cost Management API ont répondu 429 ; la vue Cost Analysis portail a chargé. Le chiffre portail, plus élevé, sert au scénario : +22,15 EUR (borne complète initiale) donne 201,14 EUR projetés, sans constituer un plafond. Captures C5/API sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\before-p4-rev3-20261025T211908Z\`. |
+| 2026-10-25T21:08:14Z | P2 shop43 terminé, après refus du portail par denyDelete | 142,251456 EUR ActualCost MTD HT | 31,972886 EUR Forecast restant du 26 au 31/10 ; projection 174,224342 EUR HT | Aucun plafond fixé ; autorisation de poursuivre au profil minimal | C5 %LOCALAPPDATA%/InfraFlowSculptor/P08/after-p2-denydelete-20261025T210809Z/c5-current.json : 172 ressources, 29 groupes, 7 piles, 63 rôles, 7 budgets ; zéro ID ajouté/retiré depuis #831 | Suppression refusée par l’affectation Deny de `ifs-shop43-core-prd`; le workspace reste `Succeeded`. Les contrôles d’inventaire restent identiques. Cost Management peut retarder l’imputation ; réponses sous le dossier indiqué. |
+| 2026-10-25T13:14:39Z | P1 shop43 achevé, avant P2 | 139,678405 EUR ActualCost MTD (dernière lecture réussie 13:02:48Z ; lecture 13:14Z HTTP 429) | 38,118531 EUR Forecast restant du 25 au 31/10 ; projection courante 177,796936 EUR HT | Aucun plafond fixé ; Florian autorise la poursuite au profil minimal | C5 %LOCALAPPDATA%/InfraFlowSculptor/P08/after-shop43-p1-20261025T131438Z/c5-current.json : 172 ressources, 29 groupes, 7 piles, 65 rôles, 7 budgets | Forecast actualisé ; lecture ActualCost rate-limitée à 13:14Z. Budget préexistant inchangé. Réponses sous %LOCALAPPDATA%/InfraFlowSculptor/P08/after-shop43-p1-20261025T131438Z/. |
 | 2026-10-24T09:12Z | P-08 après le terminal de D3 #762 | 126,903610 EUR (ActualCost Query MTD) | 169,657250 EUR projetés fin octobre, dont 42,753640 EUR du 24 au 31/10 selon la Forecast API | Budget préexistant de 200 EUR/mois, alerte uniquement | Relevé C5 final ci-dessus ; 21 IDs Shop42 identiques à la référence | Scénario conservateur reprise DEV (0,5739 EUR) + D3 complète (6,4952 EUR) : projection 176,726350 EUR, soit 23,273650 EUR sous l’alerte. Le déploiement PRD de #762 est partiellement appliqué ; le coût peut encore être retardé dans Cost Management. Estimation non plafonnante, aucun nouveau run autorisé. Aucun budget n’a été créé ou modifié. |
 | 2026-10-24T16:09Z | P-08 après diagnostic du timeout, avant reprise PRD | 130,364070 EUR HT (ActualCost MTD) | 172,822704 EUR projetés fin octobre, dont 42,458633 EUR Forecast du 24 au 31/10 | Budget préexistant de 200 EUR/mois, alerte uniquement | C5 rafraîchi à 16:11Z ; 21 IDs Shop42 identiques | Estimation conservatrice : reprise SQL (0,5739 EUR) + D3 complète (6,4952 EUR) + réserve d’ingestion de 2 Go (4,8574 EUR), soit 184,749204 EUR projetés et 15,250796 EUR sous l’alerte. Les données de coût peuvent être retardées ; la marge de logs peut être dépassée. Aucune écriture de ressource ou budget n’a eu lieu.
 | 2026-10-24T18:50:29Z | P-08 après reprise #778, avant l’unique D3 conditionnel | 131,724309 EUR HT (ActualCost MTD lu à 18:42:56Z) | Forecast du 24–31/10 : 41,098486 EUR ; coût réel partiel du 24 : 1,655228 EUR, déjà compris dans MTD ; projection MTD + forecast 172,822795 EUR | Budget préexistant 200 EUR/mois, alerte uniquement | C5 après #778 : cinq collections identiques, 21 IDs Shop42 présents | Scénario complet : échec #770 0,5739 EUR + reprise #778 une heure SQL 0,5739 EUR + D3 6,4952 EUR + réserve de 2 Go de logs 4,8574 EUR = 185,323195 EUR HT, 14,676805 EUR sous l’alerte. Cost Management peut retarder la facturation ; estimation sans garantie de plafond. Aucun budget créé ou modifié. |
@@ -186,6 +208,299 @@ réserve précédente de 17,527800 EUR, le scénario conservateur est 188,927764
 non plafonnante de 200 EUR.
 
 La procédure T § 7 exige encore le contrôle *Cost Analysis* du lendemain pour vérifier qu’aucune ligne ne court. Il est
-prévu le 2026-10-26 et n’a pas encore été exécuté. Le gate a réouvert P-08 avant R-03 ; l’étape est maintenant bloquée
-par l’autorisation manquante pour `shop43`/`shop44`, consignée dans
-[`P-08-blocage-scope-20261025.md`](../revues/P-08-blocage-scope-20261025.md).
+prévu le 2026-10-26 et n’a pas encore été exécuté ; il reste requis après le nettoyage et avant la clôture de P-08.
+L’autorisation `shop43`/`shop44` et la poursuite sans plafond, au profil de coût minimal, sont consignées dans
+[`P-08-blocage-scope-20261025.md`](../revues/P-08-blocage-scope-20261025.md) ; ce point de portée/coût est résolu.
+
+## Shop43 P2 — coûts et inventaires avant #818, reprise #830/#831 — 2026-10-25
+
+Cost Management interrogé à 13:58:07Z, avant le run manuel #818 : ActualCost MTD **141,258318 EUR HT** (25 jours retournés),
+prévision du 26 au 31 octobre **27,755451 EUR**, projection d’octobre **169,013768 EUR HT**. Les réponses brutes et le
+résumé sont conservés hors dépôt sous `%LOCALAPPDATA%/InfraFlowSculptor/P08/before-p2-main-deploy-20261025T135629Z/`.
+L’endpoint Forecast renvoyant aussi des dates de novembre, le résumé ne retient que les lignes `CostStatus=Forecast` du
+26 au 31 octobre.
+
+Le C5 pré-run à 13:56:29Z, dans le même dossier, compte 172 ressources, 29 groupes, 7 piles, 65 affectations de rôle et
+7 budgets. Après #818, le C5 du 2026-10-25T14:08:16Z, sous
+`%LOCALAPPDATA%/InfraFlowSculptor/P08/after-p2-release818-dev-fail-20261025T140816Z/c5-current.json`, conserve exactement
+les mêmes IDs dans les cinq collections : 0 ajout et 0 retrait. Les enregistrements des sept piles, des affectations de
+rôle, des groupes et des budgets sont identiques ; l’affectation Log Analytics Reader est toujours présente pour DEV et
+PRD. La ressource SQL Database Orders DEV conserve le même SKU, les mêmes propriétés et l’état `Succeeded` ; seul son
+champ `changedTime` a changé. Aucun budget n’a été créé ou modifié.
+
+Le rapport #818 indique `deploy-unit = PartiallyApplied` et une révocation échouée parce que le module appelait
+`az resource delete` sur une affectation `Microsoft.Authorization/roleAssignments`. L’aperçu DEV avait bien une
+révocation explicite ; PRD a été ignoré. La release n’a donc pas terminé l’accès SQL DEV et aucun accès PRD n’a été
+révoqué. La correction utilise `az role assignment delete --ids` ; la PR #82 porte également le correctif de reprise du
+journal et doit passer toutes ses validations avant le nouveau run.
+
+Après la fusion de la PR #82 (`94ab6ea2d8edbf7dd11b7621bb0abba424fae483`), la CI #829 a réussi et produit l’artefact
+`infra` à la révision 2, lignée `p2`. Le C5 pré-run #831 à 14:22:55Z contient toujours 172 ressources, 29 groupes,
+7 piles, 65 affectations de rôle et 7 budgets ; les cinq collections d’IDs sont inchangées depuis le C5 post-#818.
+Cost Management à 14:23:00Z reste à **141,258318 EUR HT** réel MTD, **27,755451 EUR** prévus du 26 au 31 octobre,
+projection **169,013768 EUR HT**.
+
+La release #830, lancée sur le merge SHA et l’artefact CI #829, échoue en DEV après `deploy-unit` et `data-access` :
+`az role assignment delete --ids` retourne `AuthorizationFailed` pour l’identité de déploiement, malgré le rôle RBAC
+Administrator conditionnel déjà présent à la portée du groupe et incluant Log Analytics Reader. C5 post-#830 à
+14:28:08Z conserve les cinq collections d’IDs (172/29/7/65/7). Aucun Reader n’a été retiré. Le journal conserve
+`revoke = Started`, PRD est ignoré.
+
+Pour terminer la recette sans élargir durablement les droits, une attribution **User Access Administrator temporaire** a
+été créée à la portée exacte du workspace pour chaque cible. Sa condition bloque les écritures d’affectation et ne permet
+que la suppression de l’unique affectation Log Analytics Reader de l’identité API attendue. Les captures de ces
+attributions et de leur retrait sont conservées hors dépôt sous `%LOCALAPPDATA%/InfraFlowSculptor/P08/`.
+La release #831 a réussi en DEV et PRD ; les deux journaux indiquent `deploy-unit`, `data-access` et `revoke` à `Done`.
+Le rapport PRD ne déclare détachée que l’affectation de rôle Reader visée. Les deux attributions temporaires ont été
+retirées après leur usage.
+
+Le C5 final #831 à 14:46:42Z compte 172 ressources, 29 groupes, 7 piles, **63 rôles** et 7 budgets. Comparé au pré-run
+#831, seuls les deux IDs Reader DEV/PRD ont disparu ; aucune ressource, groupe, pile ou budget n’a été ajouté ou retiré.
+Le relevé Cost Management à 14:46:47Z est inchangé (141,258318 EUR réel MTD ; 27,755451 EUR prévision ; 169,013768 EUR
+projection). Les fichiers sont sous `%LOCALAPPDATA%/InfraFlowSculptor/P08/after-p2-release831-20261025T144642Z/`.
+
+Le contrôle API après propagation répond `/health` HTTP 200 ; `/health/dependencies` HTTP 503, avec `logs=failed`,
+`secret=ok`, `sql=ok`, `sql-least-privilege=ok`, `appconfig=skipped`, `servicebus=skipped`. Le résumé expurgé est
+`after-p2-release831-20261025T144642Z/health-dependencies-prd-summary.json`. La pile core PRD gère toujours le workspace
+et porte `denyDelete`; l’essai de suppression dans le portail reste à terminer après confirmation d’action à l’instant
+du clic.
+
+Le run #832, doublon de mise en file sans mutation, a été annulé pendant l’aperçu DEV avant son stage de déploiement ;
+son build est `canceled`, sans artefact `ifs-*`.
+
+## Shop43 P4 — révision 3, reprise DEV et déploiement PRD — 2026-10-25
+
+La PR #83 a été fusionnée sur `main` au SHA `4b7251fbf4b5740e27a331e1670c1258a65d820e`. CI #834 a réussi ; la release #836 a
+déployé la pile orders DEV puis échoué en résolution Graph avant l’opération SQL. Le rapport a conservé `deploy-unit=Done` et
+`data-access=Started`, révision 3 ; C5 post-#836 a montré une seule ressource ajoutée, `id-shop43-extra-dev`.
+
+La release #837, sur le même SHA et le CI #834 exact, a repris l’opération DEV `data-access` depuis `Started`. Les deux aperçus
+ont réussi ; DEV comptait six modifications, PRD une création (`id-shop43-extra-prd`) et cinq modifications. Aucun aperçu ne
+prévoit recréation, suppression/détachement ou révocation. Les deux rapports `ifs-report/v2` sont `Succeeded`, révision 3,
+commit `67e8d0b77acc3ab196e44577743b2e703a537134`, empreinte approuvée identique à l’aperçu de la cible, erreur vide ;
+`deploy-unit` et `data-access` sont `Done`, et aucun pare-feu temporaire n’est créé ou nettoyé. L’approbation de l’environnement
+PRD a été donnée après lecture de l’aperçu PRD.
+
+C5 après #837 à `2026-10-25T22:03:07Z` : 174 ressources, 29 groupes, 7 piles, 63 affectations de rôle et 7 budgets. Comparé au
+préflight P4 (172/29/7/63/7), les seuls nouveaux IDs sont `id-shop43-extra-dev` et `id-shop43-extra-prd`, chacun dans son groupe
+orders cible ; aucun ID n’a disparu. Les données détaillées sont hors dépôt sous
+`%LOCALAPPDATA%/InfraFlowSculptor/P08/after-p4-rev3-run837-20261025T220307Z/`.
+
+Cost Analysis portail après le run, rafraîchi le 2026-10-25 vers 22:03Z : 103,13 EUR réel MTD et 134,61 EUR prévus pour octobre.
+La vue rafraîchie est inférieure au relevé de 21:45Z (142,25/178,99) ; elle est consignée comme observation la plus récente,
+sans masquer l’écart. La borne haute initiale de 22,15 EUR pour P4/P5/P7 surestime les actions restantes ; la projection
+conservatrice est de 156,76 EUR HT, sous l’alerte préexistante de 200 EUR. Le budget n’a pas été modifié. L’observation est
+conservée dans `cost-portal-observation.json` du dossier hors dépôt ci-dessus.
+
+## Shop43 P4 — révision 4, release #840 — 2026-10-25
+
+La PR #84 est fusionnée sur main au SHA 561f5f2f28263e6d066b9d27abb9924cf693a2d9. La CI #839 a réussi sur ce SHA ; la release #840 a consommé exactement cette version. L’aperçu DEV a réussi et le déploiement DEV a terminé avec un rapport ifs-report/v2 Succeeded, révision 4, empreinte approuvée égale à l’aperçu publié, cinq modifications et une identité détachée. L’aperçu PRD a réussi. L’approbation de l’environnement shop43-prd a été refusée comme l’exige la recette rev4 ; le stage de déploiement PRD n’a exécuté aucune tâche et aucun rapport PRD n’a été produit. Le run global est donc completed/failed à cause de ce refus attendu.
+
+L’identité id-shop43-extra-dev, créée lors de #836, existe toujours dans Azure ; le rapport DEV l’inscrit dans detachedResources et le stack orders-dev la liste dans detachedResources, sans la gérer. L’identité id-shop43-extra-prd, créée lors de #837, existe toujours et demeure gérée par le stack orders-prd. Aucun déploiement PRD rev4 n’a modifié son état.
+
+C5 pré-run #840 du 2026-10-25T22:13:35Z et post-run du 2026-10-25T22:40:29Z : 174 ressources, 29 groupes, 7 piles, 63 affectations de rôle et 7 budgets ; les cinq collections d’IDs sont identiques. Le résumé de comparaison et l’état des identités sont dans %LOCALAPPDATA%/InfraFlowSculptor/P08/after-p4-rev4-run840-20261025T223927Z/postcondition-summary.json ; les inventaires détaillés restent dans ce dossier.
+
+Après le run, Cost Management API à 2026-10-25T22:43:25Z retourne 103,125364 EUR HT ActualCost MTD (dernière date disponible : 25/10) et 30,254608 EUR Forecast restant du 25 au 31/10, soit 133,379972 EUR projetés. La réserve complète P4/P5/P7 de 22,15 EUR porte l’estimation prudente à 155,529972 EUR HT, 44,470028 EUR sous l’alerte non plafonnante de 200 EUR. Le rafraîchissement du portail après le run a redirigé vers l’authentification Microsoft ; aucune nouvelle observation du portail n’est revendiquée. Requêtes, réponses et résumé : %LOCALAPPDATA%/InfraFlowSculptor/P08/after-p4-rev4-run840-20261025T224325Z/.
+
+Les définitions Azure DevOps 97 et 99 portent de nouveau leurs noms exacts avec séparateurs Unicode et sont disabled ; aucun run shop43 non terminal n’est actif. Les captures anonymisées #840, y compris l’approbation refusée, sont sous src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/AzureDevOps/Recordings/p4-orders-rev4-run840/.
+
+Point de nettoyage : le rapport PRD rev5 est capturé ; extra-prd est détachée et extra-dev existe hors de orders-dev. Appliquer T à orders/data/platform et à l’identité détachée inscrite dans detachedResources ; conserver core et le kit pour P5.
+
+## Shop43 P4 — révision 5, release #843 — 2026-10-26
+
+La PR #85 et la CI #842 sont fusionnées/exécutées sur le commit main 9440556f6918d5657eba607cf9913b2fb95c4a8b. Le run release #843 consomme exactement #842 ; les aperçus et déploiements DEV/PRD ont tous réussi après l’approbation protégée de shop43-prd. Les rapports ifs-report/v2 sont Succeeded, révision 5, error vide ; pour chaque cible, approvedPreviewFingerprint correspond à l’empreinte publiée. L’aperçu PRD compte cinq Modify, aucune création/recréation/révocation, et prévoit le seul détachement de id-shop43-extra-prd.
+
+Le rapport PRD liste id-shop43-extra-prd dans detachedResources. La lecture Azure confirme que cette identité existe, que la pile ifs-shop43-orders-prd a réussi avec denyDelete et ne la gère plus, et que la pile classe l’ID comme détaché. id-shop43-extra-dev existe également, n’est pas gérée par ifs-shop43-orders-dev et son détachement est documenté dans le rapport #840. Les IDs exacts et l’état des piles sont dans identity-ownership.json de la capture C5 hors dépôt.
+
+C5 post-#843 à 2026-10-25T23:27:41Z : 174 ressources, 29 groupes, 7 piles, 63 affectations de rôle et 7 budgets ; aucune addition ni suppression dans les cinq collections comparées au C5 post-DEV #843. Cost Management API à 2026-10-25T23:30:13Z : ActualCost 103,125364 EUR HT jusqu’au 25/10, Forecast restant 27,045203 EUR du 26 au 31/10, total projeté 130,170566 EUR ; la réserve complète P4/P5/P7 de 22,15 EUR donne 152,320566 EUR prudents, sous l’alerte non plafonnante de 200 EUR. Captures C5/coût : %LOCALAPPDATA%/InfraFlowSculptor/P08/after-p4-rev5-run843-20261025T232741Z/.
+
+La capture ADO anonymisée p4-orders-rev5-run843 contient le run, les quatre artefacts ifs-preview-dev, ifs-report-dev, ifs-preview-prd, ifs-report-prd et le snapshot des approbations du projet. Résultat P4 consigné dans resultats.md. Le nettoyage T des piles orders/data/platform et de l’identité détachée reste à faire ; conserver core et le kit pour P5.
+
+### Shop43 — P4/P5 et procédure T core-dev terminée — 2026-10-26
+
+Le C5 pré-suppression du `2026-10-26T12:27:19Z` comptait 159 ressources, 24 groupes, 2 piles, 51 rôles et 7 budgets. C3 confirmait zéro build en cours/en file, zéro release active et zéro PR active. Les piles `orders-dev/prd`, `data-dev/prd`, `platform-shared` et les identités P4 détachées extra-dev/extra-prd étaient absentes. L'ID de pile core-dev, ses 7 IDs gérés, son groupe et ses 4 ressources directes correspondaient exactement à la baseline post-P1. Les exports sont sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\pre-core-dev-delete-20261026T122702Z\`.
+
+Le What-If exact core PRD de 12:15:50Z (4 `Modify`, 2 `NoChange`, 1 `Ignore`), les fichiers de source CI #858 et les lectures après l'opération P5 `deploy-unit=Done` du run #860 sont conservés hors dépôt sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\pre-core-dev-delete-20261026T121122Z\`. La classification property-level et ses limites sont décrites dans [P-08-blocage-whatif-shop43-20261026](../revues/P-08-blocage-whatif-shop43-20261026.md).
+
+`az stack sub delete --name ifs-shop43-core-dev --action-on-unmanage deleteAll --resources-without-delete-support fail` a terminé ; pile et groupe absents. C5 post-suppression à `2026-10-26T12:38:03Z` : 155 ressources, 23 groupes, 1 pile, 49 rôles, 7 budgets ; C3 toujours à zéro actif. Le delta exact comparé au C5 pré-suppression est : 4 ressources (workspace, App Insights, Key Vault, Smart Detector), le groupe `rg-shop43-core-main-dev`, la pile `ifs-shop43-core-dev`, et les rôles `20281781-048b-5145-ac68-11f1abb88482` (RBAC Administrator, rôle d'installation de portée groupe) et `15f8e5c3-ed7e-599f-87fd-31ed9bec60e5` (Key Vault Secrets Officer, géré par le stack). Aucun ID ajouté ; budgets inchangés. Ces deux rôles étaient absents du C5 pré-shop43 et présents dans les captures P1/setup. Comparaison et état final : `%LOCALAPPDATA%\InfraFlowSculptor\P08\after-core-dev-delete-20261026T123803Z\` (`summary.json`, `core-dev-delete-ownership.json`).
+
+Coût : le dernier relevé réussi à 11:50Z est 148,565572 EUR ActualCost HT au 25/10 et 27,519768 EUR Forecast du 26 au 31/10, projection 176,085340 EUR. Le refresh correctement formé de 12:47Z a reçu HTTP 429. Avec la borne P7 +11,0748 EUR et la réserve complète de 22,15 EUR, estimation 198,235340 EUR HT, sous l'alerte non plafonnante de 200 EUR. Captures de coût sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\after-core-dev-delete-20261026T123803Z\` et `cost-after-p5-20261026T115053Z\`.
+
+### Shop44 — préflight P1 core, release #901 arrêtée avant toute écriture — 2026-10-26
+
+La CI core #900 a réussi sur `main` au SHA `c4a6e2ef3758a03e83f6a2dac1395d40cd47c652` et a automatiquement déclenché la release #901. Le contrôle `Test-IfsSecretVariable` a échoué en DEV car `MAIN_PAYMENTS_API_KEY` était vide dans `ifs-shop44-dev`. Aucun artefact `ifs-preview-dev` n'a été publié ; les stages Deploy_dev, Preview_prd et Deploy_prd sont ignorés. Aucune ressource Azure n'a été modifiée.
+
+Le C5 pré-run #900 et post-run #901 compare les cinq collections par ID exact : ressources 153/153, groupes 27/27, piles 0/0, rôles 55/55, budgets 7/7 ; aucune différence. C3 après #901 : zéro build actif ou en file, zéro PR active. Les captures détaillées se trouvent sous `%LOCALAPPDATA%\InfraFlowSculptor\P08\predeploy-shop44-20261026T172310Z\` et `%LOCALAPPDATA%\InfraFlowSculptor\P08\post-core-run901-20261026T171924Z\`.
+
+Cost Management après #901 à `2026-10-26T17:19:24Z` : ActualCost MTD `149,768872 EUR HT` (données jusqu'au 26/10), Forecast `23,049078 EUR` du 27 au 31/10, projection `172,817950 EUR HT`. Avec l'estimation complète P1+P7 restante de `15,00 EUR HT`, estimation prudente `187,817950 EUR HT`, sous l'alerte non plafonnante de 200 EUR. Les réponses brutes ActualCost/Forecast et C5/C3 sont conservées hors dépôt dans le dossier post-run ci-dessus.
+
+La preuve de blocage et les journaux ADO expurgés sont consignés dans [P-08-blocage-secret-shop44-20261026](../revues/P-08-blocage-secret-shop44-20261026.md) et `src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/AzureDevOps/Recordings/p1-shop44-core-release-run901/`. Les groupes ADO DEV/PRD déclarent la variable secrète, mais l'exécution confirme que la valeur effective DEV est vide ; aucun contenu n'a été lu ou ajouté.
+
+## Shop44 P1 core DEV — release #903 — 2026-10-26
+
+La release manuelle #903 consomme le run CI #900 de la définition 107, la version `shop44 · core · rev 1 · CI`, sur `refs/heads/main` au SHA `c4a6e2ef3758a03e83f6a2dac1395d40cd47c652`. Le run #902 précédent a échoué avant toute tâche : la requête avait fourni l'ID du run comme version au lieu de son numéro ; sa timeline est vide. La capture est dans `src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/AzureDevOps/Recordings/p1-shop44-core-release-run902/`.
+
+L'aperçu DEV de #903 prévoit 6 créations, 0 modification, 0 recréation, 0 suppression/détachement, 0 révocation et 0 opération en attente. Le déploiement DEV est `Succeeded` ; le rapport `ifs-report/v2` est `Succeeded`, révision 1, sans erreur. Son `approvedPreviewFingerprint` correspond à l'empreinte publiée `c559ebd2a5b6805c268089a49544c9102b3364e8c30588251c29b7639c8d3587`. Captures expurgées : `p1-shop44-core-release-run903-preview-dev/` et `p1-shop44-core-release-run903-dev-succeeded/`.
+
+C5 après le déploiement DEV, à `2026-10-26T18:00:54Z` : 156 ressources, 27 groupes, 1 pile, 56 rôles, 7 budgets. Le delta exact depuis le C5 après #901 comprend les ressources `appi-shop44-main-dev`, `kv-shop44-main-dev`, `log-shop44-main-dev`, la pile `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/providers/Microsoft.Resources/deploymentStacks/ifs-shop44-core-dev` et l'attribution `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-dev/providers/Microsoft.KeyVault/vaults/kv-shop44-main-dev/providers/Microsoft.Authorization/roleAssignments/4e2cb82d-aa59-5251-96b7-bc2eb1dbef47`. Aucun groupe, budget ni ID préexistant n'a été retiré ou remplacé. Le stack `Succeeded` gère le groupe de ressources existant et six IDs enfants, dont les deux diagnostics ; `denySettings.mode=none`, sans détaché ni échec. Détails C5 hors dépôt : `%LOCALAPPDATA%\InfraFlowSculptor\P08\after-core-dev-run903-20261026T180054Z\`.
+
+Une valeur aléatoire de test générée en mémoire a été temporairement stockée comme secret dans le groupe DEV 12 ; elle n'est pas recopiée. L'aperçu PRD de #903 a échoué le `2026-10-26T18:00:52Z` car `MAIN_PAYMENTS_API_KEY` était vide dans le groupe PRD 13. Le journal confirme que `Deploy_prd` a été ignoré ; aucun artefact de preview PRD ni aucune ressource PRD n'ont été publiés. Le groupe 13 n'était pas modifié à cette date. Capture : `p1-shop44-core-release-run903-prd-preview-failure/`.
+
+## Shop44 P1 core — reprise DEV/PRD #904 — 2026-10-26
+
+La release manuelle #904 consomme encore exactement CI #900 (définition 107, version `shop44 · core · rev 1 · CI`) et `refs/heads/main` au SHA `c4a6e2ef3758a03e83f6a2dac1395d40cd47c652`. L'aperçu DEV prévoit quatre `Modify` (App Insights, Key Vault et leurs diagnostics), aucune création/recréation/suppression/détachement/révocation et une écriture du secret témoin. Le déploiement DEV réussit ; `ifs-report/v2` est `Succeeded`, révision 1, erreur vide, fingerprint approuvé égal au fingerprint de l'aperçu. Son journal reprend les deux opérations `deploy-unit` et `secret-write`, toutes deux `Done`, sans nouvelle opération. Captures : `p1-shop44-core-release-run904-preview-dev/` et `p1-shop44-core-release-run904-prd-preview/`.
+
+L'aperçu PRD #904 est réussi avec six créations, zéro modification/recréation/suppression/détachement/révocation/opération en attente, et une écriture du secret témoin. Fingerprint : `408469b14137156ba5866ff944011f7b026996edb41944cd3eb350205281de23`. L'approbation de `Deploy_prd` a été donnée après cette relecture ; le stage PRD et le run #904 terminent `Succeeded` à `18:25:24Z`. Le rapport PRD `ifs-report/v2`, révision 1, est sans erreur ; son fingerprint approuvé égale celui de l'aperçu. Le journal porte `deploy-unit` et `secret-write` à `Done`, sans nouvel ID d'opération.
+
+C5 avant approbation PRD, à `2026-10-26T18:14:19Z` : 157 ressources, 27 groupes, 1 pile, 56 rôles, 7 budgets. Depuis le C5 post-#901, les quatre ressources nouvelles du RG core-dev sont App Insights, Key Vault, Log Analytics et `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-dev/providers/Microsoft.AlertsManagement/smartDetectorAlertRules/Failure Anomalies - appi-shop44-main-dev` ; s'ajoutent la pile core-dev et son rôle. Aucun groupe, rôle, budget ou ID préexistant n'a été retiré. La pile est `Succeeded`, `denySettings.mode=none`, six ressources enfants gérées, zéro détachée/échouée. L'alerte Smart Detector n'est pas dans les IDs gérés par la pile, mais l'Activity Log attribue son `write` du `2026-10-26T18:08:39.843Z` au principal Microsoft `Azure Smart Alerts` (`2dcc53fc-3c98-41c6-a948-9fca137ddad4`), avec le succès à `18:08:41.328Z` et la corrélation `1a3ef7fd-3590-4de9-b5de-f47d16fc11f1`. Elle est un effet secondaire de l'App Insights de preuve dans le groupe core-dev ; son ID est suivi séparément pour le nettoyage T. C5, C3, coût et Activity Log hors dépôt sous `%LOCALAPPDATA%/InfraFlowSculptor/P08/shop44-c5-prd-approval-20261026T181419Z/`, `shop44-c3-prd-approval-20261026T181420Z/`, `shop44-cost-prd-approval-20261026T181420Z/` et le relevé C5 `after-core-dev-run903-20261026T180054Z/`.
+
+Après le terminal #904, une valeur vide a été envoyée pour `MAIN_PAYMENTS_API_KEY` dans les groupes `ifs-shop44-dev` (ID 12) et `ifs-shop44-prd` (ID 13). Les groupes conservent le drapeau secret ; l'API masque la valeur au GET. La capture de métadonnées est sous `%LOCALAPPDATA%/InfraFlowSculptor/P08/secret-cleanup-shop44-core-run904-20261026T182620Z/`.
+
+C5 post-#904, à `2026-10-26T18:27:24Z` : 160 ressources, 27 groupes, 2 piles, 57 rôles, 7 budgets. Depuis le C5 post-#901, sept ressources ARM visibles ont été ajoutées : App Insights, Key Vault et Log Analytics pour DEV et PRD, plus l'alerte Smart Detector DEV ; deux stacks ont été ajoutés et les rôles exacts sont `4e2cb82d-aa59-5251-96b7-bc2eb1dbef47` (DEV) et `42aad9eb-8fdf-527a-9031-7a70712a0b83` (PRD). Aucun groupe, budget ou ID préexistant n'a été retiré. Les deux piles sont `Succeeded`, chacune liste le RG et six IDs enfants, zéro détaché/échoué ; `denySettings.mode=none` en DEV et `denyDelete` en PRD. L'alerte Smart Detector PRD n'existe pas dans le C5 et aucun `write` correspondant n'apparaît dans l'Activity Log jusqu'à `18:27Z`.
+
+C3 après run terminal, à `2026-10-26T18:27:25Z` : zéro build actif/en file/reporté et zéro PR active. Cost Management à `18:27:25Z` : ActualCost `150,954272 EUR HT`, données jusqu'au 26/10 ; Forecast du 27 au 31/10 `23,049120 EUR`, projection `174,003392 EUR HT`. Avec la réserve complète P1/P7 de `15,00 EUR`, l'estimation est `189,003392 EUR HT`, `10,996608 EUR` sous l'alerte non plafonnante de 200 EUR. Captures hors dépôt sous `%LOCALAPPDATA%/InfraFlowSculptor/P08/shop44-c5-core-run904-20261026T182724Z/`, `shop44-c3-core-run904-20261026T182725Z/` et `shop44-cost-core-run904-20261026T182725Z/`.
+
+Le C5 frais avant l'approbation PRD de data #906, à `2026-10-26T18:40:29Z`, compte 164 ressources, 28 groupes, 3 piles, 57 rôles et 7 budgets. Par rapport au C5 post-#904, les seuls ajouts visibles sont le RG `rg-shop44-data-main-dev`, la pile `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/providers/Microsoft.Resources/deploymentStacks/ifs-shop44-data-dev`, les ressources SQL serveur, `master` et `sqldb-shop44-orders-dev`, plus l'alerte Smart Detector PRD décrite ci-dessous ; aucun ID n'a été retiré et rôles/budgets sont inchangés. La pile data-dev est `succeeded`, `denySettings.mode=none`, gère le groupe et six enfants, zéro détaché/échoué. La base est `Online`, SKU `GP_S_Gen5_1`, `autoPauseDelay=15`, `useFreeLimit` non retourné par l'API. Le rapport #906 DEV `ifs-report/v2` est `Succeeded`, révision 1, empreinte approuvée égale à l'aperçu `c495e728302ac950cb492b358b0b5d0957f5ad0fa8a066bf76241b663dfb32a2`; opérations du journal : `deploy-unit=Done`, aucune ressource détachée, accès révoqué ou règle de pare-feu temporaire. La release #906 consomme la CI #905 et le SHA exact de `main`; l'aperçu PRD #906 est réussi avec sept créations, aucun changement/retrait/révocation/opération en attente ni écriture de données. Le préflight C3 n'a qu'une exécution active (#906, pipeline data 112) et aucune PR active ; une seule approbation PRD #906 est en attente, sans approbateur bloquant. Coût Management rafraîchi à `18:40:29Z` : ActualCost `150,954272 EUR HT` (données jusqu'au 26/10), Forecast du 27 au 31/10 `23,049120 EUR`, projection `174,003392 EUR HT`; la réserve restante P1/P7 de `15 EUR` donne `189,003392 EUR HT`, `10,996608 EUR` sous l'alerte préexistante de 200 EUR. Détails C5/C3/coût et Activity Log hors dépôt sous `%LOCALAPPDATA%/InfraFlowSculptor/P08/shop44-prd-preapproval-20261026T184029Z/`. Captures ADO anonymisées sous `p1-shop44-data-release-run906-prd-preapproval/`.
+
+Après le C5 post-#904, Azure a créé l'alerte `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-prd/providers/Microsoft.AlertsManagement/smartDetectorAlertRules/Failure Anomalies - appi-shop44-main-prd`. L'Activity Log confirme `Create Smart Detector alert rule` réussi à `2026-10-26T18:33:50.9275231Z`, principal Microsoft `Azure Smart Alerts` (`2dcc53fc-3c98-41c6-a948-9fca137ddad4`), corrélation `e2d60a17-60c2-4de8-8143-aa9921709b6f`. Cet effet automatique de l'App Insights PRD de preuve n'est pas géré par la pile core-prd ; son ID est ajouté au suivi du nettoyage T, comme l'alerte core-dev.
+
+P1 data — la CI #905 (définition 110) puis la release #906 (définition 112) consomment toutes deux `main` au SHA `c4a6e2ef3758a03e83f6a2dac1395d40cd47c652`. Les aperçus DEV/PRD réussissent avec sept créations chacune et aucune modification, recréation, suppression/détachement, révocation, opération en attente ou écriture de données. L'approbation PRD a été donnée après lecture de l'aperçu, puis #906 termine `Succeeded` le `2026-10-26T18:47:55Z`. Les rapports `ifs-report/v2`, révision 1, sont sans erreur, leurs `approvedPreviewFingerprint` correspondent aux empreintes des aperçus et leurs journaux contiennent seulement `deploy-unit=Done`. Captures : `p1-shop44-data-ci-run905/`, `p1-shop44-data-release-run906-prd-preapproval/`, `p1-shop44-data-release-run906-prd-approved/` et `p1-shop44-data-release-run906-succeeded/`.
+
+C5 post-#906 à `2026-10-26T18:49:30Z` : 167 ressources, 29 groupes, 4 piles, 57 rôles, 7 budgets. Depuis le C5 post-#904, le delta exact est : les trois ressources visibles de chaque jeu SQL DEV/PRD (serveur, base `master`, base témoin), les groupes `rg-shop44-data-main-dev/prd`, les piles `ifs-shop44-data-dev/prd`, plus l'alerte Smart Detector core-PRD décrite ci-dessus ; aucun retrait, rôle ou budget ajouté. Les deux piles data réussissent et gèrent chacune le groupe et six enfants sans ressource détachée/échouée ; DEV a `denySettings.mode=none`, PRD `denyDelete`. Les bases sont serverless `GP_S_Gen5_1`, `autoPauseDelay=15`, `useFreeLimit` non retourné. `dbo.witness_checks` a été créé et relu sur les deux bases depuis `C:/Users/flori/RiderProjects/shop44/src/api/sql/witness-schema.sql`. Pour chaque cible, la règle firewall de recette n'autorisait que l'IP source `/32`, puis a été supprimée ; le préflight suivant ne trouve que `AllowAzureServices` sur les deux serveurs. C3 post-#906 à `18:49:30Z` : aucun run actif/en file/reporté ni PR active. Cost Management : ActualCost `150,954272 EUR HT` (données au 26/10), Forecast `23,049120 EUR` du 27 au 31/10, projection `174,003392 EUR HT`; borne conservatrice P1/P7 toujours `15,00 EUR`, total `189,003392 EUR HT`, marge `10,996608 EUR` sous le signal préexistant de 200 EUR. C5/C3/coût hors dépôt sous `%LOCALAPPDATA%/InfraFlowSculptor/P08/shop44-post-data-run906-20261026T184930Z/`, preuves SQL sous `%LOCALAPPDATA%/InfraFlowSculptor/P08/shop44-witness-schema-dev-20261026T184714Z.json` et `shop44-witness-schema-prd-20261026T185046Z.json`.
+
+P1 platform — la CI #907 (définition 119) et la release #908 (définition 121) consomment `main` au SHA `c4a6e2ef3758a03e83f6a2dac1395d40cd47c652`. L'aperçu shared #908, fingerprint `4df2f692df1ed41f66cc7dfa50eaaf33a58c9bb3baf20ffdad531cb818c1f532`, prévoit seulement le registre et son rôle ; aucun changement, retrait ou accès révoqué. Après contrôle du coût/C5/C3, l'approbation protégée shared a été donnée ; #908 termine `Succeeded`. Le rapport `ifs-report/v2` révision 1 est sans erreur, son empreinte approuvée correspond à l'aperçu et son journal porte `deploy-unit=Done`. ACR `crshop44mainshared` : `Basic`, provisioning `Succeeded`. Pile `ifs-shop44-platform-shared` : `succeeded`, deny `denyDelete`, 3 IDs gérés (groupe, registre, rôle), zéro détaché/échoué. C5 post-#908 à `2026-10-26T19:00:23Z` : 168 ressources, 29 groupes, 5 piles, 58 rôles, 7 budgets ; delta exact depuis le préflight d'approbation : registre ACR, pile platform-shared et rôle ACR ajoutés, aucun retrait ni autre changement. C3 post-run : zéro exécution active/en file/reportée et zéro PR active. Le premier Cost Management post-run a répondu HTTP 429 ; la lecture suivante à `19:02:54Z` réussit et confirme ActualCost `150,954272 EUR HT`, Forecast `23,049120 EUR` (27–31/10), réserve complète P1/P7 `15 EUR`, total prudent `189,003392 EUR HT`. C5 post-#908 hors dépôt : `%LOCALAPPDATA%/InfraFlowSculptor/P08/shop44-post-platform-run908-20261026T190023Z/`; préflight d'approbation : `%LOCALAPPDATA%/InfraFlowSculptor/P08/shop44-platform-prd-approval-20261026T185548Z/`. Captures #907/#908 dans `p1-shop44-platform-ci-run907/` et `p1-shop44-platform-release-run908-shared-succeeded/`.
+
+## Shop44 P7 — inventaire exact avant nettoyage T — 2026-10-27
+
+C5 de référence du `2026-10-25T10:07:29Z` : 142 ressources, 19 groupes, 0 pile, 38 attributions de rôle et 7 budgets. C5 frais pré-nettoyage du `2026-10-27T01:45Z` : 176 ressources, 29 groupes, 7 piles, 67 attributions de rôle et 7 budgets. La comparaison insensible à la casse établit que les groupes, ressources, piles et rôles `shop44` ci-dessous n’existent pas dans la référence et sont issus des jeux P1/P7. Le manifeste détaillé, les cinq réponses C5 et C3 sont conservés hors dépôt dans `%LOCALAPPDATA%\InfraFlowSculptor\P08\shop44-p7-post959failure-20261027T001158Z\cleanup-preflight-20261027T0145Z\`.
+
+### Groupes créés par Luna
+
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-platform-main-shared`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-shared`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-prd`
+
+### Piles créées par Luna
+
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/providers/Microsoft.Resources/deploymentStacks/ifs-shop44-core-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/providers/Microsoft.Resources/deploymentStacks/ifs-shop44-core-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/providers/Microsoft.Resources/deploymentStacks/ifs-shop44-data-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/providers/Microsoft.Resources/deploymentStacks/ifs-shop44-data-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/providers/Microsoft.Resources/deploymentStacks/ifs-shop44-platform-shared`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/providers/Microsoft.Resources/deploymentStacks/ifs-shop44-orders-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/providers/Microsoft.Resources/deploymentStacks/ifs-shop44-orders-prd`
+
+### Ressources Azure et sous-ressources créées par Luna
+
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-dev/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-ifs-app-shop44-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-dev/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-ifs-deploy-shop44-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-dev/providers/Microsoft.Storage/storageAccounts/stifsshop44dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-prd/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-ifs-app-shop44-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-prd/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-ifs-deploy-shop44-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-prd/providers/Microsoft.Storage/storageAccounts/stifsshop44prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-shared/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-ifs-app-shop44-shared`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-shared/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-ifs-deploy-shop44-shared`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-shared/providers/Microsoft.Storage/storageAccounts/stifsshop44shared`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-dev/providers/microsoft.alertsmanagement/smartDetectorAlertRules/Failure Anomalies - appi-shop44-main-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-dev/providers/Microsoft.Insights/components/appi-shop44-main-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-dev/providers/Microsoft.Insights/components/appi-shop44-main-dev/providers/Microsoft.Insights/diagnosticSettings/diag-appi-shop44-main-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-dev/providers/Microsoft.KeyVault/vaults/kv-shop44-main-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-dev/providers/Microsoft.KeyVault/vaults/kv-shop44-main-dev/providers/Microsoft.Authorization/roleAssignments/4e1a5357-bb3b-5131-a48b-5d13fa173dfd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-dev/providers/Microsoft.KeyVault/vaults/kv-shop44-main-dev/providers/Microsoft.Authorization/roleAssignments/4e2cb82d-aa59-5251-96b7-bc2eb1dbef47`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-dev/providers/Microsoft.KeyVault/vaults/kv-shop44-main-dev/providers/Microsoft.Insights/diagnosticSettings/diag-kv-shop44-main-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-dev/providers/Microsoft.OperationalInsights/workspaces/log-shop44-main-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-prd/providers/microsoft.alertsmanagement/smartDetectorAlertRules/Failure Anomalies - appi-shop44-main-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-prd/providers/Microsoft.Insights/components/appi-shop44-main-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-prd/providers/Microsoft.Insights/components/appi-shop44-main-prd/providers/Microsoft.Insights/diagnosticSettings/diag-appi-shop44-main-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-prd/providers/Microsoft.KeyVault/vaults/kv-shop44-main-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-prd/providers/Microsoft.KeyVault/vaults/kv-shop44-main-prd/providers/Microsoft.Authorization/roleAssignments/42aad9eb-8fdf-527a-9031-7a70712a0b83`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-prd/providers/Microsoft.KeyVault/vaults/kv-shop44-main-prd/providers/Microsoft.Authorization/roleAssignments/ad1d989a-35fb-514b-a834-4dbf451a3aba`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-prd/providers/Microsoft.KeyVault/vaults/kv-shop44-main-prd/providers/Microsoft.Insights/diagnosticSettings/diag-kv-shop44-main-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-prd/providers/Microsoft.OperationalInsights/workspaces/log-shop44-main-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-dev/providers/Microsoft.Sql/servers/sql-shop44-orders-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-dev/providers/Microsoft.Sql/servers/sql-shop44-orders-dev/auditingSettings/default`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-dev/providers/Microsoft.Sql/servers/sql-shop44-orders-dev/connectionPolicies/default`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-dev/providers/Microsoft.Sql/servers/sql-shop44-orders-dev/databases/master`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-dev/providers/Microsoft.Sql/servers/sql-shop44-orders-dev/databases/sqldb-shop44-orders-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-dev/providers/Microsoft.Sql/servers/sql-shop44-orders-dev/databases/sqldb-shop44-orders-dev/providers/Microsoft.Insights/diagnosticSettings/diag-sqldb-shop44-orders-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-dev/providers/Microsoft.Sql/servers/sql-shop44-orders-dev/firewallRules/AllowAzureServices`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-prd/providers/Microsoft.Sql/servers/sql-shop44-orders-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-prd/providers/Microsoft.Sql/servers/sql-shop44-orders-prd/auditingSettings/default`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-prd/providers/Microsoft.Sql/servers/sql-shop44-orders-prd/connectionPolicies/default`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-prd/providers/Microsoft.Sql/servers/sql-shop44-orders-prd/databases/master`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-prd/providers/Microsoft.Sql/servers/sql-shop44-orders-prd/databases/sqldb-shop44-orders-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-prd/providers/Microsoft.Sql/servers/sql-shop44-orders-prd/databases/sqldb-shop44-orders-prd/providers/Microsoft.Insights/diagnosticSettings/diag-sqldb-shop44-orders-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-data-main-prd/providers/Microsoft.Sql/servers/sql-shop44-orders-prd/firewallRules/AllowAzureServices`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-dev/providers/Microsoft.App/containerApps/ca-shop44-api-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-dev/providers/Microsoft.App/containerApps/ca-shop44-api-dev/providers/Microsoft.Authorization/roleAssignments/7e99ff7f-e176-506d-9c06-14f2eea3d3d4`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-dev/providers/Microsoft.App/containerApps/ca-shop44-api-dev/providers/Microsoft.Insights/diagnosticSettings/diag-ca-shop44-api-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-dev/providers/Microsoft.App/managedEnvironments/cae-shop44-main-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-dev/providers/Microsoft.App/managedEnvironments/cae-shop44-main-dev/providers/Microsoft.Insights/diagnosticSettings/diag-cae-shop44-main-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-dev/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-shop44-api-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-dev/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-shop44-extra-dev`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-prd/providers/Microsoft.App/containerApps/ca-shop44-api-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-prd/providers/Microsoft.App/containerApps/ca-shop44-api-prd/providers/Microsoft.Authorization/roleAssignments/b4b7ca2f-d65d-5970-9cde-5d58f6dc2b7b`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-prd/providers/Microsoft.App/containerApps/ca-shop44-api-prd/providers/Microsoft.Insights/diagnosticSettings/diag-ca-shop44-api-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-prd/providers/Microsoft.App/managedEnvironments/cae-shop44-main-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-prd/providers/Microsoft.App/managedEnvironments/cae-shop44-main-prd/providers/Microsoft.Insights/diagnosticSettings/diag-cae-shop44-main-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-prd/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-shop44-api-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-prd/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-shop44-extra-prd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-platform-main-shared`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-platform-main-shared/providers/Microsoft.ContainerRegistry/registries/crshop44mainshared`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-platform-main-shared/providers/Microsoft.ContainerRegistry/registries/crshop44mainshared/providers/Microsoft.Authorization/roleAssignments/0065b070-28ed-5a41-b6b8-fd80ec398ffa`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-platform-main-shared/providers/Microsoft.ContainerRegistry/registries/crshop44mainshared/providers/Microsoft.Authorization/roleAssignments/180cb8c0-656f-50ff-90c0-f86b10b315ab`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-platform-main-shared/providers/Microsoft.ContainerRegistry/registries/crshop44mainshared/providers/Microsoft.Authorization/roleAssignments/19ec0943-79fe-5e24-846a-023a9d9b7022`
+
+### Attributions de rôle créées par Luna
+
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/providers/Microsoft.Authorization/roleAssignments/2119e853-16db-57f3-8078-bd028e80f436`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/providers/Microsoft.Authorization/roleAssignments/87378d75-a051-57c1-a894-0706357ad4d3`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/providers/Microsoft.Authorization/roleAssignments/963bfd4a-303b-5d0e-b7d3-050f293afb6c`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/providers/Microsoft.Authorization/roleAssignments/dde2406b-ce31-5008-bfff-9768ffd21bee`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/providers/Microsoft.Authorization/roleAssignments/e39f6186-fa43-5193-a766-3d5624bd3827`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/providers/Microsoft.Authorization/roleAssignments/f2ea6b49-74d9-5cc0-8874-506d7f57eff8`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-dev/providers/Microsoft.Storage/storageAccounts/stifsshop44dev/blobServices/default/containers/ifs-operations/providers/Microsoft.Authorization/roleAssignments/9b3da39d-b571-5c10-a798-76a35e6b8d8b`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-prd/providers/Microsoft.Storage/storageAccounts/stifsshop44prd/blobServices/default/containers/ifs-operations/providers/Microsoft.Authorization/roleAssignments/4e197dfa-429c-5b9d-b6e8-7f6e163bcf72`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-prd/providers/Microsoft.Storage/storageAccounts/stifsshop44prd/blobServices/default/containers/ifs-operations/providers/Microsoft.Authorization/roleAssignments/ac4a4078-9663-471a-9fbf-93b638ef6cb7`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-ifs-shop44-shared/providers/Microsoft.Storage/storageAccounts/stifsshop44shared/blobServices/default/containers/ifs-operations/providers/Microsoft.Authorization/roleAssignments/24c75778-e256-53c0-9fca-35e8b85d0331`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-dev/providers/Microsoft.Authorization/roleAssignments/1bfae79c-2568-5895-8569-eb7b69b5806b`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourcegroups/rg-shop44-core-main-dev/providers/Microsoft.KeyVault/vaults/kv-shop44-main-dev/providers/Microsoft.Authorization/roleAssignments/4e1a5357-bb3b-5131-a48b-5d13fa173dfd`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourcegroups/rg-shop44-core-main-dev/providers/Microsoft.KeyVault/vaults/kv-shop44-main-dev/providers/Microsoft.Authorization/roleAssignments/4e2cb82d-aa59-5251-96b7-bc2eb1dbef47`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourcegroups/rg-shop44-core-main-dev/providers/Microsoft.OperationalInsights/workspaces/log-shop44-main-dev/providers/Microsoft.Authorization/roleAssignments/7440b5c5-796d-5829-a380-22683a63188e`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-core-main-prd/providers/Microsoft.Authorization/roleAssignments/78dad30f-0ca7-559d-a1cf-109b93457812`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourcegroups/rg-shop44-core-main-prd/providers/Microsoft.KeyVault/vaults/kv-shop44-main-prd/providers/Microsoft.Authorization/roleAssignments/42aad9eb-8fdf-527a-9031-7a70712a0b83`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourcegroups/rg-shop44-core-main-prd/providers/Microsoft.KeyVault/vaults/kv-shop44-main-prd/providers/Microsoft.Authorization/roleAssignments/ad1d989a-35fb-514b-a834-4dbf451a3aba`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourcegroups/rg-shop44-orders-main-dev/providers/Microsoft.App/containerApps/ca-shop44-api-dev/providers/Microsoft.Authorization/roleAssignments/7e99ff7f-e176-506d-9c06-14f2eea3d3d4`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-dev/providers/Microsoft.Authorization/roleAssignments/bf9cb222-eb3b-58b0-bd94-6aaea158c65a`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourcegroups/rg-shop44-orders-main-prd/providers/Microsoft.App/containerApps/ca-shop44-api-prd/providers/Microsoft.Authorization/roleAssignments/b4b7ca2f-d65d-5970-9cde-5d58f6dc2b7b`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-orders-main-prd/providers/Microsoft.Authorization/roleAssignments/5e8e64ae-c77d-5e54-a629-aad1bd95b98a`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-platform-main-shared/providers/Microsoft.Authorization/roleAssignments/bb83dc57-bd37-5ef1-a81c-144a384688c7`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-platform-main-shared/providers/Microsoft.Authorization/roleAssignments/cc63b516-a132-583c-98fe-3cf1e1ce08da`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-shop44-platform-main-shared/providers/Microsoft.Authorization/roleAssignments/cfbc0f1a-1f82-5ee3-a7fe-358559f92c4c`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourcegroups/rg-shop44-platform-main-shared/providers/Microsoft.ContainerRegistry/registries/crshop44mainshared/providers/Microsoft.Authorization/roleAssignments/0065b070-28ed-5a41-b6b8-fd80ec398ffa`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourcegroups/rg-shop44-platform-main-shared/providers/Microsoft.ContainerRegistry/registries/crshop44mainshared/providers/Microsoft.Authorization/roleAssignments/180cb8c0-656f-50ff-90c0-f86b10b315ab`
+- `/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourcegroups/rg-shop44-platform-main-shared/providers/Microsoft.ContainerRegistry/registries/crshop44mainshared/providers/Microsoft.Authorization/roleAssignments/19ec0943-79fe-5e24-846a-023a9d9b7022`
+
+Les deux ressources `rg-vpd-dev` ajoutées après la référence, le stockage `jetekf4xhml6iazscripts` et le container group de même nom, sont hors périmètre et préservés. Les groupes `rg-ifs-shop44-{dev,prd,shared}` et leurs neuf ressources (trois identités managées et trois comptes de stockage) sont des ressources du kit de preuve ; le stockage PRD a été copié hors Azure avant sa suppression. Les identités Entra et les connexions/définitions Azure DevOps ne sont pas des ressources Azure de ce nettoyage.
+
+## Clôture de la procédure T — shop44 — 2026-10-27
+
+- Comparaison C5 finale à `2026-10-27T01:45Z` : 144 ressources, 19 groupes, 0 pile, 40 affectations de rôle et 7 budgets. Les 142 ressources et 38 rôles de la baseline sont tous présents. Les deux seuls ajouts sont le Key Vault et le deployment script VPD dans `rg-vpd-dev`, avec leurs deux affectations de rôle ; aucune suppression de baseline ni modification des groupes, piles ou budgets.
+- Les 7 piles, les 64 ressources de l’inventaire de création, les 3 groupes du kit (9 ressources) et les 21 affectations de rôle inventoriées ont été vérifiés absents après nettoyage. Les affectations temporaires `Storage Blob Data Reader` DEV/Shared ont été révoquées ; aucun lecteur temporaire ne reste. L’affectation préexistante PRD a été laissée jusqu’à la suppression du groupe.
+- Avant le retrait des comptes techniques, 67 versions de blobs (7 versions courantes) ont été copiées hors Azure ; les 67 empreintes SHA-256 concordent avec le manifeste. C3 final : zéro build active/en file, zéro release classique active, zéro PR active.
+- `kv-shop44-main-dev` et `kv-shop44-main-prd` restent en soft-delete, avec purge planifiée au 2027-01-25 ; aucune purge manuelle n’a été faite. Le stockage et le container group `jetekf4xhml6iazscripts` restent hors périmètre et préservés.
+- Coût Cost Management global, relevé à `2026-10-27T02:53:50Z` : réel `153,046179 EUR` jusqu’au 26/10 ; forecast `31,936759 EUR` du 27 au 31/10 ; projection `184,982937 EUR`. Avec réserve `15 EUR`, l’estimation prudente est `199,982937 EUR`, soit `0,017063 EUR` sous l’alerte non plafonnante de `200 EUR` (valeurs `PreTaxCost`, hors taxes contractuelles). Une requête groupée par ResourceGroupName a répondu HTTP 429 ; conformément à la consigne de Florian, aucune attente d’une nouvelle journée de données n’est faite. Aucune écriture Azure facturable supplémentaire n’est nécessaire.
+- Vérification consolidée `allChecksPassed=true` et sources hors dépôt : `%LOCALAPPDATA%\InfraFlowSculptor\P08\shop44-p7-post959failure-20261027T001158Z\shop44-final-cleanup-verification.json` ; copie des journaux : `%LOCALAPPDATA%\InfraFlowSculptor\P08\shop44-p7-post959failure-20261027T001158Z\cleanup-preflight-20261027T0145Z\blob-evidence\`.

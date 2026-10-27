@@ -42,3 +42,12 @@
 | 2026-10-24 | Codex | P-08 — blocage #762 levé par preuve et gate.py ; préflight final avant D3 rafraîchi, C3/C5/C9 et coût confirmés, compilation `previewRun` sans run créée. Le D3 unique reste conditionné à C8. |
 | 2026-10-24 | Codex | P-08 — D3 #780 réussi en DEV/PRD avec C8 valide ; nettoyage suspendu après What-If exact `orders-prd` prévoyant cinq modifications. Coûts et C5 actualisés ; blocage consigné pour arbitrage. |
 | 2026-10-25 | Codex | P-08 — nettoyage Shop42 confirmé (C5/C3/coût) ; Florian autorise explicitement shop43 et shop44, les projets et dépôts sont préparés, et le contrôle Cost Analysis J+1 reste dû le 2026-10-26 avant toute écriture Azure facturable. |
+| 2026-10-25 | Codex | P-08 P2 shop43 : révocation Log Analytics Reader confirmée et tentative de suppression bloquée par denyDelete ; workspace sain, C5 inchangé et coût actualisé. |
+| 2026-10-25 | Codex | P-08 P4 révision 3 shop43 : #837 a repris l’opération SQL DEV laissée Started par #836 puis réussi DEV/PRD ; C5 174/29/7/63/7, coût et captures actualisés. |
+
+| 2026-10-25 | Codex | P-08 — P4 shop43 rev4 #840 exécutée en DEV, approbation PRD refusée selon recette ; C5 inchangé, coût post-run actualisé, deux identités détachées à nettoyer après rev5. |
+
+| 2026-10-26 | Codex | P-08 P4 shop43 rev5 — release #843 réussie en DEV/PRD ; rapport détachement, C5/coût et captures consignés. |
+| 2026-10-26 | Codex | P-08 T shop43 bloquée par les What-If (5/4/1 Modify) ; J+1 shop42 inconclusif, données Cost Management jusqu’au 24/10. Aucun deleteAll shop43 exécuté. |
+| 2026-10-26 | Codex | P-08 — diagnostic What-If exact : règle de réconciliation retenue ; différence de destination Log Analytics sur l’environnement Container Apps confirmée, nettoyage shop43 toujours suspendu. |
+| 2026-10-27 | Codex | P-08 clôturé pour shop44 : piles et ressources de preuve retirées, baseline préservée, journaux copiés et vérifiés, C3/C5/coût final consignés ; contrôle quotidien par groupe indisponible sur HTTP 429, déviation acceptée par Florian. |

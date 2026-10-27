@@ -58,3 +58,9 @@
 | 2026-10-25 02:13 | Codex | `P-08` : nettoyage Azure Shop42 achevé, C5/C3 et coût final vérifiés ; contrôle Cost Analysis du 2026-10-26 encore dû selon T § 7. | docs/plan/revues/P-08-nettoyage-suite-20261024.md |
 | 2026-10-25 02:29 | Codex | `P-08` blocage confirmé | docs/plan/revues/P-08-blocage-scope-20261025.md |
 | 2026-10-25 10:36 | Codex | `P-08` blocage résolu | docs/plan/revues/P-08-blocage-scope-20261025.md |
+| 2026-10-26 01:02 | Codex | `P-08` blocage confirmé | docs/plan/revues/P-08-blocage-whatif-shop43-20261026.md |
+| 2026-10-26 09:38 | Codex | `P-08` blocage résolu | docs/plan/revues/P-08-blocage-whatif-shop43-20261026.md |
+| 2026-10-26 18:23 | Codex | `P-08` blocage confirmé | docs/plan/revues/P-08-blocage-secret-shop44-20261026.md |
+| 2026-10-26 18:46 | Codex | `P-08` blocage résolu | docs/plan/revues/P-08-resolution-secret-shop44-20261026.md |
+
+| 2026-10-27 03:03 | Codex | `P-08` : shop43 et shop44 nettoyés après leurs dernières preuves ; C5/C3, 67 empreintes de journaux et coût global vérifiés. Le contrôle quotidien par groupe a reçu HTTP 429 et reste un écart explicite accepté selon la consigne de Florian. | docs/plan/revues/P-08-nettoyage-shop44-20261027.md |

@@ -1,0 +1,23 @@
+{
+  "continuation_token": "SECRET_REDACTED",
+  "count": 1,
+  "value": [
+    {
+      "id": 339,
+      "name": "ifs-preview-dev",
+      "resource": {
+        "data": "37335B6C5ACB55A0BC645C2E6480CD3F982B2A3E0DB305D23B3B4AF0C6A4011101",
+        "downloadUrl": "https://artprodweu2.artifacts.visualstudio.com/A4ef6e6c2-31fb-4df4-a0dc-28dab6a35b18/GUID_001/_apis/artifact/cGlwZWxpbmVhcnRpZmFjdDovL2Zsb3JpYW5kcmV2ZXQwMzMyL3Byb2plY3RJZC9lZjU2ODUxOS1jYmNjLTRmODctOGM2OS1hOGFmMjE2YjFiMTQvYnVpbGRJZC84MzEvYXJ0aWZhY3ROYW1lL2lmcy1wcmV2aWV3LWRldg2/content?format=zip",
+        "properties": {
+          "DomainId": "0",
+          "HashType": "DEDUP1024K",
+          "RootId": "068E876499DD755A60C79F0E57B4EEB01A7B0FE55327C019CDC5C5851E9C242402",
+          "artifactsize": "35165"
+        },
+        "type": "PipelineArtifact",
+        "url": "org-redacted/GUID_001/_apis/build/builds/831/artifacts?artifactName=ifs-preview-dev&api-version=7.1"
+      },
+      "source": "GUID_021"
+    }
+  ]
+}
