@@ -1169,6 +1169,17 @@ function Get-IfsSqlModuleVersion {
     return [string]$version
 }
 
+function Register-IfsSqlModuleRepository {
+    Register-PSRepository -Default -ErrorAction Stop
+}
+
+function Initialize-IfsSqlModuleRepository {
+    $repository = Get-PSRepository -Name 'PSGallery' -ErrorAction SilentlyContinue
+    if ($null -eq $repository) {
+        Register-IfsSqlModuleRepository
+    }
+}
+
 function Test-IfsSqlPermissionPropagationError {
     param([Parameter(Mandatory)][string] $Message)
     return $Message -match '(?i)permission was denied|permission.*not.*granted|not able to access the database|principal.*not found|does not have permission|error 33134|error 916|error 4060'
@@ -1233,7 +1244,8 @@ function Invoke-IfsDataAccess {
     $scriptPath = (Resolve-Path -LiteralPath $SqlScript).Path
     $version = Get-IfsSqlModuleVersion
     if (-not (Get-Module SqlServer -ListAvailable | Where-Object { $_.Version -eq [version]$version })) {
-        Install-Module -Name SqlServer -RequiredVersion $version -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop
+        Initialize-IfsSqlModuleRepository
+        Install-Module -Name SqlServer -RequiredVersion $version -Repository 'PSGallery' -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop
     }
     Import-Module SqlServer -RequiredVersion $version -ErrorAction Stop
     $opened = [System.Collections.Generic.List[object]]::new()

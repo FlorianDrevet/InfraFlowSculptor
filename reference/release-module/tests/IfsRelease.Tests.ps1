@@ -1651,3 +1651,55 @@ Describe "Aide du module" {
     }
 }
 }
+
+Describe "Inscription du dépôt du module SQL" {
+    It "utilise l'inscription par défaut de PSGallery sur un agent vierge" {
+        $tokens = $null
+        $parseErrors = $null
+        $moduleAst = [System.Management.Automation.Language.Parser]::ParseFile(
+            $script:modulePath,
+            [ref]$tokens,
+            [ref]$parseErrors
+        )
+        $repositoryFunction = @($moduleAst.FindAll({
+            param($node)
+            $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+                $node.Name -eq 'Register-IfsSqlModuleRepository'
+        }, $true))
+
+        $repositoryFunction.Count | Should -Be 1
+        $repositoryCommands = @($repositoryFunction[0].Body.FindAll({
+            param($node)
+            $node -is [System.Management.Automation.Language.CommandAst] -and
+                $node.GetCommandName() -eq 'Register-PSRepository'
+        }, $true))
+
+        $repositoryCommands.Count | Should -Be 1
+        $repositoryCommands[0].Extent.Text | Should -Be 'Register-PSRepository -Default -ErrorAction Stop'
+    }
+
+    It "inscrit PSGallery avant l'installation de SqlServer si le dépôt manque" {
+        InModuleScope IfsRelease -Parameters @{ SqlScriptPath = $script:repoRoot + '/reference/pilot/bicep-azdo/orders/infra/scripts/data-access.sql' } {
+            param($SqlScriptPath)
+
+            Mock Get-PSRepository {}
+            Mock Register-IfsSqlModuleRepository {}
+            Mock Get-Module {}
+            Mock Install-Module {}
+            Mock Import-Module {}
+
+            $releaseData = [pscustomobject]@{
+                dataAccess = @()
+                dependencies = @()
+                subscriptionId = '11111111-1111-1111-1111-111111111111'
+            }
+
+            Invoke-IfsDataAccess -ReleaseData $releaseData -SqlScript $SqlScriptPath -RunId 'pester'
+
+            Should -Invoke Register-IfsSqlModuleRepository -Times 1 -Exactly
+            Should -Invoke Install-Module -Times 1 -Exactly -ParameterFilter {
+                $Name -eq 'SqlServer' -and $Repository -eq 'PSGallery'
+            }
+        }
+    }
+}
