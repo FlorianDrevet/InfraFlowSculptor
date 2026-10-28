@@ -10,12 +10,12 @@
 | | |
 |---|---|
 | **Étape courante** | [`J0-11`](docs/plan/02-jalon-0-pilote.md#j0-11--ressources--propriétés-surcharges-présence-existantes-enfants) — Ressources : propriétés, surcharges, présence, existantes, enfants |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `BLOQUE` |
 | **Dernière étape terminée** | [`J0-10`](docs/plan/02-jalon-0-pilote.md#j0-10--composants-et-groupes-de-ressources) — Composants et groupes de ressources (commit `42d827d`) |
 | **Étape suivante** | `J0-12` — Moteur : cibles, présences, valeurs effectives et tags |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
-| **Dernière mise à jour** | 2026-10-28 — Codex |
+| **Dernière mise à jour** | 2026-10-28 — Codex (blocage confirmé) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
@@ -82,6 +82,12 @@ Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suiv
 ### J0-09 — écrans du projet — 2026-10-28
 
 **Décisions reçues le 2026-10-28** : favoris/récents stockés de façon relationnelle dans le profil ; JSONB exclu. Les compteurs composants/ressources/constats sont reportés à J0-10/J0-20 ; aucun zéro provisoire n'est affiché. Le blocage de conception est résolu et consigné dans [`J0-09-blocage-20261028.md`](docs/plan/revues/J0-09-blocage-20261028.md). Florian autorise l'authentification des personas de test via Keycloak local ; `project.spec.ts` et ses captures passent sur desktop et mobile. Les résultats de la suite complète et ses limites connues sont consignés dans [`suivi.md`](docs/plan/recettes/suivi.md).
+
+### J0-11 — stockage des propriétés des ressources — 2026-10-28
+
+Le plan prescrit `jsonb`, ce qui contredit la consigne « Je ne veux pas de jsonb ». Claude CLI recommande un stockage relationnel normalisé et relève que le catalogue ne décrit pas encore la forme des éléments `array` ni les membres `object`. Le dépôt contient aussi des usages JSONB déjà livrés (brouillon J0-08, audit, idempotence, outbox) et DT-04 en fait une convention. [Vérifications et proposition détaillées](docs/plan/revues/J0-11-blocage-stockage-20261028.md).
+
+**Question à Florian :** confirmes-tu de limiter l'interdiction aux nouvelles données de ressources de J0-11, avec stockage relationnel normalisé et contrats `array`/`object` explicités, en laissant les usages JSONB existants inchangés ? Ou veux-tu étendre l'interdiction aux usages JSONB déjà livrés, ce qui élargirait le travail aux migrations et à l'architecture ?
 
 ### R-04 — portée d’idempotence de création d’organisation — 2026-10-27
 
