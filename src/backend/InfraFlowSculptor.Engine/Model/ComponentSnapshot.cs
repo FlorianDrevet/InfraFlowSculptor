@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace InfraFlowSculptor.Engine.Model;
 
 public sealed record ComponentSnapshot(
@@ -8,4 +10,10 @@ public sealed record ComponentSnapshot(
     IReadOnlyList<Guid> TargetEnvironmentIds,
     ComponentSingleTargetSnapshot? SingleTarget,
     IReadOnlyList<ResourceGroupSnapshot> ResourceGroups,
-    IReadOnlyList<ResourceSnapshot> Resources);
+    IReadOnlyList<ResourceSnapshot> Resources)
+{
+    public bool TargetsAllEnvironments { get; init; }
+
+    public IReadOnlyDictionary<string, string> Tags { get; init; } =
+        ImmutableDictionary<string, string>.Empty.WithComparers(StringComparer.OrdinalIgnoreCase);
+}

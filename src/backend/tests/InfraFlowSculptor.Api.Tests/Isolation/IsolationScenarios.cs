@@ -275,6 +275,11 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}/components/{TestComponentId}",
                 HttpStatusCode.NotFound),
+            ["GetEffectiveValues"] = OrganizationScenario(
+                "GetEffectiveValues",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/resources/{TestResourceId}/effective-values",
+                HttpStatusCode.NotFound),
             ["UpdateProjectComponent"] = OrganizationWriteScenario(
                 "UpdateProjectComponent",
                 HttpMethod.Put,

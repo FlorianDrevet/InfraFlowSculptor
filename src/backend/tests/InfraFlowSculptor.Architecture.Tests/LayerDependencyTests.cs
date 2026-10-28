@@ -1,6 +1,7 @@
 using InfraFlowSculptor.Api.Controllers;
 using InfraFlowSculptor.Application.Common.Extensibility;
 using InfraFlowSculptor.Domain.Common.Models;
+using InfraFlowSculptor.Engine.Naming;
 using NetArchTest.Rules;
 using System.Xml.Linq;
 
@@ -54,6 +55,28 @@ public sealed class LayerDependencyTests
             .GetResult();
 
         AssertSuccessful(result);
+    }
+
+    [Fact]
+    public void EngineDoesNotDependOnApplicationFrameworksOrInfrastructure()
+    {
+        var engineAssembly = typeof(NamingEngine).Assembly;
+        var result = Types.InAssembly(engineAssembly)
+            .ShouldNot()
+            .HaveDependencyOnAny(
+                "InfraFlowSculptor.Application",
+                "InfraFlowSculptor.Contracts",
+                "InfraFlowSculptor.Infrastructure",
+                "InfraFlowSculptor.Api",
+                "Microsoft.EntityFrameworkCore",
+                "Microsoft.AspNetCore",
+                "Azure.")
+            .GetResult();
+
+        AssertSuccessful(result);
+        Assert.DoesNotContain(
+            engineAssembly.GetReferencedAssemblies(),
+            reference => reference.Name == "System.Net.Http");
     }
 
     [Fact]
