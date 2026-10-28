@@ -1,0 +1,156 @@
+<div
+  class="property-grid"
+  role="table"
+  [attr.aria-label]="'resource.properties' | transloco"
+  [style.--property-grid-columns]="gridColumns()"
+>
+  <div class="property-grid__header" role="row">
+    <span role="columnheader">{{ 'resource.property' | transloco }}</span>
+    <span role="columnheader">{{ 'resource.resourceValue' | transloco }}</span>
+    @for (cell of rows()[0]?.targets ?? []; track cell.targetId) {
+      <span role="columnheader">{{ cell.code }}</span>
+    }
+  </div>
+
+  @for (row of rows(); track row.definition.name) {
+    <div class="property-grid__row" role="row">
+      <div class="property-grid__name" role="rowheader">
+        <span>{{ propertyName(row) }}</span>
+        @if (row.definition.lockedAfterPublish) {
+          <span class="property-grid__locked">{{ 'resource.lockedAfterPublish' | transloco }}</span>
+        }
+      </div>
+
+      <div
+        class="property-grid__cell"
+        role="cell"
+        [class.property-grid__cell--resource]="row.resource.provenance === 'resource'"
+        [class.property-grid__cell--catalog-default]="row.resource.provenance === 'catalogDefault'"
+        [class.property-grid__cell--absent]="row.resource.provenance === 'absent'"
+      >
+        @if (isPropertyEditable(row.definition)) {
+          @if (isBooleanDefinition(row.definition.kind)) {
+            <label class="property-grid__boolean">
+              <input
+                type="checkbox"
+                [attr.aria-label]="resourceCellLabel(row)"
+                [checked]="row.resource.value === true"
+                [disabled]="disabled()"
+                (change)="onValueChange($event, row, null)"
+              />
+              <span>{{ formatValue(row.resource.value) }}</span>
+            </label>
+          } @else if (row.definition.kind === 'enum') {
+            <select
+              [attr.aria-label]="resourceCellLabel(row)"
+              [value]="formatValue(row.resource.value)"
+              [disabled]="disabled()"
+              (change)="onValueChange($event, row, null)"
+            >
+              @for (option of row.definition.values ?? []; track $index) {
+                <option [value]="formatOption(option)">{{ formatOption(option) }}</option>
+              }
+            </select>
+          } @else if (row.definition.kind === 'array') {
+            <textarea
+              [attr.aria-label]="resourceCellLabel(row)"
+              [value]="formatArrayValue(row.resource.value)"
+              [disabled]="disabled()"
+              rows="3"
+              (change)="onValueChange($event, row, null)"
+            ></textarea>
+          } @else {
+            <input
+              [type]="isNumericDefinition(row.definition.kind) ? 'number' : 'text'"
+              [attr.aria-label]="resourceCellLabel(row)"
+              [step]="row.definition.kind === 'integer' ? '1' : 'any'"
+              [min]="row.definition.minimum ?? null"
+              [max]="row.definition.maximum ?? null"
+              [value]="
+                row.resource.value === null ? '' : formatValue(row.resource.value)
+              "
+              [disabled]="disabled()"
+              (change)="onValueChange($event, row, null)"
+            />
+          }
+        } @else {
+          <span class="property-grid__readonly">{{ formatValue(row.resource.value) }}</span>
+        }
+        <app-provenance [value]="row.resource.provenance" />
+      </div>
+
+      @for (cell of row.targets; track cell.targetId) {
+        <div
+          class="property-grid__cell"
+          role="cell"
+          [class.property-grid__cell--override]="cell.provenance === 'override'"
+          [class.property-grid__cell--resource]="cell.provenance === 'resource'"
+          [class.property-grid__cell--catalog-default]="cell.provenance === 'catalogDefault'"
+          [class.property-grid__cell--absent]="!cell.applicable || cell.provenance === 'absent'"
+        >
+          @if (!cell.applicable) {
+            <span class="property-grid__readonly">{{ 'resource.valueAbsent' | transloco }}</span>
+          } @else if (isPropertyEditable(row.definition)) {
+            @if (isBooleanDefinition(row.definition.kind)) {
+              <label class="property-grid__boolean">
+                <input
+                  type="checkbox"
+                  [attr.aria-label]="targetCellLabel(row, cell.code)"
+                  [checked]="cell.value === true"
+                  [disabled]="disabled()"
+                  (change)="onValueChange($event, row, cell.targetId)"
+                />
+                <span>{{ formatValue(cell.value) }}</span>
+              </label>
+            } @else if (row.definition.kind === 'enum') {
+              <select
+                [attr.aria-label]="targetCellLabel(row, cell.code)"
+                [value]="formatValue(cell.value)"
+                [disabled]="disabled()"
+                (change)="onValueChange($event, row, cell.targetId)"
+              >
+                @for (option of row.definition.values ?? []; track $index) {
+                  <option [value]="formatOption(option)">{{ formatOption(option) }}</option>
+                }
+              </select>
+            } @else if (row.definition.kind === 'array') {
+              <textarea
+                [attr.aria-label]="targetCellLabel(row, cell.code)"
+                [value]="formatArrayValue(cell.value)"
+                [disabled]="disabled()"
+                rows="3"
+                (change)="onValueChange($event, row, cell.targetId)"
+              ></textarea>
+            } @else {
+              <input
+                [type]="isNumericDefinition(row.definition.kind) ? 'number' : 'text'"
+                [attr.aria-label]="targetCellLabel(row, cell.code)"
+                [step]="row.definition.kind === 'integer' ? '1' : 'any'"
+                [min]="row.definition.minimum ?? null"
+                [max]="row.definition.maximum ?? null"
+                [value]="cell.value === null ? '' : formatValue(cell.value)"
+                [disabled]="disabled()"
+                (change)="onValueChange($event, row, cell.targetId)"
+              />
+            }
+          } @else {
+            <span class="property-grid__readonly">{{ formatValue(cell.value) }}</span>
+          }
+          @if (cell.provenance) {
+            <app-provenance [value]="cell.provenance" />
+          }
+          @if (canClearOverride(row.definition, cell)) {
+            <app-ds-button
+              size="sm"
+              variant="ghost"
+              [disabled]="disabled()"
+              (click)="clear(row, cell)"
+            >
+              {{ 'resource.clearOverride' | transloco }}
+            </app-ds-button>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

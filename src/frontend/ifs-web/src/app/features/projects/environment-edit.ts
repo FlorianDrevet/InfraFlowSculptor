@@ -205,7 +205,7 @@ export class EnvironmentEdit implements OnInit {
           this.service.updateEnvironment(this.projectId(), this.environmentId(), body),
         );
       }
-      await this.router.navigate(['../environments'], { relativeTo: this.route });
+      await this.router.navigate(['..'], { relativeTo: this.route });
     } catch (error) {
       if (
         !confirmTargetImpact &&
@@ -231,7 +231,7 @@ export class EnvironmentEdit implements OnInit {
   }
 
   protected cancel(): void {
-    void this.router.navigate(['../environments'], { relativeTo: this.route });
+    void this.router.navigate(['..'], { relativeTo: this.route });
   }
 
   private async load(): Promise<void> {

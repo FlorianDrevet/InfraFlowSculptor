@@ -118,7 +118,9 @@ test('Alice parcourt et gère les écrans du projet', async ({ page, browser }) 
     await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
     await firstSaveRequest;
     expect((await firstSave).status()).toBe(200);
-    await expect(page).toHaveURL(/\/environments$/);
+    await expect(page).toHaveURL(
+      new RegExp(`/o/${CONTOSO_ID}/projects/${projectId}/environments$`),
+    );
 
     await secondPage.locator('#environment-description').fill(staleDescription);
     await secondPage.getByRole('button', { name: 'Enregistrer', exact: true }).click();

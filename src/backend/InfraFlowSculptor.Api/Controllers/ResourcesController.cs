@@ -14,12 +14,17 @@ using InfraFlowSculptor.Application.Components.Commands.SetForcedName;
 using InfraFlowSculptor.Application.Components.Commands.SetOverride;
 using InfraFlowSculptor.Application.Components.Commands.SetPresence;
 using InfraFlowSculptor.Application.Components.Commands.SetResourceProperties;
+using InfraFlowSculptor.Application.Components.Commands.UpdateResourceMetadata;
 using InfraFlowSculptor.Application.Components.Commands.UpdateChild;
 using InfraFlowSculptor.Application.Components.Queries.GetEffectiveValues;
+using InfraFlowSculptor.Application.Components.Queries.GetResourceDeletionImpact;
 using InfraFlowSculptor.Application.Components.Queries.GetProjectComponent;
+using InfraFlowSculptor.Application.Components.Queries.PreviewResourceName;
 using InfraFlowSculptor.Contracts.Components;
+using InfraFlowSculptor.Contracts.Naming;
 using InfraFlowSculptor.Contracts.Resources;
 using InfraFlowSculptor.Domain.Common.Features;
+using InfraFlowSculptor.Engine.Naming;
 using Mediator;
 using Microsoft.AspNetCore.Mvc;
 
@@ -37,6 +42,66 @@ public static class ResourcesController
             .WithTags("Resources")
             .RequireFeature(Features.Organizations)
             .RequireFeature(Features.ProjectSetup);
+
+        resources.MapPost("/preview-name", async (
+                Guid projectId,
+                Guid componentId,
+                PreviewResourceNameRequest request,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new PreviewResourceNameQuery(
+                    projectId,
+                    componentId,
+                    request.ResourceGroupId,
+                    request.Type,
+                    request.LogicalName,
+                    request.ResourceId), cancellationToken);
+                return result.Match<IResult>(
+                    preview => Results.Ok(MapPreview(preview)),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.PreviewResourceName)
+            .WithSummary("Calculer les noms Azure d'une ressource avant son ajout au modèle.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces<ProjectNamingPreviewResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        resources.MapGet("/{resourceId:guid}/delete-impact", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(
+                    new GetResourceDeletionImpactQuery(projectId, componentId, resourceId),
+                    cancellationToken);
+                return result.Match<IResult>(
+                    summary => Results.Ok(new ResourceDeletionImpactResponse(
+                        summary.ResourceVersion,
+                        ResourceDeletionImpactStatus.Partial,
+                        [
+                            ResourceDeletionImpactArea.IncomingLinks,
+                            ResourceDeletionImpactArea.ApplicationParameters,
+                            ResourceDeletionImpactArea.ImplicitEffects
+                        ],
+                        summary.Items.Select(item => new ResourceDeletionImpactItemResponse(
+                            ResourceDeletionImpactKind.Child,
+                            item.Type,
+                            item.Name)).ToArray())),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.GetResourceDeletionImpact)
+            .WithSummary("Prévisualiser les effets calculés avant la suppression d'une ressource.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces<ResourceDeletionImpactResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         effectiveValues.MapGet("/{resourceId:guid}/effective-values", async (
                 Guid projectId,
@@ -109,6 +174,36 @@ public static class ResourcesController
             })
             .WithName(EndpointNames.SetResourceProperties)
             .WithSummary("Modifier les propriétés de base d'une ressource.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces<ResourceResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        resources.MapPut("/{resourceId:guid}/metadata", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                UpdateResourceMetadataRequest request,
+                IModelCommandExecutor executor,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var command = new UpdateResourceMetadataCommand(
+                    projectId,
+                    componentId,
+                    resourceId,
+                    request.Description,
+                    request.Tags,
+                    request.ExpectedVersion);
+                return await ExecuteAndReturnResourceAsync(
+                    command, StatusCodes.Status200OK, projectId, componentId, resourceId, executor, mediator, cancellationToken);
+            })
+            .WithName(EndpointNames.UpdateResourceMetadata)
+            .WithSummary("Modifier la description et les tags d'une ressource.")
             .RequireAuthorization(AuthorizationPolicies.Member)
             .RequireRateLimiting(RateLimitingPolicies.Write)
             .WithIdempotency()
@@ -429,4 +524,42 @@ public static class ResourcesController
             property.Name,
             property.Value,
             property.Provenance)).ToArray());
+
+    private static ProjectNamingPreviewResponse MapPreview(NamingPreviewResult preview) => new(
+        preview.Items.Select(item => new ProjectNamingPreviewItemResponse(
+            item.ComponentId,
+            item.ComponentCode,
+            item.ResourceId,
+            item.ResourceType,
+            item.LogicalName,
+            item.TargetId,
+            item.EnvironmentCode,
+            item.ResourceName,
+            item.ResourceGroupName,
+            item.NameLength,
+            item.MaximumLength,
+            item.IsExisting,
+            MapExplanation(item.Explanation),
+            MapExplanation(item.ResourceGroupExplanation))).ToArray(),
+        preview.Issues.Select(issue => new ProjectNamingIssueResponse(
+            issue.Code,
+            issue.Message,
+            issue.Severity,
+            issue.ComponentId,
+            issue.ResourceId,
+            issue.ResourceGroupId,
+            issue.TargetId,
+            issue.Value,
+            issue.ValueLength,
+            issue.Limit)).ToArray());
+
+    private static NamingExplanationResponse? MapExplanation(NamingExplanation? explanation) =>
+        explanation is null
+            ? null
+            : new NamingExplanationResponse(
+                explanation.Level,
+                explanation.Template,
+                explanation.RawName,
+                explanation.FinalName,
+                explanation.Transformations);
 }

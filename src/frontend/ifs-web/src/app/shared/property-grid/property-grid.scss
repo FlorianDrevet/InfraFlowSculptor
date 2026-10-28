@@ -1,0 +1,109 @@
+.property-grid {
+  display: grid;
+  min-width: max-content;
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-md);
+  overflow: auto;
+}
+
+.property-grid__header,
+.property-grid__row {
+  display: grid;
+  grid-template-columns: var(--property-grid-columns);
+  align-items: center;
+  gap: var(--ifs-space-3);
+  padding: var(--ifs-space-3) var(--ifs-space-4);
+}
+
+.property-grid__header {
+  background: var(--ifs-surface-2);
+  color: var(--ifs-text-2);
+  font-size: 0.8rem;
+}
+
+.property-grid__row {
+  border-top: 1px solid var(--ifs-line);
+}
+
+.property-grid__name,
+.property-grid__cell {
+  display: flex;
+  align-items: center;
+  gap: var(--ifs-space-2);
+  min-width: 0;
+}
+
+.property-grid__cell {
+  flex-wrap: wrap;
+}
+
+.property-grid__cell input:not([type='checkbox']),
+.property-grid__cell select,
+.property-grid__cell textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--ifs-space-2) var(--ifs-space-3);
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-sm);
+  background: var(--ifs-surface-1);
+  color: var(--ifs-text);
+  font: inherit;
+}
+
+.property-grid__cell textarea {
+  resize: vertical;
+  font-family: var(--ifs-font-mono);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.property-grid__cell input:focus-visible,
+.property-grid__cell select:focus-visible {
+  outline: 2px solid var(--ifs-signal);
+  outline-offset: 2px;
+}
+
+.property-grid__cell textarea:focus-visible {
+  outline: 2px solid var(--ifs-signal);
+  outline-offset: 2px;
+}
+
+.property-grid__cell--override input:not([type='checkbox']),
+.property-grid__cell--override select,
+.property-grid__cell--override textarea {
+  border-color: var(--ifs-warning);
+  background: color-mix(in srgb, var(--ifs-warning) 8%, var(--ifs-surface-1));
+}
+
+.property-grid__cell--catalog-default input:not([type='checkbox']),
+.property-grid__cell--catalog-default select,
+.property-grid__cell--catalog-default textarea {
+  border-style: dashed;
+}
+
+.property-grid__cell--absent .property-grid__readonly {
+  color: var(--ifs-text-2);
+  font-style: italic;
+}
+
+.property-grid__boolean {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ifs-space-2);
+}
+
+.property-grid__readonly,
+.property-grid__locked {
+  color: var(--ifs-text-2);
+}
+
+.property-grid__locked {
+  font-size: 0.75rem;
+}
+
+@media (max-width: 760px) {
+  .property-grid {
+    max-width: calc(100vw - 2rem);
+  }
+}

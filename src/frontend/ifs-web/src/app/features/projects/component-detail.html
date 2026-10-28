@@ -165,8 +165,40 @@
     </section>
 
     <section class="component-detail__section" aria-labelledby="resources-heading">
-      <h3 id="resources-heading">{{ 'resourceGroup.resourcesHeading' | transloco }}</h3>
-      <p class="component-detail__empty">{{ 'resourceGroup.noResources' | transloco }}</p>
+      <header>
+        <h3 id="resources-heading" #resourcesHeading tabindex="-1">
+          {{ 'resourceGroup.resourcesHeading' | transloco }}
+        </h3>
+        @if (canEditModel()) {
+          <a class="st-btn st-btn-primary" [routerLink]="['resources/new']">
+            {{ 'resource.add' | transloco }}
+          </a>
+        }
+      </header>
+      @if (component()!.resources.length === 0) {
+        <p class="component-detail__empty">{{ 'resourceGroup.noResources' | transloco }}</p>
+      } @else {
+        <ul class="component-detail__resources">
+          @for (resource of component()!.resources; track resource.id) {
+            <li>
+              <a [routerLink]="['resources', resource.id]">
+                <strong>{{ resource.logicalName }}</strong>
+                <code>{{ resource.type }}</code>
+              </a>
+              @if (canEditModel()) {
+                <app-ds-button
+                  variant="danger"
+                  size="sm"
+                  [disabled]="deletingResource()"
+                  (click)="requestResourceDeletion(resource)"
+                >
+                  {{ 'resource.delete' | transloco }}
+                </app-ds-button>
+              }
+            </li>
+          }
+        </ul>
+      }
     </section>
 
     <section class="component-detail__section" aria-labelledby="dependencies-heading">
@@ -183,4 +215,31 @@
       </div>
     </section>
   </section>
+}
+
+@if (resourceDeletionNotice()) {
+  <p #resourceDeletionStatus class="component-detail__error" role="status" tabindex="-1">
+    {{
+      (resourceDeletionNotice() === 'removed'
+        ? 'resource.deleteSuccess'
+        : 'resource.deleteAlreadyRemoved'
+      ) | transloco
+    }}
+  </p>
+}
+
+@if (pendingDeleteResource(); as resource) {
+  <app-resource-delete-dialog
+    [resource]="resource"
+    [removedBehavior]="component()!.removedResourceBehavior"
+    [impact]="deletionImpact()"
+    [loading]="deletionLoading()"
+    [saving]="deletingResource()"
+    [error]="deletionError()"
+    [conflict]="deletionConflict()"
+    [confirmation]="deletionConfirmation()"
+    (confirmationChange)="updateDeletionConfirmation($event)"
+    (dismiss)="cancelResourceDeletion()"
+    (confirm)="deleteResource()"
+  />
 }

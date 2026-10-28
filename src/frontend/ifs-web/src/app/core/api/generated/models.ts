@@ -50,6 +50,7 @@ export type { ObjectType } from './models/object-type';
 export type { OrganizationMemberResponse } from './models/organization-member-response';
 export type { OrganizationRole } from './models/organization-role';
 export type { OrganizationSummaryResponse } from './models/organization-summary-response';
+export type { PreviewResourceNameRequest } from './models/preview-resource-name-request';
 export type { ProblemDetails } from './models/problem-details';
 export type { ProjectEnvironmentResponse } from './models/project-environment-response';
 export type { ProjectNamingIssueResponse } from './models/project-naming-issue-response';
@@ -67,6 +68,11 @@ export type { ProjectWizardEnvironmentRequest } from './models/project-wizard-en
 export type { RemovedResourceBehavior } from './models/removed-resource-behavior';
 export type { RenameOrganizationRequest } from './models/rename-organization-request';
 export type { ResourceChildResponse } from './models/resource-child-response';
+export type { ResourceDeletionImpactArea } from './models/resource-deletion-impact-area';
+export type { ResourceDeletionImpactItemResponse } from './models/resource-deletion-impact-item-response';
+export type { ResourceDeletionImpactKind } from './models/resource-deletion-impact-kind';
+export type { ResourceDeletionImpactResponse } from './models/resource-deletion-impact-response';
+export type { ResourceDeletionImpactStatus } from './models/resource-deletion-impact-status';
 export type { ResourceGroupResponse } from './models/resource-group-response';
 export type { ResourceResponse } from './models/resource-response';
 export type { RestoreProjectRequest } from './models/restore-project-request';
@@ -87,4 +93,5 @@ export type { UpdateMePreferencesRequest } from './models/update-me-preferences-
 export type { UpdateOrganizationAccessRestrictionsRequest } from './models/update-organization-access-restrictions-request';
 export type { UpdateProjectEnvironmentRequest } from './models/update-project-environment-request';
 export type { UpdateProjectSettingsRequest } from './models/update-project-settings-request';
+export type { UpdateResourceMetadataRequest } from './models/update-resource-metadata-request';
 export type { VersionResponse } from './models/version-response';

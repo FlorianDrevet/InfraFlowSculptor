@@ -310,6 +310,17 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}/resources/{TestResourceId}/effective-values",
                 HttpStatusCode.NotFound),
+            ["GetResourceDeletionImpact"] = OrganizationScenario(
+                "GetResourceDeletionImpact",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/delete-impact",
+                HttpStatusCode.NotFound),
+            ["PreviewResourceName"] = OrganizationScenario(
+                "PreviewResourceName",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/preview-name",
+                HttpStatusCode.NotFound,
+                new { resourceGroupId = Guid.Parse(TestResourceGroupId), type = "KeyVault", logicalName = "isolated" }),
             ["UpdateProjectComponent"] = OrganizationWriteScenario(
                 "UpdateProjectComponent",
                 HttpMethod.Put,
@@ -400,6 +411,12 @@ public static class IsolationScenarios
                 $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/properties",
                 HttpStatusCode.NotFound,
                 new { properties = new { }, expectedVersion = 1 }),
+            ["UpdateResourceMetadata"] = OrganizationWriteScenario(
+                "UpdateResourceMetadata",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/metadata",
+                HttpStatusCode.NotFound,
+                new { description = "isolated", tags = new Dictionary<string, string>(), expectedVersion = 1 }),
             ["SetOverride"] = OrganizationWriteScenario(
                 "SetOverride",
                 HttpMethod.Put,

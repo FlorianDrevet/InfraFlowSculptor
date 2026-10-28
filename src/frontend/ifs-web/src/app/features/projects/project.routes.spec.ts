@@ -21,6 +21,9 @@ describe('project feature routes', () => {
     expect(COMPONENT_ROUTES.map((route) => route.path)).toEqual([
       '',
       ':componentId/settings',
+      ':componentId/resources/new',
+      ':componentId/resources/new/:type',
+      ':componentId/resources/:resourceId',
       ':componentId',
     ]);
     expect(COMPONENT_ROUTES.every((route) => route.loadComponent)).toBe(true);

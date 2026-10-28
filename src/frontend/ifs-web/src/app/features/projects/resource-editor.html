@@ -1,0 +1,296 @@
+<section class="resource-editor">
+  <a [routerLink]="['../../']">{{ 'resource.backToComponent' | transloco }}</a>
+  @if (loading()) {
+    <p role="status">{{ 'resource.loadingResource' | transloco }}</p>
+  } @else if (loadError() || !resource() || !component()) {
+    <p class="resource-editor__error" role="alert">{{ 'resource.loadError' | transloco }}</p>
+  } @else {
+    <header class="resource-editor__header">
+      <app-ds-resource-icon [type]="resource()!.type" [size]="40" />
+      <div>
+        <div class="resource-editor__title">
+          <h2>{{ resource()!.logicalName }}</h2>
+          <span class="resource-editor__type">{{ resourceTypeLabel() }}</span>
+          @if (resource()!.isExisting) {
+            <span class="resource-editor__existing-badge">{{
+              'resource.existingBadge' | transloco
+            }}</span>
+          }
+        </div>
+        <p>{{ component()!.name }}</p>
+      </div>
+    </header>
+
+    <nav class="resource-editor__tabs" [attr.aria-label]="'resource.tabs' | transloco">
+      <a
+        [attr.aria-current]="activeTab() === 'general' ? 'page' : null"
+        [routerLink]="[]"
+        [queryParams]="{ tab: 'general' }"
+        >{{ 'resource.general' | transloco }}</a
+      >
+      @if (!resource()!.isExisting) {
+        <a
+          [attr.aria-current]="activeTab() === 'properties' ? 'page' : null"
+          [routerLink]="[]"
+          [queryParams]="{ tab: 'properties' }"
+          >{{ 'resource.properties' | transloco }}</a
+        >
+      }
+    </nav>
+
+    @if (actionError() && !conflict()) {
+      <p class="resource-editor__error" role="alert">{{ 'resource.saveError' | transloco }}</p>
+    }
+
+    @if (activeTab() === 'general') {
+      <div class="resource-editor__general-grid">
+        <div class="resource-editor__main-column">
+          <section class="resource-editor__card" aria-labelledby="resource-names-heading">
+            <h3 id="resource-names-heading">{{ 'resource.azureNames' | transloco }}</h3>
+            @if (!resource()!.isExisting) {
+              <app-generated-names
+                [items]="generatedNames()"
+                [loading]="generatedNamesLoading()"
+                [error]="generatedNamesError()"
+              />
+            } @else {
+              <h4>{{ 'resource.existingIds' | transloco }}</h4>
+              @for (target of effectiveValues(); track target.id) {
+                <form class="resource-editor__existing" (ngSubmit)="saveExistingId(target.id)">
+                  <label>
+                    {{ targetLabel(target) }}
+                    <input
+                      [name]="'resourceId-' + target.id"
+                      [value]="currentExistingId(target.id)"
+                      required
+                      (input)="updateExistingId(target.id, $any($event.target).value)"
+                    />
+                  </label>
+                  <app-ds-button size="sm" type="submit" [disabled]="saving() || !canEditModel()">{{
+                    'resource.save' | transloco
+                  }}</app-ds-button>
+                </form>
+              }
+              <p class="resource-editor__note">{{ 'resource.existingSafety' | transloco }}</p>
+            }
+          </section>
+
+          <section class="resource-editor__card" aria-labelledby="resource-identity-heading">
+            <h3 id="resource-identity-heading">{{ 'resource.identity' | transloco }}</h3>
+            <form class="resource-editor__metadata" (ngSubmit)="saveMetadata()">
+              <label>
+                {{ 'resource.logicalName' | transloco }}
+                <input name="logicalName" [value]="resource()!.logicalName" readonly />
+              </label>
+              <label>
+                {{ 'resource.resourceGroup' | transloco }}
+                <input name="resourceGroup" [value]="resourceGroupName()" readonly />
+              </label>
+              <label class="resource-editor__metadata-description">
+                {{ 'resource.description' | transloco }}
+                <input
+                  name="resourceDescription"
+                  [value]="descriptionDraft()"
+                  (input)="updateDescription($any($event.target).value)"
+                />
+              </label>
+              <label class="resource-editor__metadata-tags">
+                {{ 'resource.tags' | transloco }}
+                <textarea
+                  name="resourceTags"
+                  rows="2"
+                  [value]="tagsDraft()"
+                  (input)="updateTags($any($event.target).value)"
+                ></textarea>
+                <span>{{ 'resource.tagsHelp' | transloco }}</span>
+              </label>
+              @if (tagError()) {
+                <p class="resource-editor__error" role="alert">
+                  {{ 'resource.tagsInvalid' | transloco }}
+                </p>
+              }
+              <app-ds-button
+                class="resource-editor__metadata-save"
+                variant="primary"
+                type="submit"
+                [disabled]="saving() || !canEditModel()"
+                >{{ 'resource.save' | transloco }}</app-ds-button
+              >
+            </form>
+          </section>
+
+          @if (!resource()!.isExisting) {
+            <section class="resource-editor__card" aria-labelledby="resource-forced-name-heading">
+              <h3 id="resource-forced-name-heading">{{ 'resource.forcedName' | transloco }}</h3>
+              <p class="resource-editor__note">{{ 'resource.forcedNameHelp' | transloco }}</p>
+              @if (!hasForcedNames() && !showForcedNameEditor()) {
+                <p class="resource-editor__empty-forced-name">
+                  {{ 'resource.noForcedNames' | transloco }}
+                  <button type="button" (click)="startForcedNameEdit()">
+                    {{ 'resource.forceName' | transloco }}
+                  </button>
+                </p>
+              }
+              @if (showForcedNameEditor() || hasForcedNames()) {
+                @for (target of effectiveValues(); track target.id) {
+                  <form class="resource-editor__forced-name" (ngSubmit)="saveForcedName(target)">
+                    <label>
+                      {{ targetLabel(target) }}
+                      <input
+                        [name]="'forcedName-' + target.id"
+                        [value]="currentForcedName(target.id)"
+                        [placeholder]="'resource.forcedNamePlaceholder' | transloco"
+                        maxlength="90"
+                        (input)="updateForcedName(target.id, $any($event.target).value)"
+                      />
+                    </label>
+                    <app-ds-button
+                      size="sm"
+                      type="submit"
+                      [disabled]="
+                        saving() || !canEditModel() || !currentForcedName(target.id).trim()
+                      "
+                      >{{ 'resource.save' | transloco }}</app-ds-button
+                    >
+                  </form>
+                }
+              }
+            </section>
+          }
+        </div>
+
+        <aside class="resource-editor__side-column">
+          <section class="resource-editor__card" aria-labelledby="resource-presence-heading">
+            <h3 id="resource-presence-heading">{{ 'resource.presence' | transloco }}</h3>
+            <ul class="resource-editor__presence">
+              @for (target of effectiveValues(); track target.id) {
+                <li>
+                  <label class="resource-editor__presence-switch">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      [attr.aria-label]="
+                        'resource.presenceForTarget' | transloco: { code: target.code }
+                      "
+                      [attr.aria-checked]="target.isPresent"
+                      [checked]="target.isPresent"
+                      [disabled]="!canTogglePresence(target)"
+                      (change)="setPresence(target)"
+                    />
+                    <span>{{ target.code }}</span>
+                  </label>
+                </li>
+              }
+            </ul>
+            <p class="resource-editor__note">{{ 'resource.presenceHelp' | transloco }}</p>
+          </section>
+        </aside>
+      </div>
+    } @else {
+      @if (resource()!.isExisting) {
+        <p class="resource-editor__note">{{ 'resource.existingPropertiesReadOnly' | transloco }}</p>
+      } @else if (rows().length === 0) {
+        <p class="resource-editor__note">{{ 'resource.noProperties' | transloco }}</p>
+      } @else {
+        <div
+          class="resource-editor__legend"
+          aria-label="{{ 'resource.propertiesLegend' | transloco }}"
+        >
+          <span
+            ><i
+              class="resource-editor__legend-swatch resource-editor__legend-swatch--override"
+              aria-hidden="true"
+            ></i
+            >{{ 'resource.environmentOverride' | transloco }}</span
+          >
+          <span
+            ><i
+              class="resource-editor__legend-swatch resource-editor__legend-swatch--resource"
+              aria-hidden="true"
+            ></i
+            >{{ 'resource.resourceValue' | transloco }}</span
+          >
+          <span
+            ><i
+              class="resource-editor__legend-swatch resource-editor__legend-swatch--default"
+              aria-hidden="true"
+            ></i
+            >{{ 'resource.catalogDefault' | transloco }}</span
+          >
+          <span class="resource-editor__legend-locked">
+            <svg aria-hidden="true" viewBox="0 0 16 16">
+              <rect x="3.5" y="7" width="9" height="7" rx="1"></rect>
+              <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"></path>
+            </svg>
+            {{ 'resource.lockedAfterPublish' | transloco }}
+          </span>
+        </div>
+        <div class="resource-editor__grid-scroll">
+          <app-property-grid
+            [rows]="rows()"
+            [disabled]="saving() || resource()!.isExisting || !canEditModel()"
+            (updateValue)="updateProperty($event)"
+            (clearOverride)="clearOverride($event.property, $event.targetId)"
+          />
+        </div>
+      }
+    }
+  }
+
+  @if (conflict(); as details) {
+    <div class="resource-editor__conflict-backdrop">
+      <section
+        class="resource-editor__conflict"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="'resource.conflictTitle' | transloco"
+        aria-describedby="resource-conflict-summary"
+        tabindex="-1"
+        cdkTrapFocus
+        [cdkTrapFocusAutoCapture]="true"
+      >
+        <header>
+          <h2>
+            {{ 'resource.conflictHeading' | transloco: { name: resource()?.logicalName ?? '' } }}
+          </h2>
+          <p id="resource-conflict-summary">
+            {{
+              'resource.conflictSummary'
+                | transloco
+                  : { baseVersion: details.baseVersion, currentVersion: details.currentVersion }
+            }}
+          </p>
+          <p>{{ 'resource.conflictHelp' | transloco }}</p>
+        </header>
+        <div class="resource-editor__conflict-table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ 'resource.conflictField' | transloco }}</th>
+                <th>{{ 'resource.savedVersion' | transloco }} {{ details.baseVersion }}</th>
+                <th>{{ 'resource.currentVersion' | transloco }} {{ details.currentVersion }}</th>
+                <th>{{ 'resource.yourValue' | transloco }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">{{ details.label | transloco }}</th>
+                <td>{{ details.original || ('resource.valueAbsent' | transloco) }}</td>
+                <td>{{ details.saved || ('resource.valueAbsent' | transloco) }}</td>
+                <td>{{ details.submitted || ('resource.valueAbsent' | transloco) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <footer>
+          <app-ds-button [disabled]="saving()" (click)="abandonConflict()">{{
+            'resource.abandon' | transloco
+          }}</app-ds-button>
+          <app-ds-button variant="primary" [disabled]="saving()" (click)="retryConflict()">{{
+            'resource.resumeVersion' | transloco: { version: details.currentVersion }
+          }}</app-ds-button>
+        </footer>
+      </section>
+    </div>
+  }
+</section>

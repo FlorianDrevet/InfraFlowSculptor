@@ -56,6 +56,7 @@ export type { ObjectType } from './models/object-type';
 export type { OrganizationMemberResponse } from './models/organization-member-response';
 export type { OrganizationRole } from './models/organization-role';
 export type { OrganizationSummaryResponse } from './models/organization-summary-response';
+export type { PreviewResourceNameRequest } from './models/preview-resource-name-request';
 export type { ProblemDetails } from './models/problem-details';
 export type { ProjectEnvironmentResponse } from './models/project-environment-response';
 export type { ProjectNamingIssueResponse } from './models/project-naming-issue-response';
@@ -73,6 +74,11 @@ export type { ProjectWizardEnvironmentRequest } from './models/project-wizard-en
 export type { RemovedResourceBehavior } from './models/removed-resource-behavior';
 export type { RenameOrganizationRequest } from './models/rename-organization-request';
 export type { ResourceChildResponse } from './models/resource-child-response';
+export type { ResourceDeletionImpactArea } from './models/resource-deletion-impact-area';
+export type { ResourceDeletionImpactItemResponse } from './models/resource-deletion-impact-item-response';
+export type { ResourceDeletionImpactKind } from './models/resource-deletion-impact-kind';
+export type { ResourceDeletionImpactResponse } from './models/resource-deletion-impact-response';
+export type { ResourceDeletionImpactStatus } from './models/resource-deletion-impact-status';
 export type { ResourceGroupResponse } from './models/resource-group-response';
 export type { ResourceResponse } from './models/resource-response';
 export type { RestoreProjectRequest } from './models/restore-project-request';
@@ -93,6 +99,7 @@ export type { UpdateMePreferencesRequest } from './models/update-me-preferences-
 export type { UpdateOrganizationAccessRestrictionsRequest } from './models/update-organization-access-restrictions-request';
 export type { UpdateProjectEnvironmentRequest } from './models/update-project-environment-request';
 export type { UpdateProjectSettingsRequest } from './models/update-project-settings-request';
+export type { UpdateResourceMetadataRequest } from './models/update-resource-metadata-request';
 export type { VersionResponse } from './models/version-response';
 
 export type { GetVersion$Params as GetVersion$Params } from './fn/infra-flow-sculptor-api/get-version';
@@ -199,10 +206,16 @@ export type { UpdateResourceGroup$Params as UpdateResourceGroup$Params } from '.
 export { updateResourceGroup as updateResourceGroup } from './fn/components/update-resource-group';
 export type { DeleteResourceGroup$Params as DeleteResourceGroup$Params } from './fn/components/delete-resource-group';
 export { deleteResourceGroup as deleteResourceGroup } from './fn/components/delete-resource-group';
+export type { PreviewResourceName$Params as PreviewResourceName$Params } from './fn/resources/preview-resource-name';
+export { previewResourceName as previewResourceName } from './fn/resources/preview-resource-name';
+export type { GetResourceDeletionImpact$Params as GetResourceDeletionImpact$Params } from './fn/resources/get-resource-deletion-impact';
+export { getResourceDeletionImpact as getResourceDeletionImpact } from './fn/resources/get-resource-deletion-impact';
 export type { AddResource$Params as AddResource$Params } from './fn/resources/add-resource';
 export { addResource as addResource } from './fn/resources/add-resource';
 export type { SetResourceProperties$Params as SetResourceProperties$Params } from './fn/resources/set-resource-properties';
 export { setResourceProperties as setResourceProperties } from './fn/resources/set-resource-properties';
+export type { UpdateResourceMetadata$Params as UpdateResourceMetadata$Params } from './fn/resources/update-resource-metadata';
+export { updateResourceMetadata as updateResourceMetadata } from './fn/resources/update-resource-metadata';
 export type { SetOverride$Params as SetOverride$Params } from './fn/resources/set-override';
 export { setOverride as setOverride } from './fn/resources/set-override';
 export type { ClearOverride$Params as ClearOverride$Params } from './fn/resources/clear-override';

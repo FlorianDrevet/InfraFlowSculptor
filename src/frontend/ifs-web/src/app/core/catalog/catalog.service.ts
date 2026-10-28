@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Api } from '../api/generated/api';
-import { getCatalogTypes } from '../api/generated';
+import { getCatalogType, getCatalogTypes } from '../api/generated';
 
 @Injectable({ providedIn: 'root' })
 export class CatalogService {
@@ -8,5 +8,9 @@ export class CatalogService {
 
   types(version: string) {
     return this.api.invoke(getCatalogTypes, { version });
+  }
+
+  type(version: string, type: string) {
+    return this.api.invoke(getCatalogType, { version, type });
   }
 }

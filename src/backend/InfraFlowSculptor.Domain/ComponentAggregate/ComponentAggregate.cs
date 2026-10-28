@@ -472,6 +472,12 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
         return Result.Success;
     }
 
+    public ErrorOr<Success> UpdateResourceMetadata(
+        Guid resourceId,
+        string description,
+        IEnumerable<KeyValuePair<string, string>> tags) =>
+        UpdateResource(resourceId, resource => resource.SetMetadata(description, tags));
+
     public ErrorOr<Success> SetResourceOverride(Guid resourceId, Guid targetId, string propertyName, JsonElement value) =>
         UpdateResource(resourceId, resource => resource.SetOverride(targetId, propertyName, value));
 

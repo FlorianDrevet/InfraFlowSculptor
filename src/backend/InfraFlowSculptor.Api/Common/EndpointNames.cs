@@ -63,7 +63,10 @@ public static class EndpointNames
     public const string UpdateResourceGroup = "UpdateResourceGroup";
     public const string DeleteResourceGroup = "DeleteResourceGroup";
     public const string AddResource = "AddResource";
+    public const string PreviewResourceName = "PreviewResourceName";
+    public const string UpdateResourceMetadata = "UpdateResourceMetadata";
     public const string GetEffectiveValues = "GetEffectiveValues";
+    public const string GetResourceDeletionImpact = "GetResourceDeletionImpact";
     public const string SetResourceProperties = "SetResourceProperties";
     public const string SetOverride = "SetOverride";
     public const string ClearOverride = "ClearOverride";
