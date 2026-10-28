@@ -411,8 +411,8 @@ async function runComponentRecipe(
   await page.goto(componentsUrl);
   await waitForComponentsListReady(page);
   await expect(page.locator('.project-components__list li')).toHaveCount(3);
-  await page.keyboard.press('Escape');
   await expect(page.locator('.cdk-overlay-backdrop, dialog[open]')).toHaveCount(0);
+  await waitForViewTransition(page);
   await page.screenshot({
     path: resolve(screenshotDirectory, `Components-${viewportWidth}.png`),
     fullPage: false,
@@ -486,6 +486,18 @@ async function clearRecipeComponents(page: Page, componentsUrl: string): Promise
 
 async function waitForComponentsListReady(page: Page): Promise<void> {
   await expect(page.locator('.project-components__empty, .project-components__list')).toBeVisible();
+}
+
+async function waitForViewTransition(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const animations = document.getAnimations().filter((animation) => {
+      const effect = animation.effect;
+      return (
+        effect instanceof KeyframeEffect && effect.pseudoElement?.startsWith('::view-transition')
+      );
+    });
+    await Promise.all(animations.map((animation) => animation.finished.catch(() => undefined)));
+  });
 }
 
 async function createPerEnvironmentComponent(
