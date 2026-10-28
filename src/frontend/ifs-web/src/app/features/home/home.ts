@@ -48,6 +48,7 @@ export class Home implements OnInit, OnDestroy {
       labelKey: 'shell.home',
       path: '/',
       scope: 'workspace',
+      iconName: 'home',
     });
   }
 

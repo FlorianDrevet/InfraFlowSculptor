@@ -45,6 +45,12 @@ const keyPattern = /['"]([\w.-]+)['"]\s*\|\s*transloco\b|\bt\(\s*['"]([\w.-]+)['
 for (const match of source.matchAll(keyPattern)) {
   usedKeys.add(match[1] ?? match[2]);
 }
+const literalKeyPattern = /['"]([\w.-]+)['"]/g;
+for (const match of source.matchAll(literalKeyPattern)) {
+  if (frenchKeys.includes(match[1])) {
+    usedKeys.add(match[1]);
+  }
+}
 
 for (const key of frenchKeys) {
   if (!usedKeys.has(key)) {

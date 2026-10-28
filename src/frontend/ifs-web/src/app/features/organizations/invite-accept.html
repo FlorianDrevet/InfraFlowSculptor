@@ -1,0 +1,86 @@
+<main class="invite-accept">
+  <div class="invite-accept__brand"><app-brand /></div>
+  @if (loading()) {
+    <p class="invite-accept__status" role="status">{{ 'organization.invitationLoading' | transloco }}</p>
+  } @else if (loadError() || !preview()) {
+    <section class="invite-accept__card" aria-labelledby="invite-accept-title">
+      <h1 id="invite-accept-title">{{ 'organization.invitationAcceptTitle' | transloco }}</h1>
+      <p class="invite-accept__error" role="alert">{{ 'organization.invitationPreviewLoadError' | transloco }}</p>
+    </section>
+  } @else {
+    <section class="invite-accept__card" aria-labelledby="invite-accept-title">
+      <header class="invite-accept__header">
+        <span class="invite-accept__avatar" aria-hidden="true">
+          {{ preview()!.organizationName.slice(0, 2).toUpperCase() }}
+        </span>
+        <div>
+          <h1 id="invite-accept-title">{{ 'organization.invitationAcceptTitle' | transloco }}</h1>
+          <h2>{{ 'organization.invitationJoining' | transloco: { organizationName: preview()!.organizationName } }}</h2>
+          <p>
+            {{ 'organization.invitationDescription' | transloco: {
+              email: preview()!.email,
+              expiresAt: formatDate(preview()!.expiresAt)
+            } }}
+          </p>
+        </div>
+      </header>
+
+      <section class="invite-accept__benefits" aria-labelledby="invite-accept-benefits-title">
+        <h3 id="invite-accept-benefits-title">{{ 'organization.invitationBenefits' | transloco }}</h3>
+        <dl>
+          @for (role of preview()!.roles; track role) {
+            <div>
+              <dt>{{ 'organization.invitationOrganizationRole' | transloco }}</dt>
+              <dd>{{ roleLabel(role) }}</dd>
+            </div>
+          }
+        </dl>
+      </section>
+
+      @if (accepted()) {
+        <p class="invite-accept__success" role="status">
+          {{ 'organization.invitationAccepted' | transloco: { organizationName: preview()!.organizationName } }}
+        </p>
+      } @else {
+        @let message = acceptError() ?? statusMessage();
+        @if (message === 'matching') {
+          <div class="invite-accept__banner" role="status">
+            <span class="invite-accept__banner-title">
+              {{ 'organization.invitationSignedInAs' | transloco: { email: preview()!.email } }}
+            </span>
+            <span>{{ 'organization.invitationMatchingAddress' | transloco }}</span>
+          </div>
+        } @else if (message) {
+          <p class="invite-accept__error" role="alert">
+            @switch (message) {
+              @case ('expired') {
+                {{ 'organization.invitationExpiredDetails' | transloco: { organizationName: preview()!.organizationName } }}
+              }
+              @case ('revoked') { {{ 'organization.invitationRevoked' | transloco }} }
+              @case ('alreadyAccepted') { {{ 'organization.invitationAlreadyAccepted' | transloco }} }
+              @case ('unverified') { {{ 'organization.invitationUnverifiedEmail' | transloco }} }
+              @case ('mismatch') {
+                {{ 'organization.invitationEmailMismatch' | transloco: { email: preview()!.email } }}
+              }
+              @case ('tenantDenied') {
+                {{ 'organization.invitationTenantDenied' | transloco: { organizationName: preview()!.organizationName } }}
+              }
+              @default { {{ 'organization.invitationAcceptError' | transloco }} }
+            }
+          </p>
+        }
+      }
+
+      @if (canAccept() && !accepted()) {
+        <div class="invite-accept__actions">
+          <app-ds-button
+            variant="primary"
+            type="button"
+            [disabled]="accepting()"
+            (click)="accept()"
+          >{{ 'organization.invitationAcceptAction' | transloco: { organizationName: preview()!.organizationName } }}</app-ds-button>
+        </div>
+      }
+    </section>
+  }
+</main>

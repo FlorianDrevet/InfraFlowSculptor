@@ -1,0 +1,125 @@
+<section class="organization-invitations" aria-labelledby="organization-invitations-title">
+  <header class="organization-invitations__header">
+    <div>
+      <h2 id="organization-invitations-title">{{ 'organization.invitationsTitle' | transloco }}</h2>
+      @if (allowedEmailDomains().length > 0) {
+        <p>{{ 'organization.invitationValidityDomains' | transloco: { domains: allowedEmailDomains().join(', ') } }}</p>
+      } @else {
+        <p>{{ 'organization.invitationValidityAll' | transloco }}</p>
+      }
+    </div>
+  </header>
+
+  @if (canManage()) {
+    <form class="organization-invitations__form" (ngSubmit)="invite()">
+      <h3>{{ 'organization.invitePeopleTitle' | transloco }}</h3>
+      <app-ds-text-field
+        [label]="'organization.invitationEmail' | transloco"
+        name="invitationEmail"
+        type="email"
+        autocomplete="email"
+        [required]="true"
+        [value]="email()"
+        (valueChange)="email.set($event ?? '')"
+      />
+      <fieldset class="organization-invitations__roles">
+        <legend>{{ 'organization.invitationRoles' | transloco }}</legend>
+        @for (role of roleChoices; track role) {
+          <label>
+            <input
+              type="checkbox"
+              [checked]="selectedRoles().includes(role)"
+              (change)="toggleRole(role, $event)"
+            />
+            @switch (role) {
+              @case ('Administrator') { {{ 'organization.roleAdministrator' | transloco }} }
+              @case ('ConnectionManager') { {{ 'organization.roleConnectionManager' | transloco }} }
+              @case ('Auditor') { {{ 'organization.roleAuditor' | transloco }} }
+              @case ('Member') { {{ 'organization.roleMember' | transloco }} }
+            }
+          </label>
+        }
+      </fieldset>
+      @if (actionError()) {
+        <p class="organization-invitations__error" role="alert">
+          @switch (actionError()) {
+            @case ('form') { {{ 'organization.invitationFormError' | transloco }} }
+            @case ('access') { {{ 'organization.invitationAccessError' | transloco }} }
+            @case ('alreadyPending') { {{ 'organization.invitationPendingError' | transloco }} }
+            @default { {{ 'organization.invitationActionError' | transloco }} }
+          }
+        </p>
+      }
+      @if (sendSucceeded()) {
+        <p class="organization-invitations__success" role="status">
+          {{ 'organization.invitationSendSuccess' | transloco }}
+        </p>
+      }
+      <app-ds-button variant="primary" type="submit" [disabled]="saving() || selectedRoles().length === 0">
+        {{ 'organization.inviteAction' | transloco }}
+      </app-ds-button>
+    </form>
+  }
+
+  @if (loading()) {
+    <p role="status">{{ 'organization.loading' | transloco }}</p>
+  } @else if (loadError()) {
+    <p class="organization-invitations__error" role="alert">
+      {{ 'organization.invitationLoadError' | transloco }}
+    </p>
+  } @else if (pendingInvitations().length === 0) {
+    <p>{{ 'organization.noPendingInvitations' | transloco }}</p>
+  } @else {
+    <ul class="organization-invitations__list">
+      @for (invitation of pendingInvitations(); track invitation.id) {
+        <li class="organization-invitations__item">
+          <div class="organization-invitations__details">
+            <strong>{{ invitation.email }}</strong>
+            <ul class="organization-invitations__role-list">
+              @for (role of invitation.roles; track role) {
+                <li>
+                  @switch (role) {
+                    @case ('Administrator') { {{ 'organization.roleAdministrator' | transloco }} }
+                    @case ('ConnectionManager') { {{ 'organization.roleConnectionManager' | transloco }} }
+                    @case ('Auditor') { {{ 'organization.roleAuditor' | transloco }} }
+                    @case ('Member') { {{ 'organization.roleMember' | transloco }} }
+                  }
+                </li>
+              }
+            </ul>
+            @if (invitation.status === 'Expired') {
+              <span class="organization-invitations__expired">{{ 'organization.invitationExpired' | transloco }}</span>
+            } @else {
+              <span class="organization-invitations__expiry">
+                {{ 'organization.invitationExpiry' | transloco: { days: daysUntilExpiry(invitation) } }}
+              </span>
+            }
+          </div>
+          @if (canManage()) {
+            <div class="organization-invitations__actions">
+              <app-ds-button
+                type="button"
+                [disabled]="actionId() === invitation.id"
+                (click)="resend(invitation)"
+              >{{ 'organization.resendInvitation' | transloco }}</app-ds-button>
+              @if (invitation.status === 'Pending') {
+                <app-ds-button
+                  variant="danger"
+                  type="button"
+                  [disabled]="actionId() === invitation.id"
+                  (click)="revoke(invitation)"
+                >{{ 'organization.revokeInvitation' | transloco }}</app-ds-button>
+              }
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+
+  @if (actionError() && !canManage()) {
+    <p class="organization-invitations__error" role="alert">
+      {{ 'organization.invitationActionError' | transloco }}
+    </p>
+  }
+</section>

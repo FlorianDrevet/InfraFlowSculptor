@@ -15,7 +15,7 @@ public sealed class JobsTests(JobsTestFixture fixture)
     [SuppressMessage("Naming", "CA1707", Justification = "The S-08 plan names this acceptance test Ping_job_is_processed_once.")]
     public async Task Ping_job_is_processed_once()
     {
-        var organizationId = Guid.NewGuid();
+        var organizationId = await fixture.CreateOrganizationAsync("Ping job");
         using var request = CreateRequest(HttpMethod.Post, "/v1/dev/ping-job", organizationId);
         using var response = await fixture.Client.SendAsync(request);
 
@@ -39,9 +39,9 @@ public sealed class JobsTests(JobsTestFixture fixture)
     [SuppressMessage("Naming", "CA1707", Justification = "The S-08 plan names this acceptance test Sessions_are_served_fairly_under_saturation.")]
     public async Task Sessions_are_served_fairly_under_saturation()
     {
-        var organizationA = Guid.NewGuid();
-        var organizationB = Guid.NewGuid();
-        var organizationC = Guid.NewGuid();
+        var organizationA = await fixture.CreateOrganizationAsync("Saturation A");
+        var organizationB = await fixture.CreateOrganizationAsync("Saturation B");
+        var organizationC = await fixture.CreateOrganizationAsync("Saturation C");
         using var cancellation = new CancellationTokenSource();
         var producers = new[]
         {
@@ -148,7 +148,8 @@ public sealed class JobsTests(JobsTestFixture fixture)
         var request = new HttpRequestMessage(method, path);
         request.Headers.Authorization = new AuthenticationHeaderValue(
             "Bearer",
-            fixture.CreateAccessToken(organizationId));
+            fixture.CreateAccessToken());
+        request.Headers.Add("X-Ifs-Organization", organizationId.ToString("D"));
         return request;
     }
 

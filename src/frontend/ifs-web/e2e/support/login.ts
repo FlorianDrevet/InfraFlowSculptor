@@ -2,9 +2,13 @@ import { type Page } from '@playwright/test';
 
 const LOCAL_KEYCLOAK_ORIGIN = 'https://localhost:8080';
 const AUTH_NAVIGATION_TIMEOUT_MS = 15_000;
+const LOCAL_APP_ORIGIN = new URL(process.env['IFS_E2E_BASE_URL'] ?? 'http://localhost:4200').origin;
 
 export async function loginAsAlice(page: Page): Promise<void> {
-  const username = process.env['IFS_E2E_USERNAME'] ?? 'alice@contoso.example';
+  await loginAsUser(page, process.env['IFS_E2E_USERNAME'] ?? 'alice@contoso.example');
+}
+
+export async function loginAsUser(page: Page, username: string): Promise<void> {
   const password = process.env['IFS_E2E_PASSWORD'];
 
   if (!password) {
@@ -28,9 +32,10 @@ export async function loginAsAlice(page: Page): Promise<void> {
   await page.locator('#username').fill(username);
   await page.locator('#password').fill(password);
   const appNavigation = page.waitForURL(
-    (url) => url.origin === 'http://localhost:4200',
+    (url) => url.origin === LOCAL_APP_ORIGIN,
     { waitUntil: 'commit', timeout: AUTH_NAVIGATION_TIMEOUT_MS },
   );
   await page.locator('form button[type="submit"]').click();
   await appNavigation;
+  await page.locator('.shell').waitFor({ state: 'visible', timeout: AUTH_NAVIGATION_TIMEOUT_MS });
 }

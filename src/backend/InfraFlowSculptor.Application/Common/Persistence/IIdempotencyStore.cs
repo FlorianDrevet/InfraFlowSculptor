@@ -1,28 +1,28 @@
-using InfraFlowSculptor.Domain.Common.Identifiers;
-
 namespace InfraFlowSculptor.Application.Common.Persistence;
 
 public interface IIdempotencyStore
 {
+    Task<IIfsDbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
+
     Task<IdempotencyEntry?> FindAsync(
-        OrganizationId organizationId,
+        IdempotencyScope scope,
         Guid key,
         CancellationToken cancellationToken = default);
 
     Task<bool> TryStartAsync(
-        OrganizationId organizationId,
+        IdempotencyScope scope,
         Guid key,
         string requestHash,
         CancellationToken cancellationToken = default);
 
     Task CompleteAsync(
-        OrganizationId organizationId,
+        IdempotencyScope scope,
         Guid key,
         IdempotencyResponse response,
         CancellationToken cancellationToken = default);
 
     Task DeleteAsync(
-        OrganizationId organizationId,
+        IdempotencyScope scope,
         Guid key,
         CancellationToken cancellationToken = default);
 }

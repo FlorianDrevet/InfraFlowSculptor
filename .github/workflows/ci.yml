@@ -276,7 +276,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Verify CI artifact redaction helpers
-        run: python3 -m unittest discover --start-directory .github/scripts --pattern test_redact_ci_artifacts.py --verbose
+        run: python3 -m unittest discover --start-directory .github/scripts --pattern 'test_*.py' --verbose
 
   e2e:
     name: End-to-end tests
@@ -490,6 +490,21 @@ jobs:
             --retry-max-time 120 --max-time 5 --output /dev/null http://localhost:4200/
           run_logged api-health curl --insecure --fail --silent --show-error --retry 24 --retry-delay 5 --retry-connrefused \
             --retry-max-time 120 --max-time 5 --output /dev/null https://localhost:7246/health
+          mapfile -t ifs_postgres_container_ids < <(docker ps --filter 'ancestor=postgres:17' --format '{{.ID}}')
+          if [ "${#ifs_postgres_container_ids[@]}" -ne 1 ]; then
+            echo '::error::Expected exactly one Aspire PostgreSQL container for demo seeding.'
+            exit 1
+          fi
+          ifs_postgres_host_port="$(docker port "${ifs_postgres_container_ids[0]}" 5432/tcp | sed -n '1s/.*://p')"
+          ifs_postgres_password="$(printenv 'Parameters__postgres-password')"
+          if [ -z "$ifs_postgres_host_port" ] || [ -z "$ifs_postgres_password" ]; then
+            echo '::error::Aspire PostgreSQL connection details are unavailable for demo seeding.'
+            exit 1
+          fi
+          export ConnectionStrings__ifs="Host=127.0.0.1;Port=${ifs_postgres_host_port};Database=ifs;Username=postgres;Password=${ifs_postgres_password};SSL Mode=Disable"
+          run_logged demo-seed dotnet run --no-build \
+            --project "$repo_root/src/backend/InfraFlowSculptor.Api/InfraFlowSculptor.Api.csproj" -- seed demo
+          unset ConnectionStrings__ifs ifs_postgres_password
           pushd "$repo_root/src/frontend/ifs-web" >/dev/null
           run_logged playwright-e2e timeout --signal=TERM --kill-after=10s 18m npm run e2e
           popd >/dev/null

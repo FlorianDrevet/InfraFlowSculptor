@@ -48,7 +48,11 @@ public sealed class OutboxMessageEntity : IOrganizationOwned
 
     public DateTimeOffset? NextAttemptAt { get; private set; }
 
-    public void MarkSent(DateTimeOffset sentAt) => SentAt = sentAt;
+    public void MarkSent(DateTimeOffset sentAt)
+    {
+        SentAt = sentAt;
+        Payload = JsonSerializer.SerializeToElement<object?>(null);
+    }
 
     public bool RecordFailure(DateTimeOffset now)
     {
@@ -57,6 +61,7 @@ public sealed class OutboxMessageEntity : IOrganizationOwned
         {
             FailedAt = now;
             NextAttemptAt = null;
+            Payload = JsonSerializer.SerializeToElement<object?>(null);
             return true;
         }
 

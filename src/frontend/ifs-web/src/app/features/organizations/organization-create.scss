@@ -1,0 +1,58 @@
+.organization-form {
+  display: grid;
+  width: min(100%, 560px);
+  gap: var(--ifs-space-6);
+  margin-inline: auto;
+}
+
+.organization-form__header {
+  display: grid;
+  gap: var(--ifs-space-2);
+}
+
+.organization-form__header h1,
+.organization-form__header p {
+  margin: 0;
+}
+
+.organization-form__header p {
+  color: var(--ifs-text-2);
+}
+
+.organization-form form {
+  display: grid;
+  gap: var(--ifs-space-3);
+  padding: var(--ifs-space-6);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+}
+
+.organization-form label {
+  color: var(--ifs-text-2);
+  font-size: 13px;
+}
+
+.organization-form input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--ifs-control-height);
+  padding: 0 var(--ifs-space-3);
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-1);
+  color: var(--ifs-text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.organization-form input:focus-visible {
+  border-color: var(--ifs-signal);
+  outline: 2px solid color-mix(in srgb, var(--ifs-signal) 35%, transparent);
+  outline-offset: 1px;
+}
+
+.organization-form__error {
+  margin: 0;
+  color: var(--ifs-danger-text);
+}

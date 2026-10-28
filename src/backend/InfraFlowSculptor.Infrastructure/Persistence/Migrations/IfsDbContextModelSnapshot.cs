@@ -23,6 +23,292 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("InfraFlowSculptor.Domain.Invitations.InvitationAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("language");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.PrimitiveCollection<int[]>("RoleValues")
+                        .IsRequired()
+                        .HasColumnType("integer[]")
+                        .HasColumnName("roles");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("token_hash");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_organization_invitations");
+
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_organization_invitations_organization_id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ux_organization_invitations_token_hash");
+
+                    b.ToTable("organization_invitations", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.PrimitiveCollection<string[]>("allowedEmailDomains")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("allowed_email_domains");
+
+                    b.PrimitiveCollection<Guid[]>("allowedTenantIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("allowed_tenant_ids");
+
+                    b.HasKey("Id")
+                        .HasName("pk_organizations");
+
+                    b.ToTable("organizations", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_projects");
+
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_projects_organization_id");
+
+                    b.ToTable("projects", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.UserProfileAggregate.UserProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("display_name");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email");
+
+                    b.Property<DateTimeOffset>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_seen_at");
+
+                    b.Property<Guid>("ObjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("object_id");
+
+                    b.Property<string>("PreferredLanguage")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("preferred_language");
+
+                    b.Property<string>("PreferredTheme")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("preferred_theme");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_profiles");
+
+                    b.HasIndex("TenantId", "ObjectId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_user_profiles_tenant_id_object_id");
+
+                    b.ToTable("user_profiles", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Auditing.AuditEventEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("action");
+
+                    b.Property<string>("ActorKind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("actor_kind");
+
+                    b.Property<string>("ActorRef")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("actor_ref");
+
+                    b.Property<string>("Diff")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("diff");
+
+                    b.Property<Guid>("ObjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("object_id");
+
+                    b.Property<string>("ObjectType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("object_type");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("Via")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("via");
+
+                    b.HasKey("Id")
+                        .HasName("pk_audit_events");
+
+                    b.HasIndex("OrganizationId", "OccurredAt")
+                        .HasDatabaseName("ix_audit_events_organization_id_occurred_at");
+
+                    b.ToTable("audit_events", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Auditing.AuditPersonalDataEntity", b =>
+                {
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<string>("Field")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("field");
+
+                    b.Property<Guid?>("SubjectUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_user_id");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("value");
+
+                    b.HasKey("EventId", "Field")
+                        .HasName("pk_audit_personal_data");
+
+                    b.HasIndex("SubjectUserId")
+                        .HasDatabaseName("ix_audit_personal_data_subject_user_id");
+
+                    b.ToTable("audit_personal_data", (string)null);
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Common.IdempotencyKeyEntity", b =>
                 {
                     b.Property<Guid>("OrganizationId")
@@ -193,6 +479,179 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasName("pk_scheduled_job_leases");
 
                     b.ToTable("scheduled_job_leases", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Common.UserIdempotencyKeyEntity", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid>("UserObjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_object_id");
+
+                    b.Property<Guid>("Key")
+                        .HasColumnType("uuid")
+                        .HasColumnName("key");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("request_hash");
+
+                    b.Property<JsonElement?>("Response")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("response");
+
+                    b.Property<int?>("StatusCode")
+                        .HasColumnType("integer")
+                        .HasColumnName("status_code");
+
+                    b.HasKey("TenantId", "UserObjectId", "Key")
+                        .HasName("pk_user_idempotency_keys");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_user_idempotency_keys_created_at");
+
+                    b.ToTable("user_idempotency_keys", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Identity.OrganizationFeatureAccessEntity", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("FeatureKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("feature_key");
+
+                    b.HasKey("OrganizationId", "FeatureKey")
+                        .HasName("pk_organization_feature_access");
+
+                    b.ToTable("organization_feature_access", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.Invitations.InvitationAggregate", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_organization_invitations_organizations_organization_id");
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", b =>
+                {
+                    b.OwnsMany("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationMember", "Members", b1 =>
+                        {
+                            b1.Property<Guid>("OrganizationId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("organization_id");
+
+                            b1.Property<Guid>("UserProfileId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("user_profile_id");
+
+                            b1.PrimitiveCollection<int[]>("RoleValues")
+                                .IsRequired()
+                                .HasColumnType("integer[]")
+                                .HasColumnName("roles");
+
+                            b1.HasKey("OrganizationId", "UserProfileId")
+                                .HasName("pk_organization_members");
+
+                            b1.ToTable("organization_members", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("OrganizationId")
+                                .HasConstraintName("fk_organization_members_organizations_organization_id");
+                        });
+
+                    b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_projects_organizations_organization_id");
+
+                    b.OwnsMany("InfraFlowSculptor.Domain.OrganizationAggregate.ProjectRoleAssignment", "RoleAssignments", b1 =>
+                        {
+                            b1.Property<Guid>("ProjectId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("project_id");
+
+                            b1.Property<Guid>("Principal")
+                                .HasColumnType("uuid")
+                                .HasColumnName("principal_id");
+
+                            b1.Property<int>("Role")
+                                .HasColumnType("integer")
+                                .HasColumnName("role");
+
+                            b1.Property<int>("Scope")
+                                .HasColumnType("integer")
+                                .HasColumnName("scope");
+
+                            b1.Property<Guid>("OrganizationId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("organization_id");
+
+                            b1.HasKey("ProjectId", "Principal", "Role", "Scope")
+                                .HasName("pk_project_role_assignments");
+
+                            b1.HasIndex("OrganizationId", "Principal")
+                                .HasDatabaseName("ix_project_role_assignments_organization_principal");
+
+                            b1.ToTable("project_role_assignments", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProjectId")
+                                .HasConstraintName("fk_project_role_assignments_projects_project_id");
+                        });
+
+                    b.Navigation("RoleAssignments");
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Auditing.AuditEventEntity", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_audit_events_organizations_organization_id");
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Auditing.AuditPersonalDataEntity", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Infrastructure.Persistence.Auditing.AuditEventEntity", "AuditEvent")
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_audit_personal_data_audit_events_event_id");
+
+                    b.HasOne("InfraFlowSculptor.Domain.UserProfileAggregate.UserProfile", null)
+                        .WithMany()
+                        .HasForeignKey("SubjectUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_audit_personal_data_user_profiles_subject_user_id");
+
+                    b.Navigation("AuditEvent");
                 });
 #pragma warning restore 612, 618
         }

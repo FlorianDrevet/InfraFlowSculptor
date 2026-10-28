@@ -15,6 +15,8 @@ module.exports = defineConfig([
         projectService: {
           allowDefaultProject: [
             'e2e/shell.spec.ts',
+            'e2e/organization.spec.ts',
+            'e2e/organization-audit.spec.ts',
             'e2e/support/login.ts',
             'playwright.config.ts',
           ],

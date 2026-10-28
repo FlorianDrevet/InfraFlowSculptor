@@ -19,6 +19,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function parseProblem(value: unknown): Record<string, unknown> {
+  if (isRecord(value)) {
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    return {};
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return isRecord(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 function parseFieldErrors(value: unknown): ApiFieldErrors {
   if (!isRecord(value)) {
     return {};
@@ -38,7 +55,7 @@ function parseFieldErrors(value: unknown): ApiFieldErrors {
 }
 
 export function normalizeHttpError(error: HttpErrorResponse): ApiError {
-  const problem = isRecord(error.error) ? error.error : {};
+  const problem = parseProblem(error.error);
   const code =
     (typeof problem['code'] === 'string' && problem['code']) ||
     (typeof problem['type'] === 'string' && problem['type'] !== 'about:blank' && problem['type']) ||

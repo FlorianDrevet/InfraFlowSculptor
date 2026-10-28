@@ -1,8 +1,20 @@
 import { isDevMode } from '@angular/core';
 import { Routes } from '@angular/router';
 import { authenticatedGuard } from './core/auth/authenticated.guard';
+import { featureGuard } from './core/features/feature.guard';
+import { FEATURES } from './core/features/feature-keys';
+import {
+  organizationMembershipGuard,
+  organizationSelectionGuard,
+} from './core/organizations/organization.guards';
 
 export const routes: Routes = [
+  {
+    path: 'invitations/:token',
+    canActivate: [authenticatedGuard],
+    loadComponent: () => import('./features/organizations/invite-accept').then(m => m.InviteAccept),
+    title: 'Accepter une invitation',
+  },
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
@@ -15,8 +27,49 @@ export const routes: Routes = [
     children: [
       {
         path: '',
+        canActivate: [organizationSelectionGuard],
         loadComponent: () => import('./features/home/home').then((m) => m.Home),
         title: 'Accueil',
+      },
+      {
+        path: 'organizations/new',
+        canActivate: [featureGuard(FEATURES.organizations)],
+        loadComponent: () =>
+          import('./features/organizations/organization-create').then((m) => m.OrganizationCreate),
+        title: 'Créer une organisation',
+      },
+      {
+        path: 'organizations/:id',
+        canActivate: [organizationMembershipGuard],
+        children: [
+          {
+            path: 'settings',
+            canActivate: [featureGuard(FEATURES.organizations)],
+            loadComponent: () =>
+              import('./features/organizations/organization-settings').then(
+                (m) => m.OrganizationSettings,
+              ),
+            title: 'Organisation — paramètres',
+          },
+          {
+            path: 'members',
+            canActivate: [featureGuard(FEATURES.organizations)],
+            loadComponent: () =>
+              import('./features/organizations/organization-members').then(
+                (m) => m.OrganizationMembers,
+              ),
+            title: 'Membres de l’organisation',
+          },
+          {
+            path: 'audit',
+            canActivate: [featureGuard(FEATURES.organizations)],
+            loadComponent: () =>
+              import('./features/organizations/organization-audit').then(
+                (m) => m.OrganizationAudit,
+              ),
+            title: 'Journal d’audit',
+          },
+        ],
       },
       {
         path: 'profile',

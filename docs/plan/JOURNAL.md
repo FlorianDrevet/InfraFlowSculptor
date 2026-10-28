@@ -66,3 +66,15 @@
 | 2026-10-27 03:03 | Codex | `P-08` : shop43 et shop44 nettoyés après leurs dernières preuves ; C5/C3, 67 empreintes de journaux et coût global vérifiés. Le contrôle quotidien par groupe a reçu HTTP 429 et reste un écart explicite accepté selon la consigne de Florian. | docs/plan/revues/P-08-nettoyage-shop44-20261027.md |
 | 2026-10-27 04:16 | Codex | `P-08` terminée | commit `f99e3cc` |
 | 2026-10-27 04:57 | Codex | `R-03` auto-validée | R-03-autovalidation.md |
+| 2026-10-27 10:31 | Codex | `J0-01` recette autonome à exécuter |  |
+| 2026-10-27 10:31 | Codex | `J0-01` reprise après recette autonome vérifiée |  |
+| 2026-10-27 10:34 | Codex | `J0-01` terminée | commit `bc6c2c4` |
+| 2026-10-27 11:44 | Codex | `J0-02` terminée | commit `6310642` |
+| 2026-10-27 13:14 | Codex | `J0-03` terminée | commit `a887316` |
+| 2026-10-27 14:27 | Codex | `J0-04` recette autonome à exécuter |  |
+| 2026-10-27 15:42 | Codex | `J0-04` reprise après recette autonome vérifiée |  |
+| 2026-10-27 15:42 | Codex | `J0-04` terminée | commit `b249f29` |
+| 2026-10-27 16:25 | Codex | `J0-05` terminée | commit `3e5fd64` |
+| 2026-10-27 17:53 | Codex | `R-04` blocage confirmé | docs/plan/revues/R-04-blocage-idempotence.md |
+| 2026-10-27 18:25 | Codex | `R-04` blocage résolu | docs/plan/revues/R-04-blocage-idempotence.md |
+| 2026-10-27 19:25 | Codex | `R-04` auto-validée | R-04-autovalidation.md |

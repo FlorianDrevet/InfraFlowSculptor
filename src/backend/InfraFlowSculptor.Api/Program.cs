@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.HttpOverrides;
+using System.Text.Json.Serialization;
 using Scalar.AspNetCore;
 using InfraFlowSculptor.Api;
 using InfraFlowSculptor.Api.Common;
@@ -15,6 +16,12 @@ using InfraFlowSculptor.Infrastructure.Authentication;
 using InfraFlowSculptor.Infrastructure.Configuration;
 using InfraFlowSculptor.Infrastructure.Persistence;
 
+if (DemoDataSeeder.IsInvocation(args))
+{
+    await DemoDataSeeder.RunAsync();
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 var isOpenApiBuild = OpenApiBuildContext.IsDocumentGeneration;
 
@@ -30,6 +37,8 @@ if (isOpenApiBuild)
 
 builder.AddServiceDefaults();
 builder.Services.AddProblemDetails();
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 // Container Apps' ingress is the only external route to the application container.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -88,8 +97,11 @@ if (!isOpenApiBuild)
     app.UseStatusCodePages();
     app.UseCors();
     app.UseAuthentication();
+    app.UseMiddleware<UserProfileSyncMiddleware>();
+    app.UseMiddleware<OrganizationContextMiddleware>();
     app.UseMiddleware<RequestLoggingScopeMiddleware>();
     app.UseAuthorization();
+    app.UseMiddleware<FeatureAvailabilityMiddleware>();
     app.UseRateLimiter();
 
     app.MapDefaultEndpoints();
@@ -116,6 +128,10 @@ if (app.Environment.IsDevelopment())
 var v1 = app.MapGroup("/v1");
 v1.MapSystemEndpoints();
 v1.MapMeEndpoints();
+v1.MapOrganizationEndpoints();
+v1.MapInvitationEndpoints();
+v1.MapProjectEndpoints();
+v1.MapFeatureEndpoints();
 if (!isOpenApiBuild && (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing")))
 {
     v1.MapDevelopmentEndpoints();

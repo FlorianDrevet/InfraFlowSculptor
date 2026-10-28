@@ -8,6 +8,8 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var postgresPassword = builder.AddParameter("postgres-password", secret: true);
 var persistentContainers = builder.Configuration.GetValue<bool>("AppHost:PersistentContainers");
+var webPort = builder.Configuration.GetValue<int?>("AppHost:WebPort") ?? 4200;
+var webOrigin = $"http://localhost:{webPort}";
 var isTesting = builder.Environment.IsEnvironment("Testing");
 var enableDevelopmentExtras = builder.Configuration.GetValue<bool?>("AppHost:EnableDevelopmentExtras")
     ?? builder.Environment.IsDevelopment();
@@ -81,6 +83,10 @@ if (enableDevelopmentExtras)
     redis = redis.WithRedisInsight();
 }
 
+var mailpit = enableDevelopmentExtras || isTesting
+    ? builder.AddMailPit(ResourceNames.MailPit).WithLifetime(containerLifetime)
+    : null;
+
 var api = builder
     .AddProject<Projects.InfraFlowSculptor_Api>(ResourceNames.Api)
     .WithReference(database)
@@ -94,7 +100,7 @@ var api = builder
     .WithEnvironment("Auth__Authority", "https://localhost:8080/realms/ifs")
     .WithEnvironment("Auth__Audience", "ifs-api")
     .WithEnvironment("Auth__Provider", "Keycloak")
-    .WithEnvironment("Cors__AllowedOrigins__0", "http://localhost:4200")
+    .WithEnvironment("Cors__AllowedOrigins__0", webOrigin)
     .WithEnvironment("Ifs__Development__EnableGitea", enableDevelopmentExtras ? "true" : "false")
     .WithEnvironment("DOTNET_ENVIRONMENT", builder.Environment.EnvironmentName)
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", builder.Environment.EnvironmentName)
@@ -109,14 +115,6 @@ if (isTesting)
 }
 else
 {
-    if (enableDevelopmentExtras)
-    {
-        var mailpit = builder
-            .AddMailPit(ResourceNames.MailPit)
-            .WithLifetime(containerLifetime);
-        api = api.WithReference(mailpit).WaitFor(mailpit);
-    }
-
     var keycloakAdminPassword = builder.AddParameter("keycloak-admin-password", secret: true);
     var keycloakBuilder = builder
         .AddKeycloak(ResourceNames.Keycloak, port: 8080, adminPassword: keycloakAdminPassword);
@@ -158,8 +156,8 @@ else
 
     builder.AddJavaScriptApp(ResourceNames.Web, "../../frontend/ifs-web")
         .WithRunScript("start")
-        .WithArgs("--", "--port", "4200")
-        .WithHttpEndpoint(port: 4200, targetPort: 4200, name: "http", isProxied: false)
+        .WithArgs("--", "--port", webPort.ToString(System.Globalization.CultureInfo.InvariantCulture))
+        .WithHttpEndpoint(port: webPort, targetPort: webPort, name: "http", isProxied: false)
         .WithEnvironment("IFS_API_URL", api.GetEndpoint("https"))
         .WithEnvironment("IFS_OIDC_PROVIDER", "keycloak")
         .WithEnvironment("IFS_OIDC_AUTHORITY", "https://localhost:8080/realms/ifs")
@@ -175,7 +173,15 @@ var worker = builder.AddProject<Projects.InfraFlowSculptor_Worker>(ResourceNames
     .WaitFor(postgres)
     .WaitFor(serviceBus)
     .WithEnvironment("DOTNET_ENVIRONMENT", builder.Environment.EnvironmentName)
+    .WithEnvironment("Invitations__BaseUrl", webOrigin)
     .WithEnvironment("Ifs__ServiceBus__IsEmulator", "true");
+if (mailpit is not null)
+{
+    worker = worker
+        .WithReference(mailpit, "email")
+        .WithEnvironment("Email__SenderAddress", "no-reply@infraflowsculptor.local")
+        .WaitFor(mailpit);
+}
 var configuredMaxConcurrentSessions = builder.Configuration.GetValue<int?>("Jobs:MaxConcurrentSessions");
 if (isTesting || configuredMaxConcurrentSessions.HasValue)
 {

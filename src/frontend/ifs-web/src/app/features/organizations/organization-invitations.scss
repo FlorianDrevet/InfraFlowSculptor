@@ -1,0 +1,141 @@
+.organization-invitations {
+  display: grid;
+  gap: var(--ifs-space-4);
+  padding: var(--ifs-space-4);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+}
+
+.organization-invitations__header h2,
+.organization-invitations__form h3 {
+  margin: 0;
+}
+
+.organization-invitations__header p {
+  margin: var(--ifs-space-1) 0 0;
+  color: var(--ifs-text-2);
+  font-size: 13px;
+}
+
+.organization-invitations__form {
+  display: grid;
+  gap: var(--ifs-space-3);
+  max-width: 560px;
+  padding-block: var(--ifs-space-4);
+  border-bottom: 1px solid var(--ifs-line);
+}
+
+.organization-invitations__form h3 {
+  font-size: 15px;
+}
+
+.organization-invitations__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ifs-space-3);
+  margin: 0;
+  padding: var(--ifs-space-3);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-md);
+}
+
+.organization-invitations__roles legend {
+  padding-inline: var(--ifs-space-1);
+  color: var(--ifs-text-2);
+  font-size: 12px;
+}
+
+.organization-invitations__roles label {
+  display: flex;
+  align-items: center;
+  gap: var(--ifs-space-2);
+  font-size: 13px;
+}
+
+.organization-invitations__list,
+.organization-invitations__role-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.organization-invitations__list {
+  display: grid;
+}
+
+.organization-invitations__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ifs-space-4);
+  padding-block: var(--ifs-space-3);
+  border-bottom: 1px solid var(--ifs-line);
+}
+
+.organization-invitations__item:last-child {
+  border-bottom: 0;
+}
+
+.organization-invitations__details {
+  display: grid;
+  min-width: 0;
+  gap: var(--ifs-space-1);
+  overflow-wrap: anywhere;
+}
+
+.organization-invitations__details > strong {
+  font-family: var(--ifs-font-mono);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.organization-invitations__role-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ifs-space-2);
+  color: var(--ifs-text-2);
+  font-size: 13px;
+}
+
+.organization-invitations__role-list li:not(:last-child)::after {
+  content: ' ·';
+}
+
+.organization-invitations__expiry,
+.organization-invitations__expired {
+  color: var(--ifs-text-2);
+  font-size: 12px;
+}
+
+.organization-invitations__expired,
+.organization-invitations__error {
+  color: var(--ifs-danger-text);
+}
+
+.organization-invitations__error,
+.organization-invitations__success {
+  margin: 0;
+}
+
+.organization-invitations__success {
+  color: var(--ifs-success-text);
+}
+
+.organization-invitations__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ifs-space-2);
+}
+
+@media (max-width: 600px) {
+  .organization-invitations__item {
+    align-items: flex-start;
+  }
+
+  .organization-invitations__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

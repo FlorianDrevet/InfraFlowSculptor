@@ -3,14 +3,19 @@ using Azure.Messaging.ServiceBus;
 using InfraFlowSculptor.Application.Common.Events;
 using InfraFlowSculptor.Application.Common.Jobs;
 using InfraFlowSculptor.Application.Common.Persistence;
+using InfraFlowSculptor.Application.Common.Notifications;
 using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.Common.Models;
+using InfraFlowSculptor.Domain.Invitations;
+using InfraFlowSculptor.Domain.OrganizationAggregate;
 using InfraFlowSculptor.Infrastructure.Persistence;
 using InfraFlowSculptor.Infrastructure.Persistence.Common;
 using InfraFlowSculptor.Infrastructure.Tests.Persistence;
+using InfraFlowSculptor.Infrastructure.Email;
 using InfraFlowSculptor.Worker.Jobs;
 using InfraFlowSculptor.Worker.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -45,6 +50,47 @@ public sealed class WorkerOutboxTests(PostgreSqlFixture postgres) : IClassFixtur
         Assert.Equal(OutboxMessageEntity.MaximumAttempts, message.Attempts);
         Assert.Equal(finalFailureAt, message.FailedAt);
         Assert.Null(message.NextAttemptAt);
+    }
+
+    [Fact]
+    public void OutboxMessageClearsPayloadAfterDelivery()
+    {
+        var organizationId = new OrganizationId(Guid.NewGuid());
+        var payload = JsonDocument.Parse("""{"token":"temporary-secret"}""").RootElement.Clone();
+        var message = new OutboxMessageEntity(new OutboxMessageData(
+            Guid.NewGuid(),
+            organizationId,
+            JobQueueNames.Notifications,
+            organizationId.Value.ToString("D"),
+            "test.notification",
+            payload,
+            DateTimeOffset.UtcNow));
+
+        message.MarkSent(DateTimeOffset.UtcNow);
+
+        Assert.Equal(JsonValueKind.Null, message.Payload.ValueKind);
+    }
+
+    [Fact]
+    public void OutboxMessageClearsPayloadAfterPermanentFailure()
+    {
+        var organizationId = new OrganizationId(Guid.NewGuid());
+        var payload = JsonDocument.Parse("""{"token":"temporary-secret"}""").RootElement.Clone();
+        var message = new OutboxMessageEntity(new OutboxMessageData(
+            Guid.NewGuid(),
+            organizationId,
+            string.Empty,
+            organizationId.Value.ToString("D"),
+            "test.event",
+            payload,
+            DateTimeOffset.UtcNow));
+
+        for (var attempt = 0; attempt < OutboxMessageEntity.MaximumAttempts; attempt++)
+        {
+            message.RecordFailure(DateTimeOffset.UtcNow.AddMinutes(attempt));
+        }
+
+        Assert.Equal(JsonValueKind.Null, message.Payload.ValueKind);
     }
 
     [Fact]
@@ -94,6 +140,56 @@ public sealed class WorkerOutboxTests(PostgreSqlFixture postgres) : IClassFixtur
         var processed = await verifyContext.ProcessedJobs.SingleAsync(item => item.JobId == eventId);
         Assert.NotNull(message.SentAt);
         Assert.Equal(handler.HandlerType, processed.HandlerType);
+    }
+
+    [Fact]
+    public async Task InvitationCreatedQueuesLocalizedEmailOnNotificationsQueue()
+    {
+        var organizationId = new OrganizationId(Guid.NewGuid());
+        var invitationId = Guid.NewGuid();
+        var now = DateTimeOffset.Parse("2026-10-27T12:00:00Z");
+        await using var context = postgres.CreateDbContext(new FixedOrganization(organizationId));
+        await context.Database.EnsureCreatedAsync();
+        context.Organizations.Add(OrganizationAggregate.Create(
+            organizationId,
+            "Contoso local",
+            new UserProfileId(Guid.NewGuid())).Value);
+        await context.SaveChangesAsync();
+
+        var dispatcher = new RecordingJobDispatcher();
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                [InvitationConfigurationKeys.BaseUrl] = "http://localhost:4200"
+            })
+            .Build();
+        var handler = new InvitationCreatedHandler(
+            dispatcher,
+            context,
+            new EmailSenderOptions("no-reply@infraflowsculptor.local"),
+            configuration);
+        var domainEvent = new InvitationCreated(
+            invitationId,
+            organizationId.Value,
+            "nina@contoso.example",
+            "a-256-bit-random-url-safe-token-value",
+            now.AddDays(7),
+            "fr");
+
+        await handler.HandleAsync(
+            domainEvent,
+            new DomainEventExecutionContext(Guid.NewGuid(), organizationId, now),
+            CancellationToken.None);
+
+        var queued = Assert.IsType<SendNotificationJob>(dispatcher.Job);
+        Assert.Equal(JobQueue.Notifications, dispatcher.Queue);
+        Assert.Equal(organizationId, dispatcher.OrganizationId);
+        Assert.Equal(NotificationChannel.Email, queued.Channel);
+        Assert.Equal("no-reply@infraflowsculptor.local", queued.Email.From);
+        Assert.Equal("nina@contoso.example", queued.Email.To);
+        Assert.Contains("Contoso local", queued.Email.TextBody, StringComparison.Ordinal);
+        Assert.Contains("/invitations/a-256-bit-random-url-safe-token-value", queued.Email.TextBody, StringComparison.Ordinal);
+        Assert.Contains("Contoso local", queued.Email.HtmlBody, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -209,5 +305,23 @@ public sealed class WorkerOutboxTests(PostgreSqlFixture postgres) : IClassFixtur
     private sealed class FixedOrganization(OrganizationId id) : ICurrentOrganization
     {
         public OrganizationId? Id { get; } = id;
+    }
+
+    private sealed class RecordingJobDispatcher : IJobDispatcher
+    {
+        public JobQueue Queue { get; private set; }
+
+        public OrganizationId OrganizationId { get; private set; }
+
+        public IJob? Job { get; private set; }
+
+        public Guid Enqueue<TJob>(JobQueue queue, OrganizationId organizationId, TJob job)
+            where TJob : IJob
+        {
+            Queue = queue;
+            OrganizationId = organizationId;
+            Job = job;
+            return Guid.NewGuid();
+        }
     }
 }

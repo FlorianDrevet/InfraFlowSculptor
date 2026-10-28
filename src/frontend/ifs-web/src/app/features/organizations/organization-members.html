@@ -1,0 +1,183 @@
+<section class="organization-members">
+  <header class="organization-members__header">
+    <h1>{{ 'organization.membersTitle' | transloco }}</h1>
+  </header>
+
+  @if (loading()) {
+    <p role="status">{{ 'organization.loading' | transloco }}</p>
+  } @else if (loadError()) {
+    <p class="organization-members__error" role="alert">
+      {{ 'organization.membersLoadError' | transloco }}
+    </p>
+  } @else {
+    <app-ds-text-field
+      class="organization-members__search"
+      [label]="'organization.searchMember' | transloco"
+      name="memberSearch"
+      type="search"
+      [placeholder]="'organization.searchMemberPlaceholder' | transloco"
+      [value]="search()"
+      (valueChange)="search.set($event ?? '')"
+    />
+
+    @if (filteredMembers().length === 0) {
+      <p>{{ 'organization.noMatchingMembers' | transloco }}</p>
+    } @else {
+      <div class="organization-members__table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">{{ 'organization.memberColumn' | transloco }}</th>
+              <th scope="col">{{ 'organization.rolesColumn' | transloco }}</th>
+              @if (isAdministrator()) {
+                <th scope="col"><span class="visually-hidden">{{ 'organization.actionsColumn' | transloco }}</span></th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (member of filteredMembers(); track member.id) {
+              <tr>
+                <td [attr.data-label]="'organization.memberColumn' | transloco">
+                  <div class="organization-members__identity">
+                    <span class="organization-members__avatar" aria-hidden="true">
+                      {{ member.displayName.slice(0, 1).toUpperCase() }}
+                    </span>
+                    <span class="organization-members__person">
+                      <strong>{{ member.displayName }}</strong>
+                      @if (member.email) {
+                        <span>{{ member.email }}</span>
+                      }
+                      @if (member.isOutsideAccessRestrictions) {
+                        <span class="organization-members__restriction">
+                          {{ 'organization.outsideRestrictions' | transloco }}
+                        </span>
+                      }
+                    </span>
+                  </div>
+                </td>
+                <td [attr.data-label]="'organization.rolesColumn' | transloco">
+                  @if (editingMemberId() === member.id) {
+                    <fieldset class="organization-members__role-editor">
+                      <legend>{{ 'organization.rolesColumn' | transloco }}</legend>
+                      @for (role of roleChoices; track role) {
+                        <label>
+                          <input
+                            type="checkbox"
+                            [checked]="selectedRoles().includes(role)"
+                            (change)="toggleRole(role, $event)"
+                          />
+                          @switch (role) {
+                            @case ('Administrator') { {{ 'organization.roleAdministrator' | transloco }} }
+                            @case ('ConnectionManager') { {{ 'organization.roleConnectionManager' | transloco }} }
+                            @case ('Auditor') { {{ 'organization.roleAuditor' | transloco }} }
+                            @case ('Member') { {{ 'organization.roleMember' | transloco }} }
+                          }
+                        </label>
+                      }
+                    </fieldset>
+                  } @else {
+                    <ul class="organization-members__roles">
+                      @for (role of member.roles; track role) {
+                        <li>
+                          @switch (role) {
+                            @case ('Administrator') { {{ 'organization.roleAdministrator' | transloco }} }
+                            @case ('ConnectionManager') { {{ 'organization.roleConnectionManager' | transloco }} }
+                            @case ('Auditor') { {{ 'organization.roleAuditor' | transloco }} }
+                            @case ('Member') { {{ 'organization.roleMember' | transloco }} }
+                          }
+                        </li>
+                      }
+                    </ul>
+                  }
+                </td>
+                @if (isAdministrator()) {
+                  <td
+                    class="organization-members__actions"
+                    [attr.data-label]="'organization.actionsColumn' | transloco"
+                  >
+                    @if (editingMemberId() === member.id) {
+                      <app-ds-button
+                        variant="secondary"
+                        type="button"
+                        [disabled]="savingMemberId() === member.id || selectedRoles().length === 0"
+                        (click)="saveRoles(member)"
+                      >
+                        {{ 'organization.saveAction' | transloco }}
+                      </app-ds-button>
+                      <app-ds-button type="button" (click)="cancelRoleEdit()">
+                        {{ 'organization.cancel' | transloco }}
+                      </app-ds-button>
+                    } @else {
+                      <app-ds-button type="button" (click)="editRoles(member)">
+                        {{ 'organization.modifyMember' | transloco }}
+                      </app-ds-button>
+                      <app-ds-button
+                        variant="danger"
+                        type="button"
+                        (click)="requestRemoval(member)"
+                      >
+                        {{ 'organization.removeMember' | transloco }}
+                      </app-ds-button>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    @if (saveError()) {
+      <p class="organization-members__error" role="alert">
+        @if (lastAdministratorError()) {
+          {{ 'organization.lastAdministratorError' | transloco }}
+        } @else {
+          {{ 'organization.membersSaveError' | transloco }}
+        }
+      </p>
+    }
+
+    <app-organization-invitations
+      [id]="id()"
+      [canManage]="isAdministrator()"
+      [allowedEmailDomains]="organization()?.allowedEmailDomains ?? []"
+    />
+  }
+</section>
+
+<dialog
+  #removeDialog
+  class="organization-members__dialog"
+  aria-labelledby="organization-remove-title"
+  aria-describedby="organization-remove-impact"
+>
+  <h2 id="organization-remove-title">
+    {{ 'organization.removeMember' | transloco }} {{ pendingRemoval()?.displayName }}
+  </h2>
+  <p id="organization-remove-impact">{{ 'organization.confirmRemoval' | transloco }}</p>
+  @if (saveError()) {
+    <p class="organization-members__error" role="alert">
+      @if (lastAdministratorError()) {
+        {{ 'organization.lastAdministratorError' | transloco }}
+      } @else if (lastProjectOwnerError()) {
+        {{ 'organization.lastProjectOwnerError' | transloco }}
+      } @else {
+        {{ 'organization.membersSaveError' | transloco }}
+      }
+    </p>
+  }
+  <div class="organization-members__dialog-actions">
+    <app-ds-button type="button" (click)="cancelRemoval()">
+      {{ 'organization.cancel' | transloco }}
+    </app-ds-button>
+    <app-ds-button
+      variant="danger"
+      type="button"
+      [disabled]="!pendingRemoval() || savingMemberId() === pendingRemoval()?.id"
+      (click)="confirmRemoval()"
+    >
+      {{ 'organization.removeMember' | transloco }}
+    </app-ds-button>
+  </div>
+</dialog>

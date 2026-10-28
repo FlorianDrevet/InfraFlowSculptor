@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Reflection;
+using InfraFlowSculptor.Application.Common.Auditing;
 using ErrorOr;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
@@ -9,7 +11,8 @@ namespace InfraFlowSculptor.Application.Common.Behaviors;
 public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
     IIfsDbContext dbContext,
     ICurrentOrganization currentOrganization,
-    TimeProvider clock)
+    TimeProvider clock,
+    IAuditWriter auditWriter)
     : IPipelineBehavior<TMessage, TResponse>
     where TMessage : IMessage
 {
@@ -30,8 +33,13 @@ public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
             var response = await next(message, cancellationToken);
             if (response is IErrorOr { IsError: true })
             {
-                await transaction.RollbackAsync(cancellationToken);
+                if (transaction.IsOwner)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                }
+
                 dbContext.ClearDomainEvents();
+                dbContext.ClearTrackedChanges();
                 return response;
             }
 
@@ -54,21 +62,40 @@ public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
                     CreatedAt: clock.GetUtcNow()));
             }
 
+            foreach (var audit in typeof(TMessage).GetCustomAttributes<AuditedAttribute>())
+            {
+                await auditWriter.WriteAsync(audit, cancellationToken);
+            }
+
             await dbContext.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            if (transaction.IsOwner)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+
             dbContext.ClearDomainEvents();
             return response;
         }
         catch (ConcurrencyConflictException)
         {
-            await transaction.RollbackAsync(CancellationToken.None);
+            if (transaction.IsOwner)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+            }
+
             dbContext.ClearDomainEvents();
+            dbContext.ClearTrackedChanges();
             return (dynamic)new List<Error> { Error.Conflict("CONFLICT_VERSION") };
         }
         catch
         {
-            await transaction.RollbackAsync(CancellationToken.None);
+            if (transaction.IsOwner)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+            }
+
             dbContext.ClearDomainEvents();
+            dbContext.ClearTrackedChanges();
             throw;
         }
     }

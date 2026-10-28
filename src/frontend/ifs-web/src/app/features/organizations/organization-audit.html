@@ -1,0 +1,95 @@
+<section class="organization-audit">
+  <header class="organization-audit__header">
+    <h1>{{ 'audit.title' | transloco }}</h1>
+    <p>{{ 'audit.description' | transloco }}</p>
+  </header>
+
+  <div class="organization-audit__filters">
+    <label for="audit-period">{{ 'audit.period' | transloco }}</label>
+    <app-ds-select
+      controlId="audit-period"
+      [ariaLabel]="'audit.period' | transloco"
+      (valueChange)="selectPeriod($event)"
+    >
+      <option value="today" [selected]="period() === 'today'">{{ 'audit.periods.today' | transloco }}</option>
+      <option value="7" [selected]="period() === 7">{{ 'audit.periods.sevenDays' | transloco }}</option>
+      <option value="30" [selected]="period() === 30">{{ 'audit.periods.thirtyDays' | transloco }}</option>
+      <option value="90" [selected]="period() === 90">{{ 'audit.periods.ninetyDays' | transloco }}</option>
+    </app-ds-select>
+  </div>
+
+  @if (loading()) {
+    <p role="status">{{ 'audit.loading' | transloco }}</p>
+  } @else if (permissionDenied()) {
+    <p class="organization-audit__error" role="alert">{{ 'audit.permissionDenied' | transloco }}</p>
+  } @else if (loadError()) {
+    <div class="organization-audit__error" role="alert">
+      <p>{{ 'audit.loadError' | transloco }}</p>
+      <app-ds-button type="button" (click)="retry()">
+        {{ 'audit.retry' | transloco }}
+      </app-ds-button>
+    </div>
+  } @else if (audit(); as auditPage) {
+    @if (auditPage.items.length === 0) {
+      <p class="organization-audit__empty">{{ 'audit.empty' | transloco }}</p>
+    } @else {
+      <div class="organization-audit__table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">{{ 'audit.columns.date' | transloco }}</th>
+              <th scope="col">{{ 'audit.columns.actor' | transloco }}</th>
+              <th scope="col">{{ 'audit.columns.action' | transloco }}</th>
+              <th scope="col">{{ 'audit.columns.objectAndChanges' | transloco }}</th>
+              <th scope="col">{{ 'audit.columns.context' | transloco }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (event of auditPage.items; track event.id) {
+              <tr>
+                <td [attr.data-label]="'audit.columns.date' | transloco">
+                  <time [attr.datetime]="event.occurredAt">{{ formatDate(event.occurredAt) }}</time>
+                </td>
+                <td [attr.data-label]="'audit.columns.actor' | transloco">
+                  <span class="organization-audit__actor">{{ event.actorDisplayName }}</span>
+                  <span class="organization-audit__via">{{ viaKey(event.via) | transloco }}</span>
+                </td>
+                <td class="organization-audit__action" [attr.data-label]="'audit.columns.action' | transloco">
+                  {{ actionKey(event.action) | transloco }}
+                </td>
+                <td [attr.data-label]="'audit.columns.objectAndChanges' | transloco">
+                  <div class="organization-audit__object">{{ eventObject(event) }}</div>
+                  @if (event.diff.changes.length > 0) {
+                    <ul class="organization-audit__changes">
+                      @for (change of event.diff.changes; track change.name) {
+                        <li>
+                          <span>{{ fieldKey(change.name) | transloco }}</span>
+                          <span>{{ describeChange(change) }}</span>
+                        </li>
+                      }
+                    </ul>
+                  }
+                </td>
+                <td [attr.data-label]="'audit.columns.context' | transloco">
+                  {{ organizationContext() }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="organization-audit__pagination" [attr.aria-label]="'audit.pagination' | transloco">
+        <app-ds-button type="button" [disabled]="page() <= 1" (click)="previousPage()">
+          {{ 'audit.previous' | transloco }}
+        </app-ds-button>
+        <span aria-live="polite">
+          {{ 'audit.pageStatus' | transloco: { page: page(), pageCount: pageCount() } }}
+        </span>
+        <app-ds-button type="button" [disabled]="page() >= pageCount()" (click)="nextPage()">
+          {{ 'audit.next' | transloco }}
+        </app-ds-button>
+      </nav>
+    }
+  }
+</section>

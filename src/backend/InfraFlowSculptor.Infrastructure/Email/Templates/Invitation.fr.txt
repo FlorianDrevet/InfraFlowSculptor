@@ -1,0 +1,5 @@
+Vous avez été invité à rejoindre {{organizationName}}.
+
+Accepter l’invitation : {{invitationUrl}}
+
+Cette invitation expire le {{expiresAt}}.

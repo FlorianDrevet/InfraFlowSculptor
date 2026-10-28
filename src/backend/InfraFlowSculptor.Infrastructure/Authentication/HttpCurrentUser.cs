@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using InfraFlowSculptor.Application.Common.Security;
+using InfraFlowSculptor.Domain.Common.Identifiers;
 using Microsoft.AspNetCore.Http;
 
 namespace InfraFlowSculptor.Infrastructure.Authentication;

@@ -1,12 +1,25 @@
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
+using InfraFlowSculptor.Application.Common.Auditing;
+using InfraFlowSculptor.Domain.Common;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.Common.Models;
+using InfraFlowSculptor.Domain.OrganizationAggregate;
+using InfraFlowSculptor.Domain.Invitations;
+using InfraFlowSculptor.Domain.UserProfileAggregate;
+using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Infrastructure.Persistence.Common;
+using InfraFlowSculptor.Infrastructure.Persistence.Identity;
+using InfraFlowSculptor.Infrastructure.Persistence.Auditing;
+using InfraFlowSculptor.Infrastructure.Persistence.Projects;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata;
+using System.Reflection;
 using System.Linq.Expressions;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace InfraFlowSculptor.Infrastructure.Persistence;
 
@@ -15,11 +28,18 @@ public class IfsDbContext(
     ICurrentOrganization currentOrganization)
     : DbContext(options), IIfsDbContext
 {
+    private static readonly JsonSerializerOptions AuditJsonOptions = new()
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
+
     private readonly ICurrentOrganization currentOrganization = currentOrganization;
 
     public DbSet<OutboxMessageEntity> OutboxMessages => Set<OutboxMessageEntity>();
 
     public DbSet<IdempotencyKeyEntity> IdempotencyKeys => Set<IdempotencyKeyEntity>();
+
+    public DbSet<UserIdempotencyKeyEntity> UserIdempotencyKeys => Set<UserIdempotencyKeyEntity>();
 
     public DbSet<ScheduledJobLeaseEntity> ScheduledJobLeases => Set<ScheduledJobLeaseEntity>();
 
@@ -27,14 +47,33 @@ public class IfsDbContext(
 
     public DbSet<OrganizationJobBudgetEntity> OrganizationJobBudgets => Set<OrganizationJobBudgetEntity>();
 
+    public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
+
+    public DbSet<OrganizationAggregate> Organizations => Set<OrganizationAggregate>();
+
+    public DbSet<ProjectAggregate> Projects => Set<ProjectAggregate>();
+
+    public DbSet<InvitationAggregate> Invitations => Set<InvitationAggregate>();
+
+    public DbSet<AuditEventEntity> AuditEvents => Set<AuditEventEntity>();
+
+    public DbSet<AuditPersonalDataEntity> AuditPersonalData => Set<AuditPersonalDataEntity>();
+
+    public DbSet<OrganizationFeatureAccessEntity> OrganizationFeatureAccess => Set<OrganizationFeatureAccessEntity>();
+
     public OrganizationId? CurrentOrganizationId => currentOrganization.Id;
 
     DbSet<TEntity> IIfsDbContext.Query<TEntity>() => Set<TEntity>();
 
     public async Task<IIfsDbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
+        if (Database.CurrentTransaction is { } currentTransaction)
+        {
+            return new IfsDbTransaction(currentTransaction, isOwner: false);
+        }
+
         var transaction = await Database.BeginTransactionAsync(cancellationToken);
-        return new IfsDbTransaction(transaction);
+        return new IfsDbTransaction(transaction, isOwner: true);
     }
 
     public IReadOnlyCollection<IDomainEvent> GetDomainEvents() =>
@@ -50,6 +89,57 @@ public class IfsDbContext(
         }
     }
 
+    public void ClearTrackedChanges() => ChangeTracker.Clear();
+
+    public IReadOnlyCollection<AuditEntityChange> GetAuditChanges()
+    {
+        var changes = new List<AuditEntityChange>();
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            var auditObject = entry.Metadata.ClrType.GetCustomAttribute<AuditedObjectAttribute>();
+            if (auditObject is null
+                || entry.State is not (EntityState.Added or EntityState.Modified or EntityState.Deleted))
+            {
+                continue;
+            }
+
+            var objectId = ReadGuid(entry.Property(auditObject.IdProperty).CurrentValue);
+            var organizationId = ReadGuid(entry.Property(auditObject.OrganizationIdProperty).CurrentValue);
+            Guid? projectId = entry.Metadata.FindProperty(AuditObjectPropertyNames.ProjectId) is null
+                ? null
+                : ReadGuid(entry.Property(AuditObjectPropertyNames.ProjectId).CurrentValue);
+            var primaryKeyNames = entry.Metadata.FindPrimaryKey()?.Properties
+                .Select(property => property.Name)
+                .ToHashSet(StringComparer.Ordinal) ?? [];
+            var properties = entry.Properties
+                .Where(property => !primaryKeyNames.Contains(property.Metadata.Name)
+                    && property.Metadata.Name != nameof(IHasVersion.Version)
+                    && (entry.State != EntityState.Modified || property.IsModified))
+                .Select(property => new AuditPropertyChange(
+                    property.Metadata.Name,
+                    entry.State == EntityState.Added
+                        ? null
+                        : ToJsonElement(property.OriginalValue, entry.Metadata.ClrType, property.Metadata.Name),
+                    entry.State == EntityState.Deleted
+                        ? null
+                        : ToJsonElement(property.CurrentValue, entry.Metadata.ClrType, property.Metadata.Name),
+                    entry.Metadata.ClrType
+                        .GetProperty(property.Metadata.Name)
+                        ?.GetCustomAttribute<PersonalDataAttribute>()
+                        ?.Field))
+                .ToArray();
+
+            changes.Add(new AuditEntityChange(
+                auditObject.ObjectType,
+                objectId,
+                organizationId,
+                properties,
+                projectId));
+        }
+
+        return changes;
+    }
+
     public void AddOutboxMessage(OutboxMessageData message) =>
         OutboxMessages.Add(new OutboxMessageEntity(message));
 
@@ -62,6 +152,10 @@ public class IfsDbContext(
             return await base.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException exception)
+        {
+            throw new ConcurrencyConflictException(exception);
+        }
+        catch (DbUpdateException exception) when (IsConcurrentOrganizationMembership(exception))
         {
             throw new ConcurrencyConflictException(exception);
         }
@@ -90,6 +184,11 @@ public class IfsDbContext(
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
+            if (entityType.IsOwned())
+            {
+                continue;
+            }
+
             var entityBuilder = modelBuilder.Entity(entityType.ClrType);
 
             if (typeof(IOrganizationOwned).IsAssignableFrom(entityType.ClrType))
@@ -125,5 +224,35 @@ public class IfsDbContext(
             var version = entry.Property(nameof(IHasVersion.Version));
             version.CurrentValue = checked((int)version.OriginalValue! + 1);
         }
+    }
+
+    private static bool IsConcurrentOrganizationMembership(DbUpdateException exception) =>
+        exception.InnerException is PostgresException postgresException
+        && postgresException.SqlState == PostgresErrorCodes.UniqueViolation
+        && postgresException.ConstraintName == "pk_organization_members";
+
+    private static Guid ReadGuid(object? value) => value switch
+    {
+        Guid guid => guid,
+        IStronglyTypedId stronglyTypedId => stronglyTypedId.Value,
+        _ => throw new InvalidOperationException("An audited entity must have a stable GUID identifier.")
+    };
+
+    private static JsonElement? ToJsonElement(object? value, Type entityType, string propertyName)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        if (entityType == typeof(OrganizationMember)
+            && propertyName == nameof(OrganizationMember.RoleValues)
+            && value is int[] roleValues)
+        {
+            var roles = roleValues.Select(role => (OrganizationRole)role).ToArray();
+            return JsonSerializer.SerializeToElement(roles, AuditJsonOptions);
+        }
+
+        return JsonSerializer.SerializeToElement(value, value.GetType(), AuditJsonOptions);
     }
 }

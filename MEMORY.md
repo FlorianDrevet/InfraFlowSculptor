@@ -16,6 +16,19 @@
 - **2026-10-27** : les preuves P1–P5 et P7–P9 sur la sortie écrite à la main sont prototypées. Le crochet P7
   `IFS_TEST_ABORT_AFTER` a été retiré de la sortie client ; voir `.github/memory/08-runtime-and-orchestration.md` et
   la revue R-03 pour l'écart de journalisation `revoke`.
+- **2026-10-27** : J0-01 est implémentée et validée localement : backend, isolation API, préférences, organisations,
+  fonctionnalités et interface. Les tests .NET, frontend et Playwright authentifiés (6/6 desktop/mobile), lint, builds
+  et OpenAPI passent ; le tiroir mobile a été corrigé. Voir `.github/memory/03-domain-model.md`, `04-frontend.md`,
+  `08-runtime-and-orchestration.md`, `09-auth-and-build.md` et `10-api-endpoints.md`.
+- **2026-10-27** : J0-02 est validée localement : rôles et cycle de vie des membres, `RG-ORG-05`, restrictions tenant/domaine,
+  API et interface. 104 tests .NET, 43 tests frontend, lint/build/OpenAPI et E2E authentifiés (16/16 desktop/mobile) passent.
+  Voir `.github/memory/03-domain-model.md`, `04-frontend.md` et `10-api-endpoints.md`.
+- **2026-10-27** : J0-03 est validée localement : invitations, vérification d’adresse, outbox e-mail MailPit/ACS et acceptation.
+  Voir `.github/memory/03-domain-model.md`, `04-frontend.md`, `05-data-and-storage.md`, `09-auth-and-build.md`,
+  `10-api-endpoints.md` et `13-integrations.md`.
+- **2026-10-27** : J0-04 est validée par la CI : audit append-only, interface et accès vérifiés ; 18/18 E2E. Les captures et l’écart pgweb/psql sont consignés dans `docs/plan/recettes/suivi.md`.
+- **2026-10-27** : J0-05 ajoute permissions et rôles de projet, l'agrégat minimal `shop`, les contrôles de sécurité, la migration et les endpoints. 155 tests backend et 59 frontend, build Release, lint et OpenAPI passent ; détails dans `.github/memory/03-domain-model.md`, `09-auth-and-build.md` et `10-api-endpoints.md`.
+- **2026-10-27** : R-04 termine la revue et la recette d'accès. Idempotence par utilisateur, transaction atomique, corrections d'audit et A14 Scalar (Alice : 15 permissions; Chloé : `project.read`). Tests .NET 205/205 et frontend 63/63 ; Release sans avertissement, lint et OpenAPI passent. Le conflit PostgreSQL d'appartenance est couvert avec un savepoint et une réponse 409 commitée. E2E Emma reste affecté par la base persistante. Détails et réserves dans `docs/plan/revues/R-04-autovalidation.md` et les mémoires thématiques.
 
 ## Fichiers thématiques
 

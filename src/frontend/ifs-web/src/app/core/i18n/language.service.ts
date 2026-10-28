@@ -1,6 +1,7 @@
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
+import { UserPreferencesService } from '../preferences/user-preferences.service';
 
 export type SupportedLanguage = 'fr' | 'en';
 
@@ -15,7 +16,15 @@ export class LanguageService {
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly document = inject(DOCUMENT);
   private readonly transloco = inject(TranslocoService);
+  private readonly preferences = inject(UserPreferencesService);
   private readonly activeLanguageState = signal<SupportedLanguage>('fr');
+  private readonly serverPreferenceEffect = effect(() => {
+    const language = this.preferences.preferredLanguage();
+    if (language !== null) {
+      this.activate(language);
+      this.storeLanguage(language);
+    }
+  });
 
   readonly activeLanguage = this.activeLanguageState.asReadonly();
 
@@ -45,6 +54,15 @@ export class LanguageService {
 
   setLanguage(language: SupportedLanguage): void {
     this.activate(language);
+    this.preferences.setLanguage(language);
+    if (!this.browser) {
+      return;
+    }
+
+    this.storeLanguage(language);
+  }
+
+  private storeLanguage(language: SupportedLanguage): void {
     if (!this.browser) {
       return;
     }

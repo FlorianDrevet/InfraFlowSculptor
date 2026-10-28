@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { UserPreferencesService } from '../preferences/user-preferences.service';
 import { LanguageService } from './language.service';
 
 describe('LanguageService', () => {
@@ -10,7 +12,13 @@ describe('LanguageService', () => {
     localStorage.removeItem('ifs.language');
     setActiveLang.mockReset();
     TestBed.configureTestingModule({
-      providers: [{ provide: TranslocoService, useValue: { setActiveLang } }],
+      providers: [
+        { provide: TranslocoService, useValue: { setActiveLang } },
+        {
+          provide: UserPreferencesService,
+          useValue: { preferredLanguage: signal(null), setLanguage: vi.fn() },
+        },
+      ],
     });
   });
 

@@ -18,6 +18,7 @@ public static class SystemController
             })
             .WithName(EndpointNames.GetVersion)
             .WithSummary("Get API version and environment.")
+            .WithMetadata(new OrganizationAgnostic())
             .Produces<VersionResponse>(StatusCodes.Status200OK)
             .AllowAnonymous();
 

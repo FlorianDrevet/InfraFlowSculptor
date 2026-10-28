@@ -1,0 +1,54 @@
+<section class="organization-form">
+  <header class="organization-form__header">
+    <h1>{{ 'organization.settingsTitle' | transloco }}</h1>
+  </header>
+
+  @if (loading()) {
+    <p role="status">{{ 'organization.loading' | transloco }}</p>
+  } @else if (!loadSucceeded()) {
+    <p class="organization-form__error" role="alert">{{ 'organization.saveError' | transloco }}</p>
+  } @else {
+    <form (ngSubmit)="save()">
+      <label for="organization-name">{{ 'organization.nameLabel' | transloco }}</label>
+      <input
+        id="organization-name"
+        name="organizationName"
+        type="text"
+        required
+        minlength="2"
+        maxlength="80"
+        autocomplete="organization"
+        [ngModel]="name()"
+        (ngModelChange)="name.set($event)"
+      />
+      <h2>{{ 'organization.accessHeading' | transloco }}</h2>
+      <label for="organization-email-domains">{{ 'organization.allowedEmailDomains' | transloco }}</label>
+      <textarea
+        id="organization-email-domains"
+        name="allowedEmailDomains"
+        rows="3"
+        [ngModel]="allowedEmailDomains()"
+        (ngModelChange)="allowedEmailDomains.set($event)"
+      ></textarea>
+      <label for="organization-tenant-ids">{{ 'organization.allowedTenantIds' | transloco }}</label>
+      <textarea
+        id="organization-tenant-ids"
+        name="allowedTenantIds"
+        rows="3"
+        [ngModel]="allowedTenantIds()"
+        (ngModelChange)="allowedTenantIds.set($event)"
+      ></textarea>
+      <p class="organization-form__hint">{{ 'organization.allowedTenantsHint' | transloco }}</p>
+      @if (hasError()) {
+        <p class="organization-form__error" role="alert">{{ 'organization.saveError' | transloco }}</p>
+      }
+      <app-ds-button variant="primary" type="submit" [disabled]="saving()">
+        @if (saving()) {
+          {{ 'organization.saving' | transloco }}
+        } @else {
+          {{ 'organization.saveAction' | transloco }}
+        }
+      </app-ds-button>
+    </form>
+  }
+</section>

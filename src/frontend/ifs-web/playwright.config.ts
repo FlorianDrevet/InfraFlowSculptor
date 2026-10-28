@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
+  workers: process.env['IFS_E2E_PASSWORD'] ? 1 : undefined,
   forbidOnly: process.env['CI'] === 'true',
   retries: process.env['CI'] === 'true' ? 1 : 0,
   timeout: 60_000,
@@ -13,7 +14,7 @@ export default defineConfig({
   ],
   outputDir: 'test-results',
   use: {
-    baseURL: 'http://localhost:4200',
+    baseURL: process.env['IFS_E2E_BASE_URL'] ?? 'http://localhost:4200',
     locale: 'fr-FR',
     // The local API and Keycloak use development certificates; CI has always
     // ignored certificate errors for the same E2E endpoints.

@@ -53,3 +53,9 @@
 | 2026-10-27 | Codex | P-08 clôturé pour shop44 : piles et ressources de preuve retirées, baseline préservée, journaux copiés et vérifiés, C3/C5/coût final consignés ; contrôle quotidien par groupe indisponible sur HTTP 429, déviation acceptée par Florian. |
 | 2026-10-27 | Codex | R-03 — crochet d'interruption P7 retiré de la sortie publiée ; preuves P1–P5/P7–P9 prototypées et écart de journalisation `revoke` consigné. |
 | 2026-10-27 | Codex | Workflow — rétablir une revue de code Claude CLI en lecture seule à chaque verrou, avec vérification des constats et verdict final Codex. |
+| 2026-10-27 | Codex | J0-01 validée localement — backend, profils, organisations, isolation, préférences, disponibilité des fonctions, interface et recette authentifiée 6/6 desktop/mobile ; correctif du tiroir mobile |
+| 2026-10-27 | Codex | J0-02 — rôles et cycle de vie des membres, protection RG-ORG-05, restrictions par domaines/tenants, routes API et interface ; 104 tests .NET, 43 tests frontend et 16/16 E2E passent |
+| 2026-10-27 | Codex | J0-03 — invitations à jeton empreint, contrôle d’adresse vérifiée, e-mail via outbox, adaptateurs MailPit/ACS, interface d’invitation et retour après connexion |
+| 2026-10-27 | Codex | J0-04 — journal append-only, purge bornée à 13 mois, consultation d’organisation et recette E2E desktop/mobile validée (18/18) |
+| 2026-10-27 | Codex | J0-05 — permissions et rôles de projet, agrégat `shop`, autorisation systématique, endpoints OpenAPI, attribution plafonnée, dernier propriétaire et audit ; 155 tests backend et 59 tests frontend passent |
+| 2026-10-27 | Codex | R-04 — revue de sécurité clôturée, idempotence transactionnelle isolée par utilisateur, protections d'audit renforcées et validation du jeton restaurée ; 205 tests .NET et 63 tests frontend verts, A14 Scalar validée ; conflit PostgreSQL et réponse 409 commitée après savepoint vérifiés ; écart E2E dû aux données persistantes consigné |

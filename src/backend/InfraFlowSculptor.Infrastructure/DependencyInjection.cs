@@ -5,11 +5,16 @@ using HealthChecks.Azure.Storage.Blobs;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Jobs;
 using InfraFlowSculptor.Application.Common.Security;
+using InfraFlowSculptor.Application.Common.Plans;
+using InfraFlowSculptor.Application.Common.Features;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Infrastructure.Azure;
 using InfraFlowSculptor.Infrastructure.Authentication;
 using InfraFlowSculptor.Infrastructure.Persistence;
 using InfraFlowSculptor.Infrastructure.Persistence.Admin;
+using InfraFlowSculptor.Infrastructure.Persistence.Auditing;
+using InfraFlowSculptor.Application.Common.Auditing;
+using InfraFlowSculptor.Infrastructure.Features;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -27,15 +32,25 @@ public static class DependencyInjection
     {
         services.AddAzureClientsCore();
         services.TryAddSingleton<TimeProvider>(TimeProvider.System);
-        services.TryAddScoped<ICurrentOrganization, HttpCurrentOrganization>();
+        services.TryAddScoped<HttpCurrentOrganization>();
+        services.TryAddScoped<ICurrentOrganization>(serviceProvider =>
+            serviceProvider.GetRequiredService<HttpCurrentOrganization>());
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, HttpCurrentUser>();
+        services.TryAddScoped<IOrganizationRoleAuthorizer, EfOrganizationRoleAuthorizer>();
+        services.TryAddScoped<IProjectAuthorizer, EfProjectAuthorizer>();
+        services.TryAddScoped<IProjectOwnershipCheck, EfProjectOwnershipCheck>();
+        services.TryAddScoped<IPlanLimitGuard, UnlimitedPlanLimitGuard>();
+        services.TryAddScoped<IFeatureAvailability, EfFeatureAvailability>();
         services.AddSingleton<IVerifiedEmailResolver, VerifiedEmailResolver>();
         services.TryAddScoped<IIdempotencyStore, EfIdempotencyStore>();
         services.TryAddScoped<IdempotencyKeyPurge>();
         services.TryAddScoped<IOrganizationJobBudgetStore, EfOrganizationJobBudgetStore>();
         services.TryAddScoped<IScheduledJobLeaseStore, EfScheduledJobLeaseStore>();
         services.TryAddScoped<IJobProcessingStatusStore, EfJobProcessingStatusStore>();
+        services.TryAddScoped<IAuditWriter, EfAuditWriter>();
+        services.TryAddScoped<IAuditEventReader, EfAuditEventReader>();
+        services.TryAddScoped<IAuditEventPurger, EfAuditEventPurger>();
 
         var credential = new IfsAzureCredential();
         services.TryAddSingleton(credential);
