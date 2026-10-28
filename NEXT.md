@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-14`](docs/plan/02-jalon-0-pilote.md#j0-14--écrans-des-ressources--ajout-général-propriétés-existante-suppression) — Écrans des ressources : ajout, général, propriétés, existante, suppression |
+| **Étape courante** | [`J0-15`](docs/plan/02-jalon-0-pilote.md#j0-15--liaisons-identités-attributions-de-rôles-et-impact) — Liaisons, identités, attributions de rôles et impact |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-13`](docs/plan/02-jalon-0-pilote.md#j0-13--moteur--nommage) — Moteur : nommage (commit `f7a169d`) |
-| **Étape suivante** | `J0-15` — Liaisons, identités, attributions de rôles et impact |
+| **Dernière étape terminée** | [`J0-14`](docs/plan/02-jalon-0-pilote.md#j0-14--écrans-des-ressources--ajout-général-propriétés-existante-suppression) — Écrans des ressources : ajout, général, propriétés, existante, suppression (commit `407e564`) |
+| **Étape suivante** | `J0-16` — Paramètres applicatifs et secrets de pipeline |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
-| **Dernière mise à jour** | 2026-10-28 — Codex |
+| **Dernière mise à jour** | 2026-10-29 — Codex |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
