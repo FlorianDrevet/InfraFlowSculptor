@@ -393,6 +393,9 @@ async function runComponentRecipe(
   await page.goto(platformDetailUrl);
 
   await page.goto(projectUrl);
+  await expect(
+    page.getByRole('heading', { name: "Composants, dans l'ordre de déploiement", exact: true }),
+  ).toBeVisible();
   await assertComponentSummaryLayout(page, viewportWidth);
   await assertNoSeriousAccessibilityViolations(page);
   await page.screenshot({

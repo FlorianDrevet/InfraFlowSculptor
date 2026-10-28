@@ -224,6 +224,7 @@
     "settingsLink": "Settings",
     "membersLink": "Members",
     "componentsHeading": "Components",
+    "componentsInDeploymentOrder": "Components, in deployment order",
     "componentsEmpty": "There are no components in this project.",
     "environmentsHeading": "Environments",
     "viewAllEnvironments": "Manage environments",

@@ -16,6 +16,7 @@ class StaticTranslationLoader implements TranslocoLoader {
         loading: 'Chargement…',
         loadError: 'Impossible de charger le projet.',
         componentsHeading: 'Composants',
+        componentsInDeploymentOrder: "Composants, dans l'ordre de déploiement",
         componentsEmpty: 'Aucun composant dans ce projet.',
         environmentsHeading: 'Environnements',
         viewAllEnvironments: 'Gérer les environnements',
@@ -106,5 +107,8 @@ describe('ProjectOverview', () => {
     expect(componentLink && getComputedStyle(componentLink).display).toBe('flex');
     expect(componentLink?.textContent).toContain('Core');
     expect(harness.routeNativeElement?.textContent).toContain('Par environnement');
+    expect(
+      harness.routeNativeElement?.querySelector('#components-heading')?.textContent?.trim(),
+    ).toBe("Composants, dans l'ordre de déploiement");
   });
 });
