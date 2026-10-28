@@ -95,3 +95,4 @@
 | 2026-10-28 17:03 | Codex | `J0-12` blocage confirmé | docs/plan/revues/J0-12-blocage-requiredwhen-20261028.md |
 | 2026-10-28 17:11 | Codex | `J0-12` blocage résolu | docs/plan/revues/J0-12-deblocage-requiredwhen-20261028.md |
 | 2026-10-28 18:45 | Codex | `J0-12` terminée | commit `9d47792` |
+| 2026-10-28 20:48 | Codex | `J0-13` terminée | commit `f7a169d` |

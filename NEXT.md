@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-13`](docs/plan/02-jalon-0-pilote.md#j0-13--moteur--nommage) — Moteur : nommage |
+| **Étape courante** | [`J0-14`](docs/plan/02-jalon-0-pilote.md#j0-14--écrans-des-ressources--ajout-général-propriétés-existante-suppression) — Écrans des ressources : ajout, général, propriétés, existante, suppression |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-12`](docs/plan/02-jalon-0-pilote.md#j0-12--moteur--cibles-présences-valeurs-effectives-et-tags) — Moteur : cibles, présences, valeurs effectives et tags (commit `9d47792`) |
-| **Étape suivante** | `J0-14` — Écrans des ressources : ajout, général, propriétés, existante, suppression |
+| **Dernière étape terminée** | [`J0-13`](docs/plan/02-jalon-0-pilote.md#j0-13--moteur--nommage) — Moteur : nommage (commit `f7a169d`) |
+| **Étape suivante** | `J0-15` — Liaisons, identités, attributions de rôles et impact |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
 | **Dernière mise à jour** | 2026-10-28 — Codex |
