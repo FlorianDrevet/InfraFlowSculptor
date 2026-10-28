@@ -325,6 +325,8 @@ async function runComponentRecipe(
   const componentsUrl = `${projectUrl}/components`;
   await page.goto(componentsUrl);
   await expect(page.getByRole('heading', { name: 'Composants', exact: true })).toBeVisible();
+  await clearRecipeComponents(page, componentsUrl);
+  await expect(page.getByRole('heading', { name: 'Composants', exact: true })).toBeVisible();
   await assertNoSeriousAccessibilityViolations(page);
   await page.screenshot({
     path: resolve(screenshotDirectory, `Components-Empty-${viewportWidth}.png`),
@@ -334,6 +336,7 @@ async function runComponentRecipe(
   await createPerEnvironmentComponent(page, componentsUrl, 'Core', 'core');
   await createPerEnvironmentComponent(page, componentsUrl, 'Orders', 'orders');
 
+  await page.goto(componentsUrl);
   await page.getByRole('link', { name: 'Créer un composant', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Nouveau composant', exact: true })).toBeVisible();
   await page.locator('input[name="componentName"]').fill('Platform');
@@ -370,7 +373,7 @@ async function runComponentRecipe(
     );
   });
   await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
-  expect((await platformCreate).status()).toBe(201);
+  await expectCreatedResponse(await platformCreate);
   await expect(page).toHaveURL(/\/components\/[0-9a-f-]+$/i);
   await expect(page.getByRole('heading', { name: 'Platform', exact: true })).toBeVisible();
   await createMainResourceGroup(page);
@@ -401,21 +404,31 @@ async function runComponentRecipe(
     path: resolve(screenshotDirectory, `Components-${viewportWidth}.png`),
     fullPage: false,
   });
+  await clearRecipeComponents(page, componentsUrl);
+  await expect(page.locator('.project-components__list li')).toHaveCount(0);
+}
+
+async function clearRecipeComponents(page: Page, componentsUrl: string): Promise<void> {
+  await page.goto(componentsUrl);
   for (const code of ['core', 'orders', 'platform']) {
+    await expect(page.getByRole('heading', { name: 'Composants', exact: true })).toBeVisible();
     const componentLink = page.locator('.project-components__list a').filter({ hasText: code });
-    await expect(componentLink).toBeVisible();
+    if ((await componentLink.count()) === 0) {
+      continue;
+    }
+
     await componentLink.click();
-    await expect(
-      page.getByRole('heading', {
-        name: code === 'core' ? 'Core' : code === 'orders' ? 'Orders' : 'Platform',
-        exact: true,
-      }),
-    ).toBeVisible();
-    const group = page.locator('.component-detail__groups li').filter({ hasText: 'main' });
-    await expect(group).toBeVisible();
-    await group.getByRole('button', { name: 'Supprimer', exact: true }).click();
-    await group.getByRole('button', { name: 'Supprimer', exact: true }).click();
-    await expect(group).toHaveCount(0);
+    const componentName = code === 'core' ? 'Core' : code === 'orders' ? 'Orders' : 'Platform';
+    await expect(page.getByRole('heading', { name: componentName, exact: true })).toBeVisible();
+    const groups = page.locator('.component-detail__groups li');
+    while ((await groups.count()) > 0) {
+      const group = groups.first();
+      const previousCount = await groups.count();
+      await group.getByRole('button', { name: 'Supprimer', exact: true }).click();
+      await group.getByRole('button', { name: 'Supprimer', exact: true }).click();
+      await expect(groups).toHaveCount(previousCount - 1);
+    }
+
     await page.getByRole('link', { name: 'Réglages', exact: true }).click();
     const componentDelete = page.locator('.component-editor__delete');
     await componentDelete
@@ -426,7 +439,6 @@ async function runComponentRecipe(
       .click();
     await expect(page).toHaveURL(componentsUrl);
   }
-  await expect(page.locator('.project-components__list li')).toHaveCount(0);
 }
 
 async function createPerEnvironmentComponent(
@@ -444,9 +456,27 @@ async function createPerEnvironmentComponent(
     return url.pathname.endsWith('/components') && candidate.request().method() === 'POST';
   });
   await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
-  expect((await response).status()).toBe(201);
+  await expectCreatedResponse(await response);
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
   await createMainResourceGroup(page);
+}
+
+async function expectCreatedResponse(response: {
+  status(): number;
+  json(): Promise<unknown>;
+}): Promise<void> {
+  const status = response.status();
+  const problem =
+    status === 201
+      ? null
+      : ((await response.json().catch(() => null)) as {
+          code?: unknown;
+        } | null);
+  const code =
+    typeof problem?.code === 'string' && /^[A-Z0-9_-]{1,80}$/.test(problem.code)
+      ? problem.code
+      : 'UNKNOWN';
+  expect(status, `Component creation returned HTTP ${status} (${code}).`).toBe(201);
 }
 
 async function createMainResourceGroup(page: Page): Promise<void> {
@@ -626,6 +656,7 @@ async function normalizeRecipeProject(
   await expect(chloeRow).toBeVisible();
   await setProjectRoles(bobRow, []);
   await setProjectRoles(chloeRow, []);
+  await clearRecipeComponents(page, `/o/${CONTOSO_ID}/projects/${projectId}/components`);
 }
 
 async function saveProjectSettings(page: Page, projectId: string) {
