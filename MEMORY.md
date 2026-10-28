@@ -5,14 +5,8 @@
 
 ## État
 
-- **2026-10-06** : S-01 à S-16 du socle sont implémentés. Backend .NET 10, Aspire, émulateurs, PostgreSQL, Worker/outbox,
-  OIDC Keycloak local, Angular 22, Strata, OpenAPI/client généré, CI et observabilité sont en place. Le run CI
-  `37460726122` est vert ; détails et écarts de recette restent dans [`NEXT.md`](NEXT.md) et
-  [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md).
-- **S-17 terminé le 2026-10-06** : mémoire vérifiée, graphe de code local et guide « Démarrer » ajoutés. À cette date, le
-  contrôle de prérequis passait; le parcours sur clone neuf restait en attente dans [`NEXT.md`](NEXT.md), car l'AppHost
-  actif occupait les ports fixes. Le verrou courant était R-01. Les moteurs/catalogues et intégrations métier étaient
-  des étapes futures.
+- **2026-10-06** : S-01 à S-16 du socle sont implémentés (backend .NET 10, Aspire, PostgreSQL, Worker/outbox, Keycloak, Angular 22, Strata, OpenAPI, CI et observabilité). CI `37460726122` verte ; détails et écarts dans [`NEXT.md`](NEXT.md) et [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md).
+- **S-17 terminé le 2026-10-06** : mémoire, graphe local et guide « Démarrer » ajoutés. Le parcours clone neuf restait en attente dans [`NEXT.md`](NEXT.md), l'AppHost occupant les ports fixes ; R-01 était le verrou courant.
 - **2026-10-27** : les preuves P1–P5 et P7–P9 sur la sortie écrite à la main sont prototypées. Le crochet P7
   `IFS_TEST_ABORT_AFTER` a été retiré de la sortie client ; voir `.github/memory/08-runtime-and-orchestration.md` et
   la revue R-03 pour l'écart de journalisation `revoke`.
@@ -29,6 +23,8 @@
 - **2026-10-27** : J0-04 est validée par la CI : audit append-only, interface et accès vérifiés ; 18/18 E2E. Les captures et l’écart pgweb/psql sont consignés dans `docs/plan/recettes/suivi.md`.
 - **2026-10-27** : J0-05 ajoute permissions et rôles de projet, l'agrégat minimal `shop`, les contrôles de sécurité, la migration et les endpoints. 155 tests backend et 59 frontend, build Release, lint et OpenAPI passent ; détails dans `.github/memory/03-domain-model.md`, `09-auth-and-build.md` et `10-api-endpoints.md`.
 - **2026-10-27** : R-04 termine la revue et la recette d'accès. Idempotence par utilisateur, transaction atomique, corrections d'audit et A14 Scalar (Alice : 15 permissions; Chloé : `project.read`). Tests .NET 205/205 et frontend 63/63 ; Release sans avertissement, lint et OpenAPI passent. Le conflit PostgreSQL d'appartenance est couvert avec un savepoint et une réponse 409 commitée. E2E Emma reste affecté par la base persistante. Détails et réserves dans `docs/plan/revues/R-04-autovalidation.md` et les mémoires thématiques.
+
+- **2026-10-27** : J0-07 ajoute les projets, environnements ordonnés, tags, commandes du modèle transactionnelles et suppression réversible ; 240 tests .NET et 64 tests frontend, OpenAPI et builds passent. Voir `.github/memory/03-domain-model.md`, `10-api-endpoints.md` et `docs/plan/recettes/suivi.md` (Scalar interactif non exécuté).
 
 ## Fichiers thématiques
 
@@ -72,6 +68,7 @@
 | Tester le vérificateur de prérequis | `python -m unittest discover tools/dev/tests` |
 | Compiler le backend | `dotnet build src/backend/InfraFlowSculptor.slnx` |
 | Démarrer l'application locale | `cd src/backend; aspire run` |
+| Tester le type JSON du client OpenAPI | `cd src/frontend/ifs-web; npm run api:normalizer:test` |
 | Mettre à jour le graphe de code, sans LLM | `python -m graphify update .` (à la racine) |
 | Étape terminée | `python tools/plan/gate.py done <ID>` |
 | Auto-valider un verrou après vérification | `python tools/plan/gate.py auto-review <R-nn>` |

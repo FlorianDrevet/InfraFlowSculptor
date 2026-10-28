@@ -1,0 +1,152 @@
+<section class="projects-page">
+  <header class="projects-page__header">
+    <div>
+      <h1>
+        {{
+          (includeDeleted() ? 'project.deletedProjectsTitle' : 'project.projectsTitle') | transloco
+        }}
+      </h1>
+      <p>
+        {{
+          (includeDeleted() ? 'project.deletedProjectsDescription' : 'project.projectsDescription')
+            | transloco
+        }}
+      </p>
+    </div>
+    @if (includeDeleted()) {
+      <app-ds-button variant="secondary" (click)="load()">
+        {{ 'project.activeProjects' | transloco }}
+      </app-ds-button>
+    } @else {
+      <div class="projects-page__header-actions">
+        <app-ds-button variant="secondary" (click)="createProject()">
+          {{ 'project.newProject' | transloco }}
+        </app-ds-button>
+        <a routerLink="deleted">{{ 'project.deletedProjectsLink' | transloco }}</a>
+      </div>
+    }
+  </header>
+
+  @if (loading()) {
+    <p role="status">{{ 'project.loading' | transloco }}</p>
+  } @else if (loadError()) {
+    <p class="projects-page__error" role="alert">{{ 'project.loadError' | transloco }}</p>
+    <app-ds-button variant="secondary" (click)="load()">{{
+      'project.retry' | transloco
+    }}</app-ds-button>
+  } @else if (projects().length === 0) {
+    <section class="projects-page__empty">
+      <h2>
+        {{ (includeDeleted() ? 'project.noDeletedProjects' : 'project.noProjects') | transloco }}
+      </h2>
+      @if (!includeDeleted()) {
+        <app-ds-button variant="primary" (click)="createProject()">
+          {{ 'project.createFirstProject' | transloco }}
+        </app-ds-button>
+      }
+    </section>
+  } @else {
+    @if (restoreError()) {
+      <p class="projects-page__error" role="alert">{{ 'project.restoreError' | transloco }}</p>
+    }
+    @if (!includeDeleted()) {
+      <div class="projects-page__filters">
+        <label class="projects-page__search">
+          <span class="projects-page__visually-hidden">{{ 'project.filterProjects' | transloco }}</span>
+          <input
+            type="search"
+            [value]="searchTerm()"
+            [placeholder]="'project.filterByNameOrCode' | transloco"
+            (input)="updateSearchTerm($event)"
+          />
+        </label>
+        <app-ds-segmented
+          [options]="projectFilterOptions()"
+          [value]="favoritesOnly() ? 'favorites' : 'all'"
+          [ariaLabel]="'project.projectFilters' | transloco"
+          (valueChange)="favoritesOnly.set($event === 'favorites')"
+        />
+      </div>
+    }
+    @if (favoriteError()) {
+      <p class="projects-page__error" role="alert">{{ 'project.favoriteError' | transloco }}</p>
+    }
+    @if (visibleProjects().length === 0) {
+      <p class="projects-page__no-results" role="status">{{ 'project.noMatchingProjects' | transloco }}</p>
+    }
+    <ul class="projects-page__list">
+      @for (project of visibleProjects(); track project.id) {
+        <li class="projects-page__card">
+          <div class="projects-page__identity">
+            <button
+              class="projects-page__project-name"
+              type="button"
+              [disabled]="includeDeleted()"
+              (click)="openProject(project.id)"
+            >
+              {{ project.name }}
+            </button>
+            <span class="projects-page__code">{{ project.code }}</span>
+            @if (project.description) {
+              <p>{{ project.description }}</p>
+            }
+          </div>
+          <dl class="projects-page__metadata">
+            <div>
+              <dt>{{ 'project.environmentCount' | transloco }}</dt>
+              <dd>{{ project.environmentCount }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'project.modelVersion' | transloco }}</dt>
+              <dd>{{ project.modelVersion }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'project.publication' | transloco }}</dt>
+              <dd>
+                {{
+                  project.firstPublishedAt
+                    ? ('project.published' | transloco)
+                    : ('project.notPublished' | transloco)
+                }}
+              </dd>
+            </div>
+          </dl>
+          @if (!includeDeleted()) {
+            <button
+              class="projects-page__favorite"
+              type="button"
+              [attr.aria-label]="
+                (project.isFavorite ? 'project.removeFavorite' : 'project.addFavorite') | transloco
+              "
+              [attr.aria-pressed]="project.isFavorite"
+              [disabled]="savingFavoriteProjectId() === project.id"
+              (click)="toggleFavorite(project)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="m12 3 2.75 5.57 6.15.9-4.45 4.34 1.05 6.13L12 17.05l-5.5 2.89 1.05-6.13L3.1 9.47l6.15-.9L12 3Z" />
+              </svg>
+            </button>
+          }
+          @if (includeDeleted()) {
+            <div class="projects-page__restore">
+              <span
+                >{{ 'project.deletedAt' | transloco }}
+                {{ project.deletedAt | date: 'mediumDate' }}</span
+              >
+              <app-ds-button
+                variant="secondary"
+                [disabled]="restoringProjectId() === project.id"
+                (click)="restoreProject(project)"
+              >
+                {{
+                  (restoringProjectId() === project.id ? 'project.restoring' : 'project.restore')
+                    | transloco
+                }}
+              </app-ds-button>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>

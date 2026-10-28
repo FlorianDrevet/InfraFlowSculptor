@@ -1,0 +1,35 @@
+.project-workspace {
+  display: grid;
+  gap: var(--ifs-space-5);
+}
+
+.project-workspace__header {
+  display: grid;
+  gap: var(--ifs-space-3);
+}
+
+.project-workspace__header > a {
+  width: fit-content;
+  color: var(--ifs-text-2);
+  font-size: 0.875rem;
+}
+
+.project-workspace__header h1,
+.project-workspace__header p {
+  margin: 0;
+}
+
+.project-workspace__header h1 {
+  font-size: 2rem;
+}
+
+.project-workspace__header div > p:last-child {
+  margin-top: var(--ifs-space-2);
+  color: var(--ifs-text-2);
+}
+
+.project-workspace__code {
+  color: var(--ifs-text-3);
+  font-family: var(--ifs-font-mono);
+  font-size: 0.8rem;
+}

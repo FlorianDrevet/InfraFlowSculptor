@@ -1,0 +1,41 @@
+@if (loading()) {
+  <p role="status">{{ 'project.loading' | transloco }}</p>
+} @else if (loadError()) {
+  <p class="project-overview__error" role="alert">{{ 'project.loadError' | transloco }}</p>
+} @else {
+  <div class="project-overview">
+    <section class="project-overview__section" aria-labelledby="components-heading">
+      <header>
+        <h2 id="components-heading">{{ 'project.componentsHeading' | transloco }}</h2>
+      </header>
+      <p class="project-overview__empty">{{ 'project.componentsEmpty' | transloco }}</p>
+    </section>
+
+    <section class="project-overview__section" aria-labelledby="environments-heading">
+      <header>
+        <h2 id="environments-heading">{{ 'project.environmentsHeading' | transloco }}</h2>
+        <a [routerLink]="['environments']">{{ 'project.viewAllEnvironments' | transloco }}</a>
+      </header>
+      @if (environments().length === 0) {
+        <p class="project-overview__empty">{{ 'project.noEnvironments' | transloco }}</p>
+      } @else {
+        <ol class="project-overview__environments">
+          @for (environment of environments(); track environment.id) {
+            <li>
+              <a [routerLink]="['environments', environment.id]">
+                <span class="project-overview__environment-name">{{ environment.name }}</span>
+                <span class="project-overview__code">{{ environment.code }}</span>
+              </a>
+              <span>{{ environment.region }}</span>
+              @if (environment.isProtected) {
+                <span class="project-overview__protected">{{
+                  'project.protectedEnvironment' | transloco
+                }}</span>
+              }
+            </li>
+          }
+        </ol>
+      }
+    </section>
+  </div>
+}

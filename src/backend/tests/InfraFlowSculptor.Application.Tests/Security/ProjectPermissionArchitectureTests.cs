@@ -13,7 +13,8 @@ public sealed class ProjectPermissionArchitectureTests
             .GetTypes()
             .Where(type => !type.IsAbstract && !type.IsInterface && typeof(IMessage).IsAssignableFrom(type))
             .Where(type => type.GetProperty(nameof(IProjectScopedRequest.ProjectId))?.PropertyType == typeof(Guid))
-            .Where(type => type.GetCustomAttribute<RequiresPermissionAttribute>() is null)
+            .Where(type => type.GetCustomAttribute<RequiresPermissionAttribute>() is null
+                && type.GetCustomAttribute<RequiresOrganizationRoleAttribute>() is null)
             .Select(type => type.FullName)
             .ToArray();
 

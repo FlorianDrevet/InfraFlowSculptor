@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://infraflowsculptor.local/schema/step.schema.json",
+  "title": "Étape de pipeline IFS",
+  "type": "object",
+  "required": ["name", "labels", "description", "availableFrom", "defaults", "parameters", "pipeline", "verifiedAgainstDocsOn"],
+  "properties": {
+    "name": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]+$" },
+    "labels": {
+      "type": "object",
+      "required": ["fr", "en"],
+      "properties": { "fr": { "type": "string" }, "en": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "description": { "type": "string" },
+    "availableFrom": { "enum": ["lot1"] },
+    "defaults": {
+      "type": "object",
+      "required": ["enabled", "blocking", "position"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "blocking": { "type": "boolean" },
+        "position": { "enum": ["beforeBuild", "afterBuild", "afterDeployment"] }
+      },
+      "additionalProperties": false
+    },
+    "parameters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "kind", "default"],
+        "properties": { "name": { "type": "string" }, "kind": { "enum": ["string", "enum", "boolean", "integer"] }, "default": {}, "values": { "type": "array", "items": {} } },
+        "additionalProperties": false
+      }
+    },
+    "pipeline": {
+      "type": "object",
+      "required": ["provider", "template"],
+      "properties": { "provider": { "const": "AzurePipelines" }, "template": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "verifiedAgainstDocsOn": { "type": "string", "format": "date" }
+  },
+  "additionalProperties": false
+}

@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-06`](docs/plan/02-jalon-0-pilote.md#j0-06--catalogue-du-pilote) — Catalogue du pilote |
+| **Étape courante** | [`J0-10`](docs/plan/02-jalon-0-pilote.md#j0-10--composants-et-groupes-de-ressources) — Composants et groupes de ressources |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`R-04`](docs/plan/02-jalon-0-pilote.md#-r-04--revue-de-sécurité-des-accès) — Revue de sécurité des accès (auto-validée) |
-| **Étape suivante** | `J0-07` — Projets et environnements (API) |
+| **Dernière étape terminée** | [`J0-09`](docs/plan/02-jalon-0-pilote.md#j0-09--écrans-du-projet--liste-vue-densemble-environnements-paramètres-membres) — Écrans du projet : liste, vue d'ensemble, environnements, paramètres, membres (commit `773695e`) |
+| **Étape suivante** | `J0-11` — Ressources : propriétés, surcharges, présence, existantes, enfants |
 | **Verrou** | aucun |
-| **Branche** | `impl/j0-acces` (créée depuis `origin/impl/socle` après la fusion de R-03) |
-| **Dernière mise à jour** | 2026-10-27 — Codex (auto-validation R-04) |
+| **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
+| **Dernière mise à jour** | 2026-10-28 — Codex |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
@@ -78,6 +78,10 @@ L’omission initiale de `deploymentPrincipalId` avait détaché l’attribution
 Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md), puis retire la ligne.
 
 ## Points ouverts et historique des décisions
+
+### J0-09 — écrans du projet — 2026-10-28
+
+**Décisions reçues le 2026-10-28** : favoris/récents stockés de façon relationnelle dans le profil ; JSONB exclu. Les compteurs composants/ressources/constats sont reportés à J0-10/J0-20 ; aucun zéro provisoire n'est affiché. Le blocage de conception est résolu et consigné dans [`J0-09-blocage-20261028.md`](docs/plan/revues/J0-09-blocage-20261028.md). Florian autorise l'authentification des personas de test via Keycloak local ; `project.spec.ts` et ses captures passent sur desktop et mobile. Les résultats de la suite complète et ses limites connues sont consignés dans [`suivi.md`](docs/plan/recettes/suivi.md).
 
 ### R-04 — portée d’idempotence de création d’organisation — 2026-10-27
 

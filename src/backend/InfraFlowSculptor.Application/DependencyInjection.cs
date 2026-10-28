@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using InfraFlowSculptor.Application.Common.Behaviors;
 using InfraFlowSculptor.Application.Common.Jobs;
+using InfraFlowSculptor.Application.Common.ModelCommands;
 
 namespace InfraFlowSculptor.Application;
 
@@ -19,12 +20,15 @@ public static class DependencyInjection
                 typeof(LoggingBehavior<,>),
                 typeof(AuthorizationBehavior<,>),
                 typeof(ValidationBehavior<,>),
-                typeof(UnitOfWorkBehavior<,>)
+                typeof(UnitOfWorkBehavior<,>),
+                typeof(ModelChangeBehavior<,>)
             ];
         });
 
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
         services.TryAddScoped<IJobDispatcher, OutboxJobDispatcher>();
+        services.TryAddScoped<IModelCommandExecutor, ModelCommandExecutor>();
+        services.TryAddSingleton<ModelCommandSerializer>();
         return services;
     }
 }

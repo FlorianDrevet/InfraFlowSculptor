@@ -1,0 +1,137 @@
+<section class="project-environments">
+  <header class="project-environments__header">
+    <h2>{{ 'project.environmentsHeading' | transloco }}</h2>
+    @if (canManage()) {
+      <app-ds-button variant="primary" (click)="createEnvironment()">
+        {{ 'project.addEnvironment' | transloco }}
+      </app-ds-button>
+    }
+  </header>
+
+  @if (loading()) {
+    <p role="status">{{ 'project.loading' | transloco }}</p>
+  } @else if (loadError()) {
+    <p class="project-environments__error" role="alert">{{ 'project.loadError' | transloco }}</p>
+  } @else if (environments().length === 0) {
+    <p>{{ 'project.noEnvironments' | transloco }}</p>
+  } @else {
+    @if (actionError()) {
+      <p class="project-environments__error" role="alert">
+        {{ 'project.environmentDeleteError' | transloco }}
+      </p>
+    }
+    <ol class="project-environments__list">
+      @for (
+        environment of environments();
+        track environment.id;
+        let first = $first;
+        let last = $last
+      ) {
+        <li class="project-environments__card">
+          <div class="project-environments__identity">
+            <span class="project-environments__position">{{ environment.position }}</span>
+            <div>
+              <h3>{{ environment.name }}</h3>
+              <span class="project-environments__code">{{ environment.code }}</span>
+            </div>
+            @if (environment.isProtected) {
+              <span class="project-environments__protected">{{
+                'project.protectedEnvironment' | transloco
+              }}</span>
+            }
+          </div>
+          <dl>
+            <div>
+              <dt>{{ 'project.regionLabel' | transloco }}</dt>
+              <dd>{{ environment.region }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'project.subscriptionId' | transloco }}</dt>
+              <dd>{{ environment.subscriptionId }}</dd>
+            </div>
+            @if (environment.description) {
+              <div>
+                <dt>{{ 'project.environmentDescription' | transloco }}</dt>
+                <dd>{{ environment.description }}</dd>
+              </div>
+            }
+          </dl>
+          <div class="project-environments__actions">
+            @if (canManage()) {
+              <app-ds-button
+                variant="ghost"
+                size="sm"
+                [disabled]="first"
+                (click)="move(environment, -1)"
+              >
+                {{ 'project.moveUp' | transloco }}
+              </app-ds-button>
+              <app-ds-button
+                variant="ghost"
+                size="sm"
+                [disabled]="last"
+                (click)="move(environment, 1)"
+              >
+                {{ 'project.moveDown' | transloco }}
+              </app-ds-button>
+            }
+            @if (mayChange(environment)) {
+              <a [routerLink]="environment.id">{{ 'project.editEnvironment' | transloco }}</a>
+              <app-ds-button variant="danger" size="sm" (click)="requestDeletion(environment)">
+                {{ 'project.deleteEnvironment' | transloco }}
+              </app-ds-button>
+            }
+          </div>
+        </li>
+      }
+    </ol>
+  }
+</section>
+
+<dialog
+  #deleteDialog
+  class="project-environments__dialog"
+  aria-labelledby="environment-delete-title"
+  aria-describedby="environment-delete-description"
+>
+  <h2 id="environment-delete-title">{{ 'project.impactTitle' | transloco }}</h2>
+  <p id="environment-delete-description">{{ 'project.deleteEnvironmentImpact' | transloco }}</p>
+  @if (impactReady()) {
+    <section aria-labelledby="environment-impact-resources">
+      <h3 id="environment-impact-resources">{{ 'project.impactResources' | transloco }}</h3>
+      @if (affectedResources().length === 0) {
+        <p>{{ 'project.noAffectedResources' | transloco }}</p>
+      } @else {
+        <ul>
+          @for (resource of affectedResources(); track resource) {
+            <li>{{ resource }}</li>
+          }
+        </ul>
+      }
+    </section>
+    @if (affectedData().length > 0) {
+      <section>
+        <h3>{{ 'project.affectedData' | transloco }}</h3>
+        <ul>
+          @for (item of affectedData(); track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      </section>
+    }
+  }
+  @if (actionError()) {
+    <p class="project-environments__error" role="alert">
+      {{ 'project.environmentDeleteError' | transloco }}
+    </p>
+  }
+  <div class="project-environments__dialog-actions">
+    <app-ds-button (click)="cancelDeletion()">{{ 'project.cancel' | transloco }}</app-ds-button>
+    <app-ds-button variant="danger" [disabled]="deleting()" (click)="confirmDeletion()">
+      {{
+        (impactReady() ? 'project.confirmDeleteEnvironment' : 'project.deleteEnvironment')
+          | transloco
+      }}
+    </app-ds-button>
+  </div>
+</dialog>

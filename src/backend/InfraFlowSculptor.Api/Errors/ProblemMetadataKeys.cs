@@ -6,6 +6,8 @@ public static class ProblemMetadataKeys
     public const string Permission = "permission";
     public const string CurrentVersion = "currentVersion";
     public const string Current = "current";
+    public const string AffectedResources = "affectedResources";
+    public const string AffectedData = "affectedData";
     public const string Limit = "limit";
     public const string Plan = "plan";
 }

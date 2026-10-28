@@ -1,0 +1,176 @@
+{
+  "type": "LogAnalyticsWorkspace",
+  "labels": {
+    "fr": "Espace Log Analytics",
+    "en": "Log Analytics workspace"
+  },
+  "category": "observability",
+  "icon": "log-analytics-workspace",
+  "armType": "Microsoft.OperationalInsights/workspaces",
+  "availableFrom": "lot1",
+  "documentationUrl": "https://learn.microsoft.com/azure/templates/microsoft.operationalinsights/workspaces",
+  "verifiedAgainstDocsOn": "2026-10-27",
+  "naming": {
+    "abbreviation": "log",
+    "allowed": "^[A-Za-z0-9][A-Za-z0-9-]{2,61}[A-Za-z0-9]$",
+    "case": "mixed",
+    "separators": [
+      "-"
+    ],
+    "forbidConsecutiveSeparators": true,
+    "minLength": 4,
+    "maxLength": 63,
+    "firstChar": "alphanumeric",
+    "lastChar": "alphanumeric",
+    "uniqueness": "resourceGroup",
+    "availabilityDomain": null
+  },
+  "properties": [
+    {
+      "name": "sku",
+      "labels": {
+        "fr": "Tarification",
+        "en": "Pricing"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "PerGB2018",
+      "values": [
+        "PerGB2018",
+        "CapacityReservation"
+      ]
+    },
+    {
+      "name": "capacityReservationLevel",
+      "labels": {
+        "fr": "Niveau de réservation (Go/jour)",
+        "en": "Capacity reservation level (GB/day)"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": 100,
+      "values": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        1000,
+        2000,
+        5000
+      ],
+      "condition": "requiredWhen:sku=CapacityReservation"
+    },
+    {
+      "name": "retentionInDays",
+      "labels": {
+        "fr": "Rétention (jours)",
+        "en": "Retention (days)"
+      },
+      "kind": "integer",
+      "overridable": true,
+      "default": 30,
+      "minimum": 30,
+      "maximum": 730
+    },
+    {
+      "name": "dailyQuotaGb",
+      "labels": {
+        "fr": "Quota journalier (Go)",
+        "en": "Daily quota (GB)"
+      },
+      "kind": "number",
+      "overridable": true,
+      "minimum": 0
+    }
+  ],
+  "fixedValues": [],
+  "children": [],
+  "identities": {
+    "system": false,
+    "userAssignedMax": 0
+  },
+  "links": {
+    "asSource": [],
+    "asTarget": [
+      "Logging",
+      "Diagnostics"
+    ],
+    "required": []
+  },
+  "outputs": [
+    {
+      "name": "id",
+      "description": "Identifiant de la ressource.",
+      "sensitive": false,
+      "computableFromName": false
+    },
+    {
+      "name": "customerId",
+      "description": "Identifiant de l’espace Log Analytics.",
+      "sensitive": false,
+      "computableFromName": false
+    }
+  ],
+  "lifecycle": {
+    "family": "data"
+  },
+  "roles": [
+    "Log Analytics Reader",
+    "Log Analytics Contributor",
+    "Monitoring Reader"
+  ],
+  "roleEquivalences": {},
+  "dataAccess": {
+    "supported": false,
+    "levels": [],
+    "databaseEngine": null
+  },
+  "exposure": {
+    "modes": [],
+    "privateGroupIds": [],
+    "privateDnsZones": [],
+    "conditions": []
+  },
+  "diagnostics": {
+    "supported": true
+  },
+  "applicationSettings": {
+    "destination": "none"
+  },
+  "languageSupport": {
+    "Bicep": "full",
+    "Terraform": "none",
+    "Pulumi": "none"
+  },
+  "generation": {
+    "Bicep": {
+      "module": "br/public:avm/res/operational-insights/workspace:0.16.0",
+      "versionPin": "0.16.0",
+      "map": {
+        "sku": "skuName",
+        "capacityReservationLevel": "skuCapacityReservationLevel",
+        "retentionInDays": "dataRetention",
+        "dailyQuotaGb": "dailyQuotaGb"
+      }
+    }
+  },
+  "deprecations": [],
+  "privateDnsZones": [],
+  "requiredNetworkRules": [],
+  "recommendedAlerts": [],
+  "pricing": {
+    "source": "azure-retail-prices",
+    "meters": [
+      {
+        "serviceName": "Azure Monitor",
+        "productName": "Log Analytics",
+        "meterName": "Pay-as-you-go data ingestion"
+      }
+    ],
+    "assumptions": [],
+    "estimated": false,
+    "unestimatedReason": "Aucun scénario tarifaire par défaut n’est estimé pour le profil du pilote."
+  },
+  "drift": []
+}

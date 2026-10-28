@@ -12,7 +12,8 @@ export const routes: Routes = [
   {
     path: 'invitations/:token',
     canActivate: [authenticatedGuard],
-    loadComponent: () => import('./features/organizations/invite-accept').then(m => m.InviteAccept),
+    loadComponent: () =>
+      import('./features/organizations/invite-accept').then((m) => m.InviteAccept),
     title: 'Accepter une invitation',
   },
   {
@@ -68,6 +69,86 @@ export const routes: Routes = [
                 (m) => m.OrganizationAudit,
               ),
             title: 'Journal d’audit',
+          },
+        ],
+      },
+      {
+        path: 'o/:orgId',
+        canActivate: [organizationMembershipGuard],
+        children: [
+          {
+            path: 'projects',
+            canActivate: [
+              featureGuard(FEATURES.organizations),
+              featureGuard(FEATURES.projectSetup),
+            ],
+            loadComponent: () =>
+              import('./features/projects/projects-page').then((m) => m.ProjectsPage),
+            title: 'Projets',
+          },
+          {
+            path: 'projects/deleted',
+            canActivate: [
+              featureGuard(FEATURES.organizations),
+              featureGuard(FEATURES.projectSetup),
+            ],
+            data: { includeDeleted: true },
+            loadComponent: () =>
+              import('./features/projects/projects-page').then((m) => m.ProjectsPage),
+            title: 'Projets supprimés',
+          },
+          {
+            path: 'projects/new',
+            canActivate: [
+              featureGuard(FEATURES.organizations),
+              featureGuard(FEATURES.projectSetup),
+            ],
+            loadComponent: () =>
+              import('./features/projects/project-wizard').then((m) => m.ProjectWizard),
+            title: 'Assistant de création de projet',
+          },
+          {
+            path: 'projects/:projectId',
+            canActivate: [
+              featureGuard(FEATURES.organizations),
+              featureGuard(FEATURES.projectSetup),
+            ],
+            loadComponent: () =>
+              import('./features/projects/project-workspace').then((m) => m.ProjectWorkspace),
+            children: [
+              {
+                path: '',
+                loadComponent: () =>
+                  import('./features/projects/project-overview').then((m) => m.ProjectOverview),
+                title: 'Vue d’ensemble du projet',
+              },
+              {
+                path: 'environments',
+                loadComponent: () =>
+                  import('./features/projects/project-environments').then(
+                    (m) => m.ProjectEnvironments,
+                  ),
+                title: 'Environnements du projet',
+              },
+              {
+                path: 'environments/:environmentId',
+                loadComponent: () =>
+                  import('./features/projects/environment-edit').then((m) => m.EnvironmentEdit),
+                title: 'Modifier un environnement',
+              },
+              {
+                path: 'settings',
+                loadComponent: () =>
+                  import('./features/projects/project-settings').then((m) => m.ProjectSettings),
+                title: 'Paramètres du projet',
+              },
+              {
+                path: 'members',
+                loadComponent: () =>
+                  import('./features/projects/project-members').then((m) => m.ProjectMembers),
+                title: 'Membres du projet',
+              },
+            ],
           },
         ],
       },

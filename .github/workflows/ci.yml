@@ -41,6 +41,26 @@ jobs:
       - name: OpenAPI artifact is current
         run: git diff --exit-code -- src/backend/InfraFlowSculptor.Api/openapi/v1.json
 
+      - name: Install pinned Bicep CLI for catalog checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(jq -r '.bicepCliVersion' reference/pilot/pins.json)"
+          az bicep install --version "v$version"
+          az bicep version
+
+      - name: Restore pinned AVM modules for catalog checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          for source in \
+            reference/pilot/bicep-azdo/core/infra/main.bicep \
+            reference/pilot/bicep-azdo/platform/infra/main.bicep \
+            reference/pilot/bicep-azdo/data/infra/main.bicep \
+            reference/pilot/bicep-azdo/orders/infra/main.bicep; do
+            az bicep restore --file "$source"
+          done
+
       - name: Test backend projects and collect coverage
         shell: bash
         run: |
@@ -52,6 +72,7 @@ jobs:
             src/backend/tests/InfraFlowSculptor.Api.Tests/InfraFlowSculptor.Api.Tests.csproj \
             src/backend/tests/InfraFlowSculptor.Application.Tests/InfraFlowSculptor.Application.Tests.csproj \
             src/backend/tests/InfraFlowSculptor.Architecture.Tests/InfraFlowSculptor.Architecture.Tests.csproj \
+            src/backend/tests/InfraFlowSculptor.Catalog.Tests/InfraFlowSculptor.Catalog.Tests.csproj \
             src/backend/tests/InfraFlowSculptor.Domain.Tests/InfraFlowSculptor.Domain.Tests.csproj \
             src/backend/tests/InfraFlowSculptor.Infrastructure.Tests/InfraFlowSculptor.Infrastructure.Tests.csproj; do
             name="${project##*/}"
@@ -512,7 +533,8 @@ jobs:
       - name: Redact Playwright reports and traces
         id: redact
         if: ${{ always() && steps.checkout.outcome == 'success' }}
-        timeout-minutes: 4
+        # Authenticated Playwright traces and nested reports can take several minutes to inspect.
+        timeout-minutes: 12
         env:
           IFS_E2E_PASSWORD: ${{ secrets.IFS_E2E_PASSWORD }}
           Parameters__postgres-password: ci-postgres-password

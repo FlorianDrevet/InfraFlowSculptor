@@ -11,6 +11,7 @@ using InfraFlowSculptor.Api.Errors;
 using InfraFlowSculptor.Api.Observability;
 using InfraFlowSculptor.Application;
 using InfraFlowSculptor.Application.Common.Security;
+using InfraFlowSculptor.Catalog;
 using InfraFlowSculptor.Infrastructure;
 using InfraFlowSculptor.Infrastructure.Authentication;
 using InfraFlowSculptor.Infrastructure.Configuration;
@@ -72,6 +73,7 @@ var authAuthority = isOpenApiBuild
 builder.Services.AddOpenApiExtensions(authAuthority);
 builder.Services.AddRateLimiting();
 builder.Services.AddApplication();
+builder.Services.AddSingleton<ICatalogProvider>(_ => CatalogLoader.Load(typeof(CatalogLoader).Assembly));
 if (isOpenApiBuild)
 {
     builder.Services.AddHttpContextAccessor();
@@ -131,7 +133,10 @@ v1.MapMeEndpoints();
 v1.MapOrganizationEndpoints();
 v1.MapInvitationEndpoints();
 v1.MapProjectEndpoints();
+v1.MapProjectWizardEndpoints();
+v1.MapNamingEndpoints();
 v1.MapFeatureEndpoints();
+v1.MapCatalogEndpoints();
 if (!isOpenApiBuild && (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing")))
 {
     v1.MapDevelopmentEndpoints();

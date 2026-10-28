@@ -22,5 +22,12 @@ public sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserProf
         builder.Property(profile => profile.PreferredTheme).HasMaxLength(16).IsRequired();
         builder.Property(profile => profile.CreatedAt).IsRequired();
         builder.Property(profile => profile.LastSeenAt).IsRequired();
+        builder.HasMany(profile => profile.FavoriteProjects)
+            .WithOne()
+            .HasForeignKey(favorite => favorite.UserProfileId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("fk_user_project_favorites_user_profiles_user_profile_id");
+        builder.Navigation(profile => profile.FavoriteProjects)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

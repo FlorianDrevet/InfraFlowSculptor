@@ -78,3 +78,11 @@
 | 2026-10-27 17:53 | Codex | `R-04` blocage confirmé | docs/plan/revues/R-04-blocage-idempotence.md |
 | 2026-10-27 18:25 | Codex | `R-04` blocage résolu | docs/plan/revues/R-04-blocage-idempotence.md |
 | 2026-10-27 19:25 | Codex | `R-04` auto-validée | R-04-autovalidation.md |
+| 2026-10-27 20:07 | Codex | `J0-06` terminée | commit `eee2c64` |
+| 2026-10-27 20:56 | Codex | `J0-07` terminée | commit `f0f4252` |
+| 2026-10-27 21:46 | Codex | `J0-08` recette autonome à exécuter |  |
+| 2026-10-27 23:33 | Codex | `J0-08` reprise après recette autonome vérifiée |  |
+| 2026-10-27 23:33 | Codex | `J0-08` terminée | commit `02a4ae5` |
+| 2026-10-28 00:25 | Codex | `J0-09` blocage confirmé | docs/plan/revues/J0-09-blocage-20261028.md |
+| 2026-10-28 07:44 | Codex | `J0-09` blocage résolu | docs/plan/revues/J0-09-blocage-20261028.md |
+| 2026-10-28 10:10 | Codex | `J0-09` terminée | commit `773695e` |

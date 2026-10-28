@@ -1,0 +1,180 @@
+<section class="environment-edit">
+  @if (loading()) {
+    <p role="status">{{ 'project.loading' | transloco }}</p>
+  } @else if (loadError()) {
+    <p class="environment-edit__error" role="alert">
+      {{ 'project.environmentLoadError' | transloco }}
+    </p>
+    <app-ds-button (click)="cancel()">{{ 'project.cancel' | transloco }}</app-ds-button>
+  } @else {
+    <header class="environment-edit__header">
+      <h2>
+        {{
+          (isCreating() ? 'project.createEnvironmentTitle' : 'project.environmentEditorTitle')
+            | transloco
+        }}
+      </h2>
+    </header>
+
+    @if (versionConflict(); as conflict) {
+      <section class="environment-edit__conflict" role="alert">
+        <h3>{{ 'project.versionConflictTitle' | transloco }}</h3>
+        <p>{{ 'project.versionConflictDescription' | transloco }}</p>
+        <div class="environment-edit__conflict-columns">
+          <section>
+            <h4>{{ 'project.storedVersion' | transloco }}</h4>
+            <dl>
+              <dt>{{ 'project.environmentName' | transloco }}</dt>
+              <dd>{{ conflict.stored.name }}</dd>
+              <dt>{{ 'project.environmentCodeLabel' | transloco }}</dt>
+              <dd>{{ conflict.stored.code }}</dd>
+              <dt>{{ 'project.regionLabel' | transloco }}</dt>
+              <dd>{{ conflict.stored.region }}</dd>
+              <dt>{{ 'project.environmentDescription' | transloco }}</dt>
+              <dd>{{ conflict.stored.description }}</dd>
+            </dl>
+          </section>
+          <section>
+            <h4>{{ 'project.yourChanges' | transloco }}</h4>
+            <dl>
+              <dt>{{ 'project.environmentName' | transloco }}</dt>
+              <dd>{{ conflict.yours.name }}</dd>
+              <dt>{{ 'project.environmentCodeLabel' | transloco }}</dt>
+              <dd>{{ conflict.yours.code }}</dd>
+              <dt>{{ 'project.regionLabel' | transloco }}</dt>
+              <dd>{{ conflict.yours.region }}</dd>
+              <dt>{{ 'project.environmentDescription' | transloco }}</dt>
+              <dd>{{ conflict.yours.description }}</dd>
+            </dl>
+          </section>
+        </div>
+      </section>
+    }
+
+    <form (ngSubmit)="save()">
+      <app-ds-text-field
+        [label]="'project.environmentName' | transloco"
+        name="environmentName"
+        [value]="form().name"
+        [required]="true"
+        (valueChange)="updateField('name', $event ?? '')"
+      />
+      <app-ds-text-field
+        [label]="'project.environmentCodeLabel' | transloco"
+        name="environmentCode"
+        [value]="form().code"
+        [required]="true"
+        [disabled]="!isCreating() && project()?.firstPublishedAt !== null"
+        (valueChange)="updateField('code', $event ?? '')"
+      />
+      <app-ds-text-field
+        [label]="'project.subscriptionId' | transloco"
+        name="subscriptionId"
+        [value]="form().subscriptionId"
+        [required]="true"
+        (valueChange)="updateField('subscriptionId', $event ?? '')"
+      />
+      <app-ds-text-field
+        [label]="'project.regionLabel' | transloco"
+        name="region"
+        [value]="form().region"
+        [required]="true"
+        (valueChange)="updateField('region', $event ?? '')"
+      />
+      <app-ds-text-field
+        [label]="'project.deploymentConnection' | transloco"
+        name="deploymentConnection"
+        [value]="form().deploymentConnection"
+        (valueChange)="updateField('deploymentConnection', $event ?? '')"
+      />
+      <app-ds-toggle
+        [label]="'project.protectedEnvironment' | transloco"
+        [checked]="form().isProtected"
+        (checkedChange)="updateField('isProtected', $event)"
+      />
+      <app-ds-text-field
+        [label]="'project.approvers' | transloco"
+        [hint]="'project.commaSeparatedHint' | transloco"
+        name="approvers"
+        [value]="form().approvers"
+        [disabled]="form().isProtected && !permissions().includes('environments.protected.manage')"
+        (valueChange)="updateField('approvers', $event ?? '')"
+      />
+      <app-ds-text-field
+        [label]="'project.runners' | transloco"
+        [hint]="'project.commaSeparatedHint' | transloco"
+        name="runners"
+        [value]="form().runners"
+        (valueChange)="updateField('runners', $event ?? '')"
+      />
+      <label class="environment-edit__textarea-label" for="environment-description">
+        {{ 'project.environmentDescription' | transloco }}
+        <textarea
+          id="environment-description"
+          name="description"
+          rows="3"
+          [value]="form().description"
+          (input)="updateField('description', $any($event.target).value)"
+        ></textarea>
+      </label>
+      <label class="environment-edit__textarea-label" for="environment-tags">
+        {{ 'project.environmentTags' | transloco }}
+        <span>{{ 'project.tagsHint' | transloco }}</span>
+        <textarea
+          id="environment-tags"
+          name="tags"
+          rows="4"
+          [value]="form().tags"
+          (input)="updateField('tags', $any($event.target).value)"
+        ></textarea>
+      </label>
+
+      @if (saveError()) {
+        <p class="environment-edit__error" role="alert">
+          {{ 'project.environmentSaveError' | transloco }}
+        </p>
+      }
+      @if (!canSave()) {
+        <p>{{ 'project.permissionRequired' | transloco }}</p>
+      }
+      <div class="environment-edit__actions">
+        <app-ds-button type="button" (click)="cancel()">{{
+          'project.cancel' | transloco
+        }}</app-ds-button>
+        @if (canSave()) {
+          <app-ds-button variant="primary" type="submit" [disabled]="saving()">
+            {{ (saving() ? 'project.environmentSaving' : 'project.environmentSave') | transloco }}
+          </app-ds-button>
+        }
+      </div>
+    </form>
+  }
+</section>
+
+<dialog #impactDialog class="environment-edit__dialog" aria-labelledby="environment-impact-title">
+  <h2 id="environment-impact-title">{{ 'project.impactTitle' | transloco }}</h2>
+  @if (affectedResources().length === 0) {
+    <p>{{ 'project.noAffectedResources' | transloco }}</p>
+  } @else {
+    <h3>{{ 'project.impactResources' | transloco }}</h3>
+    <ul>
+      @for (item of affectedResources(); track item) {
+        <li>{{ item }}</li>
+      }
+    </ul>
+  }
+  @if (affectedData().length > 0) {
+    <h3>{{ 'project.affectedData' | transloco }}</h3>
+    <ul>
+      @for (item of affectedData(); track item) {
+        <li>{{ item }}</li>
+      }
+    </ul>
+  }
+  <div class="environment-edit__actions">
+    <app-ds-button (click)="cancelImpact()">{{ 'project.cancel' | transloco }}</app-ds-button>
+    <app-ds-button variant="primary" [disabled]="saving()" (click)="confirmImpact()">
+      {{ 'project.confirmImpact' | transloco }}
+    </app-ds-button>
+  </div>
+</dialog>

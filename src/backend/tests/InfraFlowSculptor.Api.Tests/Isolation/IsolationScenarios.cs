@@ -122,6 +122,26 @@ public static class IsolationScenarios
                 $"/v1/invitations/{TestInvitationToken}",
                 HttpStatusCode.NotFound),
             ["GetFeatures"] = AuthenticatedScenario("GetFeatures", HttpMethod.Get, "/v1/features", HttpStatusCode.OK),
+            ["GetCatalogVersions"] = AuthenticatedScenario(
+                "GetCatalogVersions",
+                HttpMethod.Get,
+                "/v1/catalog/versions",
+                HttpStatusCode.OK),
+            ["GetCatalogTypes"] = AuthenticatedScenario(
+                "GetCatalogTypes",
+                HttpMethod.Get,
+                "/v1/catalog/2026.10-pilot/types?category=security",
+                HttpStatusCode.OK),
+            ["GetCatalogType"] = AuthenticatedScenario(
+                "GetCatalogType",
+                HttpMethod.Get,
+                "/v1/catalog/2026.10-pilot/types/KeyVault",
+                HttpStatusCode.OK),
+            ["GetCatalogRegions"] = AuthenticatedScenario(
+                "GetCatalogRegions",
+                HttpMethod.Get,
+                "/v1/catalog/2026.10-pilot/regions",
+                HttpStatusCode.OK),
             ["GetMyProjectPermissions"] = OrganizationScenario(
                 "GetMyProjectPermissions",
                 HttpMethod.Get,
@@ -149,6 +169,152 @@ public static class IsolationScenarios
                 $"/v1/projects/{ShopProjectId}/ownership",
                 HttpStatusCode.NotFound,
                 new { expectedVersion = 1 }),
+            ["ListProjects"] = OrganizationScenario(
+                "ListProjects",
+                HttpMethod.Get,
+                "/v1/projects?includeDeleted=true",
+                HttpStatusCode.NotFound),
+            ["CreateProject"] = OrganizationScenario(
+                "CreateProject",
+                HttpMethod.Post,
+                "/v1/projects",
+                HttpStatusCode.NotFound,
+                new { name = "Isolated Project", code = "isolated", tenantId = Guid.NewGuid(), description = "" }),
+            ["GetWizardDraft"] = OrganizationScenario(
+                "GetWizardDraft",
+                HttpMethod.Get,
+                "/v1/projects/wizard-draft",
+                HttpStatusCode.NotFound),
+            ["SaveWizardDraft"] = OrganizationScenario(
+                "SaveWizardDraft",
+                HttpMethod.Put,
+                "/v1/projects/wizard-draft",
+                HttpStatusCode.NotFound,
+                new { content = new { step = 1 } }),
+            ["DiscardWizardDraft"] = OrganizationScenario(
+                "DiscardWizardDraft",
+                HttpMethod.Delete,
+                "/v1/projects/wizard-draft",
+                HttpStatusCode.NotFound),
+            ["CreateProjectFromWizard"] = new IsolationScenario(
+                "CreateProjectFromWizard",
+                _ =>
+                {
+                    var request = CreateRequest(
+                        HttpMethod.Post,
+                        "/v1/projects/from-wizard",
+                        CreateDavidToken(),
+                        new
+                        {
+                            name = "Isolated Wizard Project",
+                            code = "isolated",
+                            tenantId = Guid.NewGuid(),
+                            description = "",
+                            namingPreset = "Compact",
+                            defaultNameTemplate = "{abbr}-{project}-{name}-{env}",
+                            resourceGroupNameTemplate = "rg-{project}-{component}-{name}-{env}",
+                            environments = new[] { new { name = "Development", code = "dev", subscriptionId = Guid.NewGuid(), region = "francecentral", isProtected = false, approvers = Array.Empty<string>(), description = "" } },
+                            tags = new Dictionary<string, string>(),
+                            publishingPreset = (string?)null
+                        });
+                    request.Headers.Add("X-Ifs-Organization", ContosoOrganizationId);
+                    request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+                    return request;
+                },
+                HttpStatusCode.NotFound),
+            ["PreviewNaming"] = OrganizationScenario(
+                "PreviewNaming",
+                HttpMethod.Post,
+                "/v1/naming/preview",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    projectName = "Isolated",
+                    projectCode = "isolated",
+                    namingPreset = "Compact",
+                    defaultNameTemplate = "{abbr}-{project}-{name}-{env}",
+                    resourceGroupNameTemplate = "rg-{project}-{component}-{name}-{env}",
+                    environments = new[] { new { code = "dev", region = "francecentral" } },
+                    tags = new Dictionary<string, string>()
+                }),
+            ["GetProject"] = OrganizationScenario(
+                "GetProject",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}",
+                HttpStatusCode.NotFound),
+            ["SetProjectFavorite"] = OrganizationWriteScenario(
+                "SetProjectFavorite",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/favorite",
+                HttpStatusCode.NotFound),
+            ["RemoveProjectFavorite"] = OrganizationWriteScenario(
+                "RemoveProjectFavorite",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}/favorite",
+                HttpStatusCode.NotFound),
+            ["UpdateProjectSettings"] = OrganizationScenario(
+                "UpdateProjectSettings",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    name = "Isolated Project",
+                    code = "isolated",
+                    description = "",
+                    systemTagsEnabled = true,
+                    coordinatorUserProfileId = (Guid?)null,
+                    tags = new Dictionary<string, string>(),
+                    confirmImpact = false,
+                    expectedVersion = 1
+                }),
+            ["SetProjectTags"] = OrganizationScenario(
+                "SetProjectTags",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/tags",
+                HttpStatusCode.NotFound,
+                new { tags = new Dictionary<string, string>(), expectedVersion = 1 }),
+            ["DeleteProject"] = OrganizationScenario(
+                "DeleteProject",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}",
+                HttpStatusCode.NotFound,
+                new { nameConfirmation = "shop", expectedVersion = 1 }),
+            ["RestoreProject"] = OrganizationScenario(
+                "RestoreProject",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/restore",
+                HttpStatusCode.NotFound,
+                new { expectedVersion = 1 }),
+            ["ListProjectEnvironments"] = OrganizationScenario(
+                "ListProjectEnvironments",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/environments",
+                HttpStatusCode.NotFound),
+            ["AddProjectEnvironment"] = OrganizationScenario(
+                "AddProjectEnvironment",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/environments",
+                HttpStatusCode.NotFound,
+                new { name = "Development", code = "dev", position = 1, subscriptionId = Guid.NewGuid(), region = "francecentral", isProtected = false, approvers = Array.Empty<string>(), runners = Array.Empty<string>(), description = "", tags = new Dictionary<string, string>(), expectedVersion = 1 }),
+            ["UpdateProjectEnvironment"] = OrganizationScenario(
+                "UpdateProjectEnvironment",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/environments/{Guid.NewGuid():D}",
+                HttpStatusCode.NotFound,
+                new { name = "Development", code = "dev", subscriptionId = Guid.NewGuid(), region = "francecentral", isProtected = false, approvers = Array.Empty<string>(), runners = Array.Empty<string>(), description = "", tags = new Dictionary<string, string>(), confirmTargetImpact = false, expectedVersion = 1 }),
+            ["MoveProjectEnvironment"] = OrganizationScenario(
+                "MoveProjectEnvironment",
+                HttpMethod.Patch,
+                $"/v1/projects/{ShopProjectId}/environments/{Guid.NewGuid():D}/position",
+                HttpStatusCode.NotFound,
+                new { position = 1, expectedVersion = 1 }),
+            ["DeleteProjectEnvironment"] = OrganizationScenario(
+                "DeleteProjectEnvironment",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}/environments/{Guid.NewGuid():D}",
+                HttpStatusCode.NotFound,
+                new { confirmDeletion = false, expectedVersion = 1 }),
             ["EnqueueDevelopmentPingJob"] = OrganizationScenario(
                 "EnqueueDevelopmentPingJob",
                 HttpMethod.Post,
@@ -187,6 +353,19 @@ public static class IsolationScenarios
         {
             var request = CreateRequest(method, path, CreateDavidToken(), body);
             request.Headers.Add("X-Ifs-Organization", ContosoOrganizationId);
+            return request;
+        }, expectedStatusCode);
+
+    private static IsolationScenario OrganizationWriteScenario(
+        string name,
+        HttpMethod method,
+        string path,
+        HttpStatusCode expectedStatusCode) =>
+        new(name, _ =>
+        {
+            var request = CreateRequest(method, path, CreateDavidToken(), null);
+            request.Headers.Add("X-Ifs-Organization", ContosoOrganizationId);
+            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
             return request;
         }, expectedStatusCode);
 

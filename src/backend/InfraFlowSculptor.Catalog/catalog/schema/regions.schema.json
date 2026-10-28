@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://infraflowsculptor.local/schema/regions.schema.json",
+  "title": "Régions Azure du catalogue IFS",
+  "type": "object",
+  "required": ["regions"],
+  "properties": {
+    "regions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "code"],
+        "properties": { "name": { "type": "string" }, "code": { "type": "string", "pattern": "^[a-z0-9]{3,4}$" } },
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false
+}

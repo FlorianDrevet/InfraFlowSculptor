@@ -15,15 +15,18 @@ export const organizationSelectionGuard: CanActivateFn = async () => {
   }
 };
 
-export const organizationMembershipGuard: CanActivateFn = async route => {
+export const organizationMembershipGuard: CanActivateFn = async (route) => {
   const organizations = inject(OrganizationsService);
   const activeOrganization = inject(ActiveOrganizationStore);
   const router = inject(Router);
 
   try {
     const availableOrganizations = await organizations.ensureLoaded();
-    const organizationId = route.paramMap.get('id');
-    if (!organizationId || !availableOrganizations.some(organization => organization.id === organizationId)) {
+    const organizationId = route.paramMap.get('id') ?? route.paramMap.get('orgId');
+    if (
+      !organizationId ||
+      !availableOrganizations.some((organization) => organization.id === organizationId)
+    ) {
       return router.parseUrl('/not-found');
     }
 

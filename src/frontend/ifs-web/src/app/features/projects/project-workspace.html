@@ -1,0 +1,20 @@
+<section class="project-workspace">
+  <header class="project-workspace__header">
+    <a [routerLink]="['/o', orgId(), 'projects']">{{ 'project.projectsLink' | transloco }}</a>
+    @if (project(); as currentProject) {
+      <div>
+        <p class="project-workspace__code">{{ currentProject.code }}</p>
+        <h1>{{ currentProject.name }}</h1>
+        @if (currentProject.description) {
+          <p>{{ currentProject.description }}</p>
+        }
+      </div>
+    } @else if (loadError()) {
+      <p role="alert">{{ 'project.loadError' | transloco }}</p>
+    } @else {
+      <p role="status">{{ 'project.loading' | transloco }}</p>
+    }
+  </header>
+
+  <router-outlet />
+</section>
