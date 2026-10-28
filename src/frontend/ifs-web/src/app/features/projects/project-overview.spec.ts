@@ -92,9 +92,18 @@ describe('ProjectOverview', () => {
     harness.fixture.detectChanges();
 
     expect(componentsService.list).toHaveBeenCalledWith(projectId);
+    const componentList = harness.routeNativeElement?.querySelector<HTMLElement>(
+      '.project-overview__components',
+    );
+    const componentRow = componentList?.querySelector<HTMLElement>('li');
     const componentLink = harness.routeNativeElement?.querySelector<HTMLAnchorElement>(
       'a[href*="components/88888888-8888-4888-8888-888888888888"]',
     );
+    expect(componentList).not.toBeNull();
+    expect(componentRow).not.toBeNull();
+    expect(getComputedStyle(componentList!).display).toBe('grid');
+    expect(getComputedStyle(componentRow!).display).toBe('flex');
+    expect(componentLink && getComputedStyle(componentLink).display).toBe('flex');
     expect(componentLink?.textContent).toContain('Core');
     expect(harness.routeNativeElement?.textContent).toContain('Par environnement');
   });

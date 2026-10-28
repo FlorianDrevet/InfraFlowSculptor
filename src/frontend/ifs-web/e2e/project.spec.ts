@@ -393,6 +393,7 @@ async function runComponentRecipe(
   await page.goto(platformDetailUrl);
 
   await page.goto(projectUrl);
+  await assertComponentSummaryLayout(page, viewportWidth);
   await assertNoSeriousAccessibilityViolations(page);
   await page.screenshot({
     path: resolve(screenshotDirectory, `ProjectOverview-${viewportWidth}.png`),
@@ -406,6 +407,35 @@ async function runComponentRecipe(
   });
   await clearRecipeComponents(page, componentsUrl);
   await expect(page.locator('.project-components__list li')).toHaveCount(0);
+}
+
+async function assertComponentSummaryLayout(page: Page, viewportWidth: number): Promise<void> {
+  const rows = page.locator('.project-overview__components > li');
+  await expect(rows).toHaveCount(3);
+
+  for (let index = 0; index < 3; index++) {
+    const row = rows.nth(index);
+    const expectedDirection = viewportWidth <= 760 ? 'column' : 'row';
+    await expect(row).toHaveCSS('flex-direction', expectedDirection);
+
+    const link = row.locator(':scope > a');
+    const nameBox = await link.locator('.project-overview__component-name').boundingBox();
+    const codeBox = await link.locator('.project-overview__code').boundingBox();
+    const linkBox = await link.boundingBox();
+    const modeBox = await row.locator(':scope > span').boundingBox();
+
+    expect(nameBox).not.toBeNull();
+    expect(codeBox).not.toBeNull();
+    expect(linkBox).not.toBeNull();
+    expect(modeBox).not.toBeNull();
+    expect(codeBox!.x).toBeGreaterThan(nameBox!.x + nameBox!.width);
+
+    if (viewportWidth <= 760) {
+      expect(modeBox!.y).toBeGreaterThanOrEqual(linkBox!.y + linkBox!.height);
+    } else {
+      expect(modeBox!.x).toBeGreaterThanOrEqual(linkBox!.x + linkBox!.width);
+    }
+  }
 }
 
 async function clearRecipeComponents(page: Page, componentsUrl: string): Promise<void> {
