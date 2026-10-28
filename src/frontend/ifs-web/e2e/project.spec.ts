@@ -410,8 +410,8 @@ async function runComponentRecipe(
 
 async function clearRecipeComponents(page: Page, componentsUrl: string): Promise<void> {
   await page.goto(componentsUrl);
+  await waitForComponentsListReady(page);
   for (const code of ['core', 'orders', 'platform']) {
-    await expect(page.getByRole('heading', { name: 'Composants', exact: true })).toBeVisible();
     const componentLink = page.locator('.project-components__list a').filter({ hasText: code });
     if ((await componentLink.count()) === 0) {
       continue;
@@ -438,7 +438,12 @@ async function clearRecipeComponents(page: Page, componentsUrl: string): Promise
       .getByRole('button', { name: 'Supprimer le composant', exact: true })
       .click();
     await expect(page).toHaveURL(componentsUrl);
+    await waitForComponentsListReady(page);
   }
+}
+
+async function waitForComponentsListReady(page: Page): Promise<void> {
+  await expect(page.locator('.project-components__empty, .project-components__list')).toBeVisible();
 }
 
 async function createPerEnvironmentComponent(
