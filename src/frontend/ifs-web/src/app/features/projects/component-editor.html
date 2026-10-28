@@ -1,0 +1,244 @@
+<section class="component-editor">
+  @if (loading()) {
+    <p role="status">{{ 'component.loading' | transloco }}</p>
+  } @else if (loadError()) {
+    <p class="component-editor__error" role="alert">{{ 'component.loadError' | transloco }}</p>
+    <app-ds-button (click)="navigateToComponents()">{{
+      'component.backToComponents' | transloco
+    }}</app-ds-button>
+  } @else {
+    <header class="component-editor__header">
+      <a [routerLink]="['/o', orgId(), 'projects', projectId(), 'components']">
+        {{ 'component.backToComponents' | transloco }}
+      </a>
+      <h2>{{ isCreating() ? ('component.newTitle' | transloco) : form().name }}</h2>
+    </header>
+
+    <form (ngSubmit)="save()">
+      <section class="component-editor__section" aria-labelledby="component-identity-title">
+        <h3 id="component-identity-title">{{ 'component.identity' | transloco }}</h3>
+        <div class="component-editor__grid">
+          <app-ds-text-field
+            [label]="'component.name' | transloco"
+            name="componentName"
+            [value]="form().name"
+            [required]="true"
+            (valueChange)="updateField('name', $event ?? '')"
+          />
+          <app-ds-text-field
+            [label]="'component.code' | transloco"
+            name="componentCode"
+            [value]="form().code"
+            [required]="true"
+            [disabled]="identityLocked()"
+            (valueChange)="updateField('code', $event ?? '')"
+          />
+        </div>
+        <label class="component-editor__textarea-label" for="component-description">
+          {{ 'component.description' | transloco }}
+          <textarea
+            id="component-description"
+            name="description"
+            rows="3"
+            [value]="form().description"
+            (input)="updateField('description', $any($event.target).value)"
+          ></textarea>
+        </label>
+      </section>
+
+      <section class="component-editor__section" aria-labelledby="component-mode-title">
+        <header>
+          <div>
+            <h3 id="component-mode-title">{{ 'component.mode' | transloco }}</h3>
+            @if (identityLocked()) {
+              <p>{{ 'component.modeLocked' | transloco }}</p>
+            }
+          </div>
+          <div
+            class="component-editor__segmented"
+            role="group"
+            [attr.aria-label]="'component.mode' | transloco"
+          >
+            <button
+              type="button"
+              [attr.aria-pressed]="form().mode === 'PerEnvironment'"
+              [disabled]="identityLocked()"
+              (click)="setMode('PerEnvironment')"
+            >
+              {{ 'component.modePerEnvironment' | transloco }}
+            </button>
+            <button
+              type="button"
+              [attr.aria-pressed]="form().mode === 'Single'"
+              [disabled]="identityLocked()"
+              (click)="setMode('Single')"
+            >
+              {{ 'component.modeSingle' | transloco }}
+            </button>
+          </div>
+        </header>
+
+        @if (form().mode === 'PerEnvironment') {
+          <app-ds-toggle
+            [label]="'component.allEnvironments' | transloco"
+            [checked]="form().targetsAllEnvironments"
+            (checkedChange)="setAllEnvironments($event)"
+          />
+          @if (!form().targetsAllEnvironments) {
+            <fieldset class="component-editor__targets">
+              <legend>{{ 'component.targets' | transloco }}</legend>
+              @for (environment of environments(); track environment.id) {
+                <label>
+                  <input
+                    type="checkbox"
+                    [checked]="form().targetEnvironmentIds.includes(environment.id)"
+                    (change)="toggleEnvironment(environment.id, $any($event.target).checked)"
+                  />
+                  <span>{{ environment.name }}</span>
+                  <code>{{ environment.code }}</code>
+                </label>
+              }
+            </fieldset>
+          }
+        } @else {
+          <fieldset class="component-editor__section component-editor__target">
+            <legend>{{ 'component.singleTarget' | transloco }}</legend>
+            <div class="component-editor__grid">
+              <app-ds-text-field
+                [label]="'component.targetCode' | transloco"
+                name="targetCode"
+                [value]="form().singleTargetCode"
+                [required]="true"
+                [hint]="'component.targetHint' | transloco"
+                (valueChange)="updateField('singleTargetCode', $event ?? '')"
+              />
+              <app-ds-text-field
+                [label]="'component.subscription' | transloco"
+                name="targetSubscription"
+                [value]="form().subscriptionId"
+                [required]="true"
+                (valueChange)="updateField('subscriptionId', $event ?? '')"
+              />
+              <app-ds-text-field
+                [label]="'component.region' | transloco"
+                name="targetRegion"
+                [value]="form().region"
+                [required]="true"
+                (valueChange)="updateField('region', $event ?? '')"
+              />
+              <app-ds-text-field
+                [label]="'component.deploymentConnection' | transloco"
+                name="targetConnection"
+                [value]="form().deploymentConnection"
+                (valueChange)="updateField('deploymentConnection', $event ?? '')"
+              />
+            </div>
+            <app-ds-toggle
+              [label]="'component.protectedTarget' | transloco"
+              [checked]="form().singleTargetIsProtected"
+              (checkedChange)="updateField('singleTargetIsProtected', $event)"
+            />
+            <div class="component-editor__grid">
+              <app-ds-text-field
+                [label]="'component.approvers' | transloco"
+                name="targetApprovers"
+                [value]="form().approvers"
+                (valueChange)="updateField('approvers', $event ?? '')"
+              />
+              <app-ds-text-field
+                [label]="'component.runners' | transloco"
+                name="targetRunners"
+                [value]="form().runners"
+                (valueChange)="updateField('runners', $event ?? '')"
+              />
+            </div>
+          </fieldset>
+        }
+      </section>
+
+      <section class="component-editor__section" aria-labelledby="component-lifecycle-title">
+        <h3 id="component-lifecycle-title">{{ 'component.lifecycle' | transloco }}</h3>
+        <label class="component-editor__select-label" for="removed-resource-behavior">
+          {{ 'component.removedResources' | transloco }}
+          <select
+            id="removed-resource-behavior"
+            name="removedResourceBehavior"
+            [value]="form().removedResourceBehavior"
+            (change)="updateField('removedResourceBehavior', $any($event.target).value)"
+          >
+            <option value="Detach">{{ 'component.detach' | transloco }}</option>
+            <option value="Delete">{{ 'component.deleteOutsideProtected' | transloco }}</option>
+          </select>
+        </label>
+        <app-ds-toggle
+          [label]="'component.deletionProtection' | transloco"
+          [checked]="form().deletionProtectionEnabled"
+          (checkedChange)="updateField('deletionProtectionEnabled', $event)"
+        />
+      </section>
+
+      <section class="component-editor__section" aria-labelledby="component-tags-title">
+        <h3 id="component-tags-title">{{ 'component.tags' | transloco }}</h3>
+        <label class="component-editor__textarea-label" for="component-tags">
+          {{ 'component.tags' | transloco }}
+          <span>{{ 'component.tagsHint' | transloco }}</span>
+          <textarea
+            id="component-tags"
+            name="tags"
+            rows="4"
+            [value]="form().tags"
+            (input)="updateField('tags', $any($event.target).value)"
+          ></textarea>
+        </label>
+      </section>
+
+      @if (saveError()) {
+        <p class="component-editor__error" role="alert">{{ 'component.saveError' | transloco }}</p>
+      }
+      @if (versionConflict()) {
+        <p class="component-editor__error" role="alert">
+          {{ 'component.versionConflict' | transloco }}
+        </p>
+      }
+      @if (!canManage()) {
+        <p>{{ 'project.permissionRequired' | transloco }}</p>
+      }
+      <div class="component-editor__actions">
+        <app-ds-button type="button" (click)="navigateToComponents()">{{
+          'component.cancel' | transloco
+        }}</app-ds-button>
+        @if (canManage()) {
+          <app-ds-button variant="primary" type="submit" [disabled]="saving()">
+            {{ (saving() ? 'component.saving' : 'component.save') | transloco }}
+          </app-ds-button>
+        }
+      </div>
+    </form>
+
+    @if (!isCreating() && component()?.firstPublishedAt === null && canManage()) {
+      <section class="component-editor__delete">
+        <h3>{{ 'component.componentDelete' | transloco }}</h3>
+        @if (deleteConfirmationOpen()) {
+          <p>{{ 'component.componentDeleteConfirmation' | transloco }}</p>
+          <div class="component-editor__actions">
+            <app-ds-button (click)="deleteConfirmationOpen.set(false)">{{
+              'component.cancel' | transloco
+            }}</app-ds-button>
+            <app-ds-button variant="danger" [disabled]="deleting()" (click)="deleteComponent()">{{
+              'component.componentDelete' | transloco
+            }}</app-ds-button>
+          </div>
+        } @else {
+          <app-ds-button variant="danger" (click)="deleteConfirmationOpen.set(true)">{{
+            'component.componentDelete' | transloco
+          }}</app-ds-button>
+        }
+        @if (deleteError()) {
+          <p class="component-editor__error" role="alert">
+            {{ 'component.componentDeleteError' | transloco }}
+          </p>
+        }
+      </section>
+    }
+  }
+</section>

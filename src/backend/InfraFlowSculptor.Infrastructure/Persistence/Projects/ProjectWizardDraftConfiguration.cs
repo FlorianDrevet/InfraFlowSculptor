@@ -13,7 +13,7 @@ public sealed class ProjectWizardDraftConfiguration : IEntityTypeConfiguration<P
         builder.ToTable("project_wizard_drafts");
         builder.HasKey(draft => new { draft.OrganizationId, draft.UserProfileId })
             .HasName("pk_project_wizard_drafts");
-        builder.Property(draft => draft.ContentJson).HasColumnType("jsonb").IsRequired();
+        builder.Property(draft => draft.ContentJson).HasColumnType("text").IsRequired();
         builder.Property(draft => draft.ExpiresAt).IsRequired();
         builder.HasIndex(draft => draft.ExpiresAt).HasDatabaseName("ix_project_wizard_drafts_expires_at");
         builder.HasOne<OrganizationAggregate>()

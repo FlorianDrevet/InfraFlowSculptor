@@ -20,7 +20,7 @@ public sealed class AuditEventEntityConfiguration : IEntityTypeConfiguration<Aud
         builder.Property(auditEvent => auditEvent.Action).HasMaxLength(128).IsRequired();
         builder.Property(auditEvent => auditEvent.ObjectType).HasMaxLength(32).HasConversion<string>().IsRequired();
         builder.Property(auditEvent => auditEvent.ObjectId).IsRequired();
-        builder.Property(auditEvent => auditEvent.Diff).HasColumnType("jsonb").IsRequired();
+        builder.Property(auditEvent => auditEvent.Diff).HasColumnType("text").IsRequired();
         builder.HasIndex(auditEvent => new { auditEvent.OrganizationId, auditEvent.OccurredAt })
             .HasDatabaseName("ix_audit_events_organization_id_occurred_at");
         builder.HasOne<OrganizationAggregate>()

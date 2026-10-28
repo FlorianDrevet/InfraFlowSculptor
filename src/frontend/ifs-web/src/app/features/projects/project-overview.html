@@ -6,9 +6,33 @@
   <div class="project-overview">
     <section class="project-overview__section" aria-labelledby="components-heading">
       <header>
-        <h2 id="components-heading">{{ 'project.componentsHeading' | transloco }}</h2>
+        <h2 id="components-heading">{{ 'project.componentsInDeploymentOrder' | transloco }}</h2>
+        @if (canManageComponents()) {
+          <a [routerLink]="['components', 'new', 'settings']">{{
+            'component.create' | transloco
+          }}</a>
+        }
       </header>
-      <p class="project-overview__empty">{{ 'project.componentsEmpty' | transloco }}</p>
+      @if (components().length === 0) {
+        <p class="project-overview__empty">{{ 'project.componentsEmpty' | transloco }}</p>
+      } @else {
+        <ul class="project-overview__components">
+          @for (component of components(); track component.id) {
+            <li>
+              <a [routerLink]="['components', component.id]">
+                <span class="project-overview__component-name">{{ component.name }}</span>
+                <span class="project-overview__code">{{ component.code }}</span>
+              </a>
+              <span>{{
+                (component.mode === 'Single'
+                  ? 'component.modeSingle'
+                  : 'component.modePerEnvironment'
+                ) | transloco
+              }}</span>
+            </li>
+          }
+        </ul>
+      }
     </section>
 
     <section class="project-overview__section" aria-labelledby="environments-heading">

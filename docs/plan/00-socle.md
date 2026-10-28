@@ -369,8 +369,9 @@ concurrence optimiste, des identifiants v7 et de l'idempotence des commandes.
    `e => e.OrganizationId == _currentOrganization.Id` ; pour toute entité `IHasVersion`, `Version` jeton de
    concurrence ; `SaveChangesAsync` incrémente `Version` des entités modifiées.
 5. Tables transverses (configurations EF + entités dans `Infrastructure/Persistence/Common/`) :
-   `outbox_messages (id, organization_id, queue, session_id, type, payload jsonb, created_at, sent_at, attempts)`,
-   `idempotency_keys (organization_id, key, request_hash, status_code, response jsonb, created_at)` avec clé
+   `outbox_messages (id, organization_id, queue, session_id, type, payload text, created_at, sent_at, attempts)`
+   (payload JSON sérialisé), `idempotency_keys (organization_id, key, request_hash, status_code, response text,
+   created_at)` (réponse JSON sérialisée) avec clé
    primaire `(organization_id, key)`, `scheduled_job_leases (job_name pk, holder, expires_at)`.
 5 bis. `Domain/Common/ObjectRef.cs` (`ObjectType` énumération + `Guid Id`) : référence unique d'un objet pour l'audit,
    l'historique, les constats, les notifications et plus tard les commentaires ([technique 10](../technique/10-extensibilite.md) § 2).

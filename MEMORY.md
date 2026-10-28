@@ -25,6 +25,8 @@
 - **2026-10-27** : R-04 termine la revue et la recette d'accès. Idempotence par utilisateur, transaction atomique, corrections d'audit et A14 Scalar (Alice : 15 permissions; Chloé : `project.read`). Tests .NET 205/205 et frontend 63/63 ; Release sans avertissement, lint et OpenAPI passent. Le conflit PostgreSQL d'appartenance est couvert avec un savepoint et une réponse 409 commitée. E2E Emma reste affecté par la base persistante. Détails et réserves dans `docs/plan/revues/R-04-autovalidation.md` et les mémoires thématiques.
 
 - **2026-10-27** : J0-07 ajoute les projets, environnements ordonnés, tags, commandes du modèle transactionnelles et suppression réversible ; 240 tests .NET et 64 tests frontend, OpenAPI et builds passent. Voir `.github/memory/03-domain-model.md`, `10-api-endpoints.md` et `docs/plan/recettes/suivi.md` (Scalar interactif non exécuté).
+- **2026-10-28** : J0-10 ajoute les composants `PerEnvironment`/`Single`, cibles, groupes de ressources, listes et réglages ; backend CI 274/274, frontend et E2E 22/22 desktop/mobile passent. Aucune colonne JSONB n'est ajoutée. Voir `.github/memory/03-domain-model.md`, `04-frontend.md`, `docs/design/maquette-v1/coverage.md` et `docs/plan/recettes/suivi.md`.
+- **2026-10-28** : J0-11 stocke les ressources et leurs valeurs imbriquées relationnellement, migre les anciennes colonnes JSONB vers `text` et interdit leur réintroduction. Détails et preuves dans `.github/memory/03-domain-model.md`, `05-data-and-storage.md` et `docs/plan/recettes/suivi.md`.
 
 ## Fichiers thématiques
 
@@ -55,7 +57,7 @@
 2. Un seul moteur de calcul (`InfraFlowSculptor.Engine`), pur ; le frontend ne calcule rien.
 3. La sortie de référence (`reference/`) fait foi pour les émetteurs.
 4. Chaque route a son test d'isolation (EXG-01).
-5. Maquette = libellés et disposition ; Strata = valeurs (tokens) ; rien d'un jalon ultérieur n'apparaît.
+5. Maquette = libellés et disposition ; comparer le rendu à la référence en itérant ; sans maquette, inscrire l'écran dans [`docs/design/maquette-v1/coverage.md`](docs/design/maquette-v1/coverage.md) et suivre Strata au plus près. Rien d'un jalon ultérieur n'apparaît.
 
 ## Commandes
 

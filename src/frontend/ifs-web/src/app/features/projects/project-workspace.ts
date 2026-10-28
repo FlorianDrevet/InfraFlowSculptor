@@ -61,6 +61,13 @@ export class ProjectWorkspace {
         iconName: 'layers',
       }),
       this.navigation.register({
+        id: `project-components-${projectId}`,
+        labelKey: 'project.componentsHeading',
+        path: `${base}/components`,
+        scope: 'project',
+        iconName: 'folder',
+      }),
+      this.navigation.register({
         id: `project-settings-${projectId}`,
         labelKey: 'project.settingsLink',
         path: `${base}/settings`,

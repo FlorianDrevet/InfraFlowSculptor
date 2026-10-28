@@ -7,6 +7,7 @@ using InfraFlowSculptor.Domain.Common.Models;
 using InfraFlowSculptor.Domain.OrganizationAggregate;
 using InfraFlowSculptor.Domain.Invitations;
 using InfraFlowSculptor.Domain.UserProfileAggregate;
+using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Infrastructure.Persistence.Common;
 using InfraFlowSculptor.Infrastructure.Persistence.Identity;
@@ -53,6 +54,8 @@ public class IfsDbContext(
     public DbSet<OrganizationAggregate> Organizations => Set<OrganizationAggregate>();
 
     public DbSet<ProjectAggregate> Projects => Set<ProjectAggregate>();
+
+    public DbSet<ComponentAggregate> Components => Set<ComponentAggregate>();
 
     public DbSet<ProjectWizardDraft> ProjectWizardDrafts => Set<ProjectWizardDraft>();
 

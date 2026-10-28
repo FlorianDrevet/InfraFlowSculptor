@@ -1,4 +1,3 @@
-using System.Text.Json;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.Common.Models;
 
@@ -30,7 +29,7 @@ public sealed class IdempotencyKeyEntity : IOrganizationOwned
 
     public int? StatusCode { get; set; }
 
-    public JsonElement? Response { get; set; }
+    public string? Response { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
 }

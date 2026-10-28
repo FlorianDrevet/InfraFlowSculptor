@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-10`](docs/plan/02-jalon-0-pilote.md#j0-10--composants-et-groupes-de-ressources) — Composants et groupes de ressources |
+| **Étape courante** | [`J0-12`](docs/plan/02-jalon-0-pilote.md#j0-12--moteur--cibles-présences-valeurs-effectives-et-tags) — Moteur : cibles, présences, valeurs effectives et tags |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-09`](docs/plan/02-jalon-0-pilote.md#j0-09--écrans-du-projet--liste-vue-densemble-environnements-paramètres-membres) — Écrans du projet : liste, vue d'ensemble, environnements, paramètres, membres (commit `773695e`) |
-| **Étape suivante** | `J0-11` — Ressources : propriétés, surcharges, présence, existantes, enfants |
+| **Dernière étape terminée** | [`J0-11`](docs/plan/02-jalon-0-pilote.md#j0-11--ressources--propriétés-surcharges-présence-existantes-enfants) — Ressources : propriétés, surcharges, présence, existantes, enfants (commit `36736ee`) |
+| **Étape suivante** | `J0-13` — Moteur : nommage |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
 | **Dernière mise à jour** | 2026-10-28 — Codex |
@@ -82,6 +82,10 @@ Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suiv
 ### J0-09 — écrans du projet — 2026-10-28
 
 **Décisions reçues le 2026-10-28** : favoris/récents stockés de façon relationnelle dans le profil ; JSONB exclu. Les compteurs composants/ressources/constats sont reportés à J0-10/J0-20 ; aucun zéro provisoire n'est affiché. Le blocage de conception est résolu et consigné dans [`J0-09-blocage-20261028.md`](docs/plan/revues/J0-09-blocage-20261028.md). Florian autorise l'authentification des personas de test via Keycloak local ; `project.spec.ts` et ses captures passent sur desktop et mobile. Les résultats de la suite complète et ses limites connues sont consignés dans [`suivi.md`](docs/plan/recettes/suivi.md).
+
+### J0-11 — stockage des propriétés des ressources — 2026-10-28
+
+**Décision reçue le 2026-10-28 :** Florian étend l'interdiction à tous les usages JSONB, existants compris. J0-11 couvre donc aussi la migration relationnelle des colonnes actuelles, l'actualisation des conventions et la précision des contrats `array`/`object` du catalogue. [Décision et vérifications](docs/plan/revues/J0-11-blocage-stockage-20261028.md).
 
 ### R-04 — portée d’idempotence de création d’organisation — 2026-10-27
 

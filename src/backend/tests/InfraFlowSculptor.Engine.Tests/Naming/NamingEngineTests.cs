@@ -70,7 +70,8 @@ public sealed class NamingEngineTests
         new ProjectSnapshot("Boutique en ligne", "shop", string.Empty),
         [new EnvironmentSnapshot("dev", region)],
         naming,
-        new Dictionary<string, string> { ["costCenter"] = "commerce" });
+        new Dictionary<string, string> { ["costCenter"] = "commerce" },
+        []);
 
     private static NamingConventionSnapshot Compact() => new(
         "Compact",

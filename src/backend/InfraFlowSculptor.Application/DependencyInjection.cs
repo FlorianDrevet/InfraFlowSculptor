@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using InfraFlowSculptor.Application.Common.Behaviors;
 using InfraFlowSculptor.Application.Common.Jobs;
 using InfraFlowSculptor.Application.Common.ModelCommands;
+using InfraFlowSculptor.Application.Components;
 
 namespace InfraFlowSculptor.Application;
 
@@ -29,6 +30,7 @@ public static class DependencyInjection
         services.TryAddScoped<IJobDispatcher, OutboxJobDispatcher>();
         services.TryAddScoped<IModelCommandExecutor, ModelCommandExecutor>();
         services.TryAddSingleton<ModelCommandSerializer>();
+        services.TryAddScoped<ModelSnapshotBuilder>();
         return services;
     }
 }

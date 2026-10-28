@@ -154,13 +154,15 @@ Confirmée (2026-10-04). Base relationnelle unique d'IFS : PostgreSQL 17 (Azure 
 PostgreSQL serveur flexible en Azure, conteneur `postgres:17` par Aspire en local), EF Core + Npgsql,
 conventions de nommage `snake_case` (`EFCore.NamingConventions`).
 
-**Pourquoi pas SQL Server, comme VPD.** IFS stocke beaucoup de documents structurés immuables (instantanés
-du modèle pour l'historique, plans de déploiement, descripteurs, jeux de modifications) ; `jsonb` indexable
-les sert mieux. Le serveur flexible coûte moins cher qu'Azure SQL à charge équivalente pour un SaaS
+**Pourquoi pas SQL Server, comme VPD.** Le modèle métier et les documents destinés aux requêtes sont stockés
+relationnellement. Certains protocoles opaques (différences d'audit, réponses idempotentes, messages d'outbox,
+brouillons et instantanés) sont sérialisés en JSON dans des colonnes `text`. PostgreSQL `jsonb` est interdit
+dans le schéma, y compris pour les données existantes ; J0-11 convertit les colonnes livrées en `text` et
+normalise les ressources. Le serveur flexible coûte moins cher qu'Azure SQL à charge équivalente pour un SaaS
 naissant, et les tests d'intégration démarrent en quelques secondes avec Testcontainers.
 
-**Si l'utilisateur préfère SQL Server** : remplacer le fournisseur EF, `jsonb` par `nvarchar(max)` +
-colonnes calculées, et Testcontainers.MsSql. Aucune autre étape du plan ne change.
+**Si l'utilisateur préfère SQL Server** : remplacer le fournisseur EF, les colonnes `text` de protocoles opaques
+par `nvarchar(max)`, et Testcontainers.MsSql. Aucune autre étape du plan ne change.
 
 ### DT-05 — Minimal API `/v1`, OpenAPI intégré + Scalar
 
@@ -467,8 +469,8 @@ autorisation, unité de travail, `ErrorOr`) est identique. Application à l'éta
 Table `audit_events` alimentée dans la transaction de la commande. Un déclencheur PostgreSQL refuse `UPDATE` et
 `DELETE` (seule la purge planifiée à 13 mois, par une fonction `SECURITY DEFINER` dédiée, peut supprimer). L'acteur
 est un identifiant opaque (`actor_ref`) ; son nom est résolu **à la lecture**. Les valeurs personnelles d'une différence
-(nom, adresse) vont dans `audit_personal_data (event_id, subject_user_id, field, value)`, la différence `jsonb` n'en
-garde qu'une marque. Pseudonymiser un compte ([EXG-06](../specs/27-exigences-non-fonctionnelles.md)) = supprimer ses
+(nom, adresse) vont dans `audit_personal_data (event_id, subject_user_id, field, value)`, la différence JSON
+sérialisée en `text` n'en garde qu'une marque. Pseudonymiser un compte ([EXG-06](../specs/27-exigences-non-fonctionnelles.md)) = supprimer ses
 lignes de `audit_personal_data` et son profil, sans jamais modifier `audit_events` (corrige la contradiction relevée
 par la revue du plan du 2026-10-04, PLAN-07).
 

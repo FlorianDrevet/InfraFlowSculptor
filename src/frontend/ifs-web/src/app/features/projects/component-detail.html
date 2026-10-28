@@ -1,0 +1,186 @@
+@if (loading()) {
+  <p role="status">{{ 'component.loading' | transloco }}</p>
+} @else if (loadError() || !component()) {
+  <p class="component-detail__error" role="alert">{{ 'component.loadError' | transloco }}</p>
+} @else {
+  <section class="component-detail">
+    <header class="component-detail__header">
+      <a [routerLink]="['../']">{{ 'component.backToComponents' | transloco }}</a>
+      <div>
+        <h2>{{ component()!.name }}</h2>
+        <code>{{ component()!.code }}</code>
+      </div>
+      @if (canManageComponents()) {
+        <a class="st-btn st-btn-secondary" [routerLink]="['settings']">
+          {{ 'component.settingsLabel' | transloco }}
+        </a>
+      }
+    </header>
+
+    <p class="component-detail__mode">
+      {{
+        (component()!.mode === 'Single' ? 'component.modeSingle' : 'component.modePerEnvironment')
+          | transloco
+      }}
+      @if (component()!.mode === 'Single' && component()!.singleTarget; as target) {
+        · {{ target.code }} · {{ target.region }}
+      } @else if (component()!.targetsAllEnvironments) {
+        · {{ 'component.allEnvironments' | transloco }}
+      } @else {
+        ·
+        @for (environment of environments(); track environment.id; let last = $last) {
+          @if (component()!.targetEnvironmentIds.includes(environment.id)) {
+            {{ environment.code }}
+            @if (!last) {
+              ,
+            }
+          }
+        }
+      }
+    </p>
+    @if (component()!.description) {
+      <p class="component-detail__description">{{ component()!.description }}</p>
+    }
+
+    <section class="component-detail__section" aria-labelledby="resource-groups-heading">
+      <header>
+        <h3 id="resource-groups-heading">{{ 'resourceGroup.heading' | transloco }}</h3>
+        @if (canEditModel()) {
+          <app-ds-button variant="primary" (click)="openCreateGroup()">
+            {{ 'resourceGroup.add' | transloco }}
+          </app-ds-button>
+        }
+      </header>
+
+      @if (component()!.resourceGroups.length === 0) {
+        <p class="component-detail__empty">{{ 'resourceGroup.empty' | transloco }}</p>
+      } @else {
+        <ul class="component-detail__groups">
+          @for (group of component()!.resourceGroups; track group.id) {
+            <li>
+              <div>
+                <h4>{{ group.name }}</h4>
+                <span>{{ group.region || ('resourceGroup.targetRegion' | transloco) }}</span>
+              </div>
+              @if (canEditModel()) {
+                <div class="component-detail__actions">
+                  <app-ds-button variant="ghost" size="sm" (click)="openEditGroup(group)">
+                    {{ 'resourceGroup.edit' | transloco }}
+                  </app-ds-button>
+                  @if (pendingDeletionGroupId() === group.id) {
+                    <span>{{ 'resourceGroup.deleteConfirmation' | transloco }}</span>
+                    <app-ds-button
+                      variant="danger"
+                      size="sm"
+                      [disabled]="deletingGroup()"
+                      (click)="deleteGroup()"
+                    >
+                      {{ 'resourceGroup.delete' | transloco }}
+                    </app-ds-button>
+                    <app-ds-button variant="ghost" size="sm" (click)="cancelGroupDeletion()">
+                      {{ 'component.cancel' | transloco }}
+                    </app-ds-button>
+                  } @else {
+                    <app-ds-button
+                      variant="danger"
+                      size="sm"
+                      (click)="requestGroupDeletion(group.id)"
+                    >
+                      {{ 'resourceGroup.delete' | transloco }}
+                    </app-ds-button>
+                  }
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+
+      @if (groupFormOpen()) {
+        <form class="component-detail__group-form" (ngSubmit)="saveGroup()">
+          <h4>
+            {{
+              editingGroupId()
+                ? ('resourceGroup.edit' | transloco)
+                : ('resourceGroup.add' | transloco)
+            }}
+          </h4>
+          <label>
+            {{ 'resourceGroup.name' | transloco }}
+            <input
+              name="groupName"
+              required
+              [value]="groupForm().name"
+              (input)="updateGroupField('name', $any($event.target).value)"
+            />
+          </label>
+          <label>
+            {{ 'resourceGroup.region' | transloco }}
+            <input
+              name="groupRegion"
+              [placeholder]="'resourceGroup.targetRegion' | transloco"
+              [value]="groupForm().region"
+              (input)="updateGroupField('region', $any($event.target).value)"
+            />
+          </label>
+          <label>
+            {{ 'resourceGroup.tags' | transloco }}
+            <textarea
+              name="groupTags"
+              rows="3"
+              [value]="groupForm().tags"
+              (input)="updateGroupField('tags', $any($event.target).value)"
+            ></textarea>
+          </label>
+          <label>
+            {{ 'resourceGroup.forcedNames' | transloco }}
+            <span>{{ 'resourceGroup.forcedNamesHint' | transloco }}</span>
+            <textarea
+              name="forcedNames"
+              rows="3"
+              [value]="groupForm().forcedNames"
+              (input)="updateGroupField('forcedNames', $any($event.target).value)"
+            ></textarea>
+          </label>
+          @if (actionError()) {
+            <p class="component-detail__error" role="alert">
+              {{ 'resourceGroup.saveError' | transloco }}
+            </p>
+          }
+          <div class="component-detail__actions">
+            <app-ds-button type="button" (click)="closeGroupForm()">{{
+              'component.cancel' | transloco
+            }}</app-ds-button>
+            <app-ds-button variant="primary" type="submit">{{
+              'resourceGroup.save' | transloco
+            }}</app-ds-button>
+          </div>
+        </form>
+      }
+      @if (actionError() && !groupFormOpen()) {
+        <p class="component-detail__error" role="alert">
+          {{ 'resourceGroup.deleteError' | transloco }}
+        </p>
+      }
+    </section>
+
+    <section class="component-detail__section" aria-labelledby="resources-heading">
+      <h3 id="resources-heading">{{ 'resourceGroup.resourcesHeading' | transloco }}</h3>
+      <p class="component-detail__empty">{{ 'resourceGroup.noResources' | transloco }}</p>
+    </section>
+
+    <section class="component-detail__section" aria-labelledby="dependencies-heading">
+      <h3 id="dependencies-heading">{{ 'resourceGroup.dependenciesHeading' | transloco }}</h3>
+      <div class="component-detail__dependencies">
+        <section>
+          <h4>{{ 'resourceGroup.dependsOn' | transloco }}</h4>
+          <p>{{ 'resourceGroup.noDependencies' | transloco }}</p>
+        </section>
+        <section>
+          <h4>{{ 'resourceGroup.usedBy' | transloco }}</h4>
+          <p>{{ 'resourceGroup.noDependencies' | transloco }}</p>
+        </section>
+      </div>
+    </section>
+  </section>
+}

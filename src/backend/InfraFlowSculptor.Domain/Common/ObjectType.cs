@@ -16,5 +16,6 @@ public enum ObjectType
     Invitation,
     OrganizationMember,
     ProjectRoleAssignment,
-    AuditEvent
+    AuditEvent,
+    ResourceGroup
 }

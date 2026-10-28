@@ -19,6 +19,10 @@ public static class IsolationScenarios
     private const string TestJobId = "55555555-5555-4555-8555-555555555555";
     private const string TestMemberId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
     private const string TestInvitationId = "66666666-6666-4666-8666-666666666666";
+    private const string TestComponentId = "77777777-7777-4777-8777-777777777777";
+    private const string TestResourceGroupId = "88888888-8888-4888-8888-888888888888";
+    private const string TestResourceId = "99999999-9999-4999-8999-999999999999";
+    private const string TestResourceChildId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
     private const string TestInvitationToken = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
     private static readonly string ShopProjectId = DemoDataSeeder.ShopProjectId.Value.ToString("D");
     private static readonly string[] MemberRoles = ["Member"];
@@ -242,6 +246,174 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}",
                 HttpStatusCode.NotFound),
+            ["ListProjectComponents"] = OrganizationScenario(
+                "ListProjectComponents",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/components",
+                HttpStatusCode.NotFound),
+            ["CreateProjectComponent"] = OrganizationWriteScenario(
+                "CreateProjectComponent",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/components",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    name = "Isolated component",
+                    code = "isolated",
+                    description = "",
+                    mode = "PerEnvironment",
+                    targetsAllEnvironments = true,
+                    targetEnvironmentIds = Array.Empty<Guid>(),
+                    singleTarget = (object?)null,
+                    removedResourceBehavior = "Detach",
+                    deletionProtectionEnabled = true,
+                    tags = new Dictionary<string, string>(),
+                    expectedVersion = 1
+                }),
+            ["GetProjectComponent"] = OrganizationScenario(
+                "GetProjectComponent",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}",
+                HttpStatusCode.NotFound),
+            ["UpdateProjectComponent"] = OrganizationWriteScenario(
+                "UpdateProjectComponent",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    name = "Isolated component",
+                    code = "isolated",
+                    description = "",
+                    mode = "PerEnvironment",
+                    targetsAllEnvironments = true,
+                    targetEnvironmentIds = Array.Empty<Guid>(),
+                    singleTarget = (object?)null,
+                    removedResourceBehavior = "Detach",
+                    deletionProtectionEnabled = true,
+                    tags = new Dictionary<string, string>(),
+                    expectedVersion = 1
+                }),
+            ["DeleteProjectComponent"] = OrganizationWriteScenario(
+                "DeleteProjectComponent",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}",
+                HttpStatusCode.NotFound,
+                new { expectedVersion = 1 }),
+            ["CreateResourceGroup"] = OrganizationWriteScenario(
+                "CreateResourceGroup",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resource-groups",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    name = "main",
+                    region = (string?)null,
+                    tags = new Dictionary<string, string>(),
+                    forcedNames = new Dictionary<Guid, string>(),
+                    expectedVersion = 1
+                }),
+            ["UpdateResourceGroup"] = OrganizationWriteScenario(
+                "UpdateResourceGroup",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resource-groups/{TestResourceGroupId}",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    name = "main",
+                    region = (string?)null,
+                    tags = new Dictionary<string, string>(),
+                    forcedNames = new Dictionary<Guid, string>(),
+                    expectedVersion = 1
+                }),
+            ["DeleteResourceGroup"] = OrganizationWriteScenario(
+                "DeleteResourceGroup",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resource-groups/{TestResourceGroupId}",
+                HttpStatusCode.NotFound,
+                new { expectedVersion = 1 }),
+            ["AddResource"] = OrganizationWriteScenario(
+                "AddResource",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    resourceGroupId = TestResourceGroupId,
+                    type = "KeyVault",
+                    logicalName = "isolated",
+                    description = "",
+                    isExisting = false,
+                    properties = new { },
+                    tags = new Dictionary<string, string>(),
+                    expectedVersion = 1
+                }),
+            ["SetResourceProperties"] = OrganizationWriteScenario(
+                "SetResourceProperties",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/properties",
+                HttpStatusCode.NotFound,
+                new { properties = new { }, expectedVersion = 1 }),
+            ["SetOverride"] = OrganizationWriteScenario(
+                "SetOverride",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/overrides",
+                HttpStatusCode.NotFound,
+                new { targetId = Guid.NewGuid(), property = "sku", value = "standard", expectedVersion = 1 }),
+            ["ClearOverride"] = OrganizationWriteScenario(
+                "ClearOverride",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/overrides",
+                HttpStatusCode.NotFound,
+                new { targetId = Guid.NewGuid(), property = "sku", expectedVersion = 1 }),
+            ["SetPresence"] = OrganizationWriteScenario(
+                "SetPresence",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/presence",
+                HttpStatusCode.NotFound,
+                new { targetId = Guid.NewGuid(), isPresent = true, expectedVersion = 1 }),
+            ["SetExistingResourceId"] = OrganizationWriteScenario(
+                "SetExistingResourceId",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/existing-id",
+                HttpStatusCode.NotFound,
+                new { targetId = Guid.NewGuid(), resourceId = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/test", expectedVersion = 1 }),
+            ["SetForcedName"] = OrganizationWriteScenario(
+                "SetForcedName",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/forced-name",
+                HttpStatusCode.NotFound,
+                new { targetId = Guid.NewGuid(), name = "kv-isolated", expectedVersion = 1 }),
+            ["MoveResource"] = OrganizationWriteScenario(
+                "MoveResource",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/resource-group",
+                HttpStatusCode.NotFound,
+                new { resourceGroupId = TestResourceGroupId, expectedVersion = 1 }),
+            ["DeleteResource"] = OrganizationWriteScenario(
+                "DeleteResource",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}",
+                HttpStatusCode.NotFound,
+                new { expectedVersion = 1 }),
+            ["AddChild"] = OrganizationWriteScenario(
+                "AddChild",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/children",
+                HttpStatusCode.NotFound,
+                new { type = "Container", name = "isolated", properties = new { }, expectedVersion = 1 }),
+            ["UpdateChild"] = OrganizationWriteScenario(
+                "UpdateChild",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/children/{TestResourceChildId}",
+                HttpStatusCode.NotFound,
+                new { type = "Container", name = "isolated", properties = new { }, expectedVersion = 1 }),
+            ["RemoveChild"] = OrganizationWriteScenario(
+                "RemoveChild",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/children/{TestResourceChildId}",
+                HttpStatusCode.NotFound,
+                new { expectedVersion = 1 }),
             ["SetProjectFavorite"] = OrganizationWriteScenario(
                 "SetProjectFavorite",
                 HttpMethod.Put,
@@ -360,10 +532,11 @@ public static class IsolationScenarios
         string name,
         HttpMethod method,
         string path,
-        HttpStatusCode expectedStatusCode) =>
+        HttpStatusCode expectedStatusCode,
+        object? body = null) =>
         new(name, _ =>
         {
-            var request = CreateRequest(method, path, CreateDavidToken(), null);
+            var request = CreateRequest(method, path, CreateDavidToken(), body);
             request.Headers.Add("X-Ifs-Organization", ContosoOrganizationId);
             request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
             return request;

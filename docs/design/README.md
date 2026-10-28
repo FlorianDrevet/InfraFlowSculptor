@@ -22,7 +22,8 @@ maquette-v1/
 │   ├── index.html           sommaire
 │   ├── <Écran>.html
 │   └── ds/strata/components/bundle.css
-└── sources/                 fichiers du canvas tels quels (*.dc.html, canvas.json, ds/strata/) — pour réimporter
+├── sources/                 fichiers du canvas tels quels (*.dc.html, canvas.json, ds/strata/) — pour réimporter
+└── coverage.md              correspondance des écrans et registre des écrans sans maquette dédiée
 strata/
 ├── README.md                principes, écriture, couleur, typographie, mise en page, motifs, « Passer au code »
 ├── tokens.json              SOURCE des valeurs (générée en CSS par l'application, DT-19)
@@ -46,6 +47,13 @@ strata/
    tableau ci-dessous et chaque étape du plan disent quelles zones implémenter.
 4. **Écrans en 1 440 px** dans la maquette : le comportement sous 760 px suit le README de Strata (§ Mise en page) et
    [RG-UI-16](../specs/26-interface.md).
+5. **Vérification visuelle obligatoire.** Pour chaque écran livré avec une maquette, comparer le rendu réel et
+   `preview/<Écran>.html` à la même taille, puis itérer jusqu'à la concordance trait pour trait dans les zones du jalon.
+   Archiver les captures et le résultat de la comparaison. Le protocole et les chemins de preuve sont dans la skill
+   [`executer-etape`](../../.agents/skills/executer-etape/SKILL.md).
+6. **Pas de maquette dédiée.** L'absence doit être inscrite dans le [registre de couverture](maquette-v1/coverage.md) ;
+   l'écran est réalisé au plus près de la référence existante la plus proche et de Strata, avec ses écarts consignés.
+   Ne pas présenter ce travail comme une correspondance exacte avec une maquette inexistante.
 
 ## Défauts connus de la maquette
 

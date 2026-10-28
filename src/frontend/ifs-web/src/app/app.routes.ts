@@ -115,40 +115,8 @@ export const routes: Routes = [
             ],
             loadComponent: () =>
               import('./features/projects/project-workspace').then((m) => m.ProjectWorkspace),
-            children: [
-              {
-                path: '',
-                loadComponent: () =>
-                  import('./features/projects/project-overview').then((m) => m.ProjectOverview),
-                title: 'Vue d’ensemble du projet',
-              },
-              {
-                path: 'environments',
-                loadComponent: () =>
-                  import('./features/projects/project-environments').then(
-                    (m) => m.ProjectEnvironments,
-                  ),
-                title: 'Environnements du projet',
-              },
-              {
-                path: 'environments/:environmentId',
-                loadComponent: () =>
-                  import('./features/projects/environment-edit').then((m) => m.EnvironmentEdit),
-                title: 'Modifier un environnement',
-              },
-              {
-                path: 'settings',
-                loadComponent: () =>
-                  import('./features/projects/project-settings').then((m) => m.ProjectSettings),
-                title: 'Paramètres du projet',
-              },
-              {
-                path: 'members',
-                loadComponent: () =>
-                  import('./features/projects/project-members').then((m) => m.ProjectMembers),
-                title: 'Membres du projet',
-              },
-            ],
+            loadChildren: () =>
+              import('./features/projects/project.routes').then((m) => m.PROJECT_ROUTES),
           },
         ],
       },

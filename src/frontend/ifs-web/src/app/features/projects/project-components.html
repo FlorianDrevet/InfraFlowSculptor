@@ -1,0 +1,35 @@
+<section class="project-components">
+  <header class="project-components__header">
+    <h2>{{ 'project.componentsHeading' | transloco }}</h2>
+    @if (canManage()) {
+      <a class="st-btn st-btn-primary" [routerLink]="['new', 'settings']">
+        {{ 'component.create' | transloco }}
+      </a>
+    }
+  </header>
+
+  @if (loading()) {
+    <p role="status">{{ 'component.loading' | transloco }}</p>
+  } @else if (loadError()) {
+    <p class="project-components__error" role="alert">
+      {{ 'component.loadError' | transloco }}
+    </p>
+  } @else if (components().length === 0) {
+    <p class="project-components__empty">{{ 'project.componentsEmpty' | transloco }}</p>
+  } @else {
+    <ul class="project-components__list">
+      @for (component of components(); track component.id) {
+        <li>
+          <a [routerLink]="[component.id]">
+            <span class="project-components__name">{{ component.name }}</span>
+            <code>{{ component.code }}</code>
+          </a>
+          <span>{{
+            (component.mode === 'Single' ? 'component.modeSingle' : 'component.modePerEnvironment')
+              | transloco
+          }}</span>
+        </li>
+      }
+    </ul>
+  }
+</section>

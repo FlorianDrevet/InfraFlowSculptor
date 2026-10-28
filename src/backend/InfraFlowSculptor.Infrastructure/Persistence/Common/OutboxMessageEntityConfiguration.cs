@@ -14,7 +14,7 @@ public sealed class OutboxMessageEntityConfiguration : IEntityTypeConfiguration<
         builder.Property(message => message.Queue).HasMaxLength(100).IsRequired();
         builder.Property(message => message.SessionId).HasMaxLength(200).IsRequired();
         builder.Property(message => message.Type).HasMaxLength(500).IsRequired();
-        builder.Property(message => message.Payload).HasColumnType("jsonb").IsRequired();
+        builder.Property(message => message.PayloadJson).HasColumnName("payload").HasColumnType("text").IsRequired();
         builder.Property(message => message.CreatedAt).IsRequired();
         builder.Property(message => message.FailedAt);
         builder.Property(message => message.Attempts).HasDefaultValue(0).IsRequired();

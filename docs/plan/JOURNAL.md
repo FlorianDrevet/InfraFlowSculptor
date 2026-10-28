@@ -86,3 +86,7 @@
 | 2026-10-28 00:25 | Codex | `J0-09` blocage confirmé | docs/plan/revues/J0-09-blocage-20261028.md |
 | 2026-10-28 07:44 | Codex | `J0-09` blocage résolu | docs/plan/revues/J0-09-blocage-20261028.md |
 | 2026-10-28 10:10 | Codex | `J0-09` terminée | commit `773695e` |
+| 2026-10-28 14:11 | Codex | `J0-10` terminée | commit `42d827d` |
+| 2026-10-28 14:14 | Codex | `J0-11` blocage confirmé | docs/plan/revues/J0-11-blocage-stockage-20261028.md |
+| 2026-10-28 14:17 | Codex | `J0-11` blocage résolu | docs/plan/revues/J0-11-blocage-stockage-20261028.md |
+| 2026-10-28 15:53 | Codex | `J0-11` terminée | commit `36736ee` |

@@ -5,6 +5,7 @@ export interface ProjectSummaryResponse {
   catalogVersion: string;
   ciPlatform: string;
   code: string;
+  componentCount: (number | string);
   coordinatorUserProfileId: (string | null);
   defaultReviewers: Array<string>;
   defaultRunners: Array<string>;
