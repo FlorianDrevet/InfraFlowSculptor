@@ -1,0 +1,23 @@
+{
+  "continuation_token": "SECRET_REDACTED",
+  "count": 1,
+  "value": [
+    {
+      "id": 291,
+      "name": "ifs-preview-dev",
+      "resource": {
+        "data": "37DC3C48A89C56AA2455BE85573A591F2924DD58E0F05F1646832DD40B9C0A8C01",
+        "downloadUrl": "https://artprodweu2.artifacts.visualstudio.com/A4ef6e6c2-31fb-4df4-a0dc-28dab6a35b18/GUID_001/_apis/artifact/cGlwZWxpbmVhcnRpZmFjdDovL2Zsb3JpYW5kcmV2ZXQwMzMyL3Byb2plY3RJZC9kZWZkYjc4OS04MzlmLTQxZTUtYWU1Ny1lOTU2OGZmNzRkYTYvYnVpbGRJZC83NzcvYXJ0aWZhY3ROYW1lL2lmcy1wcmV2aWV3LWRldg2/content?format=zip",
+        "properties": {
+          "DomainId": "0",
+          "HashType": "DEDUP1024K",
+          "RootId": "CEA4ED7F087E6C89CBA4B653BBF4B790931B6755B758F4C1657B83C0AB6A039C02",
+          "artifactsize": "33687"
+        },
+        "type": "PipelineArtifact",
+        "url": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/builds/777/artifacts?artifactName=ifs-preview-dev&api-version=7.1"
+      },
+      "source": "GUID_019"
+    }
+  ]
+}

@@ -164,8 +164,8 @@ une commande exécutée dans la base. IFS les génère pour qu'aucun accès ne s
 ([DEC-103](03-decisions.md)) : la base est déployée avant lui, et son identité existe une fois son propre
 déploiement fait. Après ce déploiement, sa release exécute un script idempotent ([DEC-90](03-decisions.md)) :
 - il crée l'utilisateur Entra de chaque identité s'il n'existe pas, **sans consulter l'annuaire** :
-  `CREATE USER [<nom>] WITH SID = <identifiant client>, TYPE = E` en Azure SQL,
-  `pgaadauth_create_principal_with_oid` avec l'identifiant d'objet en PostgreSQL ; les identifiants sont
+  `CREATE USER [<nom>] WITH SID = <Object ID du principal converti en SID>, TYPE = E` en Azure SQL,
+  `pgaadauth_create_principal_with_oid` avec l'Object ID en PostgreSQL ; les identifiants sont
   des sorties du déploiement ;
 - il ajuste ses droits au niveau voulu ;
 - il marque les utilisateurs qu'il crée, pour ne jamais toucher un utilisateur créé par quelqu'un

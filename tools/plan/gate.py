@@ -7,26 +7,27 @@ fichiers puis du texte :
     ### 🔒 R-01 — Titre d'un verrou de revue
 
 `NEXT.md` (racine) porte l'étape courante et son statut dans son tableau « En un coup d'œil ».
-Un verrou `R-nn` est levé par le fichier `docs/plan/revues/R-nn-revue.md` qui contient la ligne
-`Verdict : APPROUVÉ`, écrit par Claude.
+Un verrou `R-nn` est levé par l'auto-validation Codex dans
+`docs/plan/revues/R-nn-autovalidation.md`. Les revues Claude historiques restent reconnues.
 
 Commandes (toutes en Python 3.11+, sans dépendance) :
 
   python tools/plan/gate.py status            état courant, prochaine étape, verrous
-  python tools/plan/gate.py check             échoue (code 3) si un verrou bloque le travail de code
+  python tools/plan/gate.py check             échoue (code 3) si un vrai blocage empêche le travail
   python tools/plan/gate.py lint              vérifie la forme du plan (identifiants, rubriques)
-  python tools/plan/gate.py done <ID>         Luna : l'étape <ID> est terminée → passe à la suivante
-  python tools/plan/gate.py request <R-nn>    Luna : demande la revue (exige R-nn-demande.md)
-  python tools/plan/gate.py approve <R-nn>    Claude : lève le verrou (exige « Verdict : APPROUVÉ »)
-  python tools/plan/gate.py reject <R-nn>     Claude : corrections demandées (exige « Verdict : CORRECTIONS »)
-  python tools/plan/gate.py precommit         hook git : refuse du code tant qu'une revue est en attente
-  python tools/plan/gate.py wait-recette <ID>  Luna : la suite attend une recette de l'utilisateur (statut EN_ATTENTE_DE_RECETTE)
-  python tools/plan/gate.py resume <ID>        Luna, SEULEMENT quand l'utilisateur transmet des résultats de recette : EN_COURS
+  python tools/plan/gate.py done <ID>         Codex : l'étape <ID> est terminée → passe à la suivante
+  python tools/plan/gate.py auto-review <R-nn> Codex : valide un verrou avec le rapport d'auto-validation
+  python tools/plan/gate.py block <ID> <preuve> Codex : bloque une étape après vérification d'un échec
+  python tools/plan/gate.py unblock <ID> <preuve> Codex : lève un blocage après vérification de sa résolution
+  python tools/plan/gate.py precommit         hook git : conserve la compatibilité, sans verrou de revue humaine
+  python tools/plan/gate.py wait-recette <ID>  Codex : marque une recette autonome à exécuter
+  python tools/plan/gate.py resume <ID>        Codex : reprend après exécution vérifiée de la recette
 
 Statuts de NEXT.md : A_FAIRE, EN_COURS, EN_ATTENTE_DE_REVUE, EN_ATTENTE_DE_RECETTE, CORRECTIONS_DEMANDEES, BLOQUE.
 
 Un fichier de plan qui contient la ligne « > **Niveau : découpé.** » n'est pas exécutable : `check` refuse toute
-étape qu'il contient (code 3) tant que Claude ne l'a pas détaillé (skill detailler-jalon, qui retire cette ligne).
+étape qu'il contient (code 3) tant que le détail d'exécution n'est pas suffisant. Si les références ne permettent pas de le
+préciser sans choix de conception, Codex demande ce choix à Florian.
 """
 from __future__ import annotations
 
@@ -46,9 +47,15 @@ JOURNAL = PLAN_DIR / "JOURNAL.md"
 STEP_RE = re.compile(r"^###\s+(🔒\s+)?([A-Z][A-Z0-9]*-\d{2})\s+—\s+(.+?)\s*$")
 STATUSES = {"A_FAIRE", "EN_COURS", "EN_ATTENTE_DE_REVUE", "EN_ATTENTE_DE_RECETTE", "CORRECTIONS_DEMANDEES", "BLOQUE"}
 NOT_DETAILED_MARK = "> **Niveau : découpé.**"
-# Pendant une revue en attente, seuls ces chemins peuvent être commités (demande, état, conception).
-ALLOWED_WHILE_LOCKED = ("docs/", "NEXT.md", ".github/memory/", "MEMORY.md")
 REQUIRED_MARKERS = ("🔧", "✅", "🧪")
+AUTO_REVIEW_SECTIONS = (
+    "## Vérifications exécutées",
+    "## Recette exécutée",
+    "## Écarts",
+    "## Contrôles de coût et sécurité",
+)
+RESOLUTION_MARKER = "Blocage résolu : CONFIRMÉ"
+BLOCK_MARKER = "Blocage confirmé : CONFIRMÉ"
 
 
 @dataclass
@@ -134,6 +141,19 @@ def verdict(lock_id: str) -> str | None:
     return match.group(1).strip() if match else None
 
 
+def auto_review_is_valid(lock_id: str) -> bool:
+    review = REVIEW_DIR / f"{lock_id}-autovalidation.md"
+    if not review.exists():
+        return False
+    content = review.read_text(encoding="utf-8")
+    has_verdict = re.search(r"^Verdict\s*:\s*VALIDÉ\s*$", content, re.M) is not None
+    return has_verdict and all(section in content for section in AUTO_REVIEW_SECTIONS)
+
+
+def lock_is_validated(lock_id: str) -> bool:
+    return verdict(lock_id) == "APPROUVÉ" or auto_review_is_valid(lock_id)
+
+
 def fail(message: str, code: int = 1) -> None:
     print(f"✖ {message}")
     sys.exit(code)
@@ -159,7 +179,7 @@ def state() -> tuple[list[Step], int, str]:
 
 
 def unapproved_locks_before(steps: list[Step], index: int) -> list[Step]:
-    return [s for s in steps[:index] if s.lock and verdict(s.ident) != "APPROUVÉ"]
+    return [s for s in steps[:index] if s.lock and not lock_is_validated(s.ident)]
 
 
 def cmd_status() -> None:
@@ -181,21 +201,20 @@ def cmd_check() -> None:
     steps, index, status = state()
     pending = unapproved_locks_before(steps, index)
     if pending:
-        fail("Verrou(s) franchi(s) sans revue approuvée : " + ", ".join(s.ident for s in pending)
-             + ". Revenir à l'étape du verrou dans NEXT.md.", 3)
+        fail("Verrou(s) antérieur(s) sans revue historique approuvée ni auto-validation : "
+             + ", ".join(s.ident for s in pending) + ". Revenir au verrou et exécuter son auto-revue.", 3)
     current = steps[index]
-    if status == "EN_ATTENTE_DE_REVUE":
-        fail(f"Revue {current.ident} en attente : aucun code tant que Claude n'a pas rendu son verdict.", 3)
     if status == "EN_ATTENTE_DE_RECETTE":
-        fail(f"{current.ident} attend une recette de l'utilisateur. Reprendre seulement si l'utilisateur transmet des "
-             f"résultats : python tools/plan/gate.py resume {current.ident}.", 3)
+        print(f"🧪 {current.ident} : recette autonome à exécuter par Codex, puis `resume {current.ident}` après vérification.")
     if NOT_DETAILED_MARK in current.file.read_text(encoding="utf-8"):
-        fail(f"{current.file.name} est seulement découpé : Claude doit le détailler (skill detailler-jalon) avant "
-             f"l'exécution de {current.ident}.", 3)
+        fail(f"{current.file.name} est seulement découpé : il faut préciser le détail d'exécution avec l'utilisateur "
+             f"avant de commencer {current.ident}.", 3)
     if status == "BLOQUE":
-        fail("Statut BLOQUE : lire la section « Questions pour Claude » de NEXT.md.", 3)
-    if current.lock and status not in {"CORRECTIONS_DEMANDEES", "A_FAIRE", "EN_COURS"}:
+        fail(f"Statut BLOQUE : résoudre et consigner la condition, puis `unblock {current.ident} <preuve>`.", 3)
+    if current.lock and status not in {"CORRECTIONS_DEMANDEES", "A_FAIRE", "EN_COURS", "EN_ATTENTE_DE_REVUE"}:
         fail(f"Statut {status} incohérent sur le verrou {current.ident}.")
+    if status == "EN_ATTENTE_DE_REVUE":
+        print(f"🔎 {current.ident} : auto-revue Codex à consigner, sans attente d'un réviseur externe.")
     print(f"✔ Travail autorisé sur {describe(current)} (statut {status}).")
 
 
@@ -250,7 +269,9 @@ def cmd_done(ident: str, who: str) -> None:
     if current.ident != ident:
         fail(f"L'étape courante est {current.ident}, pas {ident}.")
     if current.lock:
-        fail("Un verrou ne se termine pas par « done » : request (Luna) puis approve (Claude).")
+        fail(f"Un verrou se termine avec `auto-review {ident}` après consignation du rapport d'auto-validation.")
+    if status == "EN_ATTENTE_DE_RECETTE":
+        fail(f"La recette de {ident} doit être exécutée et vérifiée avant `resume {ident}` puis `done {ident}`.")
     if status in {"EN_ATTENTE_DE_REVUE", "BLOQUE"}:
         fail(f"Statut {status} : impossible de terminer l'étape.")
     nxt = steps[index + 1] if index + 1 < len(steps) else None
@@ -265,56 +286,81 @@ def cmd_done(ident: str, who: str) -> None:
     journal(who, f"`{ident}` terminée", f"commit `{commit}`")
     print(f"✔ {ident} terminée. Étape courante : {describe(nxt) if nxt else 'fin du plan détaillé'}")
     if nxt and nxt.lock:
-        print("⚠ L'étape suivante est un verrou : appliquer la skill demander-revue, puis s'arrêter.")
+        print(f"⚠ L'étape suivante est un verrou : exécuter l'auto-revue, puis `auto-review {nxt.ident}`.")
 
 
-def cmd_request(ident: str) -> None:
+def cmd_auto_review(ident: str) -> None:
     steps, index, status = state()
     current = steps[index]
     if current.ident != ident or not current.lock:
         fail(f"{ident} n'est pas le verrou courant (courant : {current.ident}).")
-    demand = REVIEW_DIR / f"{ident}-demande.md"
-    if not demand.exists():
-        fail(f"Écrire d'abord {demand.relative_to(ROOT)} (modèle : docs/plan/revues/README.md).")
-    write_next_row("Statut", "`EN_ATTENTE_DE_REVUE`")
-    write_next_row("Verrou", f"🔒 `{ident}` — revue demandée le {today()}, voir [{demand.name}](docs/plan/revues/{demand.name})")
-    write_next_row("Dernière mise à jour", f"{today()} — Luna")
-    journal("Luna", f"revue `{ident}` demandée", demand.name)
-    print(f"✔ Revue {ident} demandée. Arrêtez-vous : Claude doit relire avant toute suite.")
-
-
-def cmd_approve(ident: str) -> None:
-    steps, index, _ = state()
-    current = steps[index]
-    if current.ident != ident or not current.lock:
-        fail(f"{ident} n'est pas le verrou courant (courant : {current.ident}).")
-    if verdict(ident) != "APPROUVÉ":
-        fail(f"docs/plan/revues/{ident}-revue.md doit contenir « Verdict : APPROUVÉ ».")
+    if status == "BLOQUE":
+        fail(f"{ident} reste BLOQUE : résoudre d'abord la condition bloquante.")
+    if status == "EN_ATTENTE_DE_RECETTE":
+        fail(f"Exécuter et vérifier la recette, puis `resume {ident}` avant l'auto-revue.")
+    review = REVIEW_DIR / f"{ident}-autovalidation.md"
+    if not auto_review_is_valid(ident):
+        missing = [section for section in AUTO_REVIEW_SECTIONS
+                   if not review.exists() or section not in review.read_text(encoding="utf-8")]
+        fail(f"{review.relative_to(ROOT)} doit contenir « Verdict : VALIDÉ » et les rubriques : "
+             + ", ".join(missing or AUTO_REVIEW_SECTIONS))
     nxt = steps[index + 1] if index + 1 < len(steps) else None
-    write_next_row("Dernière étape terminée", f"[`{ident}`]({current.link}) — {current.title} (approuvée)")
+    write_next_row("Dernière étape terminée", f"[`{ident}`]({current.link}) — {current.title} (auto-validée)")
     write_next_row("Verrou", "aucun")
     if nxt:
         write_next_row("Étape courante", f"[`{nxt.ident}`]({nxt.link}) — {nxt.title}")
         after = steps[index + 2] if index + 2 < len(steps) else None
         write_next_row("Étape suivante", f"`{after.ident}` — {after.title}" if after else "— fin du plan détaillé")
+    else:
+        write_next_row("Étape courante", "— fin du plan détaillé")
+        write_next_row("Étape suivante", "— fin du plan détaillé")
     write_next_row("Statut", "`A_FAIRE`")
-    write_next_row("Dernière mise à jour", f"{today()} — Claude (revue {ident})")
-    journal("Claude", f"verrou `{ident}` levé", f"{ident}-revue.md")
-    print(f"✔ Verrou {ident} levé. Étape courante : {describe(nxt) if nxt else 'fin du plan détaillé'}")
+    write_next_row("Dernière mise à jour", f"{today()} — Codex (auto-validation {ident})")
+    journal("Codex", f"`{ident}` auto-validée", review.name)
+    print(f"✔ Verrou {ident} auto-validé. Étape courante : {describe(nxt) if nxt else 'fin du plan détaillé'}")
 
 
-def cmd_reject(ident: str) -> None:
-    steps, index, _ = state()
+def cmd_unblock(ident: str, evidence_path: str) -> None:
+    steps, index, status = state()
     current = steps[index]
-    if current.ident != ident or not current.lock:
-        fail(f"{ident} n'est pas le verrou courant (courant : {current.ident}).")
-    if verdict(ident) not in {"CORRECTIONS", "CORRECTIONS DEMANDÉES"}:
-        fail(f"docs/plan/revues/{ident}-revue.md doit contenir « Verdict : CORRECTIONS ».")
-    write_next_row("Statut", "`CORRECTIONS_DEMANDEES`")
-    write_next_row("Verrou", f"🔒 `{ident}` — corrections demandées, voir [{ident}-revue.md](docs/plan/revues/{ident}-revue.md)")
-    write_next_row("Dernière mise à jour", f"{today()} — Claude (revue {ident})")
-    journal("Claude", f"verrou `{ident}` : corrections demandées", f"{ident}-revue.md")
-    print(f"✔ Corrections demandées sur {ident}. Luna applique la skill appliquer-corrections.")
+    if current.ident != ident or status != "BLOQUE":
+        fail(f"`unblock` exige que {ident} soit l'étape courante au statut BLOQUE.")
+    evidence = (ROOT / evidence_path).resolve()
+    try:
+        evidence.relative_to(ROOT.resolve())
+    except ValueError:
+        fail("La preuve de résolution doit rester dans le dépôt.")
+    if not evidence.is_file():
+        fail(f"Preuve de résolution introuvable : {evidence_path}.")
+    content = evidence.read_text(encoding="utf-8")
+    if RESOLUTION_MARKER not in content or "## Vérifications effectuées" not in content:
+        fail(f"{evidence_path} doit confirmer la résolution et décrire les vérifications effectuées.")
+    write_next_row("Statut", "`EN_COURS`")
+    write_next_row("Verrou", "aucun")
+    write_next_row("Dernière mise à jour", f"{today()} — Codex (blocage résolu)")
+    journal("Codex", f"`{ident}` blocage résolu", evidence_path)
+    print(f"✔ Blocage {ident} levé selon {evidence_path}.")
+
+
+def cmd_block(ident: str, evidence_path: str) -> None:
+    steps, index, status = state()
+    current = steps[index]
+    if current.ident != ident or status not in {"A_FAIRE", "EN_COURS"}:
+        fail(f"`block` exige que {ident} soit l'étape courante au statut A_FAIRE ou EN_COURS.")
+    evidence = (ROOT / evidence_path).resolve()
+    try:
+        evidence.relative_to(ROOT.resolve())
+    except ValueError:
+        fail("La preuve de blocage doit rester dans le dépôt.")
+    if not evidence.is_file():
+        fail(f"Preuve de blocage introuvable : {evidence_path}.")
+    content = evidence.read_text(encoding="utf-8")
+    if BLOCK_MARKER not in content or "## Vérifications effectuées" not in content:
+        fail(f"{evidence_path} doit confirmer le blocage et décrire les vérifications effectuées.")
+    write_next_row("Statut", "`BLOQUE`")
+    write_next_row("Dernière mise à jour", f"{today()} — Codex (blocage confirmé)")
+    journal("Codex", f"`{ident}` blocage confirmé", evidence_path)
+    print(f"✔ {ident} bloquée selon {evidence_path}.")
 
 
 def cmd_set_wait(ident: str, waiting: bool) -> None:
@@ -326,26 +372,19 @@ def cmd_set_wait(ident: str, waiting: bool) -> None:
         if status not in {"EN_COURS", "A_FAIRE"}:
             fail(f"Statut {status} : impossible de passer en attente de recette.")
         write_next_row("Statut", "`EN_ATTENTE_DE_RECETTE`")
-        journal("Luna", f"`{ident}` attend une recette de l'utilisateur")
+        journal("Codex", f"`{ident}` recette autonome à exécuter")
     else:
         if status != "EN_ATTENTE_DE_RECETTE":
             fail(f"Statut {status} : resume ne s'applique qu'à EN_ATTENTE_DE_RECETTE.")
         write_next_row("Statut", "`EN_COURS`")
-        journal("Luna", f"`{ident}` reprise sur résultats de recette transmis par l'utilisateur")
-    write_next_row("Dernière mise à jour", f"{today()} — Luna")
+        journal("Codex", f"`{ident}` reprise après recette autonome vérifiée")
+    write_next_row("Dernière mise à jour", f"{today()} — Codex")
     print(f"✔ {ident} : statut {'EN_ATTENTE_DE_RECETTE' if waiting else 'EN_COURS'}.")
 
 
 def cmd_precommit() -> None:
-    _, _, status = state()
-    if status != "EN_ATTENTE_DE_REVUE":
-        return
-    staged = subprocess.run(["git", "diff", "--cached", "--name-only"], cwd=ROOT, capture_output=True,
-                            text=True, check=True).stdout.split()
-    forbidden = [p for p in staged if not p.startswith(ALLOWED_WHILE_LOCKED)]
-    if forbidden:
-        fail("Revue en attente : commit refusé pour " + ", ".join(forbidden)
-             + ". Seuls docs/, NEXT.md et la mémoire peuvent changer pendant une revue.", 3)
+    # Compatibilité pour les hooks déjà installés : l'auto-revue ne bloque pas les commits.
+    return
 
 
 def main() -> None:
@@ -355,7 +394,7 @@ def main() -> None:
         print(__doc__)
         return
     command, rest = args[0], args[1:]
-    who = "Luna"
+    who = "Codex"
     if "--by" in rest:
         who = rest[rest.index("--by") + 1]
     handlers = {
@@ -366,14 +405,16 @@ def main() -> None:
         "wait-recette": lambda: cmd_set_wait(rest[0], True),
         "resume": lambda: cmd_set_wait(rest[0], False),
         "done": lambda: cmd_done(rest[0], who),
-        "request": lambda: cmd_request(rest[0]),
-        "approve": lambda: cmd_approve(rest[0]),
-        "reject": lambda: cmd_reject(rest[0]),
+        "auto-review": lambda: cmd_auto_review(rest[0]),
+        "block": lambda: cmd_block(rest[0], rest[1]),
+        "unblock": lambda: cmd_unblock(rest[0], rest[1]),
     }
     if command not in handlers:
         fail(f"Commande inconnue : {command}")
-    if command in {"done", "request", "approve", "reject", "wait-recette", "resume"} and not rest:
+    if command in {"done", "auto-review", "block", "unblock", "wait-recette", "resume"} and not rest:
         fail(f"« {command} » attend un identifiant d'étape.")
+    if command in {"block", "unblock"} and len(rest) < 2:
+        fail(f"« {command} » attend un identifiant d'étape et un chemin de preuve.")
     handlers[command]()
 
 

@@ -9,7 +9,7 @@ description: "Use when updating MEMORY.md or .github/memory/ after a step (rubri
 - La mémoire décrit **ce qui existe et a été vérifié** dans le dépôt (chemins, commandes qui marchent, conventions
   appliquées, pièges rencontrés). La cible est dans `docs/technique/`, pas ici. Pas de spéculation, pas de secret, pas de
   valeur de configuration sensible.
-- Une ligne dans `changelog.md` par étape qui modifie la mémoire : `| date | Luna/Claude | étape — changement |`.
+- Une ligne dans `changelog.md` par étape ou changement de workflow qui modifie la mémoire : `| date | Codex | étape — changement |`.
 - Dates absolues (`2026-10-04`). Un fait contredit est corrigé, pas doublé. Fichier > 150 lignes : le scinder et
   l'ajouter à l'index de `MEMORY.md`.
 

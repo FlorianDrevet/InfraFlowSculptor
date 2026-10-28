@@ -1,0 +1,10 @@
+{
+  "schema": "ifs-image/v1",
+  "project": "project-redacted",
+  "component": "orders",
+  "application": "api",
+  "tag": "699-13e6b9790f4e",
+  "image": "crproject-redactedmainshared.azurecr.io/project-redacted/orders/api@sha256:ed9e9e78cd9adc9ac667a0a8b517ac451955f5076e0a07640e9683c445d3e9ab",
+  "commit": "13e6b9790f4ef723d5cb3f9688379baccaa6f097",
+  "generatedAt": "2026-10-16T08:15:51.9088350Z"
+}

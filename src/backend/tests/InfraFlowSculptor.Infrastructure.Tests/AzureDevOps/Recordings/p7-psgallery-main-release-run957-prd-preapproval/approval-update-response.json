@@ -1,0 +1,66 @@
+{
+  "continuation_token": null,
+  "count": 1,
+  "value": [
+    {
+      "_links": {
+        "self": {
+          "href": "https://dev.azure.com/floriandrevet0332/b526fffe-311a-4a5c-badc-29a60b64279b/_apis/pipelines/approvals/7e98cc0f-68d1-45c0-b358-2a3a3f3db0ce"
+        }
+      },
+      "blockedApprovers": [],
+      "createdOn": "2026-10-26T23:33:33.733Z",
+      "executionOrder": "anyOrder",
+      "id": "7e98cc0f-68d1-45c0-b358-2a3a3f3db0ce",
+      "instructions": "managed-by: infraflowsculptor; ifs-kit-revision: 1",
+      "lastModifiedOn": "2026-10-26T23:41:16.4426376Z",
+      "minRequiredApprovers": 1,
+      "pipeline": {
+        "id": "115",
+        "name": "shop44 � orders � infra � RELEASE",
+        "owner": {
+          "_links": {
+            "self": {
+              "href": "https://dev.azure.com/floriandrevet0332/b526fffe-311a-4a5c-badc-29a60b64279b/_apis/build/Builds/957"
+            },
+            "web": {
+              "href": "https://dev.azure.com/floriandrevet0332/b526fffe-311a-4a5c-badc-29a60b64279b/_build/results?buildId=957"
+            }
+          },
+          "id": 957,
+          "name": "20261026.14"
+        }
+      },
+      "status": "approved",
+      "steps": [
+        {
+          "actualApprover": {
+            "descriptor": "aad.NjM2ZjQyZjctZDRjNy03ODI4LWE5NDMtNGRiNjUyMzg3NWMx",
+            "displayName": "Florian DREVET",
+            "id": "854cd66b-ee05-6aa4-9196-6440f34f161e",
+            "uniqueName": "florian.drevet@magellangroup.eu"
+          },
+          "assignedApprover": {
+            "descriptor": "vssgp.Uy0xLTktMTU1MTM3NDI0NS0zNTIxMzY3NzI3LTQwNzkzNTg3ODQtMjQyMDExNDk5NS0yMDY5Mjk2MTY4LTEtNzI0NjQwMTEtMjU2MzIyMDgwMS0yNTQ4NTQxMzM2LTIwODM1MDYwNzc",
+            "displayName": "[shop44]\\Shop44 Release Approvers",
+            "id": "618a902e-4b85-4c93-8ef7-23fa283c4af9",
+            "isContainer": true,
+            "uniqueName": "vstfs:///Classification/TeamProject/b526fffe-311a-4a5c-badc-29a60b64279b\\Shop44 Release Approvers"
+          },
+          "comment": "P-08 P7 - pr�flight C3/C5/co�ts v�rifi� � 2026-10-26T23:40Z. Aper�u PRD r�concili� propri�t� par propri�t� ; fingerprint identique � celui d�j� approuv� sur #950. Autorise la reprise de data-access puis la r�vocation Log Analytics Reader pr�vue.",
+          "history": [],
+          "initiatedOn": "2026-10-26T23:33:33.7339529Z",
+          "lastModifiedBy": {
+            "descriptor": "aad.NjM2ZjQyZjctZDRjNy03ODI4LWE5NDMtNGRiNjUyMzg3NWMx",
+            "displayName": "Florian DREVET",
+            "id": "854cd66b-ee05-6aa4-9196-6440f34f161e",
+            "uniqueName": "florian.drevet@magellangroup.eu"
+          },
+          "lastModifiedOn": "2026-10-26T23:41:16.4426376Z",
+          "order": 1,
+          "status": "approved"
+        }
+      ]
+    }
+  ]
+}

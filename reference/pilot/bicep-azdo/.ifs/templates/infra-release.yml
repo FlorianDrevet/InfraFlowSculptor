@@ -1,0 +1,48 @@
+# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+parameters:
+- name: project
+  type: string
+- name: component
+  type: string
+- name: defaultBranch
+  type: string
+  default: main
+- name: secretWrites
+  type: object
+  default: []
+- name: targets
+  type: object
+  default: []
+- name: recoveryMode
+  type: string
+  default: standard
+- name: recoveryOperationId
+  type: string
+  default: ''
+- name: recoveryRevision
+  type: string
+  default: '0'
+- name: recoveryCommit
+  type: string
+  default: ''
+
+stages:
+- ${{ each target in parameters.targets }}:
+  - template: /.ifs/templates/infra-target-stages.yml
+    parameters:
+      project: ${{ parameters.project }}
+      component: ${{ parameters.component }}
+      defaultBranch: ${{ parameters.defaultBranch }}
+      secretWrites: ${{ parameters.secretWrites }}
+      systemAssignedSqlClientId: ${{ coalesce(target.systemAssignedSqlClientId, '') }}
+      recoveryMode: ${{ parameters.recoveryMode }}
+      target: ${{ target }}
+- ${{ if eq(parameters.project, 'shop42') }}:
+  - template: /.ifs/templates/infra-data-access-recovery.yml
+    parameters:
+      project: ${{ parameters.project }}
+      component: ${{ parameters.component }}
+      recoveryMode: ${{ parameters.recoveryMode }}
+      recoveryOperationId: ${{ parameters.recoveryOperationId }}
+      recoveryRevision: ${{ parameters.recoveryRevision }}
+      recoveryCommit: ${{ parameters.recoveryCommit }}

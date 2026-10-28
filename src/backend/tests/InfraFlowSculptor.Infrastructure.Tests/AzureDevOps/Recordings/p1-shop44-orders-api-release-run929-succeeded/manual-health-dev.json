@@ -1,0 +1,53 @@
+{
+  "schema": "ifs-manual-health/v1",
+  "target": "dev",
+  "coldStart": {
+    "replicasBeforeFirstRequest": 0,
+    "sqlStatusBeforeFirstRequest": "Paused",
+    "healthAttempts": [
+      {
+        "attempt": 1,
+        "timeoutSeconds": 20,
+        "result": "timeout"
+      },
+      {
+        "attempt": 2,
+        "statusCode": 200,
+        "status": "ok",
+        "version": "928-e403f769e174"
+      }
+    ]
+  },
+  "dependencies": {
+    "httpStatus": 200,
+    "checks": [
+      {
+        "name": "secret",
+        "result": "passed"
+      },
+      {
+        "name": "logs",
+        "result": "passed"
+      },
+      {
+        "name": "sql",
+        "result": "passed"
+      },
+      {
+        "name": "sql-least-privilege",
+        "result": "passed"
+      },
+      {
+        "name": "appconfig",
+        "result": "skipped"
+      },
+      {
+        "name": "servicebus",
+        "result": "skipped"
+      }
+    ],
+    "requestCount": 3,
+    "note": "The first request succeeded; two follow-up reads captured the check details after an output parser issue. No additional replica start was requested."
+  },
+  "capturedAtUtc": "2026-10-26T21:12:26.7631317Z"
+}

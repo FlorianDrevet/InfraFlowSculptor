@@ -1,0 +1,23 @@
+{
+  "continuation_token": "SECRET_REDACTED",
+  "count": 1,
+  "value": [
+    {
+      "id": 221,
+      "name": "infra",
+      "resource": {
+        "data": "A83AC29F8E508938390FE09DF11288E5D3676E3208FB2ED59701100FF7F6BD0B01",
+        "downloadUrl": "https://artprodweu2.artifacts.visualstudio.com/A4ef6e6c2-31fb-4df4-a0dc-28dab6a35b18/GUID_001/_apis/artifact/cGlwZWxpbmVhcnRpZmFjdDovL2Zsb3JpYW5kcmV2ZXQwMzMyL3Byb2plY3RJZC9kZWZkYjc4OS04MzlmLTQxZTUtYWU1Ny1lOTU2OGZmNzRkYTYvYnVpbGRJZC83MDQvYXJ0aWZhY3ROYW1lL2luZnJh0/content?format=zip",
+        "properties": {
+          "DomainId": "0",
+          "HashType": "DEDUP1024K",
+          "RootId": "43A6DA97EF7F307D256EDEEB97636B635FAF5BAF165198311E26C2636BF7645E02",
+          "artifactsize": "314403"
+        },
+        "type": "PipelineArtifact",
+        "url": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/builds/704/artifacts?artifactName=infra&api-version=7.1"
+      },
+      "source": "GUID_007"
+    }
+  ]
+}

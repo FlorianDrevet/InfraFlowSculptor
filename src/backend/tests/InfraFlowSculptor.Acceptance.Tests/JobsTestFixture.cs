@@ -15,6 +15,7 @@ namespace InfraFlowSculptor.Acceptance.Tests;
 public sealed class JobsTestFixture : IAsyncLifetime
 {
     private static readonly TimeSpan ResourceHealthTimeout = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan ServiceBusHealthTimeout = TimeSpan.FromMinutes(8);
     private readonly string signingKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
     private readonly string postgresPassword = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
 
@@ -36,7 +37,7 @@ public sealed class JobsTestFixture : IAsyncLifetime
         application = await appHost.BuildAsync();
         try
         {
-            using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(25));
+            using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(35));
             await application.StartAsync(timeout.Token);
             foreach (var resource in new[]
             {
@@ -137,15 +138,85 @@ public sealed class JobsTestFixture : IAsyncLifetime
 
     private async Task WaitForApiAsync(CancellationToken cancellationToken)
     {
-        await WaitForResourceHealthyAsync(ResourceNames.Api, cancellationToken);
-        using var response = await Client.GetAsync("/alive", cancellationToken);
-        response.EnsureSuccessStatusCode();
+        // The acceptance AppHost can retain a stale Waiting notification for the API's logical resource
+        // even after DCP has started a healthy executable instance. Probe /health for API and dependency
+        // readiness; WarmWorkerAsync below separately verifies the worker end to end.
+        using var healthTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        healthTimeout.CancelAfter(ResourceHealthTimeout);
+        var lastProbe = "no response";
+
+        try
+        {
+            while (!healthTimeout.IsCancellationRequested)
+            {
+                try
+                {
+                    using var probeTimeout = CancellationTokenSource.CreateLinkedTokenSource(healthTimeout.Token);
+                    probeTimeout.CancelAfter(TimeSpan.FromSeconds(3));
+                    using var response = await Client.GetAsync("/health", probeTimeout.Token);
+                    lastProbe = $"HTTP {(int)response.StatusCode}";
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return;
+                    }
+                }
+                catch (HttpRequestException exception)
+                {
+                    lastProbe = exception.GetType().Name;
+                }
+                catch (OperationCanceledException) when (!healthTimeout.IsCancellationRequested)
+                {
+                    lastProbe = "probe timed out";
+                }
+
+                // ResourceNotifications can lag while /health succeeds, so only use its terminal state
+                // as a fail-fast signal after the HTTP readiness probe has failed.
+                ThrowIfApiHasFailed();
+                await Task.Delay(TimeSpan.FromMilliseconds(500), healthTimeout.Token);
+            }
+        }
+        catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"Aspire API endpoint '/health' did not return success within {ResourceHealthTimeout}; " +
+                $"last probe: {lastProbe}. ResourceNotifications may still report stale API state. " +
+                GetResourceDiagnostics(ResourceNames.Api),
+                exception);
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        throw new TimeoutException(
+            $"Aspire API endpoint '/health' did not return success within {ResourceHealthTimeout}; " +
+            $"last probe: {lastProbe}. ResourceNotifications may still report stale API state. " +
+            GetResourceDiagnostics(ResourceNames.Api));
+    }
+
+    private void ThrowIfApiHasFailed()
+    {
+        var currentApplication = application;
+        if (currentApplication is null ||
+            !currentApplication.ResourceNotifications.TryGetCurrentState(ResourceNames.Api, out var resourceEvent))
+        {
+            return;
+        }
+
+        var state = resourceEvent.Snapshot.State?.Text;
+        if (state is not null && KnownResourceStates.TerminalStates.Contains(state))
+        {
+            throw new InvalidOperationException(
+                $"Aspire API resource entered terminal state '{state}'. {GetResourceDiagnostics(ResourceNames.Api)}");
+        }
     }
 
     private async Task WaitForResourceHealthyAsync(string resourceName, CancellationToken cancellationToken)
     {
+        // A cold Service Bus Emulator start includes its SQL sidecar. On this Windows Docker host,
+        // that readiness path took almost five minutes; give it extra room before reporting DCP Waiting as a failure.
+        var healthTimeout = resourceName == ResourceNames.ServiceBus
+            ? ServiceBusHealthTimeout
+            : ResourceHealthTimeout;
         using var resourceTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        resourceTimeout.CancelAfter(ResourceHealthTimeout);
+        resourceTimeout.CancelAfter(healthTimeout);
 
         try
         {
@@ -157,7 +228,7 @@ public sealed class JobsTestFixture : IAsyncLifetime
         catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
         {
             throw new TimeoutException(
-                $"Aspire resource '{resourceName}' did not become healthy within {ResourceHealthTimeout}. " +
+                $"Aspire resource '{resourceName}' did not become healthy within {healthTimeout}. " +
                 GetResourceDiagnostics(resourceName),
                 exception);
         }

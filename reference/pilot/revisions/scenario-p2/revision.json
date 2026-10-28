@@ -1,0 +1,6 @@
+{
+  "revision": 2,
+  "lineage": "p2",
+  "baseLineages": ["baseline"],
+  "purpose": "P-07 criterion 8: revoke the application identity workspace access"
+}

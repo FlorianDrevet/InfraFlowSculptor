@@ -1,0 +1,194 @@
+{
+  "capturedUtc": "2026-10-27T00:06:45.9455628Z",
+  "runId": 959,
+  "previewFingerprint": "4a0c1506cf76c920a91c90d2cb178d253d77d0871e704044da3b4b9b5feaa43f",
+  "previousApprovedFingerprints": [
+    "4a0c1506cf76c920a91c90d2cb178d253d77d0871e704044da3b4b9b5feaa43f"
+  ],
+  "sameFingerprintAsRun950": null,
+  "sameFingerprintAsRun957": true,
+  "sameFingerprintAsRun958": null,
+  "previousPropertyReviewRunId": 957,
+  "live": {
+    "appIdentityTypeWhitespaceEquivalent": true,
+    "allLogsEnabled": true,
+    "extraIdentityIsolationScope": null,
+    "readerAssignmentPresent": true,
+    "environmentDiagnosticDestinationType": null,
+    "extraIdentityAssigned": false,
+    "readerPrincipalMatchesApiIdentity": true,
+    "retentionDisabled": true,
+    "apiIdentityIsolationScope": null,
+    "cooldownPeriodSeconds": 300,
+    "environmentDiagnosticWorkspaceMatchesCore": true,
+    "appDiagnosticWorkspaceMatchesCore": true,
+    "apiIdentityAssigned": true,
+    "readerScopeMatchesCoreWorkspace": true,
+    "cooldownDefaultEquivalent": true,
+    "logAnalyticsCustomerIdMatchesWorkspace": true,
+    "sqlDatabaseMatchesPreview": true,
+    "secretValueRead": false,
+    "environmentAuditCategoryDisabled": true,
+    "registryServerMatchesAcrLoginServer": true,
+    "imageMatchesPreviewState": true,
+    "pollingDefaultEquivalent": true,
+    "environmentPublicNetworkAccess": "Enabled",
+    "azureClientIdMatchesApiIdentity": true,
+    "readerRole": "Log Analytics Reader",
+    "keyVaultSecretUriMatchesVaultAndName": true,
+    "environmentInternal": null,
+    "sqlServerMatchesPreview": true,
+    "environmentMtlsEnabled": false,
+    "appInsightsConnectionStringMatchesComponent": true,
+    "appDiagnosticDestinationType": null,
+    "pollingIntervalSeconds": 30,
+    "ingressTrafficMatchesAppOwnedState": true,
+    "assignedUserIdentityCount": 1,
+    "imageDigest": "2352cc9119437f3f9c795ae55d096ab4647e38e527e27b4da9d6851b38236a46",
+    "ingressTraffic": [
+      {
+        "latestRevision": true,
+        "weight": 100
+      }
+    ]
+  },
+  "preview": {
+    "created": 0,
+    "modified": 6,
+    "recreated": 0,
+    "detachedOrDeleted": 0,
+    "revokedAccess": 1,
+    "dataWrites": 1,
+    "pendingOperationKinds": [
+      "revoke"
+    ],
+    "modifiedResourceIds": [
+      "/subscriptions/SUBSCRIPTION_ID_001/resourceGroups/rg-project-redacted-orders-main-prd/providers/Microsoft.App/containerApps/ca-project-redacted-api-prd",
+      "/subscriptions/SUBSCRIPTION_ID_001/resourceGroups/rg-project-redacted-orders-main-prd/providers/Microsoft.App/containerApps/ca-project-redacted-api-prd/providers/Microsoft.Insights/diagnosticSettings/diag-ca-project-redacted-api-prd",
+      "/subscriptions/SUBSCRIPTION_ID_001/resourceGroups/rg-project-redacted-orders-main-prd/providers/Microsoft.App/managedEnvironments/cae-project-redacted-main-prd",
+      "/subscriptions/SUBSCRIPTION_ID_001/resourceGroups/rg-project-redacted-orders-main-prd/providers/Microsoft.App/managedEnvironments/cae-project-redacted-main-prd/providers/Microsoft.Insights/diagnosticSettings/diag-cae-project-redacted-main-prd",
+      "/subscriptions/SUBSCRIPTION_ID_001/resourceGroups/rg-project-redacted-orders-main-prd/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-project-redacted-api-prd",
+      "/subscriptions/SUBSCRIPTION_ID_001/resourceGroups/rg-project-redacted-orders-main-prd/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-project-redacted-extra-prd"
+    ]
+  },
+  "propertyByPropertyReview": [
+    {
+      "conclusion": "Identity type differs only by whitespace; traffic remains latestRevision=true/weight=100; registry resolves to the ACR login server; Key Vault secret URI matches vault/name without reading its value; SQL server/database, workspace ID, Application Insights connection string and AZURE_CLIENT_ID resolve to their existing resources; image digest and 1 CPU/2Gi remain app-owned; scale values 300/30 are platform defaults when omitted.",
+      "paths": [
+        "identity.type",
+        "properties.configuration.ingress.traffic",
+        "properties.configuration.registries",
+        "properties.configuration.secrets",
+        "properties.template.containers",
+        "properties.template.scale.cooldownPeriod",
+        "properties.template.scale.pollingInterval"
+      ],
+      "resource": "Microsoft.App/containerApps/ca-shop44-api-prd"
+    },
+    {
+      "conclusion": "AllMetrics destination remains the core workspace; null to Dedicated is the model-pinned destination change.",
+      "paths": [
+        "properties.metrics",
+        "properties.logAnalyticsDestinationType"
+      ],
+      "resource": "Microsoft.Insights/diagnosticSettings/diag-ca-shop44-api-prd"
+    },
+    {
+      "conclusion": "Workspace customer ID matches core; mTLS remains disabled; internal null and model false both mean public ingress, with PublicNetworkAccess Enabled.",
+      "paths": [
+        "properties.appLogsConfiguration.logAnalyticsConfiguration.customerId",
+        "properties.peerAuthentication",
+        "properties.vnetConfiguration"
+      ],
+      "resource": "Microsoft.App/managedEnvironments/cae-shop44-main-prd"
+    },
+    {
+      "conclusion": "AllLogs and AllMetrics remain enabled, audit remains disabled and retention remains disabled; null to Dedicated is the model-pinned destination change to the same core workspace.",
+      "paths": [
+        "properties.logs",
+        "properties.metrics",
+        "properties.logAnalyticsDestinationType"
+      ],
+      "resource": "Microsoft.Insights/diagnosticSettings/diag-cae-shop44-main-prd"
+    },
+    {
+      "conclusion": "Only isolationScope=None is omitted; live value is null/default and API identity remains assigned.",
+      "paths": [
+        "properties"
+      ],
+      "resource": "Microsoft.ManagedIdentity/userAssignedIdentities/id-shop44-api-prd"
+    },
+    {
+      "conclusion": "Only isolationScope=None is omitted; live value is null/default and the extra identity remains unassigned.",
+      "paths": [
+        "properties"
+      ],
+      "resource": "Microsoft.ManagedIdentity/userAssignedIdentities/id-shop44-extra-prd"
+    }
+  ],
+  "review": {
+    "exactFingerprintRechecked": true,
+    "exactModifiedResourceIdsMatchRun958": true,
+    "everyEffectiveDeltaReconciled": true,
+    "onlyIntentionalDiagnosticDestinationChange": true,
+    "readerRoleScopeAndPrincipalMatchApiIdentity": true,
+    "databaseAccessIsExpectedP7DataWrite": true,
+    "secretValuesRead": false,
+    "conclusion": "Les deltas de ressources sont identiques aux previews #957/#958 déjà réconciliés propriété par propriété. C3/C5/coûts ont été rafraîchis après le déploiement DEV. Les seules créations observées au C5 sont deux ressources VPD hors périmètre déjà observées avant; elles restent intactes."
+  },
+  "c3": {
+    "capturedUtc": "2026-10-27T00:02:45.6605347Z",
+    "activeBuildIds": [
+      959
+    ],
+    "activePullRequests": 0
+  },
+  "c5": {
+    "capturedUtc": "2026-10-27T00:02:45.7994515Z",
+    "resources": 178,
+    "groups": 29,
+    "stacks": 7,
+    "roleAssignments": 68,
+    "budgets": 7,
+    "resourceIdDelta": {
+      "before": 176,
+      "after": 178,
+      "added": [
+        "/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-vpd-dev/providers/Microsoft.Storage/storageAccounts/jetekf4xhml6iazscripts",
+        "/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-vpd-dev/providers/Microsoft.ContainerInstance/containerGroups/jetekf4xhml6iazscripts"
+      ],
+      "removed": []
+    }
+  },
+  "externalOutOfScopeResources": [
+    {
+      "id": "/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-vpd-dev/providers/Microsoft.Storage/storageAccounts/jetekf4xhml6iazscripts",
+      "disposition": "preserve",
+      "knownFromCapture": "shop44-p7-after950-failure-20261026T232613Z"
+    },
+    {
+      "id": "/subscriptions/fc4fa56f-e4e7-41e9-8a0d-559fcd27b827/resourceGroups/rg-vpd-dev/providers/Microsoft.ContainerInstance/containerGroups/jetekf4xhml6iazscripts",
+      "disposition": "preserve",
+      "knownFromCapture": "shop44-p7-after950-failure-20261026T232613Z"
+    }
+  ],
+  "cost": {
+    "capturedUtc": "2026-10-27T00:03:29.6647054Z",
+    "currency": "EUR",
+    "actualEur": 151.908090346331,
+    "actualThrough": "20261026",
+    "forecastEur": 31.936738967895508,
+    "forecastFrom": "2026-10-27T00:00:00Z",
+    "forecastThrough": "2026-10-31",
+    "remainingRecipeReserveEur": 15.0,
+    "conservativeTotalEur": 198.8448293142265,
+    "existingAlertEur": 200
+  },
+  "approval": {
+    "id": "2193ee39-0b99-4dea-8dd3-e3c872a2d400",
+    "status": "pending",
+    "linkedRunId": 959,
+    "blockedApprovers": 0,
+    "minRequiredApprovers": 1
+  }
+}

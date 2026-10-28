@@ -1,0 +1,23 @@
+{
+  "continuation_token": "SECRET_REDACTED",
+  "count": 1,
+  "value": [
+    {
+      "id": 384,
+      "name": "ifs-install-report",
+      "resource": {
+        "data": "4CD6B46DB9CFF4E4DC86ACAD8477DF1B07ADE29CBE3CB90745A2A007EC725C5901",
+        "downloadUrl": "https://artprodweu2.artifacts.visualstudio.com/A4ef6e6c2-31fb-4df4-a0dc-28dab6a35b18/GUID_001/_apis/artifact/cGlwZWxpbmVhcnRpZmFjdDovL2Zsb3JpYW5kcmV2ZXQwMzMyL3Byb2plY3RJZC9iNTI2ZmZmZS0zMTFhLTRhNWMtYmFkYy0yOWE2MGI2NDI3OWIvYnVpbGRJZC84ODkvYXJ0aWZhY3ROYW1lL2lmcy1pbnN0YWxsLXJlcG9ydA2/content?format=zip",
+        "properties": {
+          "DomainId": "0",
+          "HashType": "DEDUP1024K",
+          "RootId": "C27068A9DAD5924A4904F6B578032E56B3916459AAC2E860CBCD7929AF74E51702",
+          "artifactsize": "9517"
+        },
+        "type": "PipelineArtifact",
+        "url": "https://dev.azure.com/org-redacted/GUID_001/_apis/build/builds/889/artifacts?artifactName=ifs-install-report&api-version=7.1"
+      },
+      "source": "GUID_007"
+    }
+  ]
+}

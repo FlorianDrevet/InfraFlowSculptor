@@ -99,53 +99,128 @@ class GateTests(unittest.TestCase):
         self.assertIn("commit `abc123`", next_text)
         self.assertIn("`S-01` terminée", self.journal_path.read_text(encoding="utf-8"))
 
-    def test_request_requires_review_demand(self) -> None:
-        self.write_next(current="R-01")
+    def test_check_allows_codex_to_run_pending_recipe(self) -> None:
+        self.write_next(current="S-01", status="EN_ATTENTE_DE_RECETTE")
         output = io.StringIO()
-        with contextlib.redirect_stdout(output), self.assertRaises(SystemExit) as raised:
-            gate.cmd_request("R-01")
-
-        self.assertEqual(raised.exception.code, 1)
-        self.assertIn("R-01-demande.md", output.getvalue())
-
-    def test_approve_requires_approved_verdict(self) -> None:
-        self.write_next(current="R-01")
-        (self.review_dir / "R-01-revue.md").write_text("Verdict : CORRECTIONS\n", encoding="utf-8")
-        output = io.StringIO()
-        with contextlib.redirect_stdout(output), self.assertRaises(SystemExit) as raised:
-            gate.cmd_approve("R-01")
-
-        self.assertEqual(raised.exception.code, 1)
-        self.assertIn("Verdict : APPROUVÉ", output.getvalue())
-
-    def test_check_returns_three_when_review_is_pending(self) -> None:
-        self.write_next(current="R-01", status="EN_ATTENTE_DE_REVUE")
-        output = io.StringIO()
-        with contextlib.redirect_stdout(output), self.assertRaises(SystemExit) as raised:
+        with contextlib.redirect_stdout(output):
             gate.cmd_check()
 
-        self.assertEqual(raised.exception.code, 3)
-        self.assertIn("Revue R-01 en attente", output.getvalue())
+        self.assertIn("recette", output.getvalue().lower())
+        self.assertIn("Codex", output.getvalue())
 
-    def test_precommit_rejects_code_during_review(self) -> None:
-        self.write_next(current="R-01", status="EN_ATTENTE_DE_REVUE")
-        with contextlib.redirect_stdout(io.StringIO()), patch.object(
-            gate.subprocess, "run", return_value=SimpleNamespace(stdout="src/x.cs\n")
-        ):
-            with self.assertRaises(SystemExit) as raised:
-                gate.cmd_precommit()
+    def test_done_cannot_skip_pending_recipe(self) -> None:
+        self.write_next(current="S-01", status="EN_ATTENTE_DE_RECETTE")
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), self.assertRaises(SystemExit) as raised:
+            gate.cmd_done("S-01", "Codex")
 
-        self.assertEqual(raised.exception.code, 3)
+        self.assertEqual(raised.exception.code, 1)
+        self.assertIn("resume", output.getvalue())
 
-    def test_precommit_accepts_review_document_during_review(self) -> None:
+    def test_resume_recipe_does_not_require_user_results(self) -> None:
+        self.write_next(current="S-01", status="EN_ATTENTE_DE_RECETTE")
+
+        with contextlib.redirect_stdout(io.StringIO()):
+            gate.cmd_set_wait("S-01", False)
+
+        self.assertIn("`EN_COURS`", self.next_path.read_text(encoding="utf-8"))
+        self.assertIn("Codex", self.journal_path.read_text(encoding="utf-8"))
+
+    def test_auto_review_requires_checklist_and_advances_lock(self) -> None:
+        (self.plan_dir / "00-socle.md").write_text(
+            "### S-01 — Socle\n🎯 Objectif.\n🔧 À faire.\n✅ Vérification.\n🧪 Recette.\n\n"
+            "### 🔒 R-01 — Revue\n",
+            encoding="utf-8",
+        )
+        (self.plan_dir / "01-suite.md").write_text(
+            "### S-02 — Suite\n🎯 Objectif.\n🔧 À faire.\n✅ Vérification.\n🧪 Recette.\n",
+            encoding="utf-8",
+        )
+        self.write_next(current="R-01", status="EN_COURS")
+        (self.review_dir / "R-01-autovalidation.md").write_text(
+            "# Auto-validation R-01\n\nVerdict : VALIDÉ\n\n"
+            "## Vérifications exécutées\n- Tests verts\n\n"
+            "## Recette exécutée\n- Parcours vérifié\n\n"
+            "## Écarts\n- Aucun\n\n"
+            "## Contrôles de coût et sécurité\n- Sans objet\n",
+            encoding="utf-8",
+        )
+
+        with contextlib.redirect_stdout(io.StringIO()):
+            gate.cmd_auto_review("R-01")
+
+        next_text = self.next_path.read_text(encoding="utf-8")
+        self.assertIn("[`S-02`](docs/plan/01-suite.md#s-02--suite)", next_text)
+        self.assertIn("`A_FAIRE`", next_text)
+        self.assertIn("`R-01` auto-validée", self.journal_path.read_text(encoding="utf-8"))
+
+    def test_auto_review_rejects_incomplete_evidence(self) -> None:
+        self.write_next(current="R-01")
+        (self.review_dir / "R-01-autovalidation.md").write_text("Verdict : VALIDÉ\n", encoding="utf-8")
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), self.assertRaises(SystemExit) as raised:
+            gate.cmd_auto_review("R-01")
+
+        self.assertEqual(raised.exception.code, 1)
+        self.assertIn("Recette exécutée", output.getvalue())
+
+    def test_unblock_requires_recorded_resolution(self) -> None:
+        self.write_next(current="S-01", status="BLOQUE")
+        evidence = self.review_dir / "S-01-resolution.md"
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), self.assertRaises(SystemExit) as raised:
+            gate.cmd_unblock("S-01", "docs/plan/revues/S-01-resolution.md")
+
+        self.assertEqual(raised.exception.code, 1)
+        self.assertIn("introuvable", output.getvalue())
+
+        evidence.write_text(
+            "# Résolution S-01\n\nBlocage résolu : CONFIRMÉ\n\n"
+            "## Vérifications effectuées\n- Condition bloquante vérifiée\n",
+            encoding="utf-8",
+        )
+        with contextlib.redirect_stdout(io.StringIO()):
+            gate.cmd_unblock("S-01", "docs/plan/revues/S-01-resolution.md")
+
+        self.assertIn("`EN_COURS`", self.next_path.read_text(encoding="utf-8"))
+        self.assertIn("blocage résolu", self.journal_path.read_text(encoding="utf-8"))
+
+    def test_block_requires_recorded_failure_evidence(self) -> None:
+        self.write_next(current="S-01", status="EN_COURS")
+        evidence = self.review_dir / "S-01-blockage.md"
+        evidence.write_text(
+            "# Blocage S-01\n\nBlocage confirmé : CONFIRMÉ\n\n"
+            "## Vérifications effectuées\n- Le critère bloquant a échoué.\n",
+            encoding="utf-8",
+        )
+
+        with contextlib.redirect_stdout(io.StringIO()):
+            gate.cmd_block("S-01", "docs/plan/revues/S-01-blockage.md")
+
+        self.assertIn("`BLOQUE`", self.next_path.read_text(encoding="utf-8"))
+        self.assertIn("blocage confirmé", self.journal_path.read_text(encoding="utf-8"))
+
+    def test_block_rejects_evidence_without_confirmed_failure(self) -> None:
+        self.write_next(current="S-01", status="EN_COURS")
+        evidence = self.review_dir / "S-01-blockage.md"
+        evidence.write_text(
+            "# Blocage S-01\n\n## Vérifications effectuées\n- En attente.\n",
+            encoding="utf-8",
+        )
+        output = io.StringIO()
+
+        with contextlib.redirect_stdout(output), self.assertRaises(SystemExit) as raised:
+            gate.cmd_block("S-01", "docs/plan/revues/S-01-blockage.md")
+
+        self.assertEqual(raised.exception.code, 1)
+        self.assertIn("confirmer le blocage", output.getvalue())
+
+    def test_precommit_allows_code_during_self_review(self) -> None:
         self.write_next(current="R-01", status="EN_ATTENTE_DE_REVUE")
         with patch.object(
-            gate.subprocess,
-            "run",
-            return_value=SimpleNamespace(stdout="docs/plan/revues/R-01-demande.md\n"),
+            gate.subprocess, "run", return_value=SimpleNamespace(stdout="src/x.cs\n")
         ):
             gate.cmd_precommit()
-
 
 if __name__ == "__main__":
     unittest.main()

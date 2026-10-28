@@ -1,0 +1,78 @@
+{
+  "schema": "ifs-release/v1",
+  "project": "shop",
+  "component": "orders",
+  "target": "dev",
+  "unit": "ifs-shop-orders-dev",
+  "subscriptionId": "<A>",
+  "location": "francecentral",
+  "protected": false,
+  "deploymentIdentityObjectId": null,
+  "dependencies": [
+    {
+      "component": "core",
+      "resources": [
+        {
+          "id": "/subscriptions/<A>/resourceGroups/rg-shop-core-main-dev/providers/Microsoft.OperationalInsights/workspaces/log-shop-main-dev"
+        },
+        {
+          "id": "/subscriptions/<A>/resourceGroups/rg-shop-core-main-dev/providers/Microsoft.Insights/components/appi-shop-main-dev"
+        },
+        {
+          "id": "/subscriptions/<A>/resourceGroups/rg-shop-core-main-dev/providers/Microsoft.KeyVault/vaults/kv-shop-main-dev"
+        }
+      ]
+    },
+    {
+      "component": "data",
+      "resources": [
+        {
+          "id": "/subscriptions/<A>/resourceGroups/rg-shop-data-main-dev/providers/Microsoft.Sql/servers/sql-shop-orders-dev"
+        },
+        {
+          "id": "/subscriptions/<A>/resourceGroups/rg-shop-data-main-dev/providers/Microsoft.Sql/servers/sql-shop-orders-dev/databases/sqldb-shop-orders-dev"
+        }
+      ]
+    },
+    {
+      "component": "platform",
+      "resources": [
+        {
+          "id": "/subscriptions/<C>/resourceGroups/rg-shop-platform-main-shared/providers/Microsoft.ContainerRegistry/registries/crshopmainshared"
+        }
+      ]
+    }
+  ],
+  "secretWrites": [],
+  "secretReferences": [
+    {
+      "vault": "kv-shop-main-dev",
+      "secret": "payments-api-key",
+      "writer": "core"
+    }
+  ],
+  "appOwnedState": [
+    {
+      "resourceId": "/subscriptions/<A>/resourceGroups/rg-shop-orders-main-dev/providers/Microsoft.App/containerApps/ca-shop-api-dev",
+      "parameter": "caApi.image",
+      "kind": "containerAppImage",
+      "bootstrapImage": "mcr.microsoft.com/k8se/quickstart@sha256:3a4d93c34c6753f24765ab17a36f1754aee9b02082b7d9553d17697b9e8252c4"
+    }
+  ],
+  "dataAccess": [
+    {
+      "server": "sql-shop-orders-dev.database.windows.net",
+      "database": "sqldb-shop-orders-dev",
+      "principal": {
+        "resourceId": "/subscriptions/<A>/resourceGroups/rg-shop-orders-main-dev/providers/Microsoft.App/containerApps/ca-shop-api-dev",
+        "kind": "systemAssigned"
+      },
+      "level": "ReadWrite",
+      "exposure": "Public"
+    }
+  ],
+  "accessObjectTypes": ["Microsoft.Authorization/roleAssignments", "Microsoft.Insights/diagnosticSettings"],
+  "restartOnSecretChange": [
+    "/subscriptions/<A>/resourceGroups/rg-shop-orders-main-dev/providers/Microsoft.App/containerApps/ca-shop-api-dev"
+  ]
+}

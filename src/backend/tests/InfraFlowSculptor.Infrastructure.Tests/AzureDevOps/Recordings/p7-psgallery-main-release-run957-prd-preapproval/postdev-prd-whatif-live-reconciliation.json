@@ -1,0 +1,72 @@
+{
+  "capturedUtc": "2026-10-26T23:39:18.6171593Z",
+  "runId": 957,
+  "previewFingerprint": "4a0c1506cf76c920a91c90d2cb178d253d77d0871e704044da3b4b9b5feaa43f",
+  "previousApprovedFingerprint": "4a0c1506cf76c920a91c90d2cb178d253d77d0871e704044da3b4b9b5feaa43f",
+  "sameFingerprintAsRun950Approved": true,
+  "live": {
+    "appIdentityTypeWhitespaceEquivalent": true,
+    "allLogsEnabled": true,
+    "extraIdentityIsolationScope": null,
+    "readerAssignmentPresent": true,
+    "environmentDiagnosticDestinationType": null,
+    "extraIdentityAssigned": false,
+    "readerPrincipalMatchesApiIdentity": true,
+    "retentionDisabled": true,
+    "apiIdentityIsolationScope": null,
+    "cooldownPeriodSeconds": 300,
+    "environmentDiagnosticWorkspaceMatchesCore": true,
+    "appDiagnosticWorkspaceMatchesCore": true,
+    "apiIdentityAssigned": true,
+    "readerScopeMatchesCoreWorkspace": true,
+    "cooldownDefaultEquivalent": true,
+    "logAnalyticsCustomerIdMatchesWorkspace": true,
+    "sqlDatabaseMatchesPreview": true,
+    "secretValueRead": false,
+    "environmentAuditCategoryDisabled": true,
+    "registryServerMatchesAcrLoginServer": true,
+    "imageMatchesPreviewState": true,
+    "pollingDefaultEquivalent": true,
+    "environmentPublicNetworkAccess": "Enabled",
+    "azureClientIdMatchesApiIdentity": true,
+    "readerRole": "Log Analytics Reader",
+    "keyVaultSecretUriMatchesVaultAndName": true,
+    "environmentInternal": null,
+    "sqlServerMatchesPreview": true,
+    "environmentMtlsEnabled": false,
+    "appInsightsConnectionStringMatchesComponent": true,
+    "appDiagnosticDestinationType": null,
+    "pollingIntervalSeconds": 30,
+    "ingressTrafficMatchesAppOwnedState": true,
+    "assignedUserIdentityCount": 1,
+    "imageDigest": "2352cc9119437f3f9c795ae55d096ab4647e38e527e27b4da9d6851b38236a46",
+    "ingressTraffic": [
+      {
+        "latestRevision": true,
+        "weight": 100
+      }
+    ]
+  },
+  "review": {
+    "effectivePreviewChangesAcceptedFromPreviouslyApprovedExactFingerprint": true,
+    "recreates": 0,
+    "destinationTypeChangeIsIntentional": true,
+    "detachedOrDeleted": 0,
+    "destinationTypeModelValue": [
+      "Dedicated",
+      "Dedicated"
+    ],
+    "noSecretValuesRead": true,
+    "creates": 0,
+    "otherPreviewPropertiesReviewed": true,
+    "pendingOperations": [
+      "data-access",
+      "revoke"
+    ],
+    "modifiedResources": 6,
+    "revokedAccess": 1,
+    "dataWrites": [
+      "database-access"
+    ]
+  }
+}
