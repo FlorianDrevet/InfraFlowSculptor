@@ -25,9 +25,20 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext)
             .ToArrayAsync(cancellationToken);
 
         return new ModelSnapshot(
-            new ProjectSnapshot(project.Name, project.Code, project.Description),
+            new ProjectSnapshot(project.Name, project.Code, project.Description)
+            {
+                CatalogVersion = project.CatalogVersion,
+                SystemTagsEnabled = project.SystemTagsEnabled
+            },
             project.Environments.OrderBy(environment => environment.Position)
-                .Select(environment => new EnvironmentSnapshot(environment.Code, environment.Region))
+                .Select(environment => new EnvironmentSnapshot(environment.Code, environment.Region)
+                {
+                    Id = environment.Id,
+                    Name = environment.Name,
+                    Position = environment.Position,
+                    SubscriptionId = environment.SubscriptionId,
+                    Tags = environment.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase)
+                })
                 .ToArray(),
             new NamingConventionSnapshot(
                 project.NamingPreset,
@@ -77,5 +88,9 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext)
                 child.Id,
                 child.Type,
                 child.Name,
-                child.GetProperties())).ToArray())).ToArray());
+                child.GetProperties())).ToArray())).ToArray())
+    {
+        TargetsAllEnvironments = component.TargetsAllEnvironments,
+        Tags = component.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase)
+    };
 }

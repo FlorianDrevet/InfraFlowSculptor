@@ -42,6 +42,131 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
     public Task SingleTargetResourceUsesThePersistedSingleTargetId() =>
         RunSerialAsync(SingleTargetResourceUsesThePersistedSingleTargetIdCore);
 
+    [Fact]
+    public Task EffectiveValuesExposeTargetPresenceTagsAndPropertyProvenance() =>
+        RunSerialAsync(EffectiveValuesExposeTargetPresenceTagsAndPropertyProvenanceCore);
+
+    private async Task EffectiveValuesExposeTargetPresenceTagsAndPropertyProvenanceCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var environmentTags = new Dictionary<string, string> { ["environment-level"] = "loaded" };
+        using var updateEnvironment = CreateRequest(
+            HttpMethod.Put,
+            $"/v1/projects/{ProjectId:D}/environments/{environment.Id:D}",
+            new UpdateProjectEnvironmentRequest(
+                environment.Name,
+                environment.Code,
+                environment.SubscriptionId,
+                environment.Region,
+                environment.IsProtected,
+                environment.Approvers,
+                environment.Runners,
+                environment.Description,
+                environmentTags,
+                false,
+                await GetProjectVersionFromApiAsync(),
+                environment.DeploymentConnection));
+        updateEnvironment.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var environmentResponse = await client.SendAsync(updateEnvironment);
+        Assert.True(environmentResponse.StatusCode == HttpStatusCode.OK, await environmentResponse.Content.ReadAsStringAsync());
+
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+        var resourceBody = await CreateResourceAsync(
+            componentId,
+            resourceGroupId,
+            "KeyVault",
+            $"kv-{Guid.NewGuid():N}"[..12],
+            new Dictionary<string, object?> { ["purgeProtection"] = false, ["sku"] = "premium" });
+        using var resource = JsonDocument.Parse(resourceBody);
+        var resourceId = resource.RootElement.GetProperty("id").GetGuid();
+        var resourceVersion = resource.RootElement.GetProperty("version").GetInt32();
+
+        using var setOverride = CreateRequest(
+            HttpMethod.Put,
+            $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{resourceId:D}/overrides",
+            new
+            {
+                targetId = environment.Id,
+                property = "purgeProtection",
+                value = true,
+                expectedVersion = resourceVersion
+            });
+        setOverride.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var overrideResponse = await client.SendAsync(setOverride);
+        Assert.Equal(HttpStatusCode.OK, overrideResponse.StatusCode);
+
+        using var request = CreateRequest(
+            HttpMethod.Get,
+            $"/v1/projects/{ProjectId:D}/resources/{resourceId:D}/effective-values");
+        using var response = await client.SendAsync(request);
+        Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+        using var result = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+
+        var targets = result.RootElement.EnumerateArray().ToArray();
+        var target = Assert.Single(targets);
+        Assert.Equal(environment.Id, target.GetProperty("id").GetGuid());
+        Assert.Equal(environment.Code, target.GetProperty("code").GetString());
+        Assert.True(target.GetProperty("isPresent").GetBoolean());
+        Assert.Equal(environment.Region, target.GetProperty("region").GetString());
+        Assert.Equal("shop", target.GetProperty("tags").GetProperty("ifs-project").GetString());
+        Assert.Equal("loaded", target.GetProperty("tags").GetProperty("environment-level").GetString());
+
+        var properties = target.GetProperty("properties").EnumerateArray().ToArray();
+        var purgeProtection = Assert.Single(properties, value => value.GetProperty("name").GetString() == "purgeProtection");
+        Assert.True(purgeProtection.GetProperty("value").GetBoolean());
+        Assert.Equal("override", purgeProtection.GetProperty("provenance").GetString());
+
+        var sku = Assert.Single(properties, value => value.GetProperty("name").GetString() == "sku");
+        Assert.Equal("premium", sku.GetProperty("value").GetString());
+        Assert.Equal("resource", sku.GetProperty("provenance").GetString());
+
+        var retention = Assert.Single(properties, value => value.GetProperty("name").GetString() == "softDeleteRetentionInDays");
+        Assert.Equal(90, retention.GetProperty("value").GetInt32());
+        Assert.Equal("catalogDefault", retention.GetProperty("provenance").GetString());
+
+        var logWorkspaceBody = await CreateResourceAsync(
+            componentId,
+            resourceGroupId,
+            "LogAnalyticsWorkspace",
+            $"log-{Guid.NewGuid():N}"[..12],
+            new Dictionary<string, object?>());
+        using var logWorkspace = JsonDocument.Parse(logWorkspaceBody);
+        var logWorkspaceId = logWorkspace.RootElement.GetProperty("id").GetGuid();
+        using var logRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/v1/projects/{ProjectId:D}/resources/{logWorkspaceId:D}/effective-values");
+        using var logResponse = await client.SendAsync(logRequest);
+        Assert.Equal(HttpStatusCode.OK, logResponse.StatusCode);
+        using var logResult = await JsonDocument.ParseAsync(await logResponse.Content.ReadAsStreamAsync());
+        var logTarget = Assert.Single(logResult.RootElement.EnumerateArray());
+        var dailyQuota = Assert.Single(
+            logTarget.GetProperty("properties").EnumerateArray(),
+            value => value.GetProperty("name").GetString() == "dailyQuotaGb");
+        Assert.Equal(JsonValueKind.Null, dailyQuota.GetProperty("value").ValueKind);
+        Assert.Equal("absent", dailyQuota.GetProperty("provenance").GetString());
+
+        var existingResourceBody = await CreateResourceAsync(
+            componentId,
+            resourceGroupId,
+            "KeyVault",
+            $"kv-{Guid.NewGuid():N}"[..12],
+            new Dictionary<string, object?>(),
+            isExisting: true);
+        using var existingResource = JsonDocument.Parse(existingResourceBody);
+        var existingResourceId = existingResource.RootElement.GetProperty("id").GetGuid();
+        using var existingRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/v1/projects/{ProjectId:D}/resources/{existingResourceId:D}/effective-values");
+        using var existingResponse = await client.SendAsync(existingRequest);
+        Assert.Equal(HttpStatusCode.OK, existingResponse.StatusCode);
+        using var existingResult = await JsonDocument.ParseAsync(await existingResponse.Content.ReadAsStreamAsync());
+        var existingTarget = Assert.Single(existingResult.RootElement.EnumerateArray());
+        Assert.False(existingTarget.GetProperty("isPresent").GetBoolean());
+        Assert.Empty(existingTarget.GetProperty("properties").EnumerateArray());
+    }
+
     private async Task SingleTargetResourceUsesThePersistedSingleTargetIdCore()
     {
         await PrepareAsync();

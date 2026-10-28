@@ -90,3 +90,8 @@
 | 2026-10-28 14:14 | Codex | `J0-11` blocage confirmé | docs/plan/revues/J0-11-blocage-stockage-20261028.md |
 | 2026-10-28 14:17 | Codex | `J0-11` blocage résolu | docs/plan/revues/J0-11-blocage-stockage-20261028.md |
 | 2026-10-28 15:53 | Codex | `J0-11` terminée | commit `36736ee` |
+| 2026-10-28 16:24 | Codex | `J0-12` blocage confirmé | docs/plan/revues/J0-12-blocage-effective-values-20261028.md |
+| 2026-10-28 16:28 | Codex | `J0-12` blocage résolu | docs/plan/revues/J0-12-deblocage-20261028.md |
+| 2026-10-28 17:03 | Codex | `J0-12` blocage confirmé | docs/plan/revues/J0-12-blocage-requiredwhen-20261028.md |
+| 2026-10-28 17:11 | Codex | `J0-12` blocage résolu | docs/plan/revues/J0-12-deblocage-requiredwhen-20261028.md |
+| 2026-10-28 18:45 | Codex | `J0-12` terminée | commit `9d47792` |

@@ -15,8 +15,10 @@ using InfraFlowSculptor.Application.Components.Commands.SetOverride;
 using InfraFlowSculptor.Application.Components.Commands.SetPresence;
 using InfraFlowSculptor.Application.Components.Commands.SetResourceProperties;
 using InfraFlowSculptor.Application.Components.Commands.UpdateChild;
+using InfraFlowSculptor.Application.Components.Queries.GetEffectiveValues;
 using InfraFlowSculptor.Application.Components.Queries.GetProjectComponent;
 using InfraFlowSculptor.Contracts.Components;
+using InfraFlowSculptor.Contracts.Resources;
 using InfraFlowSculptor.Domain.Common.Features;
 using Mediator;
 using Microsoft.AspNetCore.Mvc;
@@ -31,6 +33,29 @@ public static class ResourcesController
             .WithTags("Resources")
             .RequireFeature(Features.Organizations)
             .RequireFeature(Features.ProjectSetup);
+        var effectiveValues = v1.MapGroup("/projects/{projectId:guid}/resources")
+            .WithTags("Resources")
+            .RequireFeature(Features.Organizations)
+            .RequireFeature(Features.ProjectSetup);
+
+        effectiveValues.MapGet("/{resourceId:guid}/effective-values", async (
+                Guid projectId,
+                Guid resourceId,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new GetEffectiveValuesQuery(projectId, resourceId), cancellationToken);
+                return result.Match<IResult>(
+                    values => Results.Ok(values.Select(Map).ToArray()),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.GetEffectiveValues)
+            .WithSummary("Consulter les valeurs effectives d'une ressource par cible.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces<EffectiveValueTargetResponse[]>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         resources.MapPost("", async (
                 Guid projectId,
@@ -393,4 +418,15 @@ public static class ResourcesController
             child.Type,
             child.Name,
             child.Properties)).ToArray());
+
+    private static EffectiveValueTargetResponse Map(EffectiveValueTargetSummary target) => new(
+        target.Id,
+        target.Code,
+        target.IsPresent,
+        target.Region,
+        target.Tags,
+        target.Properties.Select(property => new EffectivePropertyResponse(
+            property.Name,
+            property.Value,
+            property.Provenance)).ToArray());
 }

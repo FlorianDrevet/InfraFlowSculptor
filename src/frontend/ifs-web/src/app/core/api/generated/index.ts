@@ -28,6 +28,8 @@ export type { CreateProjectRequest } from './models/create-project-request';
 export type { DeleteProjectEnvironmentRequest } from './models/delete-project-environment-request';
 export type { DeleteProjectRequest } from './models/delete-project-request';
 export type { EffectiveProjectPermissionsResponse } from './models/effective-project-permissions-response';
+export type { EffectivePropertyResponse } from './models/effective-property-response';
+export type { EffectiveValueTargetResponse } from './models/effective-value-target-response';
 export type { ExpectedVersionRequest } from './models/expected-version-request';
 export type { FeatureAvailabilityResponse } from './models/feature-availability-response';
 export type { HttpValidationProblemDetails } from './models/http-validation-problem-details';
@@ -209,6 +211,8 @@ export type { UpdateChild$Params as UpdateChild$Params } from './fn/resources/up
 export { updateChild as updateChild } from './fn/resources/update-child';
 export type { RemoveChild$Params as RemoveChild$Params } from './fn/resources/remove-child';
 export { removeChild as removeChild } from './fn/resources/remove-child';
+export type { GetEffectiveValues$Params as GetEffectiveValues$Params } from './fn/resources/get-effective-values';
+export { getEffectiveValues as getEffectiveValues } from './fn/resources/get-effective-values';
 export type { PreviewNaming$Params as PreviewNaming$Params } from './fn/naming/preview-naming';
 export { previewNaming as previewNaming } from './fn/naming/preview-naming';
 export type { GetCatalogVersions$Params as GetCatalogVersions$Params } from './fn/catalog/get-catalog-versions';

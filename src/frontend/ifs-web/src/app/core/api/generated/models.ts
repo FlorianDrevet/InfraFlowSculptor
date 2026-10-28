@@ -22,6 +22,8 @@ export type { CreateProjectRequest } from './models/create-project-request';
 export type { DeleteProjectEnvironmentRequest } from './models/delete-project-environment-request';
 export type { DeleteProjectRequest } from './models/delete-project-request';
 export type { EffectiveProjectPermissionsResponse } from './models/effective-project-permissions-response';
+export type { EffectivePropertyResponse } from './models/effective-property-response';
+export type { EffectiveValueTargetResponse } from './models/effective-value-target-response';
 export type { ExpectedVersionRequest } from './models/expected-version-request';
 export type { FeatureAvailabilityResponse } from './models/feature-availability-response';
 export type { HttpValidationProblemDetails } from './models/http-validation-problem-details';

@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-12`](docs/plan/02-jalon-0-pilote.md#j0-12--moteur--cibles-présences-valeurs-effectives-et-tags) — Moteur : cibles, présences, valeurs effectives et tags |
+| **Étape courante** | [`J0-13`](docs/plan/02-jalon-0-pilote.md#j0-13--moteur--nommage) — Moteur : nommage |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-11`](docs/plan/02-jalon-0-pilote.md#j0-11--ressources--propriétés-surcharges-présence-existantes-enfants) — Ressources : propriétés, surcharges, présence, existantes, enfants (commit `36736ee`) |
-| **Étape suivante** | `J0-13` — Moteur : nommage |
+| **Dernière étape terminée** | [`J0-12`](docs/plan/02-jalon-0-pilote.md#j0-12--moteur--cibles-présences-valeurs-effectives-et-tags) — Moteur : cibles, présences, valeurs effectives et tags (commit `9d47792`) |
+| **Étape suivante** | `J0-14` — Écrans des ressources : ajout, général, propriétés, existante, suppression |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
 | **Dernière mise à jour** | 2026-10-28 — Codex |
@@ -86,6 +86,12 @@ Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suiv
 ### J0-11 — stockage des propriétés des ressources — 2026-10-28
 
 **Décision reçue le 2026-10-28 :** Florian étend l'interdiction à tous les usages JSONB, existants compris. J0-11 couvre donc aussi la migration relationnelle des colonnes actuelles, l'actualisation des conventions et la précision des contrats `array`/`object` du catalogue. [Décision et vérifications](docs/plan/revues/J0-11-blocage-stockage-20261028.md).
+
+### J0-12 — valeurs effectives, présences et tags — 2026-10-28
+
+**Arbitrages reçus le 2026-10-28 :** RG-RES-07 sera couverte avec les liaisons en J0-15 et le constat `VAL-RES-PRESENCE` en J0-20 ; le DTO de la route `effective-values` est confirmé ; le nom API Key Vault est `purgeProtection` (la recette cite `enablePurgeProtection`, nom du paramètre Bicep). La route, ses tests et le client généré sont implémentés localement. La preuve des arbitrages est dans [le déblocage J0-12](docs/plan/revues/J0-12-deblocage-20261028.md).
+
+**Arbitrage `requiredWhen:` résolu le 2026-10-28 :** sur demande de Florian, Claude CLI a recommandé de traiter `requiredWhen:` comme une condition d'applicabilité, comme `requires:`. Le moteur masque `capacityReservationLevel` et `administratorLogin` hors condition et les inclut lorsque celle-ci est vraie. Tests ciblés 11/11 après reproduction rouge. [Décision et preuve de déblocage](docs/plan/revues/J0-12-deblocage-requiredwhen-20261028.md).
 
 ### R-04 — portée d’idempotence de création d’organisation — 2026-10-27
 
