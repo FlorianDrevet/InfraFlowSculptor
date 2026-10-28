@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-10`](docs/plan/02-jalon-0-pilote.md#j0-10--composants-et-groupes-de-ressources) — Composants et groupes de ressources |
+| **Étape courante** | [`J0-11`](docs/plan/02-jalon-0-pilote.md#j0-11--ressources--propriétés-surcharges-présence-existantes-enfants) — Ressources : propriétés, surcharges, présence, existantes, enfants |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-09`](docs/plan/02-jalon-0-pilote.md#j0-09--écrans-du-projet--liste-vue-densemble-environnements-paramètres-membres) — Écrans du projet : liste, vue d'ensemble, environnements, paramètres, membres (commit `773695e`) |
-| **Étape suivante** | `J0-11` — Ressources : propriétés, surcharges, présence, existantes, enfants |
+| **Dernière étape terminée** | [`J0-10`](docs/plan/02-jalon-0-pilote.md#j0-10--composants-et-groupes-de-ressources) — Composants et groupes de ressources (commit `42d827d`) |
+| **Étape suivante** | `J0-12` — Moteur : cibles, présences, valeurs effectives et tags |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
 | **Dernière mise à jour** | 2026-10-28 — Codex |

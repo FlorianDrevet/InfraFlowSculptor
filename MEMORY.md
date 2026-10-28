@@ -25,6 +25,7 @@
 - **2026-10-27** : R-04 termine la revue et la recette d'accès. Idempotence par utilisateur, transaction atomique, corrections d'audit et A14 Scalar (Alice : 15 permissions; Chloé : `project.read`). Tests .NET 205/205 et frontend 63/63 ; Release sans avertissement, lint et OpenAPI passent. Le conflit PostgreSQL d'appartenance est couvert avec un savepoint et une réponse 409 commitée. E2E Emma reste affecté par la base persistante. Détails et réserves dans `docs/plan/revues/R-04-autovalidation.md` et les mémoires thématiques.
 
 - **2026-10-27** : J0-07 ajoute les projets, environnements ordonnés, tags, commandes du modèle transactionnelles et suppression réversible ; 240 tests .NET et 64 tests frontend, OpenAPI et builds passent. Voir `.github/memory/03-domain-model.md`, `10-api-endpoints.md` et `docs/plan/recettes/suivi.md` (Scalar interactif non exécuté).
+- **2026-10-28** : J0-10 ajoute les composants `PerEnvironment`/`Single`, cibles, groupes de ressources, listes et réglages ; backend CI 274/274, frontend et E2E 22/22 desktop/mobile passent. Aucune colonne JSONB n'est ajoutée. Voir `.github/memory/03-domain-model.md`, `04-frontend.md`, `docs/design/maquette-v1/coverage.md` et `docs/plan/recettes/suivi.md`.
 
 ## Fichiers thématiques
 
