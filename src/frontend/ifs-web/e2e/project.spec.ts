@@ -411,6 +411,8 @@ async function runComponentRecipe(
   await page.goto(componentsUrl);
   await waitForComponentsListReady(page);
   await expect(page.locator('.project-components__list li')).toHaveCount(3);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.cdk-overlay-backdrop, dialog[open]')).toHaveCount(0);
   await page.screenshot({
     path: resolve(screenshotDirectory, `Components-${viewportWidth}.png`),
     fullPage: false,
