@@ -1,0 +1,124 @@
+.environment-edit {
+  display: grid;
+  gap: var(--ifs-space-5);
+}
+
+.environment-edit__header h2 {
+  margin: 0;
+}
+
+.environment-edit form {
+  display: grid;
+  gap: var(--ifs-space-4);
+  max-width: 760px;
+}
+
+.environment-edit__textarea-label {
+  display: grid;
+  gap: var(--ifs-space-2);
+  color: var(--ifs-text-2);
+  font-size: 0.875rem;
+}
+
+.environment-edit__textarea-label span {
+  color: var(--ifs-text-3);
+  font-size: 0.8rem;
+}
+
+.environment-edit textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--ifs-space-2) var(--ifs-space-3);
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-1);
+  color: var(--ifs-text);
+  font: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.environment-edit textarea:focus-visible {
+  border-color: var(--ifs-signal);
+  outline: 2px solid color-mix(in srgb, var(--ifs-signal) 35%, transparent);
+  outline-offset: 1px;
+}
+
+.environment-edit__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--ifs-space-3);
+}
+
+.environment-edit__error {
+  color: var(--ifs-danger);
+}
+
+.environment-edit__dialog {
+  width: min(600px, calc(100vw - 2rem));
+  max-height: min(80vh, 720px);
+  overflow: auto;
+  padding: var(--ifs-space-6);
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+  color: var(--ifs-text);
+}
+
+.environment-edit__dialog::backdrop {
+  background: rgb(0 0 0 / 58%);
+}
+
+.environment-edit__conflict {
+  padding: var(--ifs-space-4);
+  border: 1px solid var(--ifs-warning);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+}
+
+.environment-edit__conflict h3,
+.environment-edit__conflict h4 {
+  margin: 0 0 var(--ifs-space-3);
+}
+
+.environment-edit__conflict-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ifs-space-4);
+}
+
+.environment-edit__conflict-columns section {
+  min-width: 0;
+  padding: var(--ifs-space-3);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-md);
+}
+
+.environment-edit__conflict-columns dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ifs-space-1);
+  margin: 0;
+}
+
+.environment-edit__conflict-columns dt {
+  color: var(--ifs-text-2);
+  font-size: 0.75rem;
+}
+
+.environment-edit__conflict-columns dd {
+  margin: 0 0 var(--ifs-space-2);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .environment-edit__conflict-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .environment-edit__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

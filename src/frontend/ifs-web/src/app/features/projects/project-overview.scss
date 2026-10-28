@@ -1,0 +1,101 @@
+.project-overview {
+  display: grid;
+  gap: var(--ifs-space-5);
+}
+
+.project-overview__section {
+  display: grid;
+  gap: var(--ifs-space-4);
+  padding: var(--ifs-space-5);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+}
+
+.project-overview__section header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ifs-space-3);
+}
+
+.project-overview__section h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.project-overview__section header a {
+  color: var(--ifs-text-2);
+}
+
+.project-overview__empty {
+  margin: 0;
+  color: var(--ifs-text-2);
+}
+
+.project-overview__environments {
+  display: grid;
+  gap: var(--ifs-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project-overview__environments li {
+  display: flex;
+  align-items: center;
+  gap: var(--ifs-space-3);
+  min-width: 0;
+  padding: var(--ifs-space-3);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-md);
+}
+
+.project-overview__environments li > a {
+  display: flex;
+  align-items: center;
+  gap: var(--ifs-space-2);
+  min-width: 0;
+  color: var(--ifs-text);
+  text-decoration: none;
+}
+
+.project-overview__environment-name {
+  font-weight: 600;
+}
+
+.project-overview__code {
+  color: var(--ifs-text-3);
+  font-family: var(--ifs-font-mono, monospace);
+  font-size: 0.8rem;
+}
+
+.project-overview__environments li > span:first-of-type {
+  margin-inline-start: auto;
+  color: var(--ifs-text-2);
+}
+
+.project-overview__protected {
+  padding: var(--ifs-space-1) var(--ifs-space-2);
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-sm);
+  color: var(--ifs-text-2);
+  font-size: 0.75rem;
+}
+
+.project-overview__error {
+  color: var(--ifs-danger);
+}
+
+@media (max-width: 760px) {
+  .project-overview__section header,
+  .project-overview__environments li,
+  .project-overview__environments li > a {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .project-overview__environments li > span:first-of-type {
+    margin-inline-start: 0;
+  }
+}

@@ -44,6 +44,28 @@ describe('normalizeHttpError', () => {
     });
   });
 
+  it('preserves server-calculated impact details for confirmation dialogs', () => {
+    const normalized = normalizeHttpError(
+      new HttpErrorResponse({
+        status: 409,
+        error: {
+          code: 'RG-ENV-03-CONFIRMATION-REQUIRED',
+          currentVersion: 4,
+          affectedResources: ['resource-a'],
+          affectedData: ['region: francecentral → westeurope'],
+        },
+      }),
+    );
+
+    expect(normalized).toMatchObject({
+      metadata: {
+        currentVersion: 4,
+        affectedResources: ['resource-a'],
+        affectedData: ['region: francecentral → westeurope'],
+      },
+    });
+  });
+
   it('provides a stable fallback code when the response has no problem document', () => {
     const normalized = normalizeHttpError(
       new HttpErrorResponse({ status: 503, statusText: 'Unavailable' }),

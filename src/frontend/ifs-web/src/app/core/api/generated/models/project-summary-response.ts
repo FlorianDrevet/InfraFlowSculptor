@@ -14,6 +14,7 @@ export interface ProjectSummaryResponse {
   firstPublishedAt: (string | null);
   id: string;
   infrastructureLanguage: string;
+  isFavorite: boolean;
   modelVersion: (number | string);
   moduleSource: string;
   name: string;

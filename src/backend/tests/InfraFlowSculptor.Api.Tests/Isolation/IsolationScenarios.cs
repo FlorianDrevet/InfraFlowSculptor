@@ -172,7 +172,7 @@ public static class IsolationScenarios
             ["ListProjects"] = OrganizationScenario(
                 "ListProjects",
                 HttpMethod.Get,
-                "/v1/projects",
+                "/v1/projects?includeDeleted=true",
                 HttpStatusCode.NotFound),
             ["CreateProject"] = OrganizationScenario(
                 "CreateProject",
@@ -242,6 +242,32 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}",
                 HttpStatusCode.NotFound),
+            ["SetProjectFavorite"] = OrganizationWriteScenario(
+                "SetProjectFavorite",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/favorite",
+                HttpStatusCode.NotFound),
+            ["RemoveProjectFavorite"] = OrganizationWriteScenario(
+                "RemoveProjectFavorite",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}/favorite",
+                HttpStatusCode.NotFound),
+            ["UpdateProjectSettings"] = OrganizationScenario(
+                "UpdateProjectSettings",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    name = "Isolated Project",
+                    code = "isolated",
+                    description = "",
+                    systemTagsEnabled = true,
+                    coordinatorUserProfileId = (Guid?)null,
+                    tags = new Dictionary<string, string>(),
+                    confirmImpact = false,
+                    expectedVersion = 1
+                }),
             ["SetProjectTags"] = OrganizationScenario(
                 "SetProjectTags",
                 HttpMethod.Put,
@@ -327,6 +353,19 @@ public static class IsolationScenarios
         {
             var request = CreateRequest(method, path, CreateDavidToken(), body);
             request.Headers.Add("X-Ifs-Organization", ContosoOrganizationId);
+            return request;
+        }, expectedStatusCode);
+
+    private static IsolationScenario OrganizationWriteScenario(
+        string name,
+        HttpMethod method,
+        string path,
+        HttpStatusCode expectedStatusCode) =>
+        new(name, _ =>
+        {
+            var request = CreateRequest(method, path, CreateDavidToken(), null);
+            request.Headers.Add("X-Ifs-Organization", ContosoOrganizationId);
+            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
             return request;
         }, expectedStatusCode);
 

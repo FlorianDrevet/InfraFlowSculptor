@@ -9,6 +9,8 @@ public sealed class UserProfile : AggregateRoot<UserProfileId>
     public const string DefaultLanguage = "fr";
     public const string DefaultTheme = "system";
 
+    private readonly List<UserProjectFavorite> favoriteProjects = [];
+
     public Guid TenantId { get; private set; }
 
     public Guid ObjectId { get; private set; }
@@ -28,6 +30,8 @@ public sealed class UserProfile : AggregateRoot<UserProfileId>
     public DateTimeOffset CreatedAt { get; private set; }
 
     public DateTimeOffset LastSeenAt { get; private set; }
+
+    public IReadOnlyCollection<UserProjectFavorite> FavoriteProjects => favoriteProjects.AsReadOnly();
 
     private UserProfile()
     {
@@ -84,6 +88,26 @@ public sealed class UserProfile : AggregateRoot<UserProfileId>
 
         PreferredLanguage = language;
         PreferredTheme = theme;
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> SetProjectFavorite(ProjectId projectId, bool isFavorite)
+    {
+        if (projectId.Value == Guid.Empty)
+        {
+            return Error.Validation("PROJECT_FAVORITE_ID_INVALID", "A project identifier is required.");
+        }
+
+        var existingFavorite = favoriteProjects.SingleOrDefault(favorite => favorite.ProjectId == projectId);
+        if (isFavorite && existingFavorite is null)
+        {
+            favoriteProjects.Add(new UserProjectFavorite(Id, projectId));
+        }
+        else if (!isFavorite && existingFavorite is not null)
+        {
+            favoriteProjects.Remove(existingFavorite);
+        }
+
         return Result.Success;
     }
 

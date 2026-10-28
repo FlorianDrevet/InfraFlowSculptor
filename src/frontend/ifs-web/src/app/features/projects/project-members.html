@@ -1,0 +1,117 @@
+<section class="project-members">
+  <header class="project-members__header">
+    <div>
+      <h2>{{ 'project.membersTitle' | transloco }}</h2>
+      <p>{{ 'project.membersDescription' | transloco }}</p>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <p role="status">{{ 'project.loading' | transloco }}</p>
+  } @else if (loadError()) {
+    <p class="project-members__error" role="alert">{{ 'project.loadError' | transloco }}</p>
+  } @else {
+    <app-ds-text-field
+      class="project-members__search"
+      [label]="'project.searchMembers' | transloco"
+      name="memberSearch"
+      type="search"
+      [value]="search()"
+      (valueChange)="search.set($event ?? '')"
+    />
+    @if (filteredMembers().length === 0) {
+      <p>{{ 'project.noMatchingMembers' | transloco }}</p>
+    } @else {
+      <div class="project-members__table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">{{ 'project.memberName' | transloco }}</th>
+              <th scope="col">{{ 'project.memberRoles' | transloco }}</th>
+              @if (canManage()) {
+                <th scope="col">
+                  <span class="visually-hidden">{{ 'project.memberActions' | transloco }}</span>
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (projectMember of filteredMembers(); track projectMember.member.id) {
+              <tr>
+                <td [attr.data-label]="'project.memberName' | transloco">
+                  <div class="project-members__identity">
+                    <span class="project-members__avatar" aria-hidden="true">
+                      {{ projectMember.member.displayName.slice(0, 1).toUpperCase() }}
+                    </span>
+                    <span class="project-members__person">
+                      <strong>{{ projectMember.member.displayName }}</strong>
+                      @if (projectMember.member.email) {
+                        <span>{{ projectMember.member.email }}</span>
+                      }
+                    </span>
+                  </div>
+                </td>
+                <td [attr.data-label]="'project.memberRoles' | transloco">
+                  @if (editingMemberId() === projectMember.member.id) {
+                    <fieldset class="project-members__role-editor">
+                      <legend>{{ 'project.memberRoles' | transloco }}</legend>
+                      @for (role of roleChoices(); track role) {
+                        <label>
+                          <input
+                            type="checkbox"
+                            [checked]="selectedRoles().includes(role)"
+                            (change)="toggleRole(role, $event)"
+                          />
+                          {{ roleLabelKey(role) | transloco }}
+                        </label>
+                      }
+                    </fieldset>
+                  } @else if (projectMember.assignments.length === 0) {
+                    <span class="project-members__empty-role">{{
+                      'project.noRoles' | transloco
+                    }}</span>
+                  } @else {
+                    <ul class="project-members__roles">
+                      @for (
+                        assignment of projectMember.assignments;
+                        track assignment.role + assignment.scope
+                      ) {
+                        <li>{{ roleLabelKey(assignment.role) | transloco }}</li>
+                      }
+                    </ul>
+                  }
+                </td>
+                @if (canManage()) {
+                  <td
+                    class="project-members__actions"
+                    [attr.data-label]="'project.memberActions' | transloco"
+                  >
+                    @if (editingMemberId() === projectMember.member.id) {
+                      <app-ds-button
+                        variant="primary"
+                        [disabled]="savingMemberId() === projectMember.member.id"
+                        (click)="saveRoles(projectMember)"
+                      >
+                        {{ 'project.saveRoles' | transloco }}
+                      </app-ds-button>
+                      <app-ds-button (click)="cancelEdit()">{{
+                        'project.cancel' | transloco
+                      }}</app-ds-button>
+                    } @else {
+                      <app-ds-button variant="secondary" (click)="editRoles(projectMember)">
+                        {{ 'project.editRoles' | transloco }}
+                      </app-ds-button>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    @if (saveError()) {
+      <p class="project-members__error" role="alert">{{ 'project.rolesSaveError' | transloco }}</p>
+    }
+  }
+</section>

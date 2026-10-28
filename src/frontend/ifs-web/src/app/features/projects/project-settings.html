@@ -1,0 +1,198 @@
+<section class="project-settings">
+  <header>
+    <h2>{{ 'project.settingsTitle' | transloco }}</h2>
+    <p>{{ 'project.settingsDescription' | transloco }}</p>
+  </header>
+
+  @if (loading()) {
+    <p role="status">{{ 'project.loading' | transloco }}</p>
+  } @else if (loadError() || !project()) {
+    <p class="project-settings__error" role="alert">{{ 'project.loadError' | transloco }}</p>
+  } @else {
+    @if (versionConflict(); as conflict) {
+      <section class="project-settings__conflict" role="alert">
+        <h3>{{ 'project.versionConflictTitle' | transloco }}</h3>
+        <p>{{ 'project.versionConflictDescription' | transloco }}</p>
+        <div class="project-settings__conflict-columns">
+          <section>
+            <h4>{{ 'project.storedVersion' | transloco }}</h4>
+            <dl>
+              <dt>{{ 'project.projectName' | transloco }}</dt>
+              <dd>{{ conflict.stored.name }}</dd>
+              <dt>{{ 'project.projectCode' | transloco }}</dt>
+              <dd>{{ conflict.stored.code }}</dd>
+              <dt>{{ 'project.projectDescription' | transloco }}</dt>
+              <dd>{{ conflict.stored.description }}</dd>
+              <dt>{{ 'project.modelVersion' | transloco }}</dt>
+              <dd>{{ conflict.stored.version }}</dd>
+            </dl>
+          </section>
+          <section>
+            <h4>{{ 'project.yourChanges' | transloco }}</h4>
+            <dl>
+              <dt>{{ 'project.projectName' | transloco }}</dt>
+              <dd>{{ conflict.yours.name }}</dd>
+              <dt>{{ 'project.projectCode' | transloco }}</dt>
+              <dd>{{ conflict.yours.code }}</dd>
+              <dt>{{ 'project.projectDescription' | transloco }}</dt>
+              <dd>{{ conflict.yours.description }}</dd>
+              <dt>{{ 'project.projectTags' | transloco }}</dt>
+              <dd>{{ conflict.yours.tags }}</dd>
+            </dl>
+          </section>
+        </div>
+      </section>
+    }
+
+    <form (ngSubmit)="save()">
+      <app-ds-text-field
+        [label]="'project.projectName' | transloco"
+        name="projectName"
+        [value]="form().name"
+        [required]="true"
+        (valueChange)="updateField('name', $event ?? '')"
+      />
+      <app-ds-text-field
+        [label]="'project.projectCode' | transloco"
+        name="projectCode"
+        [value]="form().code"
+        [required]="true"
+        [disabled]="codeLocked()"
+        (valueChange)="updateField('code', $event ?? '')"
+      />
+      @if (codeLocked()) {
+        <p class="project-settings__hint">{{ 'project.projectCodeLocked' | transloco }}</p>
+      }
+      <p class="project-settings__tenant">
+        <span>{{ 'project.tenantId' | transloco }}</span>
+        <code>{{ project()?.tenantId }}</code>
+      </p>
+      <label class="project-settings__textarea-label" for="project-description">
+        {{ 'project.projectDescription' | transloco }}
+        <textarea
+          id="project-description"
+          name="projectDescription"
+          rows="3"
+          [value]="form().description"
+          (input)="updateField('description', $any($event.target).value)"
+        ></textarea>
+      </label>
+      <label class="project-settings__textarea-label" for="project-tags">
+        {{ 'project.projectTags' | transloco }}
+        <span>{{ 'project.tagsHint' | transloco }}</span>
+        <textarea
+          id="project-tags"
+          name="projectTags"
+          rows="4"
+          [value]="form().tags"
+          (input)="updateField('tags', $any($event.target).value)"
+        ></textarea>
+      </label>
+      <app-ds-toggle
+        [label]="'project.systemTagsEnabled' | transloco"
+        [checked]="form().systemTagsEnabled"
+        (checkedChange)="updateField('systemTagsEnabled', $event)"
+      />
+      <label class="project-settings__select-label" for="project-coordinator">
+        {{ 'project.coordinator' | transloco }}
+        <select
+          id="project-coordinator"
+          name="projectCoordinator"
+          [value]="form().coordinatorUserProfileId"
+          (change)="updateField('coordinatorUserProfileId', $any($event.target).value)"
+        >
+          <option value="">{{ 'project.noCoordinator' | transloco }}</option>
+          @for (member of members(); track member.id) {
+            <option [value]="member.id">
+              {{ member.displayName }}{{ member.email ? ' · ' + member.email : '' }}
+            </option>
+          }
+        </select>
+      </label>
+
+      @if (saveError()) {
+        <p class="project-settings__error" role="alert">
+          {{ 'project.settingsSaveError' | transloco }}
+        </p>
+      }
+      @if (canAdminister()) {
+        <app-ds-button variant="primary" type="submit" [disabled]="saving()">
+          {{ (saving() ? 'project.settingsSaving' : 'project.settingsSave') | transloco }}
+        </app-ds-button>
+      } @else {
+        <p>{{ 'project.permissionRequired' | transloco }}</p>
+      }
+    </form>
+
+    @if (canAdminister()) {
+      <section class="project-settings__danger-zone">
+        <h3>{{ 'project.deleteProject' | transloco }}</h3>
+        <app-ds-button variant="danger" (click)="requestDelete()">
+          {{ 'project.deleteProject' | transloco }}
+        </app-ds-button>
+      </section>
+    }
+  }
+</section>
+
+<dialog #impactDialog class="project-settings__dialog" aria-labelledby="project-impact-title">
+  <h2 id="project-impact-title">{{ 'project.settingsImpactTitle' | transloco }}</h2>
+  <p>{{ 'project.settingsImpactDescription' | transloco }}</p>
+  <section>
+    <h3>{{ 'project.impactResources' | transloco }}</h3>
+    @if (affectedResources().length === 0) {
+      <p>{{ 'project.noAffectedResources' | transloco }}</p>
+    } @else {
+      <ul>
+        @for (item of affectedResources(); track item) {
+          <li>{{ item }}</li>
+        }
+      </ul>
+    }
+  </section>
+  @if (affectedData().length > 0) {
+    <section>
+      <h3>{{ 'project.affectedData' | transloco }}</h3>
+      <ul>
+        @for (item of affectedData(); track item) {
+          <li>{{ item }}</li>
+        }
+      </ul>
+    </section>
+  }
+  <div class="project-settings__dialog-actions">
+    <app-ds-button (click)="impactDialog.close()">{{ 'project.cancel' | transloco }}</app-ds-button>
+    <app-ds-button variant="primary" [disabled]="saving()" (click)="confirmImpact()">
+      {{ 'project.confirmImpact' | transloco }}
+    </app-ds-button>
+  </div>
+</dialog>
+
+<dialog #deleteDialog class="project-settings__dialog" aria-labelledby="project-delete-title">
+  <h2 id="project-delete-title">{{ 'project.deleteProjectTitle' | transloco }}</h2>
+  <p>{{ 'project.deleteProjectImpact' | transloco }}</p>
+  @if (project(); as currentProject) {
+    <p>{{ 'project.environmentCount' | transloco }}: {{ currentProject.environmentCount }}</p>
+    <app-ds-text-field
+      [label]="'project.nameConfirmation' | transloco"
+      name="projectNameConfirmation"
+      [value]="nameConfirmation()"
+      (valueChange)="nameConfirmation.set($event ?? '')"
+    />
+  }
+  @if (deleteError()) {
+    <p class="project-settings__error" role="alert">
+      {{ 'project.projectDeleteError' | transloco }}
+    </p>
+  }
+  <div class="project-settings__dialog-actions">
+    <app-ds-button (click)="cancelDelete()">{{ 'project.cancel' | transloco }}</app-ds-button>
+    <app-ds-button
+      variant="danger"
+      [disabled]="deleting() || nameConfirmation() !== project()?.name"
+      (click)="confirmDelete()"
+    >
+      {{ 'project.confirmDeleteProject' | transloco }}
+    </app-ds-button>
+  </div>
+</dialog>

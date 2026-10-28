@@ -9,6 +9,7 @@ export class ApiError extends Error {
     message: string,
     readonly fieldErrors: ApiFieldErrors = {},
     readonly traceId: string | null = null,
+    readonly metadata: Readonly<Record<string, unknown>> = {},
   ) {
     super(message);
     this.name = 'ApiError';
@@ -54,6 +55,11 @@ function parseFieldErrors(value: unknown): ApiFieldErrors {
   );
 }
 
+function parseMetadata(problem: Record<string, unknown>): Readonly<Record<string, unknown>> {
+  const keys = ['currentVersion', 'current', 'affectedResources', 'affectedData'];
+  return Object.fromEntries(keys.flatMap((key) => (key in problem ? [[key, problem[key]]] : [])));
+}
+
 export function normalizeHttpError(error: HttpErrorResponse): ApiError {
   const problem = parseProblem(error.error);
   const code =
@@ -74,5 +80,6 @@ export function normalizeHttpError(error: HttpErrorResponse): ApiError {
     message,
     parseFieldErrors(problem['errors'] ?? problem['fieldErrors']),
     traceId,
+    parseMetadata(problem),
   );
 }

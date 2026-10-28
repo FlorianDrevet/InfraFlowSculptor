@@ -19,4 +19,5 @@ public sealed record ProjectSummaryResponse(
     Guid? CoordinatorUserProfileId,
     IReadOnlyList<string> DefaultRunners,
     IReadOnlyList<string> DefaultReviewers,
-    IReadOnlyDictionary<string, string> Tags);
+    IReadOnlyDictionary<string, string> Tags,
+    bool IsFavorite);

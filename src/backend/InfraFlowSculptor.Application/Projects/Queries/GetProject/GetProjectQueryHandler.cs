@@ -1,14 +1,16 @@
 using ErrorOr;
 using InfraFlowSculptor.Application.Common.Persistence;
+using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Application.Projects;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.ProjectAggregate;
+using InfraFlowSculptor.Domain.UserProfileAggregate;
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 
 namespace InfraFlowSculptor.Application.Projects.Queries.GetProject;
 
-public sealed class GetProjectQueryHandler(IIfsDbContext dbContext)
+public sealed class GetProjectQueryHandler(IIfsDbContext dbContext, ICurrentUser currentUser)
     : IQueryHandler<GetProjectQuery, ErrorOr<ProjectSummary>>
 {
     public async ValueTask<ErrorOr<ProjectSummary>> Handle(
@@ -24,6 +26,17 @@ public sealed class GetProjectQueryHandler(IIfsDbContext dbContext)
         {
             return Error.NotFound("NOT_FOUND", "The project was not found.");
         }
+
+        var userProfileId = await dbContext.Query<UserProfile>()
+            .Where(profile => profile.TenantId == currentUser.Key.TenantId
+                && profile.ObjectId == currentUser.Key.ObjectId)
+            .Select(profile => (Guid?)profile.Id.Value)
+            .SingleOrDefaultAsync(cancellationToken);
+        var isFavorite = userProfileId is not null
+            && await dbContext.Query<UserProjectFavorite>()
+                .AnyAsync(favorite => favorite.UserProfileId == new UserProfileId(userProfileId.Value)
+                    && favorite.ProjectId == project.Id,
+                    cancellationToken);
 
         return new ProjectSummary(
             project.Id.Value,
@@ -44,6 +57,7 @@ public sealed class GetProjectQueryHandler(IIfsDbContext dbContext)
             project.CoordinatorUserProfileId?.Value,
             project.DefaultRunners,
             project.DefaultReviewers,
-            project.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase));
+            project.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase),
+            isFavorite);
     }
 }

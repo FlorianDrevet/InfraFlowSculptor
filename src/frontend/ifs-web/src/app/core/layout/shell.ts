@@ -33,7 +33,7 @@ export class Shell implements OnInit {
     void this.features.ensureLoaded().catch(() => undefined);
   });
 
-  private readonly registerOrganizationMembers = effect(onCleanup => {
+  private readonly registerOrganizationMembers = effect((onCleanup) => {
     const organizationId = this.activeOrganization.organizationId();
     if (!organizationId) {
       return;
@@ -51,11 +51,13 @@ export class Shell implements OnInit {
     );
   });
 
-  private readonly registerOrganizationAudit = effect(onCleanup => {
+  private readonly registerOrganizationAudit = effect((onCleanup) => {
     const organizationId = this.activeOrganization.organizationId();
-    const organization = this.organizations.organizations().find(item => item.id === organizationId);
-    const canReadAudit = organization?.roles.some(role =>
-      role === 'Administrator' || role === 'Auditor',
+    const organization = this.organizations
+      .organizations()
+      .find((item) => item.id === organizationId);
+    const canReadAudit = organization?.roles.some(
+      (role) => role === 'Administrator' || role === 'Auditor',
     );
     if (!organizationId || !canReadAudit) {
       return;
@@ -73,7 +75,7 @@ export class Shell implements OnInit {
     );
   });
 
-  private readonly registerOrganizationSettings = effect(onCleanup => {
+  private readonly registerOrganizationSettings = effect((onCleanup) => {
     const organizationId = this.activeOrganization.organizationId();
     if (!organizationId) {
       return;
@@ -87,6 +89,24 @@ export class Shell implements OnInit {
         scope: 'organization',
         featureKey: FEATURES.organizations,
         iconName: 'sliders',
+      }),
+    );
+  });
+
+  private readonly registerProjects = effect((onCleanup) => {
+    const organizationId = this.activeOrganization.organizationId();
+    if (!organizationId) {
+      return;
+    }
+
+    onCleanup(
+      this.navigation.register({
+        id: 'projects',
+        labelKey: 'project.projectsLink',
+        path: `/o/${organizationId}/projects`,
+        scope: 'organization',
+        featureKey: FEATURES.projectSetup,
+        iconName: 'folder',
       }),
     );
   });

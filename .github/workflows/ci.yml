@@ -533,7 +533,8 @@ jobs:
       - name: Redact Playwright reports and traces
         id: redact
         if: ${{ always() && steps.checkout.outcome == 'success' }}
-        timeout-minutes: 4
+        # Authenticated Playwright traces and nested reports can take several minutes to inspect.
+        timeout-minutes: 12
         env:
           IFS_E2E_PASSWORD: ${{ secrets.IFS_E2E_PASSWORD }}
           Parameters__postgres-password: ci-postgres-password

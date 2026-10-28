@@ -10,11 +10,13 @@ import { RequestBuilder } from '../../request-builder';
 import { ProjectSummaryResponse } from '../../models/project-summary-response';
 
 export interface ListProjects$Params {
+  includeDeleted?: boolean;
 }
 
 export function listProjects(http: HttpClient, rootUrl: string, params?: ListProjects$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<ProjectSummaryResponse>>> {
   const rb = new RequestBuilder(rootUrl, listProjects.PATH, 'get');
   if (params) {
+    rb.query('includeDeleted', params.includeDeleted, {});
   }
 
   return http.request(

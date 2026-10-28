@@ -63,6 +63,9 @@ class StaticTranslationLoader implements TranslocoLoader {
         optional: 'Étape 5 sur 6 · facultative',
         skip: 'Passer',
         create: 'Créer le projet',
+        createdHeading: 'Projet créé',
+        createdDescription: 'Le projet {{ name }} ({{ code }}) est prêt.',
+        openProject: 'Ouvrir le projet',
         noExternalChanges:
           'Rien n’est créé hors d’IFS à cette étape : ni dépôt, ni ressource Azure, ni pipeline.',
       },
@@ -120,7 +123,7 @@ function renderWizard(draft: unknown = null, saveFails = false) {
         loader: StaticTranslationLoader,
       }),
     ],
-  }).then((result) => ({ ...result, service }));
+  }).then((result) => ({ ...result, service, router }));
 }
 
 describe('ProjectWizard', () => {
@@ -173,5 +176,40 @@ describe('ProjectWizard', () => {
       'Le brouillon n’a pas pu être enregistré',
     );
     expect(service.saveDraft).toHaveBeenCalled();
+  });
+
+  it('navigates to the created project workspace', async () => {
+    const { router } = await renderWizard({
+      content: {
+        step: 6,
+        name: 'Mon projet',
+        code: 'monprojet',
+        description: '',
+        codeManuallyEdited: true,
+        environments: [
+          {
+            name: 'Développement',
+            code: 'dev',
+            subscriptionId: '11111111-1111-4111-8111-111111111111',
+            region: 'francecentral',
+            isProtected: false,
+            approvers: '',
+            description: '',
+          },
+        ],
+        namingPreset: 'Compact',
+        defaultNameTemplate: '{abbr}-{project}-{name}-{env}',
+        resourceGroupNameTemplate: 'rg-{project}-{component}-{name}-{env}',
+        publishingPreset: null,
+      },
+      expiresAt: '2026-11-26T12:00:00Z',
+    });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Créer le projet' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Ouvrir le projet' }));
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith(
+      `/o/${organizationId}/projects/77777777-7777-4777-8777-777777777777`,
+    );
   });
 });

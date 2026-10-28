@@ -47,8 +47,14 @@ export type { CreateProject$Params as CreateProject$Params } from './fn/projects
 export { createProject as createProject } from './fn/projects/create-project';
 export type { GetProject$Params as GetProject$Params } from './fn/projects/get-project';
 export { getProject as getProject } from './fn/projects/get-project';
+export type { UpdateProjectSettings$Params as UpdateProjectSettings$Params } from './fn/projects/update-project-settings';
+export { updateProjectSettings as updateProjectSettings } from './fn/projects/update-project-settings';
 export type { DeleteProject$Params as DeleteProject$Params } from './fn/projects/delete-project';
 export { deleteProject as deleteProject } from './fn/projects/delete-project';
+export type { SetProjectFavorite$Params as SetProjectFavorite$Params } from './fn/projects/set-project-favorite';
+export { setProjectFavorite as setProjectFavorite } from './fn/projects/set-project-favorite';
+export type { RemoveProjectFavorite$Params as RemoveProjectFavorite$Params } from './fn/projects/remove-project-favorite';
+export { removeProjectFavorite as removeProjectFavorite } from './fn/projects/remove-project-favorite';
 export type { SetProjectTags$Params as SetProjectTags$Params } from './fn/projects/set-project-tags';
 export { setProjectTags as setProjectTags } from './fn/projects/set-project-tags';
 export type { RestoreProject$Params as RestoreProject$Params } from './fn/projects/restore-project';

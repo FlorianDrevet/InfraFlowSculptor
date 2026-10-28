@@ -348,6 +348,25 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.ToTable("user_profiles", (string)null);
                 });
 
+            modelBuilder.Entity("InfraFlowSculptor.Domain.UserProfileAggregate.UserProjectFavorite", b =>
+                {
+                    b.Property<Guid>("UserProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_profile_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.HasKey("UserProfileId", "ProjectId")
+                        .HasName("pk_user_project_favorites");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("ix_user_project_favorites_project_id");
+
+                    b.ToTable("user_project_favorites", (string)null);
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Auditing.AuditEventEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -921,6 +940,23 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_project_wizard_drafts_user_profiles_user_profile_id");
                 });
 
+            modelBuilder.Entity("InfraFlowSculptor.Domain.UserProfileAggregate.UserProjectFavorite", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_project_favorites_projects_project_id");
+
+                    b.HasOne("InfraFlowSculptor.Domain.UserProfileAggregate.UserProfile", null)
+                        .WithMany("FavoriteProjects")
+                        .HasForeignKey("UserProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_project_favorites_user_profiles_user_profile_id");
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Auditing.AuditEventEntity", b =>
                 {
                     b.HasOne("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", null)
@@ -947,6 +983,11 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_audit_personal_data_user_profiles_subject_user_id");
 
                     b.Navigation("AuditEvent");
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.UserProfileAggregate.UserProfile", b =>
+                {
+                    b.Navigation("FavoriteProjects");
                 });
 #pragma warning restore 612, 618
         }

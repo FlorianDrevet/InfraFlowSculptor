@@ -16,8 +16,8 @@
       }}
     </p>
     <p class="wizard-mono">{{ project.id }}</p>
-    <app-ds-button variant="primary" (click)="exitAssistant()">{{
-      'projectWizard.returnHome' | transloco
+    <app-ds-button variant="primary" (click)="openProject()">{{
+      'projectWizard.openProject' | transloco
     }}</app-ds-button>
   </section>
 } @else {

@@ -417,6 +417,14 @@ export class ProjectWizard implements OnInit, OnDestroy {
     await this.router.navigateByUrl('/');
   }
 
+  protected async openProject(): Promise<void> {
+    const project = this.createdProject();
+    if (!project) {
+      return;
+    }
+    await this.router.navigateByUrl(`/o/${this.organizationId}/projects/${project.id}`);
+  }
+
   protected async retryLoad(): Promise<void> {
     this.loading.set(true);
     this.loadError.set(false);

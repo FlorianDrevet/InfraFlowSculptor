@@ -32,6 +32,9 @@ public static class EndpointNames
     public const string CreateProjectFromWizard = "CreateProjectFromWizard";
     public const string PreviewNaming = "PreviewNaming";
     public const string GetProject = "GetProject";
+    public const string UpdateProjectSettings = "UpdateProjectSettings";
+    public const string SetProjectFavorite = "SetProjectFavorite";
+    public const string RemoveProjectFavorite = "RemoveProjectFavorite";
     public const string AddProjectEnvironment = "AddProjectEnvironment";
     public const string ListProjectEnvironments = "ListProjectEnvironments";
     public const string UpdateProjectEnvironment = "UpdateProjectEnvironment";

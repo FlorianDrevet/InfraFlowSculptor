@@ -54,4 +54,5 @@ export type { TakeProjectOwnershipRequest } from './models/take-project-ownershi
 export type { UpdateMePreferencesRequest } from './models/update-me-preferences-request';
 export type { UpdateOrganizationAccessRestrictionsRequest } from './models/update-organization-access-restrictions-request';
 export type { UpdateProjectEnvironmentRequest } from './models/update-project-environment-request';
+export type { UpdateProjectSettingsRequest } from './models/update-project-settings-request';
 export type { VersionResponse } from './models/version-response';

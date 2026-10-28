@@ -21,7 +21,6 @@ public sealed class ListProjectsQueryHandler(
         ListProjectsQuery query,
         CancellationToken cancellationToken)
     {
-        _ = query;
         if (currentOrganization.Id is not { } organizationId)
         {
             return Error.NotFound("NOT_FOUND", "The organization was not found.");
@@ -48,12 +47,15 @@ public sealed class ListProjectsQueryHandler(
                 OrganizationRole.Auditor,
                 cancellationToken);
 
-        var projects = dbContext.Query<ProjectAggregate>()
+        IQueryable<ProjectAggregate> projects = dbContext.Query<ProjectAggregate>()
             .AsNoTracking()
             .Include(project => project.RoleAssignments)
             .Include(project => project.Environments)
-            .Include(project => project.Tags)
-            .Where(project => project.DeletedAt == null);
+            .Include(project => project.Tags);
+        if (!query.IncludeDeleted)
+        {
+            projects = projects.Where(project => project.DeletedAt == null);
+        }
         if (!seesAllProjects)
         {
             projects = projects.Where(project => project.RoleAssignments
@@ -61,9 +63,16 @@ public sealed class ListProjectsQueryHandler(
         }
 
         var visibleProjects = await projects
-            .OrderBy(project => project.Name)
             .ToArrayAsync(cancellationToken);
-        var summaries = visibleProjects.Select(project => new ProjectSummary(
+        var userProfileId = new UserProfileId(profileId.Value);
+        var favoriteProjectIds = await dbContext.Query<UserProjectFavorite>()
+            .Where(favorite => favorite.UserProfileId == userProfileId)
+            .Select(favorite => favorite.ProjectId)
+            .ToHashSetAsync(cancellationToken);
+        var summaries = visibleProjects
+            .OrderByDescending(project => favoriteProjectIds.Contains(project.Id))
+            .ThenBy(project => project.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(project => new ProjectSummary(
                 project.Id.Value,
                 project.Version,
                 project.Name,
@@ -82,7 +91,8 @@ public sealed class ListProjectsQueryHandler(
                 project.CoordinatorUserProfileId?.Value,
                 project.DefaultRunners,
                 project.DefaultReviewers,
-                project.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase)))
+                project.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase),
+                favoriteProjectIds.Contains(project.Id)))
             .ToArray();
         return summaries;
     }

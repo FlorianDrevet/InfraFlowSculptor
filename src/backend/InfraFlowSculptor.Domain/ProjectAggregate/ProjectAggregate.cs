@@ -242,6 +242,84 @@ public sealed partial class ProjectAggregate : AggregateRoot<ProjectId>, IOrgani
         return Result.Success;
     }
 
+    public ErrorOr<Success> UpdateSettings(
+        string name,
+        string code,
+        string description,
+        bool systemTagsEnabled,
+        UserProfileId? coordinatorUserProfileId,
+        IEnumerable<KeyValuePair<string, string>> projectTags,
+        bool confirmImpact)
+    {
+        var normalizedName = name?.Trim() ?? string.Empty;
+        var normalizedCode = code?.Trim() ?? string.Empty;
+        var normalizedDescription = description?.Trim() ?? string.Empty;
+        if (normalizedName.Length is < 3 or > 80)
+        {
+            return Error.Validation("PROJECT_NAME_INVALID", "A project name must contain between 3 and 80 characters.");
+        }
+
+        if (!ProjectCodePattern().IsMatch(normalizedCode))
+        {
+            return Error.Validation("PROJECT_CODE_INVALID", "A project code must match ^[a-z][a-z0-9]{1,9}$.");
+        }
+
+        if (normalizedDescription.Length > 1000)
+        {
+            return Error.Validation("PROJECT_DESCRIPTION_INVALID", "A project description cannot exceed 1000 characters.");
+        }
+
+        var validatedTags = ValidateTags(projectTags);
+        if (validatedTags.IsError)
+        {
+            return validatedTags.Errors;
+        }
+
+        var codeChanged = !string.Equals(Code, normalizedCode, StringComparison.Ordinal);
+        if (FirstPublishedAt is not null && codeChanged)
+        {
+            return Error.Conflict("RG-PRJ-01-CODE-LOCKED", "The project code cannot change after its first publication.");
+        }
+
+        var nameChanged = !string.Equals(Name, normalizedName, StringComparison.Ordinal);
+        var systemTagsChanged = SystemTagsEnabled != systemTagsEnabled;
+        if ((nameChanged || codeChanged || systemTagsChanged) && !confirmImpact)
+        {
+            var changes = new List<string>();
+            if (nameChanged)
+            {
+                changes.Add($"name: {Name} → {normalizedName}");
+            }
+
+            if (codeChanged)
+            {
+                changes.Add($"code: {Code} → {normalizedCode}");
+            }
+
+            if (systemTagsChanged)
+            {
+                changes.Add($"systemTagsEnabled: {SystemTagsEnabled} → {systemTagsEnabled}");
+            }
+
+            return Error.Conflict(
+                "PROJECT_SETTINGS_CONFIRMATION_REQUIRED",
+                "Confirm the project changes after reviewing the impact calculated by the server.",
+                new Dictionary<string, object>
+                {
+                    ["affectedResources"] = Array.Empty<string>(),
+                    ["affectedData"] = changes
+                });
+        }
+
+        Name = normalizedName;
+        Code = normalizedCode;
+        Description = normalizedDescription;
+        SystemTagsEnabled = systemTagsEnabled;
+        CoordinatorUserProfileId = coordinatorUserProfileId;
+        ReplaceTags(tags, validatedTags.Value);
+        return Result.Success;
+    }
+
     public ErrorOr<Success> UpdateEnvironment(
         Guid id,
         string name,

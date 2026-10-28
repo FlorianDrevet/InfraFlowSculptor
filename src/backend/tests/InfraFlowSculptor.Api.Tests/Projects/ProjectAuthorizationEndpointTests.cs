@@ -47,6 +47,234 @@ public sealed class ProjectAuthorizationEndpointTests(ApiFactory factory) : ICla
     }
 
     [Fact]
+    public async Task ProjectSettingsCanBeUpdatedWhenExpectedVersionMatches()
+    {
+        var scenario = await CreateProjectScenarioAsync();
+        var projectId = scenario.ProjectId;
+        var expectedVersion = await GetProjectVersionAsync(projectId, scenario.OrganizationId, scenario.OwnerToken);
+
+        using var request = CreateRequest(
+            HttpMethod.Put,
+            $"/v1/projects/{projectId:D}",
+            scenario.OwnerToken,
+            scenario.OrganizationId,
+            new
+            {
+                name = "Boutique en ligne",
+                code = "shop",
+                description = "Catalogue actualisé",
+                systemTagsEnabled = true,
+                coordinatorUserProfileId = (Guid?)null,
+                tags = new Dictionary<string, string>(),
+                confirmImpact = true,
+                expectedVersion
+            });
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+
+        using var response = await client.SendAsync(request);
+
+        Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+        using var updated = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        Assert.Equal("Boutique en ligne", updated.RootElement.GetProperty("name").GetString());
+        Assert.Equal("Catalogue actualisé", updated.RootElement.GetProperty("description").GetString());
+    }
+
+    [Theory]
+    [InlineData(" second project ", "shop")]
+    [InlineData("Unique Project", "SECOND")]
+    public async Task ProjectSettingsRejectAnotherProjectsNameOrCodeIgnoringCase(string name, string code)
+    {
+        var scenario = await CreateProjectScenarioAsync();
+        var otherProjectId = new ProjectId(Guid.NewGuid());
+        using (var scope = factory.Services.CreateScope())
+        {
+            scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>()
+                .Set(new OrganizationId(scenario.OrganizationId));
+            var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+            var sourceProject = await dbContext.Projects
+                .Include(project => project.RoleAssignments)
+                .SingleAsync(project => project.Id == new ProjectId(scenario.ProjectId));
+            var ownerId = sourceProject.RoleAssignments
+                .Single(assignment => assignment.Role == ProjectRole.Owner)
+                .Principal;
+            var otherProject = ProjectAggregate.Create(
+                otherProjectId,
+                new OrganizationId(scenario.OrganizationId),
+                "Second Project",
+                "second",
+                ownerId).Value;
+            dbContext.Projects.Add(otherProject);
+            await dbContext.SaveChangesAsync();
+        }
+
+        var expectedVersion = await GetProjectVersionAsync(
+            scenario.ProjectId,
+            scenario.OrganizationId,
+            scenario.OwnerToken);
+        using var request = CreateRequest(
+            HttpMethod.Put,
+            $"/v1/projects/{scenario.ProjectId:D}",
+            scenario.OwnerToken,
+            scenario.OrganizationId,
+            new
+            {
+                name,
+                code,
+                description = "",
+                systemTagsEnabled = true,
+                coordinatorUserProfileId = (Guid?)null,
+                tags = new Dictionary<string, string>(),
+                confirmImpact = true,
+                expectedVersion
+            });
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains(
+            "PROJECT_NAME_OR_CODE_DUPLICATE",
+            await response.Content.ReadAsStringAsync(),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ProjectListCanIncludeDeletedProjectsForRestoration()
+    {
+        var scenario = await CreateProjectScenarioAsync();
+        var version = await GetProjectVersionAsync(scenario.ProjectId, scenario.OrganizationId, scenario.OwnerToken);
+        using var deleteRequest = CreateRequest(
+            HttpMethod.Delete,
+            $"/v1/projects/{scenario.ProjectId:D}",
+            scenario.OwnerToken,
+            scenario.OrganizationId,
+            new { nameConfirmation = "Shop Project", expectedVersion = version });
+        deleteRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var deleteResponse = await client.SendAsync(deleteRequest);
+        Assert.True(
+            deleteResponse.StatusCode == HttpStatusCode.NoContent,
+            await deleteResponse.Content.ReadAsStringAsync());
+
+        using var listRequest = CreateRequest(
+            HttpMethod.Get,
+            "/v1/projects?includeDeleted=true",
+            scenario.OwnerToken,
+            scenario.OrganizationId);
+        using var listResponse = await client.SendAsync(listRequest);
+        Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
+        var projects = await listResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var deletedProject = projects.EnumerateArray()
+            .Single(project => project.GetProperty("id").GetGuid() == scenario.ProjectId);
+
+        Assert.NotEqual(JsonValueKind.Null, deletedProject.GetProperty("deletedAt").ValueKind);
+    }
+
+    [Fact]
+    public async Task ProjectFavoritesAreStoredPerUserAndListedBeforeOtherProjects()
+    {
+        var scenario = await CreateProjectScenarioAsync();
+        var alphabeticalProjectId = new ProjectId(Guid.NewGuid());
+        using (var scope = factory.Services.CreateScope())
+        {
+            scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>()
+                .Set(new OrganizationId(scenario.OrganizationId));
+            var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+            var sourceProject = await dbContext.Projects
+                .Include(project => project.RoleAssignments)
+                .SingleAsync(project => project.Id == new ProjectId(scenario.ProjectId));
+            var ownerProfileId = sourceProject.RoleAssignments
+                .Single(assignment => assignment.Role == ProjectRole.Owner)
+                .Principal;
+            var alphabeticalProject = ProjectAggregate.Create(
+                alphabeticalProjectId,
+                new OrganizationId(scenario.OrganizationId),
+                "Aardvark project",
+                "aardvark",
+                ownerProfileId).Value;
+            dbContext.Projects.Add(alphabeticalProject);
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var favoriteRequest = CreateRequest(
+            HttpMethod.Put,
+            $"/v1/projects/{scenario.ProjectId:D}/favorite",
+            scenario.OwnerToken,
+            scenario.OrganizationId);
+        favoriteRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var favoriteResponse = await client.SendAsync(favoriteRequest);
+        Assert.True(
+            favoriteResponse.StatusCode == HttpStatusCode.NoContent,
+            await favoriteResponse.Content.ReadAsStringAsync());
+
+        using var duplicateFavoriteRequest = CreateRequest(
+            HttpMethod.Put,
+            $"/v1/projects/{scenario.ProjectId:D}/favorite",
+            scenario.OwnerToken,
+            scenario.OrganizationId);
+        duplicateFavoriteRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var duplicateFavoriteResponse = await client.SendAsync(duplicateFavoriteRequest);
+        Assert.Equal(HttpStatusCode.NoContent, duplicateFavoriteResponse.StatusCode);
+
+        using var ownerListRequest = CreateRequest(
+            HttpMethod.Get,
+            "/v1/projects",
+            scenario.OwnerToken,
+            scenario.OrganizationId);
+        using var ownerListResponse = await client.SendAsync(ownerListRequest);
+        Assert.Equal(HttpStatusCode.OK, ownerListResponse.StatusCode);
+        using var ownerProjects = JsonDocument.Parse(await ownerListResponse.Content.ReadAsStringAsync());
+        var ownerProjectList = ownerProjects.RootElement.EnumerateArray().ToArray();
+        Assert.Equal(scenario.ProjectId, ownerProjectList[0].GetProperty("id").GetGuid());
+        Assert.True(ownerProjectList[0].GetProperty("isFavorite").GetBoolean());
+
+        using var readerListRequest = CreateRequest(
+            HttpMethod.Get,
+            "/v1/projects",
+            scenario.ReaderToken,
+            scenario.OrganizationId);
+        using var readerListResponse = await client.SendAsync(readerListRequest);
+        Assert.Equal(HttpStatusCode.OK, readerListResponse.StatusCode);
+        using var readerProjects = JsonDocument.Parse(await readerListResponse.Content.ReadAsStringAsync());
+        var readerShop = readerProjects.RootElement.EnumerateArray()
+            .Single(project => project.GetProperty("id").GetGuid() == scenario.ProjectId);
+        Assert.False(readerShop.GetProperty("isFavorite").GetBoolean());
+
+        using var removeFavoriteRequest = CreateRequest(
+            HttpMethod.Delete,
+            $"/v1/projects/{scenario.ProjectId:D}/favorite",
+            scenario.OwnerToken,
+            scenario.OrganizationId);
+        removeFavoriteRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var removeFavoriteResponse = await client.SendAsync(removeFavoriteRequest);
+        Assert.Equal(HttpStatusCode.NoContent, removeFavoriteResponse.StatusCode);
+
+        using var duplicateRemoveFavoriteRequest = CreateRequest(
+            HttpMethod.Delete,
+            $"/v1/projects/{scenario.ProjectId:D}/favorite",
+            scenario.OwnerToken,
+            scenario.OrganizationId);
+        duplicateRemoveFavoriteRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var duplicateRemoveFavoriteResponse = await client.SendAsync(duplicateRemoveFavoriteRequest);
+        Assert.Equal(HttpStatusCode.NoContent, duplicateRemoveFavoriteResponse.StatusCode);
+
+        using var ownerListAfterRemovalRequest = CreateRequest(
+            HttpMethod.Get,
+            "/v1/projects",
+            scenario.OwnerToken,
+            scenario.OrganizationId);
+        using var ownerListAfterRemovalResponse = await client.SendAsync(ownerListAfterRemovalRequest);
+        Assert.Equal(HttpStatusCode.OK, ownerListAfterRemovalResponse.StatusCode);
+        using var ownerProjectsAfterRemoval = JsonDocument.Parse(
+            await ownerListAfterRemovalResponse.Content.ReadAsStringAsync());
+        var ownerShopAfterRemoval = ownerProjectsAfterRemoval.RootElement.EnumerateArray()
+            .Single(project => project.GetProperty("id").GetGuid() == scenario.ProjectId);
+        Assert.False(ownerShopAfterRemoval.GetProperty("isFavorite").GetBoolean());
+        Assert.Equal(
+            alphabeticalProjectId.Value,
+            ownerProjectsAfterRemoval.RootElement[0].GetProperty("id").GetGuid());
+    }
+
+    [Fact]
     public async Task SeededShopProjectGivesAliceAllPermissionsAndChloeProjectRead()
     {
         using var scope = factory.Services.CreateScope();

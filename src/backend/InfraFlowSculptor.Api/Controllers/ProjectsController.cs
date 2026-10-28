@@ -12,7 +12,9 @@ using InfraFlowSculptor.Application.Projects.Commands.MoveProjectEnvironment;
 using InfraFlowSculptor.Application.Projects.Commands.RemoveProjectRole;
 using InfraFlowSculptor.Application.Projects.Commands.RestoreProject;
 using InfraFlowSculptor.Application.Projects.Commands.SetProjectTags;
+using InfraFlowSculptor.Application.Projects.Commands.SetProjectFavorite;
 using InfraFlowSculptor.Application.Projects.Commands.TakeProjectOwnership;
+using InfraFlowSculptor.Application.Projects.Commands.UpdateProjectSettings;
 using InfraFlowSculptor.Application.Projects.Commands.UpdateProjectEnvironment;
 using InfraFlowSculptor.Application.Projects.Queries.GetEffectivePermissions;
 using InfraFlowSculptor.Application.Projects.Queries.GetProject;
@@ -36,9 +38,9 @@ public static class ProjectsController
             .RequireFeature(Features.Organizations)
             .RequireFeature(Features.ProjectSetup);
 
-        projects.MapGet("", async (IMediator mediator, CancellationToken cancellationToken) =>
+        projects.MapGet("", async ([FromQuery] bool? includeDeleted, IMediator mediator, CancellationToken cancellationToken) =>
             {
-                var result = await mediator.Send(new ListProjectsQuery(), cancellationToken);
+                var result = await mediator.Send(new ListProjectsQuery(includeDeleted == true), cancellationToken);
                 return result.Match<IResult>(
                     values => Results.Ok(values.Select(Map).ToArray()),
                     errors => errors.ToProblem());
@@ -100,7 +102,8 @@ public static class ProjectsController
                             request.CoordinatorUserProfileId,
                             request.DefaultRunners ?? [],
                             request.DefaultReviewers ?? [],
-                            new Dictionary<string, string>())),
+                            new Dictionary<string, string>(),
+                            false)),
                     errors => errors.ToProblem());
             })
             .WithName(EndpointNames.CreateProject)
@@ -123,6 +126,75 @@ public static class ProjectsController
             .RequireAuthorization(AuthorizationPolicies.Member)
             .RequireRateLimiting(RateLimitingPolicies.Read)
             .Produces<ProjectSummaryResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        projects.MapPut("/{id:guid}", async (
+                Guid id,
+                UpdateProjectSettingsRequest request,
+                IMediator mediator,
+                IModelCommandExecutor executor,
+                CancellationToken cancellationToken) =>
+            {
+                var command = new UpdateProjectSettingsCommand(
+                    id,
+                    request.Name,
+                    request.Code,
+                    request.Description,
+                    request.SystemTagsEnabled,
+                    request.CoordinatorUserProfileId,
+                    request.Tags,
+                    request.ConfirmImpact,
+                    request.ExpectedVersion);
+                var result = await executor.ExecuteAsync([command], ModelCommandMode.Apply, cancellationToken);
+                if (result.IsError)
+                {
+                    return result.Errors.ToProblem();
+                }
+
+                var updated = await mediator.Send(new GetProjectQuery(id), cancellationToken);
+                return updated.Match<IResult>(value => Results.Ok(Map(value)), errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.UpdateProjectSettings)
+            .WithSummary("Modifier l’identité, les tags et le coordinateur d’un projet.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces<ProjectSummaryResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        projects.MapPut("/{id:guid}/favorite", async (Guid id, IMediator mediator, CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new SetProjectFavoriteCommand(id, true), cancellationToken);
+                return result.Match<IResult>(
+                    _ => Results.NoContent(),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.SetProjectFavorite)
+            .WithSummary("Ajouter un projet aux favoris de l’utilisateur courant.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        projects.MapDelete("/{id:guid}/favorite", async (Guid id, IMediator mediator, CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new SetProjectFavoriteCommand(id, false), cancellationToken);
+                return result.Match<IResult>(
+                    _ => Results.NoContent(),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.RemoveProjectFavorite)
+            .WithSummary("Retirer un projet des favoris de l’utilisateur courant.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
@@ -491,7 +563,8 @@ public static class ProjectsController
             project.CoordinatorUserProfileId,
             project.DefaultRunners,
             project.DefaultReviewers,
-            project.Tags);
+            project.Tags,
+            project.IsFavorite);
 
     private static ProjectEnvironmentResponse Map(ProjectEnvironmentSummary environment) =>
         new(

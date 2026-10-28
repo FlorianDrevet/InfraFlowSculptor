@@ -10,12 +10,12 @@
 | | |
 |---|---|
 | **Étape courante** | [`J0-09`](docs/plan/02-jalon-0-pilote.md#j0-09--écrans-du-projet--liste-vue-densemble-environnements-paramètres-membres) — Écrans du projet : liste, vue d'ensemble, environnements, paramètres, membres |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`J0-08`](docs/plan/02-jalon-0-pilote.md#j0-08--assistant-de-création-de-projet) — Assistant de création de projet (commit `02a4ae5`) |
 | **Étape suivante** | `J0-10` — Composants et groupes de ressources |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
-| **Dernière mise à jour** | 2026-10-27 — Codex |
+| **Dernière mise à jour** | 2026-10-28 — Codex (blocage résolu) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
@@ -78,6 +78,10 @@ L’omission initiale de `deploymentPrincipalId` avait détaché l’attribution
 Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md), puis retire la ligne.
 
 ## Points ouverts et historique des décisions
+
+### J0-09 — écrans du projet — 2026-10-28
+
+**Décisions reçues le 2026-10-28** : favoris/récents stockés de façon relationnelle dans le profil ; JSONB exclu. Les compteurs composants/ressources/constats sont reportés à J0-10/J0-20 ; aucun zéro provisoire n'est affiché. Le blocage de conception est résolu et consigné dans [`J0-09-blocage-20261028.md`](docs/plan/revues/J0-09-blocage-20261028.md). Florian autorise l'authentification des personas de test via Keycloak local ; `project.spec.ts` et ses captures passent sur desktop et mobile. Les résultats de la suite complète et ses limites connues sont consignés dans [`suivi.md`](docs/plan/recettes/suivi.md).
 
 ### R-04 — portée d’idempotence de création d’organisation — 2026-10-27
 
