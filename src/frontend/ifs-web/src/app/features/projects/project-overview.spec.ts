@@ -48,6 +48,8 @@ describe('ProjectOverview', () => {
       removedResourceBehavior: 'Detach',
       deletionProtectionEnabled: true,
       firstPublishedAt: null,
+      defaultNameTemplate: null,
+      namingOverrides: [],
       tags: {},
       resourceGroups: [],
       resources: [],

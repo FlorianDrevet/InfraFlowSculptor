@@ -137,6 +137,7 @@ public sealed class PropertyValueValidatorTests
               "category": "compute",
               "icon": "server",
               "labels": { "fr": "Test", "en": "Test" },
+              "naming": { "abbreviation": "pt" },
               "properties": [
                 { "name": "slug", "kind": "string", "overridable": true, "pattern": "^[a-z0-9-]+$" }
               ],

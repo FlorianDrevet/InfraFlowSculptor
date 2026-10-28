@@ -3121,6 +3121,106 @@
         ]
       }
     },
+    "/v1/projects/{projectId}/components/{componentId}/naming": {
+      "put": {
+        "tags": [
+          "Components"
+        ],
+        "summary": "Modifier les gabarits et abréviations du composant.",
+        "operationId": "SetComponentNaming",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComponentNamingSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComponentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/projects/{projectId}/components/{componentId}/resource-groups": {
       "post": {
         "tags": [
@@ -5071,6 +5171,237 @@
         ]
       }
     },
+    "/v1/projects/{projectId}/naming": {
+      "get": {
+        "tags": [
+          "Naming"
+        ],
+        "summary": "Consulter les gabarits et abréviations du projet.",
+        "operationId": "GetProjectNaming",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectNamingSettingsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Naming"
+        ],
+        "summary": "Modifier les gabarits et abréviations du projet.",
+        "operationId": "SetProjectNaming",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectNamingSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectNamingSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/naming/preview": {
+      "post": {
+        "tags": [
+          "Naming"
+        ],
+        "summary": "Calculer les noms de toutes les ressources du projet.",
+        "operationId": "PreviewProjectNaming",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectNamingPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectNamingPreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/catalog/versions": {
       "get": {
         "tags": [
@@ -5520,7 +5851,8 @@
           "category",
           "labelFr",
           "labelEn",
-          "icon"
+          "icon",
+          "abbreviation"
         ],
         "type": "object",
         "properties": {
@@ -5537,6 +5869,9 @@
             "type": "string"
           },
           "icon": {
+            "type": "string"
+          },
+          "abbreviation": {
             "type": "string"
           }
         }
@@ -5618,6 +5953,36 @@
           "Single"
         ]
       },
+      "ComponentNamingSettingsRequest": {
+        "required": [
+          "defaultTemplate",
+          "typeOverrides",
+          "expectedVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "defaultTemplate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "typeOverrides": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamingOverrideRequest"
+            }
+          },
+          "expectedVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "ComponentResponse": {
         "required": [
           "id",
@@ -5633,6 +5998,8 @@
           "removedResourceBehavior",
           "deletionProtectionEnabled",
           "firstPublishedAt",
+          "defaultNameTemplate",
+          "namingOverrides",
           "tags",
           "resourceGroups",
           "resources"
@@ -5699,6 +6066,18 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "defaultNameTemplate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "namingOverrides": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamingOverrideResponse"
+            }
           },
           "tags": {
             "type": "object",
@@ -6379,6 +6758,86 @@
           }
         }
       },
+      "NamingExplanationResponse": {
+        "required": [
+          "level",
+          "template",
+          "rawName",
+          "finalName",
+          "transformations"
+        ],
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "string"
+          },
+          "template": {
+            "type": "string"
+          },
+          "rawName": {
+            "type": "string"
+          },
+          "finalName": {
+            "type": "string"
+          },
+          "transformations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "NamingOverrideRequest": {
+        "required": [
+          "type",
+          "template",
+          "abbreviation"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "template": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "abbreviation": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "NamingOverrideResponse": {
+        "required": [
+          "type",
+          "template",
+          "abbreviation"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "template": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "abbreviation": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "NamingPreviewEnvironmentRequest": {
         "required": [
           "code",
@@ -6715,6 +7174,301 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "ProjectNamingIssueResponse": {
+        "required": [
+          "code",
+          "message",
+          "severity",
+          "componentId",
+          "resourceId",
+          "resourceGroupId",
+          "targetId",
+          "value",
+          "valueLength",
+          "limit"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "componentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "resourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "resourceGroupId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "targetId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "valueLength": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "limit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ProjectNamingPreviewItemResponse": {
+        "required": [
+          "componentId",
+          "componentCode",
+          "resourceId",
+          "resourceType",
+          "logicalName",
+          "targetId",
+          "targetCode",
+          "resourceName",
+          "resourceGroupName",
+          "nameLength",
+          "maximumLength",
+          "isExisting",
+          "explanation",
+          "resourceGroupExplanation"
+        ],
+        "type": "object",
+        "properties": {
+          "componentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "componentCode": {
+            "type": "string"
+          },
+          "resourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resourceType": {
+            "type": "string"
+          },
+          "logicalName": {
+            "type": "string"
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetCode": {
+            "type": "string"
+          },
+          "resourceName": {
+            "type": "string"
+          },
+          "resourceGroupName": {
+            "type": "string"
+          },
+          "nameLength": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "maximumLength": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "isExisting": {
+            "type": "boolean"
+          },
+          "explanation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NamingExplanationResponse"
+              }
+            ]
+          },
+          "resourceGroupExplanation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NamingExplanationResponse"
+              }
+            ]
+          }
+        }
+      },
+      "ProjectNamingPreviewRequest": {
+        "required": [
+          "preset",
+          "defaultTemplate",
+          "resourceGroupTemplate",
+          "typeOverrides"
+        ],
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": "string"
+          },
+          "defaultTemplate": {
+            "type": "string"
+          },
+          "resourceGroupTemplate": {
+            "type": "string"
+          },
+          "typeOverrides": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamingOverrideRequest"
+            }
+          }
+        }
+      },
+      "ProjectNamingPreviewResponse": {
+        "required": [
+          "items",
+          "issues"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectNamingPreviewItemResponse"
+            }
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectNamingIssueResponse"
+            }
+          }
+        }
+      },
+      "ProjectNamingSettingsRequest": {
+        "required": [
+          "preset",
+          "defaultTemplate",
+          "resourceGroupTemplate",
+          "typeOverrides",
+          "expectedVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": "string"
+          },
+          "defaultTemplate": {
+            "type": "string"
+          },
+          "resourceGroupTemplate": {
+            "type": "string"
+          },
+          "typeOverrides": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamingOverrideRequest"
+            }
+          },
+          "expectedVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ProjectNamingSettingsResponse": {
+        "required": [
+          "projectId",
+          "version",
+          "preset",
+          "defaultTemplate",
+          "resourceGroupTemplate",
+          "typeOverrides",
+          "isPublished"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "preset": {
+            "type": "string"
+          },
+          "defaultTemplate": {
+            "type": "string"
+          },
+          "resourceGroupTemplate": {
+            "type": "string"
+          },
+          "typeOverrides": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamingOverrideResponse"
+            }
+          },
+          "isPublished": {
+            "type": "boolean"
           }
         }
       },

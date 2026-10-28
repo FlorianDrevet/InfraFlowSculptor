@@ -31,6 +31,9 @@ public static class EndpointNames
     public const string DiscardWizardDraft = "DiscardWizardDraft";
     public const string CreateProjectFromWizard = "CreateProjectFromWizard";
     public const string PreviewNaming = "PreviewNaming";
+    public const string GetProjectNaming = "GetProjectNaming";
+    public const string SetProjectNaming = "SetProjectNaming";
+    public const string PreviewProjectNaming = "PreviewProjectNaming";
     public const string GetProject = "GetProject";
     public const string UpdateProjectSettings = "UpdateProjectSettings";
     public const string SetProjectFavorite = "SetProjectFavorite";
@@ -54,6 +57,7 @@ public static class EndpointNames
     public const string CreateProjectComponent = "CreateProjectComponent";
     public const string GetProjectComponent = "GetProjectComponent";
     public const string UpdateProjectComponent = "UpdateProjectComponent";
+    public const string SetComponentNaming = "SetComponentNaming";
     public const string DeleteProjectComponent = "DeleteProjectComponent";
     public const string CreateResourceGroup = "CreateResourceGroup";
     public const string UpdateResourceGroup = "UpdateResourceGroup";

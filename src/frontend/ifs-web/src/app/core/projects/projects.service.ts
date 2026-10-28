@@ -9,15 +9,18 @@ import {
   getMyProjectPermissions,
   getProject,
   getProjectMemberPermissions,
+  getProjectNaming,
   listProjectEnvironments,
   listProjects,
   moveProjectEnvironment,
   removeProjectRole,
+  previewProjectNaming,
   restoreProject,
   removeProjectFavorite,
   setProjectFavorite,
   updateProjectEnvironment,
   updateProjectSettings,
+  setProjectNaming,
 } from '../api/generated';
 import type {
   AddProjectEnvironmentRequest,
@@ -26,6 +29,8 @@ import type {
   DeleteProjectRequest,
   MoveProjectEnvironmentRequest,
   ProjectEnvironmentResponse,
+  ProjectNamingPreviewRequest,
+  ProjectNamingSettingsRequest,
   ProjectRole,
   ProjectRoleScope,
   ProjectSummaryResponse,
@@ -50,6 +55,18 @@ export class ProjectsService {
 
   environments(projectId: string) {
     return this.api.invoke(listProjectEnvironments, { id: projectId });
+  }
+
+  namingSettings(projectId: string) {
+    return this.api.invoke(getProjectNaming, { projectId });
+  }
+
+  saveNamingSettings(projectId: string, body: ProjectNamingSettingsRequest) {
+    return this.api.invoke(setProjectNaming, { projectId, body });
+  }
+
+  previewNaming(projectId: string, body: ProjectNamingPreviewRequest) {
+    return this.api.invoke(previewProjectNaming, { projectId, body });
   }
 
   updateSettings(projectId: string, body: UpdateProjectSettingsRequest) {

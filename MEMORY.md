@@ -27,6 +27,7 @@
 - **2026-10-28** : J0-10 ajoute les composants `PerEnvironment`/`Single`, cibles, groupes de ressources, listes et réglages ; backend CI 274/274, frontend et E2E 22/22 desktop/mobile passent. Aucune colonne JSONB n'est ajoutée. Voir `.github/memory/03-domain-model.md`, `04-frontend.md`, `docs/design/maquette-v1/coverage.md` et `docs/plan/recettes/suivi.md`.
 - **2026-10-28** : J0-11 stocke les ressources et leurs valeurs imbriquées relationnellement, migre les anciennes colonnes JSONB vers `text` et interdit leur réintroduction. Détails et preuves dans `.github/memory/03-domain-model.md`, `05-data-and-storage.md` et `docs/plan/recettes/suivi.md`.
 - **2026-10-28** : J0-12 ajoute les résolveurs de cibles, présences, tags et valeurs effectives et leur route API. La suite Release passe 335/335; la recette Scalar locale confirme `dev=false` par surcharge et `prd=true` par valeur de ressource, puis supprime le projet de recette. Voir `.github/memory/12-engine.md`, `10-api-endpoints.md` et `docs/plan/recettes/suivi.md`.
+- **2026-10-28** : J0-13 ajoute le moteur de nommage, les règles de sanitisation et d'unicité, l'aperçu et la disponibilité DNS. RG-NOM-10 reste verrouillée jusqu'à J0-28 faute de snapshot publié; détails et limites UI dans `.github/memory/12-engine.md` et `docs/plan/recettes/suivi.md`.
 
 ## Fichiers thématiques
 

@@ -97,6 +97,8 @@ export type { UpdateProjectComponent$Params as UpdateProjectComponent$Params } f
 export { updateProjectComponent as updateProjectComponent } from './fn/components/update-project-component';
 export type { DeleteProjectComponent$Params as DeleteProjectComponent$Params } from './fn/components/delete-project-component';
 export { deleteProjectComponent as deleteProjectComponent } from './fn/components/delete-project-component';
+export type { SetComponentNaming$Params as SetComponentNaming$Params } from './fn/components/set-component-naming';
+export { setComponentNaming as setComponentNaming } from './fn/components/set-component-naming';
 export type { CreateResourceGroup$Params as CreateResourceGroup$Params } from './fn/components/create-resource-group';
 export { createResourceGroup as createResourceGroup } from './fn/components/create-resource-group';
 export type { UpdateResourceGroup$Params as UpdateResourceGroup$Params } from './fn/components/update-resource-group';
@@ -131,6 +133,12 @@ export type { GetEffectiveValues$Params as GetEffectiveValues$Params } from './f
 export { getEffectiveValues as getEffectiveValues } from './fn/resources/get-effective-values';
 export type { PreviewNaming$Params as PreviewNaming$Params } from './fn/naming/preview-naming';
 export { previewNaming as previewNaming } from './fn/naming/preview-naming';
+export type { GetProjectNaming$Params as GetProjectNaming$Params } from './fn/naming/get-project-naming';
+export { getProjectNaming as getProjectNaming } from './fn/naming/get-project-naming';
+export type { SetProjectNaming$Params as SetProjectNaming$Params } from './fn/naming/set-project-naming';
+export { setProjectNaming as setProjectNaming } from './fn/naming/set-project-naming';
+export type { PreviewProjectNaming$Params as PreviewProjectNaming$Params } from './fn/naming/preview-project-naming';
+export { previewProjectNaming as previewProjectNaming } from './fn/naming/preview-project-naming';
 export type { GetCatalogVersions$Params as GetCatalogVersions$Params } from './fn/catalog/get-catalog-versions';
 export { getCatalogVersions as getCatalogVersions } from './fn/catalog/get-catalog-versions';
 export type { GetCatalogTypes$Params as GetCatalogTypes$Params } from './fn/catalog/get-catalog-types';

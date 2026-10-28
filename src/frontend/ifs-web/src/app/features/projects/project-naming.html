@@ -1,0 +1,216 @@
+<section class="project-naming">
+  <header class="project-naming__header">
+    <div>
+      <h1>{{ 'project.namingTitle' | transloco }}</h1>
+      <p>{{ 'project.namingDescription' | transloco }}</p>
+    </div>
+    <app-ds-button
+      variant="primary"
+      [disabled]="saving() || !isDirty() || settings()?.isPublished === true"
+      (click)="save()"
+    >
+      {{ 'project.namingSave' | transloco }}
+    </app-ds-button>
+  </header>
+
+  @if (loading()) {
+    <p role="status">{{ 'project.loading' | transloco }}</p>
+  } @else if (loadError()) {
+    <p class="project-naming__error" role="alert">{{ 'project.loadError' | transloco }}</p>
+    <app-ds-button (click)="retry()">{{ 'project.retry' | transloco }}</app-ds-button>
+  } @else {
+    @if (settings()?.isPublished) {
+      <app-ds-banner tone="ember" [title]="'project.namingPublishedTitle' | transloco">
+        {{ 'project.namingPublishedDescription' | transloco }}
+      </app-ds-banner>
+    }
+
+    @if (saveError()) {
+      <p class="project-naming__error" role="alert">{{ 'project.namingSaveError' | transloco }}</p>
+    }
+
+    <div class="project-naming__layout">
+      <div class="project-naming__settings">
+        <app-ds-panel [title]="'project.namingTemplatesTitle' | transloco">
+          <div class="project-naming__template-fields">
+            <app-ds-text-field
+              [label]="'project.namingDefaultTemplate' | transloco"
+              name="defaultTemplate"
+              [value]="defaultTemplate()"
+              [disabled]="settings()?.isPublished === true"
+              [mono]="true"
+              (valueChange)="updateDefaultTemplate($event ?? '')"
+            />
+            <app-ds-text-field
+              [label]="'project.namingResourceGroup' | transloco"
+              name="resourceGroupTemplate"
+              [value]="resourceGroupTemplate()"
+              [disabled]="settings()?.isPublished === true"
+              [mono]="true"
+              (valueChange)="updateResourceGroupTemplate($event ?? '')"
+            />
+          </div>
+
+          @for (override of templateRows(); track override.type) {
+            <div class="project-naming__template-row">
+              <app-ds-text-field
+                [label]="typeLabel(override.type)"
+                [name]="'template-' + override.type"
+                [value]="override.template ?? ''"
+                [disabled]="settings()?.isPublished === true"
+                [mono]="true"
+                (valueChange)="updateTypeTemplate(override.type, $event ?? '')"
+              />
+              <app-ds-button
+                variant="ghost"
+                size="sm"
+                [disabled]="settings()?.isPublished === true"
+                [ariaLabel]="'project.namingRemoveTemplate' | transloco: { type: typeLabel(override.type) }"
+                (click)="removeTemplate(override.type)"
+              >
+                {{ 'project.namingRemove' | transloco }}
+              </app-ds-button>
+            </div>
+          }
+
+          @if (addTemplateFormOpen()) {
+            <div class="project-naming__add-template">
+              <label class="project-naming__select-label" for="naming-template-type">
+                {{ 'project.namingTypeLabel' | transloco }}
+                <select
+                  id="naming-template-type"
+                  [value]="newTemplateType()"
+                  (change)="updateNewTemplateType($event)"
+                >
+                  @for (type of availableTemplateTypes(); track type.type) {
+                    <option [value]="type.type">{{ type.labelFr }}</option>
+                  }
+                </select>
+              </label>
+              <app-ds-text-field
+                [label]="'project.namingTemplateValue' | transloco"
+                name="typeTemplate"
+                [value]="newTemplateValue()"
+                [disabled]="settings()?.isPublished === true"
+                [mono]="true"
+                (valueChange)="newTemplateValue.set($event ?? '')"
+              />
+              <app-ds-button
+                variant="primary"
+                size="sm"
+                [disabled]="!newTemplateType() || !newTemplateValue().trim()"
+                (click)="addTemplate()"
+              >
+                {{ 'project.namingAddTemplate' | transloco }}
+              </app-ds-button>
+            </div>
+          } @else {
+            <app-ds-button
+              variant="ghost"
+              size="sm"
+              icon="plus"
+              [disabled]="settings()?.isPublished === true || availableTemplateTypes().length === 0"
+              (click)="startAddingTemplate()"
+            >
+              {{ 'project.namingTypeTemplate' | transloco }}
+            </app-ds-button>
+          }
+        </app-ds-panel>
+
+        <app-ds-panel
+          [title]="'project.namingAbbreviations' | transloco"
+          [subtitle]="'project.namingCatalogDefault' | transloco"
+          [padded]="false"
+        >
+          @for (row of abbreviationRows(); track row.type) {
+            <div class="project-naming__abbreviation-row">
+              <span>{{ row.label }}</span>
+              <label class="project-naming__visually-hidden" [for]="'abbreviation-' + row.type">
+                {{ 'project.namingAbbreviationLabel' | transloco: { type: row.label } }}
+              </label>
+              <input
+                class="st-field-input st-mono"
+                [id]="'abbreviation-' + row.type"
+                [value]="row.abbreviation"
+                [disabled]="settings()?.isPublished === true"
+                (input)="updateAbbreviation(row.type, valueFromEvent($event))"
+              />
+              <span class="project-naming__source">
+                {{ (row.source === 'project' ? 'project.namingProjectOrigin' : 'project.namingCatalogOrigin') | transloco }}
+              </span>
+            </div>
+          } @empty {
+            <p class="project-naming__empty">{{ 'project.namingAbbreviationsEmpty' | transloco }}</p>
+          }
+        </app-ds-panel>
+      </div>
+
+      <div class="project-naming__preview">
+        <div class="project-naming__preview-heading">
+          <h2>{{ 'project.namingPreviewTitle' | transloco: { count: visibleItems().length } }}</h2>
+          @if (targetOptions().length > 1) {
+            <app-ds-segmented
+              [options]="targetOptions()"
+              [value]="selectedTarget()"
+              [ariaLabel]="'project.namingTarget' | transloco"
+              (valueChange)="selectedTarget.set($event)"
+            />
+          }
+        </div>
+
+        @if (previewError()) {
+          <p class="project-naming__error" role="alert">{{ 'project.namingPreviewError' | transloco }}</p>
+        } @else if (previewLoading() && !preview()) {
+          <p role="status">{{ 'project.namingPreviewLoading' | transloco }}</p>
+        } @else if (visibleItems().length === 0) {
+          <p class="project-naming__empty">{{ 'project.namingPreviewEmpty' | transloco }}</p>
+        } @else {
+          <div class="project-naming__table-scroll" [attr.aria-busy]="previewLoading()">
+            <table class="project-naming__table">
+              <thead>
+                <tr>
+                  <th scope="col">{{ 'project.namingResource' | transloco }}</th>
+                  <th scope="col">{{ 'project.namingAzureName' | transloco }}</th>
+                  <th scope="col">{{ 'project.namingLength' | transloco }}</th>
+                  <th scope="col">{{ 'project.namingOrigin' | transloco }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of visibleItems(); track item.resourceId + item.targetId) {
+                  <tr [class.project-naming__row-error]="hasError(item)">
+                    <td>{{ resourceLabel(item) }}</td>
+                    <td class="project-naming__azure-name">{{ item.resourceName }}</td>
+                    <td class="project-naming__length">
+                      {{ item.nameLength }}@if (item.maximumLength !== null) { /{{ item.maximumLength }} }
+                    </td>
+                    <td>
+                      <span>{{ originKey(item) | transloco }}</span>
+                      @if (item.explanation?.level === 'ProjectType' || item.explanation?.level === 'ComponentType') {
+                        <span> · {{ typeLabel(item.resourceType) }}</span>
+                      }
+                      @if ((item.explanation?.transformations?.length ?? 0) > 0) {
+                        <span class="project-naming__transformation">
+                          · {{ item.explanation?.transformations?.join(' · ') }}
+                        </span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          @if (visibleIssues().length > 0) {
+            <ul class="project-naming__issues" aria-label="{{ 'project.namingIssues' | transloco }}">
+              @for (issue of visibleIssues(); track issue.code + issue.resourceId + issue.targetId) {
+                <li [class.project-naming__issue-info]="issue.severity === 'Info'">
+                  {{ issue.message }}
+                </li>
+              }
+            </ul>
+          }
+        }
+      </div>
+    </div>
+  }
+</section>

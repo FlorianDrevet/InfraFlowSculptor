@@ -10,6 +10,7 @@ describe('project feature routes', () => {
       'environments/:environmentId',
       'components',
       'settings',
+      'naming',
       'members',
     ]);
     expect(PROJECT_ROUTES.every((route) => route.loadComponent || route.loadChildren)).toBe(true);

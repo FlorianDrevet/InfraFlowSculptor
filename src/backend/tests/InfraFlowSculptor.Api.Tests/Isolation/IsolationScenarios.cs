@@ -241,6 +241,36 @@ public static class IsolationScenarios
                     environments = new[] { new { code = "dev", region = "francecentral" } },
                     tags = new Dictionary<string, string>()
                 }),
+            ["GetProjectNaming"] = OrganizationScenario(
+                "GetProjectNaming",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/naming",
+                HttpStatusCode.NotFound),
+            ["SetProjectNaming"] = OrganizationWriteScenario(
+                "SetProjectNaming",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/naming",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    preset = "Compact",
+                    defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                    resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                    typeOverrides = Array.Empty<object>(),
+                    expectedVersion = 1
+                }),
+            ["PreviewProjectNaming"] = OrganizationScenario(
+                "PreviewProjectNaming",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/naming/preview",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    preset = "Compact",
+                    defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                    resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                    typeOverrides = Array.Empty<object>()
+                }),
             ["GetProject"] = OrganizationScenario(
                 "GetProject",
                 HttpMethod.Get,
@@ -297,6 +327,17 @@ public static class IsolationScenarios
                     removedResourceBehavior = "Detach",
                     deletionProtectionEnabled = true,
                     tags = new Dictionary<string, string>(),
+                    expectedVersion = 1
+                }),
+            ["SetComponentNaming"] = OrganizationWriteScenario(
+                "SetComponentNaming",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/naming",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    defaultTemplate = (string?)null,
+                    typeOverrides = Array.Empty<object>(),
                     expectedVersion = 1
                 }),
             ["DeleteProjectComponent"] = OrganizationWriteScenario(

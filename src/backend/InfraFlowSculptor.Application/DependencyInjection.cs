@@ -6,6 +6,7 @@ using InfraFlowSculptor.Application.Common.Behaviors;
 using InfraFlowSculptor.Application.Common.Jobs;
 using InfraFlowSculptor.Application.Common.ModelCommands;
 using InfraFlowSculptor.Application.Components;
+using InfraFlowSculptor.Application.Naming.Availability;
 
 namespace InfraFlowSculptor.Application;
 
@@ -31,6 +32,8 @@ public static class DependencyInjection
         services.TryAddScoped<IModelCommandExecutor, ModelCommandExecutor>();
         services.TryAddSingleton<ModelCommandSerializer>();
         services.TryAddScoped<ModelSnapshotBuilder>();
+        services.TryAddScoped<NameAvailabilityService>();
+        services.TryAddScoped<NameAvailabilityProcessor>();
         return services;
     }
 }

@@ -27,6 +27,11 @@ export const PROJECT_ROUTES: Routes = [
     title: 'Paramètres du projet',
   },
   {
+    path: 'naming',
+    loadComponent: () => import('./project-naming').then((module) => module.ProjectNaming),
+    title: 'Nommage du projet',
+  },
+  {
     path: 'members',
     loadComponent: () => import('./project-members').then((module) => module.ProjectMembers),
     title: 'Membres du projet',

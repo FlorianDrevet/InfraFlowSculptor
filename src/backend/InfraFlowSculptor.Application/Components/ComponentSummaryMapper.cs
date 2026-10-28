@@ -28,6 +28,14 @@ internal static class ComponentSummaryMapper
         component.RemovedResourceBehavior,
         component.DeletionProtectionEnabled,
         component.FirstPublishedAt,
+        component.DefaultNameTemplate,
+        component.NamingOverrides
+            .OrderBy(value => value.Type, StringComparer.OrdinalIgnoreCase)
+            .Select(value => new InfraFlowSculptor.Application.Naming.NamingOverrideValue(
+                value.Type,
+                value.Template,
+                value.Abbreviation))
+            .ToArray(),
         component.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase),
         component.ResourceGroups.Select(group => new ResourceGroupSummary(
             group.Id,

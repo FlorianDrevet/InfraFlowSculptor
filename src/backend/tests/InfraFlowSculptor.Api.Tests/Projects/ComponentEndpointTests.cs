@@ -46,6 +46,355 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
     public Task EffectiveValuesExposeTargetPresenceTagsAndPropertyProvenance() =>
         RunSerialAsync(EffectiveValuesExposeTargetPresenceTagsAndPropertyProvenanceCore);
 
+    [Fact]
+    public Task ProjectNamingSettingsCanBeSavedAndPreviewUsesComponentOverrides() =>
+        RunSerialAsync(ProjectNamingSettingsCanBeSavedAndPreviewUsesComponentOverridesCore);
+
+    [Fact]
+    public Task NamingPreviewRejectsTypesOutsideThePinnedCatalog() =>
+        RunSerialAsync(NamingPreviewRejectsTypesOutsideThePinnedCatalogCore);
+
+    [Fact]
+    public Task NamingPreviewReportsGlobalNamesReservedBySiblingProjects() =>
+        RunSerialAsync(NamingPreviewReportsGlobalNamesReservedBySiblingProjectsCore);
+
+    private async Task NamingPreviewReportsGlobalNamesReservedBySiblingProjectsCore()
+    {
+        await PrepareAsync();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var logicalName = $"shared{suffix}";
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        Guid? siblingProjectId = null;
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var resourceBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "KeyVault",
+                logicalName,
+                new Dictionary<string, object?>());
+            using var resource = JsonDocument.Parse(resourceBody);
+            var resourceId = resource.RootElement.GetProperty("id").GetGuid();
+
+            siblingProjectId = await SeedSiblingProjectWithGlobalKeyVaultAsync(
+                suffix,
+                logicalName,
+                environment.Code,
+                environment.Region);
+
+            using var previewRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/naming/preview",
+                new
+                {
+                    preset = "Compact",
+                    defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                    resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                    typeOverrides = new[] { new { type = "KeyVault", template = "{abbr}-{name}-{env}", abbreviation = (string?)null } }
+                });
+            using var previewResponse = await client.SendAsync(previewRequest);
+
+            Assert.True(previewResponse.StatusCode == HttpStatusCode.OK, await previewResponse.Content.ReadAsStringAsync());
+            using var preview = await JsonDocument.ParseAsync(await previewResponse.Content.ReadAsStreamAsync());
+            var issues = preview.RootElement.GetProperty("issues").EnumerateArray();
+            Assert.Contains(issues, issue =>
+                issue.GetProperty("code").GetString() == "VAL-NOM-COLLISION"
+                && issue.GetProperty("message").GetString()!.Contains("dans un autre projet de l’organisation", StringComparison.Ordinal)
+                && issue.GetProperty("resourceId").GetGuid() == resourceId
+                && issue.GetProperty("value").GetString() == $"kv-{logicalName}-{environment.Code}");
+        }
+        finally
+        {
+            await CleanupNamingPreviewFixturesAsync(componentId, siblingProjectId);
+        }
+    }
+
+    private async Task<Guid> SeedSiblingProjectWithGlobalKeyVaultAsync(
+        string suffix,
+        string logicalName,
+        string environmentCode,
+        string region)
+    {
+        using var scope = factory.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        var sourceProject = await dbContext.Projects.SingleAsync(project => project.Id == new ProjectId(ProjectId));
+        var alice = await dbContext.UserProfiles.SingleAsync(profile =>
+            profile.ObjectId == Guid.Parse("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"));
+        var siblingProject = ProjectAggregate.Create(
+            new ProjectId(Guid.NewGuid()),
+            new OrganizationId(OrganizationId),
+            $"Reserved names {suffix}",
+            $"r{suffix}",
+            sourceProject.TenantId,
+            string.Empty,
+            sourceProject.CatalogVersion,
+            alice.Id).Value;
+        Assert.False(siblingProject.ConfigureTypeNamingOverride("KeyVault", "{abbr}-{name}-{env}", null).IsError);
+        var siblingEnvironment = siblingProject.AddEnvironment(
+            Guid.NewGuid(),
+            "Development",
+            environmentCode,
+            Guid.NewGuid(),
+            region,
+            1,
+            false,
+            [],
+            [],
+            "Sibling project naming test").Value;
+        var siblingComponent = ComponentRoot.Create(
+            new ComponentId(Guid.NewGuid()),
+            siblingProject.Id,
+            siblingProject.OrganizationId,
+            $"Sibling {suffix}",
+            $"reserved-{suffix}",
+            "Global naming reservation test",
+            ComponentDeploymentMode.PerEnvironment,
+            siblingProject.Environments).Value;
+        var resourceGroup = siblingComponent.AddResourceGroup(Guid.NewGuid(), "main").Value;
+        Assert.False(siblingComponent.AddResource(
+            Guid.NewGuid(),
+            resourceGroup.Id,
+            "KeyVault",
+            logicalName,
+            "Global name reservation test",
+            false,
+            [siblingEnvironment.Id],
+            new Dictionary<string, JsonElement>()).IsError);
+
+        dbContext.Projects.Add(siblingProject);
+        dbContext.Components.Add(siblingComponent);
+        await dbContext.SaveChangesAsync();
+        return siblingProject.Id.Value;
+    }
+
+    private async Task CleanupNamingPreviewFixturesAsync(Guid componentId, Guid? siblingProjectId)
+    {
+        using var scope = factory.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        var componentsToRemove = new List<ComponentRoot>();
+        var component = await dbContext.Components
+            .Include(value => value.Resources)
+            .Include(value => value.ResourceGroups)
+            .SingleOrDefaultAsync(value => value.Id == new ComponentId(componentId));
+        if (component is not null)
+        {
+            componentsToRemove.Add(component);
+        }
+
+        if (siblingProjectId is { } siblingId)
+        {
+            componentsToRemove.AddRange(await dbContext.Components
+                .Include(value => value.Resources)
+                .Include(value => value.ResourceGroups)
+                .Where(component => component.ProjectId == new ProjectId(siblingId))
+                .ToArrayAsync());
+        }
+
+        foreach (var componentToRemove in componentsToRemove)
+        {
+            foreach (var resource in componentToRemove.Resources.ToArray())
+            {
+                Assert.False(componentToRemove.RemoveResource(resource.Id).IsError);
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+        foreach (var componentToRemove in componentsToRemove)
+        {
+            foreach (var resourceGroup in componentToRemove.ResourceGroups.ToArray())
+            {
+                Assert.False(componentToRemove.RemoveResourceGroup(resourceGroup.Id, containsResources: false).IsError);
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+        dbContext.Components.RemoveRange(componentsToRemove);
+        if (siblingProjectId is { } projectId)
+        {
+            var siblingProject = await dbContext.Projects
+                .SingleOrDefaultAsync(project => project.Id == new ProjectId(projectId));
+            if (siblingProject is not null)
+            {
+                dbContext.Projects.Remove(siblingProject);
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+    }
+
+    private async Task NamingPreviewRejectsTypesOutsideThePinnedCatalogCore()
+    {
+        await PrepareAsync();
+        using var preview = CreateRequest(
+            HttpMethod.Post,
+            $"/v1/projects/{ProjectId:D}/naming/preview",
+            new
+            {
+                preset = "Compact",
+                defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                typeOverrides = new[] { new { type = "UnknownType", template = "{abbr}-{name}", abbreviation = (string?)null } }
+            });
+
+        using var response = await client.SendAsync(preview);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    private async Task ProjectNamingSettingsCanBeSavedAndPreviewUsesComponentOverridesCore()
+    {
+        await PrepareAsync();
+        using var getSettings = CreateRequest(HttpMethod.Get, $"/v1/projects/{ProjectId:D}/naming");
+        using var getResponse = await client.SendAsync(getSettings);
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        using var original = await JsonDocument.ParseAsync(await getResponse.Content.ReadAsStreamAsync());
+        var originalSettings = original.RootElement.Clone();
+        var initialVersion = original.RootElement.GetProperty("version").GetInt32();
+
+        using var updateProjectNaming = CreateRequest(
+            HttpMethod.Put,
+            $"/v1/projects/{ProjectId:D}/naming",
+            new
+            {
+                preset = "Compact",
+                defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                typeOverrides = new[] { new { type = "KeyVault", template = "{abbr}-{project}-{name}-{env}", abbreviation = "vault" } },
+                expectedVersion = initialVersion
+            });
+        updateProjectNaming.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var projectNamingResponse = await client.SendAsync(updateProjectNaming);
+        Assert.True(projectNamingResponse.StatusCode == HttpStatusCode.OK, await projectNamingResponse.Content.ReadAsStringAsync());
+        using var updatedNaming = await JsonDocument.ParseAsync(await projectNamingResponse.Content.ReadAsStreamAsync());
+        Assert.True(updatedNaming.RootElement.GetProperty("version").GetInt32() > initialVersion);
+        Assert.Equal("vault", updatedNaming.RootElement.GetProperty("typeOverrides")[0].GetProperty("abbreviation").GetString());
+
+        try
+        {
+            using var invalidProjectNaming = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/naming",
+                new
+                {
+                    preset = "Compact",
+                    defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                    resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                    typeOverrides = new[] { new { type = "UnknownType", template = "{abbr}-{name}", abbreviation = (string?)null } },
+                    expectedVersion = updatedNaming.RootElement.GetProperty("version").GetInt32()
+                });
+            invalidProjectNaming.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var invalidProjectNamingResponse = await client.SendAsync(invalidProjectNaming);
+            Assert.Equal(HttpStatusCode.BadRequest, invalidProjectNamingResponse.StatusCode);
+
+            var environment = await GetEditableEnvironmentAsync();
+            var componentId = await CreateResourceTestComponentAsync(environment);
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var resourceBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "KeyVault",
+                "main",
+                new Dictionary<string, object?>());
+            using var resource = JsonDocument.Parse(resourceBody);
+            var resourceId = resource.RootElement.GetProperty("id").GetGuid();
+            var componentVersion = await GetComponentVersionFromApiAsync(componentId);
+
+            using var setComponentNaming = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/naming",
+                new
+                {
+                    defaultTemplate = (string?)null,
+                    typeOverrides = new[] { new { type = "KeyVault", template = "vault-{component}-{name}-{env}", abbreviation = (string?)null } },
+                    expectedVersion = componentVersion
+                });
+            setComponentNaming.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var componentNamingResponse = await client.SendAsync(setComponentNaming);
+            Assert.True(componentNamingResponse.StatusCode == HttpStatusCode.OK, await componentNamingResponse.Content.ReadAsStringAsync());
+
+            using var preview = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/naming/preview",
+                new
+                {
+                    preset = "Compact",
+                    defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                    resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                    typeOverrides = new[] { new { type = "KeyVault", template = "{abbr}-{project}-{name}-{env}-{region}", abbreviation = "kv" } }
+                });
+            using var previewResponse = await client.SendAsync(preview);
+            Assert.True(previewResponse.StatusCode == HttpStatusCode.OK, await previewResponse.Content.ReadAsStringAsync());
+            using var previewContent = await JsonDocument.ParseAsync(await previewResponse.Content.ReadAsStreamAsync());
+            var item = Assert.Single(
+                previewContent.RootElement.GetProperty("items").EnumerateArray(),
+                value => value.GetProperty("resourceId").GetGuid() == resourceId);
+            Assert.Equal("vault-res-", item.GetProperty("resourceName").GetString()![..10]);
+            Assert.Equal("ComponentType", item.GetProperty("explanation").GetProperty("level").GetString());
+            Assert.Contains(
+                previewContent.RootElement.GetProperty("issues").EnumerateArray(),
+                issue => issue.GetProperty("code").GetString() == "VAL-NOM-LONGUEUR"
+                    && issue.GetProperty("resourceId").GetGuid() == resourceId);
+
+            var componentVersionAfterPreview = await GetComponentVersionFromApiAsync(componentId);
+            using var clearComponentNaming = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/naming",
+                new { defaultTemplate = (string?)null, typeOverrides = Array.Empty<object>(), expectedVersion = componentVersionAfterPreview });
+            clearComponentNaming.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var clearComponentNamingResponse = await client.SendAsync(clearComponentNaming);
+            Assert.Equal(HttpStatusCode.OK, clearComponentNamingResponse.StatusCode);
+
+            using var normalizedPreview = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/naming/preview",
+                new
+                {
+                    preset = "Compact",
+                    defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                    resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                    typeOverrides = new[] { new { type = " KeyVault ", template = "{abbr}-{project}-{name}-{env}", abbreviation = "vault" } }
+                });
+            using var normalizedPreviewResponse = await client.SendAsync(normalizedPreview);
+            Assert.Equal(HttpStatusCode.OK, normalizedPreviewResponse.StatusCode);
+            using var normalizedPreviewContent = await JsonDocument.ParseAsync(await normalizedPreviewResponse.Content.ReadAsStreamAsync());
+            var normalizedItem = Assert.Single(
+                normalizedPreviewContent.RootElement.GetProperty("items").EnumerateArray(),
+                value => value.GetProperty("resourceId").GetGuid() == resourceId);
+            Assert.Equal("vault-shop-main-dev", normalizedItem.GetProperty("resourceName").GetString());
+        }
+        finally
+        {
+            using var restoreNaming = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/naming",
+                new
+                {
+                    preset = originalSettings.GetProperty("preset").GetString(),
+                    defaultTemplate = originalSettings.GetProperty("defaultTemplate").GetString(),
+                    resourceGroupTemplate = originalSettings.GetProperty("resourceGroupTemplate").GetString(),
+                    typeOverrides = originalSettings.GetProperty("typeOverrides").EnumerateArray()
+                        .Select(value => new
+                        {
+                            type = value.GetProperty("type").GetString(),
+                            template = value.GetProperty("template").ValueKind == JsonValueKind.Null
+                                ? null
+                                : value.GetProperty("template").GetString(),
+                            abbreviation = value.GetProperty("abbreviation").ValueKind == JsonValueKind.Null
+                                ? null
+                                : value.GetProperty("abbreviation").GetString()
+                        }).ToArray(),
+                    expectedVersion = await GetProjectVersionFromApiAsync()
+                });
+            restoreNaming.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var restoreResponse = await client.SendAsync(restoreNaming);
+            Assert.Equal(HttpStatusCode.OK, restoreResponse.StatusCode);
+        }
+    }
+
     private async Task EffectiveValuesExposeTargetPresenceTagsAndPropertyProvenanceCore()
     {
         await PrepareAsync();

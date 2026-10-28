@@ -68,3 +68,4 @@
 | 2026-10-28 | Codex | J0-10 — composants `PerEnvironment`/`Single`, groupes et vues desktop/mobile ; CI 40692215159 valide 274 tests backend et 22 E2E, captures comparées et migration vérifiée, sans JSONB |
 | 2026-10-28 | Codex | J0-11 — ressources et valeurs imbriquées persistées relationnellement ; colonnes JSONB existantes converties en `text`, migration et tests garantissent qu'aucune colonne JSONB ne subsiste |
 | 2026-10-28 | Codex | J0-12 — snapshots moteur et route effective-values livrés; 335 tests backend passent. Recette Scalar locale passée après séquençage compatible avec l'irréversibilité de `purgeProtection`; le projet temporaire est supprimé logiquement, aucun coût Azure. |
+| 2026-10-28 | Codex | J0-13 — nommage pur, résolution des collisions globales, cache de disponibilité DNS et écran de prévisualisation; RG-NOM-10 reportée à J0-28 jusqu'au snapshot des noms publiés; 372 tests backend verts. |

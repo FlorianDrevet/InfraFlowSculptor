@@ -19,6 +19,7 @@ public sealed class ComponentConfiguration : IEntityTypeConfiguration<ComponentA
         builder.Property(component => component.Code).HasMaxLength(20).IsRequired();
         builder.Property(component => component.CodeKey).HasMaxLength(20).IsRequired();
         builder.Property(component => component.Description).HasMaxLength(1000).IsRequired();
+        builder.Property(component => component.DefaultNameTemplate).HasMaxLength(200);
         builder.Property(component => component.Mode).HasConversion<string>().HasMaxLength(32).IsRequired();
         builder.Property(component => component.TargetsAllEnvironments).IsRequired();
         builder.Property(component => component.TargetEnvironmentIds)
@@ -70,6 +71,18 @@ public sealed class ComponentConfiguration : IEntityTypeConfiguration<ComponentA
             tags.Property(tag => tag.Value).HasMaxLength(256).IsRequired();
         });
         builder.Navigation(component => component.Tags).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.OwnsMany(component => component.NamingOverrides, overrides =>
+        {
+            overrides.ToTable("component_resource_type_naming_overrides");
+            overrides.WithOwner().HasForeignKey("ComponentId");
+            overrides.HasKey("ComponentId", nameof(ResourceTypeNamingOverride.Type))
+                .HasName("pk_component_resource_type_naming_overrides");
+            overrides.Property(value => value.Type).HasMaxLength(100).IsRequired();
+            overrides.Property(value => value.Template).HasMaxLength(200);
+            overrides.Property(value => value.Abbreviation).HasMaxLength(16);
+        });
+        builder.Navigation(component => component.NamingOverrides).UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.OwnsMany(component => component.ResourceGroups, groups =>
         {

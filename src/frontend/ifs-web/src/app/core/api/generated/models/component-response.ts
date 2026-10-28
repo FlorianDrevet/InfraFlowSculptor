@@ -3,17 +3,20 @@
 
 import { ComponentDeploymentMode } from '../models/component-deployment-mode';
 import { ComponentSingleTargetResponse } from '../models/component-single-target-response';
+import { NamingOverrideResponse } from '../models/naming-override-response';
 import { RemovedResourceBehavior } from '../models/removed-resource-behavior';
 import { ResourceGroupResponse } from '../models/resource-group-response';
 import { ResourceResponse } from '../models/resource-response';
 export interface ComponentResponse {
   code: string;
+  defaultNameTemplate: (string | null);
   deletionProtectionEnabled: boolean;
   description: string;
   firstPublishedAt: (string | null);
   id: string;
   mode: ComponentDeploymentMode;
   name: string;
+  namingOverrides: Array<NamingOverrideResponse>;
   projectId: string;
   removedResourceBehavior: RemovedResourceBehavior;
   resourceGroups: Array<ResourceGroupResponse>;

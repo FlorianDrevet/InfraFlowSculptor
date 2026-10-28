@@ -14,6 +14,8 @@ public sealed record ComponentSnapshot(
 {
     public bool TargetsAllEnvironments { get; init; }
 
+    public ComponentNamingSnapshot? Naming { get; init; }
+
     public IReadOnlyDictionary<string, string> Tags { get; init; } =
         ImmutableDictionary<string, string>.Empty.WithComparers(StringComparer.OrdinalIgnoreCase);
 }

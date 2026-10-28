@@ -40,6 +40,11 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("code_key");
 
+                    b.Property<string>("DefaultNameTemplate")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("default_name_template");
+
                     b.Property<bool>("DeletionProtectionEnabled")
                         .HasColumnType("boolean")
                         .HasColumnName("deletion_protection_enabled");
@@ -786,6 +791,68 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.ToTable("organization_feature_access", (string)null);
                 });
 
+            modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Naming.NameAvailabilityEntity", b =>
+                {
+                    b.Property<string>("AvailabilityDomain")
+                        .HasMaxLength(253)
+                        .HasColumnType("character varying(253)")
+                        .HasColumnName("availability_domain");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(253)
+                        .HasColumnType("character varying(253)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("Attempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("attempts");
+
+                    b.Property<DateTimeOffset?>("CheckedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("checked_at");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("Failure")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("failure_code");
+
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<DateTimeOffset>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.HasKey("AvailabilityDomain", "Name")
+                        .HasName("pk_name_availability");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_name_availability_expires_at");
+
+                    b.HasIndex("Status", "NextAttemptAt")
+                        .HasDatabaseName("ix_name_availability_status_next_attempt_at");
+
+                    b.ToTable("name_availability", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_name_availability_attempts", "attempts >= 0 AND attempts <= 3");
+
+                            t.HasCheckConstraint("ck_name_availability_status", "status IN ('Pending', 'Resolved', 'NotResolved', 'Unknown')");
+                        });
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Domain.ComponentAggregate.ComponentAggregate", b =>
                 {
                     b.HasOne("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", null)
@@ -794,6 +861,37 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_components_projects_project_id");
+
+                    b.OwnsMany("InfraFlowSculptor.Domain.ProjectAggregate.ResourceTypeNamingOverride", "NamingOverrides", b1 =>
+                        {
+                            b1.Property<Guid>("ComponentId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("component_id");
+
+                            b1.Property<string>("Type")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("type");
+
+                            b1.Property<string>("Abbreviation")
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("abbreviation");
+
+                            b1.Property<string>("Template")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("template");
+
+                            b1.HasKey("ComponentId", "Type")
+                                .HasName("pk_component_resource_type_naming_overrides");
+
+                            b1.ToTable("component_resource_type_naming_overrides", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ComponentId")
+                                .HasConstraintName("fk_component_resource_type_naming_overrides_components_compone");
+                        });
 
                     b.OwnsOne("InfraFlowSculptor.Domain.ComponentAggregate.ComponentSingleTarget", "SingleTarget", b1 =>
                         {
@@ -1188,7 +1286,6 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                                         .HasColumnName("resource_id");
 
                                     b2.Property<Guid>("TargetId")
-                                        .ValueGeneratedOnAdd()
                                         .HasColumnType("uuid")
                                         .HasColumnName("target_id");
 
@@ -1219,7 +1316,6 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                                         .HasColumnName("resource_id");
 
                                     b2.Property<Guid>("TargetId")
-                                        .ValueGeneratedOnAdd()
                                         .HasColumnType("uuid")
                                         .HasColumnName("target_id");
 
@@ -1250,7 +1346,6 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                                         .HasColumnName("resource_id");
 
                                     b2.Property<Guid>("TargetId")
-                                        .ValueGeneratedOnAdd()
                                         .HasColumnType("uuid")
                                         .HasColumnName("target_id");
 
@@ -1426,6 +1521,8 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                             b1.Navigation("Tags");
                         });
 
+                    b.Navigation("NamingOverrides");
+
                     b.Navigation("ResourceGroups");
 
                     b.Navigation("Resources");
@@ -1517,6 +1614,37 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("ProjectId")
                                 .HasConstraintName("fk_project_role_assignments_projects_project_id");
+                        });
+
+                    b.OwnsMany("InfraFlowSculptor.Domain.ProjectAggregate.ResourceTypeNamingOverride", "NamingOverrides", b1 =>
+                        {
+                            b1.Property<Guid>("ProjectId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("project_id");
+
+                            b1.Property<string>("Type")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("type");
+
+                            b1.Property<string>("Abbreviation")
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("abbreviation");
+
+                            b1.Property<string>("Template")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("template");
+
+                            b1.HasKey("ProjectId", "Type")
+                                .HasName("pk_project_resource_type_naming_overrides");
+
+                            b1.ToTable("project_resource_type_naming_overrides", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProjectId")
+                                .HasConstraintName("fk_project_resource_type_naming_overrides_projects_project_id");
                         });
 
                     b.OwnsMany("InfraFlowSculptor.Domain.ProjectAggregate.ProjectTag", "Tags", b1 =>
@@ -1660,6 +1788,8 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("Environments");
+
+                    b.Navigation("NamingOverrides");
 
                     b.Navigation("RoleAssignments");
 

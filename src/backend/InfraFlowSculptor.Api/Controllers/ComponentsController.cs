@@ -9,10 +9,13 @@ using InfraFlowSculptor.Application.Components.Commands.CreateResourceGroup;
 using InfraFlowSculptor.Application.Components.Commands.DeleteComponent;
 using InfraFlowSculptor.Application.Components.Commands.DeleteResourceGroup;
 using InfraFlowSculptor.Application.Components.Commands.UpdateComponent;
+using InfraFlowSculptor.Application.Components.Commands.SetComponentNaming;
 using InfraFlowSculptor.Application.Components.Commands.UpdateResourceGroup;
+using InfraFlowSculptor.Application.Naming;
 using InfraFlowSculptor.Application.Components.Queries.GetProjectComponent;
 using InfraFlowSculptor.Application.Components.Queries.ListProjectComponents;
 using InfraFlowSculptor.Contracts.Components;
+using InfraFlowSculptor.Contracts.Naming;
 using InfraFlowSculptor.Domain.Common.Features;
 using InfraFlowSculptor.Domain.ComponentAggregate;
 using Mediator;
@@ -151,6 +154,48 @@ public static class ComponentsController
             })
             .WithName(EndpointNames.UpdateProjectComponent)
             .WithSummary("Modifier un composant.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces<ComponentResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        components.MapPut("/{componentId:guid}/naming", async (
+                Guid projectId,
+                Guid componentId,
+                ComponentNamingSettingsRequest request,
+                IMediator mediator,
+                IModelCommandExecutor executor,
+                CancellationToken cancellationToken) =>
+            {
+                if (request.TypeOverrides is null)
+                {
+                    return Results.ValidationProblem(new Dictionary<string, string[]>
+                    {
+                        ["typeOverrides"] = ["La liste des gabarits par type est obligatoire."]
+                    });
+                }
+
+                var command = new SetComponentNamingCommand(
+                    projectId,
+                    componentId,
+                    request.DefaultTemplate,
+                    request.TypeOverrides.Select(value => new NamingOverrideValue(value.Type, value.Template, value.Abbreviation)).ToArray(),
+                    request.ExpectedVersion);
+                var executed = await executor.ExecuteAsync([command], ModelCommandMode.Apply, cancellationToken);
+                if (executed.IsError)
+                {
+                    return executed.Errors.ToProblem();
+                }
+
+                var result = await mediator.Send(new GetProjectComponentQuery(projectId, componentId), cancellationToken);
+                return result.Match<IResult>(value => Results.Ok(Map(value)), errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.SetComponentNaming)
+            .WithSummary("Modifier les gabarits et abréviations du composant.")
             .RequireAuthorization(AuthorizationPolicies.Member)
             .RequireRateLimiting(RateLimitingPolicies.Write)
             .WithIdempotency()
@@ -321,6 +366,11 @@ public static class ComponentsController
         component.RemovedResourceBehavior,
         component.DeletionProtectionEnabled,
         component.FirstPublishedAt,
+        component.DefaultNameTemplate,
+        component.NamingOverrides.Select(value => new NamingOverrideResponse(
+            value.Type,
+            value.Template,
+            value.Abbreviation)).ToArray(),
         component.Tags,
         component.ResourceGroups.Select(Map).ToArray(),
         component.Resources.Select(Map).ToArray());

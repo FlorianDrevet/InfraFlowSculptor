@@ -49,7 +49,8 @@ public static class CatalogController
                         resourceType.Category,
                         resourceType.LabelFr,
                         resourceType.LabelEn,
-                        resourceType.Icon))
+                        resourceType.Icon,
+                        resourceType.Abbreviation))
                     .ToArray();
                 return Results.Ok(resourceTypes);
             })

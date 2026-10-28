@@ -1,19 +1,34 @@
 using ErrorOr;
 using InfraFlowSculptor.Application.Common.Persistence;
+using InfraFlowSculptor.Application.Naming;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
+using InfraFlowSculptor.Catalog;
 using InfraFlowSculptor.Engine.Model;
+using InfraFlowSculptor.Engine.Naming;
 using Microsoft.EntityFrameworkCore;
 
 namespace InfraFlowSculptor.Application.Components;
 
-public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext)
+public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvider catalogProvider)
 {
-    public async Task<ErrorOr<ModelSnapshot>> BuildAsync(Guid projectId, CancellationToken cancellationToken = default)
+    public Task<ErrorOr<ModelSnapshot>> BuildAsync(Guid projectId, CancellationToken cancellationToken = default) =>
+        BuildAsync(projectId, includeOrganizationNamingReservations: false, cancellationToken);
+
+    public Task<ErrorOr<ModelSnapshot>> BuildWithOrganizationNamingReservationsAsync(
+        Guid projectId,
+        CancellationToken cancellationToken = default) =>
+        BuildAsync(projectId, includeOrganizationNamingReservations: true, cancellationToken);
+
+    private async Task<ErrorOr<ModelSnapshot>> BuildAsync(
+        Guid projectId,
+        bool includeOrganizationNamingReservations,
+        CancellationToken cancellationToken)
     {
         var project = await dbContext.Query<ProjectAggregate>()
             .Include(candidate => candidate.Environments)
+            .Include(candidate => candidate.NamingOverrides)
             .SingleOrDefaultAsync(candidate => candidate.Id == new ProjectId(projectId), cancellationToken);
         if (project is null)
         {
@@ -24,9 +39,97 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext)
             .Where(component => component.ProjectId == new ProjectId(projectId))
             .ToArrayAsync(cancellationToken);
 
+        var snapshot = CreateSnapshot(project, components);
+        if (snapshot.IsError)
+        {
+            return snapshot.Errors;
+        }
+
+        if (!includeOrganizationNamingReservations)
+        {
+            return snapshot.Value;
+        }
+
+        var otherProjects = await dbContext.Query<ProjectAggregate>()
+            .Where(candidate => candidate.OrganizationId == project.OrganizationId
+                && candidate.Id != project.Id
+                && candidate.DeletedAt == null)
+            .Include(candidate => candidate.Environments)
+            .Include(candidate => candidate.NamingOverrides)
+            .ToArrayAsync(cancellationToken);
+        if (otherProjects.Length == 0)
+        {
+            return snapshot.Value;
+        }
+
+        var otherProjectIds = otherProjects.Select(candidate => candidate.Id).ToArray();
+        var otherComponents = await dbContext.Query<ComponentAggregate>()
+            .Where(component => otherProjectIds.Contains(component.ProjectId))
+            .ToArrayAsync(cancellationToken);
+        var reservations = new List<GlobalNameReservationSnapshot>();
+        foreach (var otherProject in otherProjects)
+        {
+            var otherSnapshot = CreateSnapshot(
+                otherProject,
+                otherComponents.Where(component => component.ProjectId == otherProject.Id).ToArray());
+            if (otherSnapshot.IsError)
+            {
+                return otherSnapshot.Errors;
+            }
+
+            var otherPreview = NamingEngine.Preview(otherSnapshot.Value);
+            if (otherPreview.Issues.Any(issue => issue.Code.StartsWith("NAMING_TEMPLATE_", StringComparison.Ordinal)
+                || issue.Code is "NAMING_NAME_TOKEN_REQUIRED" or "NAMING_TOKEN_UNKNOWN"))
+            {
+                return Error.Validation(
+                    "ORGANIZATION_NAMING_RESERVATIONS_UNAVAILABLE",
+                    "Global name collisions cannot be checked while another project has an invalid naming template.");
+            }
+
+            reservations.AddRange(otherPreview.Items
+                .Where(item => otherSnapshot.Value.NamingRules.TryGetValue(item.ResourceType, out var rule)
+                    && string.Equals(rule.Uniqueness, "global", StringComparison.OrdinalIgnoreCase))
+                .Select(item => new GlobalNameReservationSnapshot(
+                    item.ResourceType,
+                    item.IsExisting ? GetExistingResourceName(item.ResourceName) : item.ResourceName,
+                    otherProject.Id.Value)));
+        }
+
+        return snapshot.Value with { OrganizationGlobalNames = reservations };
+    }
+
+    private static string GetExistingResourceName(string resourceId)
+    {
+        var normalizedId = resourceId.TrimEnd('/');
+        var separatorIndex = normalizedId.LastIndexOf('/');
+        return separatorIndex < 0 ? normalizedId : normalizedId[(separatorIndex + 1)..];
+    }
+
+    private ErrorOr<ModelSnapshot> CreateSnapshot(ProjectAggregate project, IReadOnlyList<ComponentAggregate> components)
+    {
+        var catalog = catalogProvider.GetVersion(project.CatalogVersion);
+        if (catalog is null)
+        {
+            return Error.Validation("PROJECT_CATALOG_VERSION_UNAVAILABLE", "The project's pinned catalog version is unavailable.");
+        }
+
+        var naming = new NamingConventionSnapshot(
+            project.NamingPreset,
+            project.DefaultNameTemplate,
+            project.ResourceGroupNameTemplate)
+        {
+            TypeTemplates = project.NamingOverrides
+                .Where(value => value.Template is not null)
+                .ToDictionary(value => value.Type, value => value.Template!, StringComparer.OrdinalIgnoreCase),
+            TypeAbbreviations = project.NamingOverrides
+                .Where(value => value.Abbreviation is not null)
+                .ToDictionary(value => value.Type, value => value.Abbreviation!, StringComparer.OrdinalIgnoreCase)
+        };
+
         return new ModelSnapshot(
             new ProjectSnapshot(project.Name, project.Code, project.Description)
             {
+                Id = project.Id.Value,
                 CatalogVersion = project.CatalogVersion,
                 SystemTagsEnabled = project.SystemTagsEnabled
             },
@@ -40,12 +143,13 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext)
                     Tags = environment.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase)
                 })
                 .ToArray(),
-            new NamingConventionSnapshot(
-                project.NamingPreset,
-                project.DefaultNameTemplate,
-                project.ResourceGroupNameTemplate),
+            naming,
             project.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase),
-            components.Select(MapComponent).ToArray());
+            components.Select(MapComponent).ToArray())
+        {
+            NamingRules = CatalogNamingSnapshotMapper.CreateRules(catalog),
+            RegionCodes = CatalogNamingSnapshotMapper.CreateRegionCodes(catalog)
+        };
     }
 
     private static ComponentSnapshot MapComponent(ComponentAggregate component) => new(
@@ -91,6 +195,16 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext)
                 child.GetProperties())).ToArray())).ToArray())
     {
         TargetsAllEnvironments = component.TargetsAllEnvironments,
+        Naming = component.DefaultNameTemplate is not null || component.NamingOverrides.Count > 0
+            ? new ComponentNamingSnapshot(
+                component.DefaultNameTemplate,
+                component.NamingOverrides
+                    .Where(value => value.Template is not null)
+                    .ToDictionary(value => value.Type, value => value.Template!, StringComparer.OrdinalIgnoreCase),
+                component.NamingOverrides
+                    .Where(value => value.Abbreviation is not null)
+                    .ToDictionary(value => value.Type, value => value.Abbreviation!, StringComparer.OrdinalIgnoreCase))
+            : null,
         Tags = component.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase)
     };
 }

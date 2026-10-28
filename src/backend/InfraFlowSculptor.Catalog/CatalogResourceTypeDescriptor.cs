@@ -13,6 +13,7 @@ public sealed class CatalogResourceTypeDescriptor
         var labels = Definition.GetProperty("labels");
         LabelFr = labels.GetProperty("fr").GetString()!;
         LabelEn = labels.GetProperty("en").GetString()!;
+        Abbreviation = Definition.GetProperty("naming").GetProperty("abbreviation").GetString()!;
     }
 
     public string Type { get; }
@@ -24,6 +25,8 @@ public sealed class CatalogResourceTypeDescriptor
     public string LabelFr { get; }
 
     public string LabelEn { get; }
+
+    public string Abbreviation { get; }
 
     public JsonElement Definition { get; }
 }

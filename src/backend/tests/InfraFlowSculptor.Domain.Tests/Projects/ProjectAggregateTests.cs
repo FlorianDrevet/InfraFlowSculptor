@@ -218,6 +218,71 @@ public sealed class ProjectAggregateTests
     }
 
     [Fact]
+    public void ConfiguringNamingAdvancesTheProjectConcurrencyVersion()
+    {
+        var project = CreateProject(new UserProfileId(Guid.NewGuid()));
+        var previousVersion = project.Version;
+
+        var configured = project.ConfigureNaming("Custom", "{name}-{region}", "rg-{name}-{region}");
+
+        Assert.False(configured.IsError);
+        Assert.Equal(previousVersion + 1, project.Version);
+    }
+
+    [Fact]
+    public void PublishedProjectCannotChangeNamingTemplatesOrOverrides()
+    {
+        var project = CreateProject(new UserProfileId(Guid.NewGuid()));
+        project.RecordPublication(DateTimeOffset.UtcNow);
+
+        var templates = project.ConfigureNaming("Custom", "{abbr}-{project}-{name}-{env}", "rg-{project}-{component}-{name}-{env}");
+        var typeOverride = project.ConfigureTypeNamingOverride("KeyVault", "{abbr}-{project}-{name}-{env}", "kv");
+
+        Assert.Contains(templates.Errors, error => error.Code == "PROJECT_NAMING_LOCKED_AFTER_PUBLICATION");
+        Assert.Contains(typeOverride.Errors, error => error.Code == "PROJECT_NAMING_LOCKED_AFTER_PUBLICATION");
+    }
+
+    [Fact]
+    public void ConfiguringTypeNamingOverrideAdvancesTheProjectConcurrencyVersion()
+    {
+        var project = CreateProject(new UserProfileId(Guid.NewGuid()));
+        var previousVersion = project.Version;
+
+        var configured = InvokeRequired(project, "ConfigureTypeNamingOverride", "KeyVault", "{name}-{region}", "vault");
+
+        Assert.False(ReadProperty<bool>(configured, "IsError"));
+        Assert.Equal(previousVersion + 1, project.Version);
+    }
+
+    [Fact]
+    public void ProjectStoresTypeSpecificNamingTemplateAndAbbreviation()
+    {
+        var project = CreateProject(new UserProfileId(Guid.NewGuid()));
+
+        var configured = InvokeRequired(project, "ConfigureTypeNamingOverride", "KeyVault", "{abbr}-{project}-{name}-{env}", "vault");
+
+        Assert.False(ReadProperty<bool>(configured, "IsError"));
+        var naming = Assert.Single((System.Collections.IEnumerable)ReadProperty<object>(project, "NamingOverrides"));
+        Assert.Equal("KeyVault", ReadProperty<string>(naming!, "Type"));
+        Assert.Equal("{abbr}-{project}-{name}-{env}", ReadProperty<string>(naming!, "Template"));
+        Assert.Equal("vault", ReadProperty<string>(naming!, "Abbreviation"));
+    }
+
+    [Fact]
+    public void ClearingProjectTemplateRetainsTheTypeSpecificAbbreviation()
+    {
+        var project = CreateProject(new UserProfileId(Guid.NewGuid()));
+        InvokeRequired(project, "ConfigureTypeNamingOverride", "KeyVault", "{abbr}-{project}-{name}-{env}", "vault");
+
+        var configured = InvokeRequired(project, "ConfigureTypeNamingOverride", "KeyVault", null, "kvault");
+
+        Assert.False(ReadProperty<bool>(configured, "IsError"));
+        var naming = Assert.Single((System.Collections.IEnumerable)ReadProperty<object>(project, "NamingOverrides"));
+        Assert.Null(ReadNullableProperty(naming!, "Template"));
+        Assert.Equal("kvault", ReadProperty<string>(naming!, "Abbreviation"));
+    }
+
+    [Fact]
     public void ProjectNormalizesDefaultRunnersAndReviewers()
     {
         var project = Project.Create(
@@ -349,6 +414,27 @@ public sealed class ProjectAggregateTests
 
         Assert.True(result.IsError);
         Assert.Contains(result.Errors, error => error.Code == "PROJECT_ROLE_INVALID");
+    }
+
+    private static object InvokeRequired(object target, string methodName, params object?[] arguments)
+    {
+        var method = target.GetType().GetMethod(methodName);
+        Assert.NotNull(method);
+        return method!.Invoke(target, arguments)!;
+    }
+
+    private static T ReadProperty<T>(object target, string propertyName)
+    {
+        var property = target.GetType().GetProperty(propertyName);
+        Assert.NotNull(property);
+        return Assert.IsAssignableFrom<T>(property!.GetValue(target));
+    }
+
+    private static object? ReadNullableProperty(object target, string propertyName)
+    {
+        var property = target.GetType().GetProperty(propertyName);
+        Assert.NotNull(property);
+        return property!.GetValue(target);
     }
 
     private static Project CreateProject(UserProfileId ownerId) =>
