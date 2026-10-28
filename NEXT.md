@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-09`](docs/plan/02-jalon-0-pilote.md#j0-09--écrans-du-projet--liste-vue-densemble-environnements-paramètres-membres) — Écrans du projet : liste, vue d'ensemble, environnements, paramètres, membres |
-| **Statut** | `EN_COURS` |
-| **Dernière étape terminée** | [`J0-08`](docs/plan/02-jalon-0-pilote.md#j0-08--assistant-de-création-de-projet) — Assistant de création de projet (commit `02a4ae5`) |
-| **Étape suivante** | `J0-10` — Composants et groupes de ressources |
+| **Étape courante** | [`J0-10`](docs/plan/02-jalon-0-pilote.md#j0-10--composants-et-groupes-de-ressources) — Composants et groupes de ressources |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`J0-09`](docs/plan/02-jalon-0-pilote.md#j0-09--écrans-du-projet--liste-vue-densemble-environnements-paramètres-membres) — Écrans du projet : liste, vue d'ensemble, environnements, paramètres, membres (commit `773695e`) |
+| **Étape suivante** | `J0-11` — Ressources : propriétés, surcharges, présence, existantes, enfants |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
-| **Dernière mise à jour** | 2026-10-28 — Codex (blocage résolu) |
+| **Dernière mise à jour** | 2026-10-28 — Codex |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
