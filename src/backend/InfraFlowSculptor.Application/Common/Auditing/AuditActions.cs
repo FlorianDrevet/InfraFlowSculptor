@@ -21,4 +21,7 @@ public static class AuditActions
     public const string ResourceGroupCreated = "component.resource_group.created";
     public const string ResourceGroupUpdated = "component.resource_group.updated";
     public const string ResourceGroupDeleted = "component.resource_group.deleted";
+    public const string ResourceCreated = "component.resource.created";
+    public const string ResourceUpdated = "component.resource.updated";
+    public const string ResourceDeleted = "component.resource.deleted";
 }

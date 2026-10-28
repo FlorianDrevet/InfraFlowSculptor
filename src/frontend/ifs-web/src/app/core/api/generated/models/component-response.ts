@@ -5,6 +5,7 @@ import { ComponentDeploymentMode } from '../models/component-deployment-mode';
 import { ComponentSingleTargetResponse } from '../models/component-single-target-response';
 import { RemovedResourceBehavior } from '../models/removed-resource-behavior';
 import { ResourceGroupResponse } from '../models/resource-group-response';
+import { ResourceResponse } from '../models/resource-response';
 export interface ComponentResponse {
   code: string;
   deletionProtectionEnabled: boolean;
@@ -16,6 +17,7 @@ export interface ComponentResponse {
   projectId: string;
   removedResourceBehavior: RemovedResourceBehavior;
   resourceGroups: Array<ResourceGroupResponse>;
+  resources: Array<ResourceResponse>;
   singleTarget: (null | ComponentSingleTargetResponse);
   tags: {
 [key: string]: string;

@@ -58,4 +58,16 @@ public static class EndpointNames
     public const string CreateResourceGroup = "CreateResourceGroup";
     public const string UpdateResourceGroup = "UpdateResourceGroup";
     public const string DeleteResourceGroup = "DeleteResourceGroup";
+    public const string AddResource = "AddResource";
+    public const string SetResourceProperties = "SetResourceProperties";
+    public const string SetOverride = "SetOverride";
+    public const string ClearOverride = "ClearOverride";
+    public const string SetPresence = "SetPresence";
+    public const string SetExistingResourceId = "SetExistingResourceId";
+    public const string SetForcedName = "SetForcedName";
+    public const string MoveResource = "MoveResource";
+    public const string DeleteResource = "DeleteResource";
+    public const string AddChild = "AddChild";
+    public const string UpdateChild = "UpdateChild";
+    public const string RemoveChild = "RemoveChild";
 }

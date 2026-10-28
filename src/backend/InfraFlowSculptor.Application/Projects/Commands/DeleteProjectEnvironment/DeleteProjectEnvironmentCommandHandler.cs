@@ -72,12 +72,12 @@ public sealed class DeleteProjectEnvironmentCommandHandler(
                 new Dictionary<string, object> { ["currentVersion"] = project.Version });
         }
 
-        var targetedComponents = await dbContext.Query<Component>()
-            .Where(component => component.ProjectId == projectId
-                && component.Mode == ComponentDeploymentMode.PerEnvironment
-                && !component.TargetsAllEnvironments
-                && component.TargetEnvironmentIds.Contains(command.EnvironmentId))
+        var projectComponents = await dbContext.Query<Component>()
+            .Where(component => component.ProjectId == projectId)
             .ToArrayAsync(cancellationToken);
+        var targetedComponents = projectComponents
+            .Where(component => component.TargetsEnvironment(command.EnvironmentId))
+            .ToArray();
         if (targetedComponents.Any(component => component.WouldLoseLastTargetAfterRemoving(command.EnvironmentId)))
         {
             return Error.Conflict(
@@ -112,10 +112,17 @@ public sealed class DeleteProjectEnvironmentCommandHandler(
 
         foreach (var component in targetedComponents)
         {
-            var targetRemoved = component.RemoveTargetEnvironment(command.EnvironmentId);
-            if (targetRemoved.IsError)
+            if (component.Mode == ComponentDeploymentMode.PerEnvironment && !component.TargetsAllEnvironments)
             {
-                return targetRemoved.Errors;
+                var targetRemoved = component.RemoveTargetEnvironment(command.EnvironmentId);
+                if (targetRemoved.IsError)
+                {
+                    return targetRemoved.Errors;
+                }
+            }
+            else
+            {
+                component.RemoveResourceTargetEnvironment(command.EnvironmentId);
             }
         }
 

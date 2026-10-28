@@ -5,6 +5,7 @@ export interface ComponentSingleTargetResponse {
   approvers: Array<string>;
   code: string;
   deploymentConnection: string;
+  id: string;
   isProtected: boolean;
   region: string;
   runners: Array<string>;

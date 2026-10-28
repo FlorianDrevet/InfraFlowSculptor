@@ -77,7 +77,8 @@ public sealed class CreateProjectFromWizardCommandHandler(
                 command.NamingPreset,
                 command.DefaultNameTemplate,
                 command.ResourceGroupNameTemplate),
-            command.Tags);
+            command.Tags,
+            []);
         var preview = NamingEngine.Preview(snapshot);
         if (preview.Issues.Count > 0)
         {

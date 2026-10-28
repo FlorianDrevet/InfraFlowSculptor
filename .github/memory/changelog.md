@@ -66,3 +66,4 @@
 | 2026-10-28 | Codex | J0-09 — écrans du projet terminés : favoris relationnels, formulaires Angular corrigés, 71 tests frontend et 261 tests backend verts ; revue Claude ciblée sans défaut bloquant ; CI complète 40660436427 verte, E2E et nettoyage des artefacts validés |
 | 2026-10-28 | Codex | Workflow front — comparaison visuelle itérative jusqu'à concordance trait pour trait ; registre des écrans sans maquette et preuve J0-09 non comparative signalée |
 | 2026-10-28 | Codex | J0-10 — composants `PerEnvironment`/`Single`, groupes et vues desktop/mobile ; CI 40692215159 valide 274 tests backend et 22 E2E, captures comparées et migration vérifiée, sans JSONB |
+| 2026-10-28 | Codex | J0-11 — ressources et valeurs imbriquées persistées relationnellement ; colonnes JSONB existantes converties en `text`, migration et tests garantissent qu'aucune colonne JSONB ne subsiste |

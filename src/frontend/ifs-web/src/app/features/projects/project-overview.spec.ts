@@ -50,6 +50,7 @@ describe('ProjectOverview', () => {
       firstPublishedAt: null,
       tags: {},
       resourceGroups: [],
+      resources: [],
     } as ComponentResponse;
     const service = {
       get: vi

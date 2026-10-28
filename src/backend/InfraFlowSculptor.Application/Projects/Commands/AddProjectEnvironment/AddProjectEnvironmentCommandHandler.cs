@@ -102,6 +102,14 @@ public sealed class AddProjectEnvironmentCommandHandler(
             return created.Errors;
         }
 
+        var components = await dbContext.Query<Component>()
+            .Where(component => component.ProjectId == projectId)
+            .ToArrayAsync(cancellationToken);
+        foreach (var component in components)
+        {
+            component.AddResourceTargetEnvironment(created.Value.Id);
+        }
+
         return new ModelCommandOutcome($"Environment {created.Value.Code} added at position {created.Value.Position}.", []);
     }
 }

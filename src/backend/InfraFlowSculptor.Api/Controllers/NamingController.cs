@@ -39,7 +39,8 @@ public static class NamingController
                         request.NamingPreset,
                         request.DefaultNameTemplate,
                         request.ResourceGroupNameTemplate),
-                    request.Tags ?? new Dictionary<string, string>());
+                    request.Tags ?? new Dictionary<string, string>(),
+                    []);
                 var preview = NamingEngine.Preview(snapshot);
                 return Results.Ok(new NamingPreviewResponse(
                     preview.Items.Select(item => new NamingPreviewItemResponse(

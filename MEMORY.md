@@ -26,6 +26,7 @@
 
 - **2026-10-27** : J0-07 ajoute les projets, environnements ordonnés, tags, commandes du modèle transactionnelles et suppression réversible ; 240 tests .NET et 64 tests frontend, OpenAPI et builds passent. Voir `.github/memory/03-domain-model.md`, `10-api-endpoints.md` et `docs/plan/recettes/suivi.md` (Scalar interactif non exécuté).
 - **2026-10-28** : J0-10 ajoute les composants `PerEnvironment`/`Single`, cibles, groupes de ressources, listes et réglages ; backend CI 274/274, frontend et E2E 22/22 desktop/mobile passent. Aucune colonne JSONB n'est ajoutée. Voir `.github/memory/03-domain-model.md`, `04-frontend.md`, `docs/design/maquette-v1/coverage.md` et `docs/plan/recettes/suivi.md`.
+- **2026-10-28** : J0-11 stocke les ressources et leurs valeurs imbriquées relationnellement, migre les anciennes colonnes JSONB vers `text` et interdit leur réintroduction. Détails et preuves dans `.github/memory/03-domain-model.md`, `05-data-and-storage.md` et `docs/plan/recettes/suivi.md`.
 
 ## Fichiers thématiques
 

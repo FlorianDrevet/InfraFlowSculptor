@@ -1,6 +1,7 @@
 namespace InfraFlowSculptor.Application.Components;
 
 public sealed record ComponentSingleTargetSummary(
+    Guid Id,
     string Code,
     Guid SubscriptionId,
     string Region,

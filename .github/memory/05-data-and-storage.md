@@ -39,3 +39,17 @@
 - L’accès applicatif orders utilise l’identité système de la Container App. `data-access.sql` crée un principal Entra avec le SID dérivé du ClientId, marque les principaux IFS par la propriété `ifs-managed` et refuse d’adopter un principal existant sans marqueur. `data-access-remove.sql` retire uniquement les rôles pris en charge et supprime seulement un principal marqué qui ne possède aucun objet.
 - Les scripts et manifestes sont vérifiés hors ligne; aucun abonnement, groupe Entra ou serveur SQL Azure n’a été utilisé pour cette étape.
 - J0-06 stocke les versions du catalogue comme JSON embarqués dans `InfraFlowSculptor.Catalog`; aucune table, migration ni ressource Azure n'est nécessaire. Le chargeur calcule une empreinte SHA-256 déterministe des documents de chaque version. La CI restaure les modules Bicep AVM épinglés dans son cache pour vérifier les correspondances sans connexion ni écriture Azure.
+
+## J0-11 — persistance sans PostgreSQL JSONB
+
+- Les valeurs métier de ressources sont relationnelles : nœuds scalaires et nœuds `array`/`object` typés, relations
+  dédiées pour propriétés, surcharges, présence, IDs existants, noms forcés, enfants et tags. Les arbres sont limités
+  en profondeur et en nombre de nœuds. Les valeurs `array`/`object` déclarent le type racine au catalogue et conservent
+  récursivement leurs valeurs imbriquées.
+- La migration `20261028141051_J0_11_ResourcesAndRelationalStorage` convertit les colonnes JSONB préexistantes
+  `project_wizard_drafts.content_json`, `audit_events.diff`, `idempotency_keys.response`,
+  `user_idempotency_keys.response` et `outbox_messages.payload` en `text`, en préservant leurs valeurs JSON. Elle ajoute
+  aussi les tables de ressources et l'ID persistant des cibles `Single`. Son `Down` refuse de rétablir JSONB.
+- Règle active : aucune colonne PostgreSQL `jsonb`. Le JSON sérialisé en `text` est réservé aux protocoles opaques
+  existants ; les données requêtables du modèle sont relationnelles. Test d'intégration `JsonbMigrationTests` vérifie
+  conservation des valeurs et zéro colonne `jsonb` après migration.

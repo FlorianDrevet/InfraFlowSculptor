@@ -1,4 +1,5 @@
 using ErrorOr;
+using System.Text.Json;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.OrganizationAggregate;
@@ -141,6 +142,65 @@ public sealed class ComponentAggregateTests
     }
 
     [Fact]
+    public void SingleComponentResourceUsesItsStableTargetIdInsteadOfAnEnvironmentId()
+    {
+        var (project, environments) = CreateProjectWithEnvironments();
+        var singleTarget = ComponentSingleTarget.Create(
+            project.Code,
+            "shared",
+            Guid.NewGuid(),
+            "francecentral",
+            null,
+            true,
+            TargetApprovers,
+            null,
+            environments,
+            ProjectRunners).Value;
+        var component = Component.Create(
+            new ComponentId(Guid.NewGuid()),
+            project.Id,
+            project.OrganizationId,
+            "Platform",
+            "platform",
+            "",
+            ComponentDeploymentMode.Single,
+            environments,
+            targetsAllEnvironments: false,
+            targetEnvironmentIds: [],
+            singleTarget).Value;
+        var group = component.AddResourceGroup(Guid.NewGuid(), "main").Value;
+        var resource = component.AddResource(
+            Guid.NewGuid(), group.Id, "KeyVault", "shared", "", true,
+            [singleTarget.Id], new Dictionary<string, JsonElement>()).Value;
+
+        Assert.False(resource.Presences.Single().IsPresent);
+        Assert.False(component.SetExistingResourceId(resource.Id, singleTarget.Id, "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/shared").IsError);
+        Assert.True(resource.Presences.Single().IsPresent);
+        Assert.True(resource.Presences.Single().TargetId == singleTarget.Id);
+        Assert.True(resource.ExistingIds.Single().TargetId == singleTarget.Id);
+
+        var replacementTarget = ComponentSingleTarget.Create(
+            project.Code, "shared", Guid.NewGuid(), "francecentral", null, true,
+            TargetApprovers, null, environments, ProjectRunners).Value;
+        Assert.NotEqual(singleTarget.Id, replacementTarget.Id);
+        var updated = component.Update(
+            component.Name,
+            component.Code,
+            component.Description,
+            ComponentDeploymentMode.Single,
+            environments,
+            targetsAllEnvironments: false,
+            selectedEnvironmentIds: [],
+            replacementTarget,
+            component.RemovedResourceBehavior,
+            component.DeletionProtectionEnabled);
+
+        Assert.False(updated.IsError);
+        Assert.Equal(singleTarget.Id, component.SingleTarget!.Id);
+        Assert.Contains(resource.Presences, presence => presence.TargetId == singleTarget.Id && presence.IsPresent);
+    }
+
+    [Fact]
     public void ResourceGroupCannotBeRemovedWhenItContainsResources()
     {
         var (project, environments) = CreateProjectWithEnvironments();
@@ -180,6 +240,84 @@ public sealed class ComponentAggregateTests
 
         Assert.True(duplicate.IsError);
         Assert.Contains(duplicate.Errors, error => error.Code == "RESOURCE_GROUP_NAME_DUPLICATE");
+    }
+
+    [Fact]
+    public void ResourceValuesAreStoredAsTypedTreeNodesAndOverridesCanBeClearedExplicitly()
+    {
+        var (project, environments) = CreateProjectWithEnvironments();
+        var component = CreateComponent(project, environments, "Core", "core").Value;
+        var group = component.AddResourceGroup(Guid.NewGuid(), "main").Value;
+        using var propertiesDocument = JsonDocument.Parse("""{"workloadProfiles":[{"name":"D4","minimumCount":2}],"zoneRedundant":false}""");
+        var properties = propertiesDocument.RootElement.EnumerateObject()
+            .ToDictionary(property => property.Name, property => property.Value.Clone(), StringComparer.Ordinal);
+
+        var created = component.AddResource(
+            Guid.NewGuid(), group.Id, "ContainerAppsEnvironment", "main", "", false,
+            environments.Select(environment => environment.Id), properties);
+
+        Assert.False(created.IsError);
+        Assert.Equal(2, created.Value.Presences.Count(presence => presence.IsPresent));
+        Assert.Equal(5, created.Value.Values.Count);
+        Assert.Contains(created.Value.Values, node => node.Kind == ResourceValueKind.WholeNumber && node.IntegerValue == 2);
+        Assert.Contains(created.Value.Values, node => node.Kind == ResourceValueKind.Sequence && node.Position is null);
+        var restoredProfiles = created.Value.GetProperties()["workloadProfiles"];
+        Assert.Equal("D4", restoredProfiles[0].GetProperty("name").GetString());
+        Assert.Equal(2, restoredProfiles[0].GetProperty("minimumCount").GetInt32());
+
+        using var emptyDocument = JsonDocument.Parse("\"\"");
+        var empty = emptyDocument.RootElement.Clone();
+        var environmentId = environments.First().Id;
+        var set = component.SetResourceOverride(created.Value.Id, environmentId, "zoneRedundant", empty);
+
+        Assert.False(set.IsError);
+        var overrideRoot = Assert.Single(created.Value.Values, node => node.TargetId == environmentId && node.ParentId is null);
+        Assert.Equal(ResourceValueKind.Textual, overrideRoot.Kind);
+        Assert.Equal(string.Empty, overrideRoot.StringValue);
+
+        var cleared = component.ClearResourceOverride(created.Value.Id, environmentId, "zoneRedundant");
+
+        Assert.False(cleared.IsError);
+        Assert.DoesNotContain(created.Value.Values, node => node.TargetId == environmentId);
+        Assert.Contains(created.Value.Values, node => node.TargetId is null && node.PropertyName == "zoneRedundant");
+    }
+
+    [Fact]
+    public void ResourceValuesRejectNestingBeyondTheRelationalTreeLimit()
+    {
+        var (project, environments) = CreateProjectWithEnvironments();
+        var component = CreateComponent(project, environments, "Core", "core").Value;
+        var group = component.AddResourceGroup(Guid.NewGuid(), "main").Value;
+        using var nestedValue = JsonDocument.Parse(new string('[', 33) + "0" + new string(']', 33));
+        var result = component.AddResource(
+            Guid.NewGuid(), group.Id, "ContainerAppsEnvironment", "main", "", false,
+            environments.Select(environment => environment.Id),
+            new Dictionary<string, JsonElement> { ["workloadProfiles"] = nestedValue.RootElement.Clone() });
+
+        Assert.True(result.IsError);
+        Assert.Contains(result.Errors, error => error.Code == "RESOURCE_PROPERTY_VALUE_INVALID");
+        Assert.Empty(component.Resources);
+    }
+
+    [Fact]
+    public void ExistingResourceStartsAbsentAndBecomesPresentAfterItsIdentifierIsSet()
+    {
+        var (project, environments) = CreateProjectWithEnvironments();
+        var component = CreateComponent(project, environments, "Core", "core").Value;
+        var group = component.AddResourceGroup(Guid.NewGuid(), "main").Value;
+        var created = component.AddResource(
+            Guid.NewGuid(), group.Id, "KeyVault", "legacy", "", true,
+            environments.Select(environment => environment.Id), new Dictionary<string, JsonElement>());
+
+        Assert.False(created.IsError);
+        Assert.All(created.Value.Presences, presence => Assert.False(presence.IsPresent));
+
+        var environmentId = environments.First().Id;
+        var assigned = component.SetExistingResourceId(created.Value.Id, environmentId,
+            "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/legacy");
+
+        Assert.False(assigned.IsError);
+        Assert.True(created.Value.Presences.Single(presence => presence.TargetId == environmentId).IsPresent);
     }
 
     private static ErrorOr<Component> CreateComponent(

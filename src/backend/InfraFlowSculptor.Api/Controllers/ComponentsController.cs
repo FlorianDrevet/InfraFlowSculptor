@@ -309,6 +309,7 @@ public static class ComponentsController
         component.TargetEnvironmentIds,
         component.SingleTarget is { } target
             ? new ComponentSingleTargetResponse(
+                target.Id,
                 target.Code,
                 target.SubscriptionId,
                 target.Region,
@@ -321,7 +322,8 @@ public static class ComponentsController
         component.DeletionProtectionEnabled,
         component.FirstPublishedAt,
         component.Tags,
-        component.ResourceGroups.Select(Map).ToArray());
+        component.ResourceGroups.Select(Map).ToArray(),
+        component.Resources.Select(Map).ToArray());
 
     private static ResourceGroupResponse Map(ResourceGroupSummary group) => new(
         group.Id,
@@ -330,4 +332,24 @@ public static class ComponentsController
         group.Region,
         group.Tags,
         group.ForcedNames);
+
+    private static ResourceResponse Map(ResourceSummary resource) => new(
+        resource.Id,
+        resource.Version,
+        resource.ResourceGroupId,
+        resource.Type,
+        resource.LogicalName,
+        resource.Description,
+        resource.IsExisting,
+        resource.Properties,
+        resource.Overrides,
+        resource.Presences,
+        resource.ExistingIds,
+        resource.ForcedNames,
+        resource.Tags,
+        resource.Children.Select(child => new ResourceChildResponse(
+            child.Id,
+            child.Type,
+            child.Name,
+            child.Properties)).ToArray());
 }

@@ -45,7 +45,7 @@ public sealed class UpdateComponentCommandHandler(
                 new Dictionary<string, object> { ["currentVersion"] = component.Version });
         }
 
-        var targetResult = CreateSingleTarget(command, project, catalogProvider);
+        var targetResult = CreateSingleTarget(command, project, catalogProvider, component.SingleTarget?.Id);
         if (targetResult.IsError)
         {
             return targetResult.Errors;
@@ -83,7 +83,8 @@ public sealed class UpdateComponentCommandHandler(
     private static ErrorOr<ComponentSingleTarget?> CreateSingleTarget(
         UpdateComponentCommand command,
         ProjectAggregate project,
-        ICatalogProvider catalogProvider)
+        ICatalogProvider catalogProvider,
+        Guid? targetId)
     {
         if (command.Mode != ComponentDeploymentMode.Single)
         {
@@ -100,7 +101,8 @@ public sealed class UpdateComponentCommandHandler(
             command.SingleTargetApprovers,
             command.SingleTargetRunners,
             project.Environments,
-            project.DefaultRunners);
+            project.DefaultRunners,
+            targetId);
         if (target.IsError)
         {
             return target.Errors;

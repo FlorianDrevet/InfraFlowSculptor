@@ -131,8 +131,9 @@ FluentValidation, forme de la requête seulement) → `UnitOfWorkBehavior` (comm
 - `IfsDbContext` (Infrastructure) implémente `IIfsDbContext` (Application, évolution E11) qui expose les
   `DbSet` en lecture pour les requêtes. Les gestionnaires de commande chargent et modifient les agrégats via
   le contexte ; l'enregistrement est fait **une fois** par `UnitOfWorkBehavior`.
-- Conventions : `snake_case`, `timestamptz` UTC, `jsonb` pour les instantanés et les différences, convertisseurs
-  des identifiants fortement typés, `version` jeton de concurrence, filtres globaux par organisation
+- Conventions : `snake_case`, `timestamptz` UTC, données métier en tables relationnelles ; JSON sérialisé en
+  `text` pour les protocoles opaques ; aucun type PostgreSQL `jsonb`. Convertisseurs des identifiants fortement typés,
+  `version` jeton de concurrence, filtres globaux par organisation
   ([DT-24](01-decisions.md#dt-24--isolation-multi-organisations)) et suppression logique des projets
   (30 jours, [UC-PRJ-04](../specs/11-projets-et-environnements.md)).
 - Migrations EF dans `Infrastructure/Persistence/Migrations/`, nommées par l'étape du plan

@@ -134,6 +134,7 @@ v1.MapOrganizationEndpoints();
 v1.MapInvitationEndpoints();
 v1.MapProjectEndpoints();
 v1.MapComponentEndpoints();
+v1.MapResourceEndpoints();
 v1.MapProjectWizardEndpoints();
 v1.MapNamingEndpoints();
 v1.MapFeatureEndpoints();

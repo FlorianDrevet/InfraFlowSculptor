@@ -167,7 +167,7 @@ administrateur et choisit l'organisation active. Le cadre des tests d'isolation 
 
 🔧 **À faire.**
 1. Table `audit_events (id, organization_id, project_id?, occurred_at, actor_kind, actor_ref, via
-   (Screen|Api|Mcp|Support), action, object_type, object_id, diff jsonb)` — **aucune donnée identifiante** :
+   (Screen|Api|Mcp|Support), action, object_type, object_id, diff text)` (différence JSON sérialisée) — **aucune donnée identifiante** :
    `actor_ref` est un identifiant opaque (`UserProfileId`, `ApiTokenId`, opérateur), le nom affiché est résolu **à la
    lecture** par jointure ; table `audit_personal_data (event_id, subject_user_id, field, value)` pour les valeurs
    personnelles d'une différence (adresse invitée, nom affiché) — le `diff` n'y garde que la marque `{"$personal":
@@ -333,7 +333,7 @@ en 3.
 🎯 **Objectif.** Créer un projet en six étapes, reprises sur n'importe quel poste, création atomique.
 
 🔧 **À faire.**
-1. `ProjectWizardDraft` (utilisateur, organisation, contenu `jsonb`, expiration 30 jours) ; commandes
+1. `ProjectWizardDraft` (utilisateur, organisation, contenu JSON sérialisé en `text`, expiration 30 jours) ; commandes
    `SaveWizardDraft`, `DiscardWizardDraft`, `CreateProjectFromWizard` (une transaction : projet,
    environnements, nommage, plan de publication facultatif, rôle propriétaire du créateur — [RG-PRJ-04](../specs/11-projets-et-environnements.md)).
 2. Créer le projet `InfraFlowSculptor.Engine` (pur, règles d'architecture de [technique 06 § 3](../technique/06-tests-et-qualite.md#3-tests-darchitecture-extraits-obligatoires))
@@ -420,9 +420,14 @@ l'abonnement C) ; dans chacun un groupe `main` ; essayer le code de cible `dev` 
 catalogue ne demande aucun code ([P7](../specs/01-principes.md)).
 
 🔧 **À faire.**
-1. `Resource` (dans `ComponentAggregate`) : type, nom logique, groupe, description, existante, propriétés
-   (`jsonb` : nom → valeur), surcharges (`EnvironmentOverride (EnvironmentId, Property, Value | Empty)`),
-   présences, identifiants existants par environnement, nom forcé par environnement, enfants, tags, version.
+1. `Resource` (dans `ComponentAggregate`) : type, nom logique, groupe, description, existante ; propriétés,
+   surcharges, présences, identifiants existants par environnement, nom forcé par environnement, enfants, tags et
+   version stockés relationnellement. Les valeurs scalaires sont typées ; les valeurs `array`/`object` sont des nœuds
+   relationnels ordonnés et récursifs, avec limites de profondeur et de nombre de nœuds. Le descripteur déclare le type
+   de conteneur racine ; les formes imbriquées sont conservées sans colonne JSON.
+1 bis. Interdire PostgreSQL `jsonb` dans tout le schéma : convertir les colonnes déjà livrées de brouillons,
+   d'audit, d'idempotence et d'outbox en `text` contenant le JSON sérialisé, en préservant leurs valeurs. Une migration
+   de J0-11 vérifie l'absence de colonnes `jsonb` ; `Down` refuse explicitement un retour arrière qui réintroduirait ce type.
 2. `PropertyValueValidator` (Application) : contrôle **à la saisie** de chaque valeur contre le descripteur
    (type, bornes, motif, énumération, dépréciation, irréversibilité, verrouillage après publication — [RG-RES-03](../specs/14-modele-des-ressources.md)) ;
    les trois cas hérité / vide / absent de [RG-RES-14](../specs/14-modele-des-ressources.md) : commande explicite
@@ -439,11 +444,12 @@ catalogue ne demande aucun code ([P7](../specs/01-principes.md)).
 ✅ **Vérification automatique.** Tests par règle ; un test « nouveau type sans code » : ajouter un descripteur de
 test dans le catalogue de test, créer une ressource de ce type par l'API → fonctionne sans modification ; isolation.
 
-🧪 **Test manuel.** Scalar : ajouter `kv main` à `core`, mettre `enablePurgeProtection=false` en surcharge `dev`,
-puis tenter de repasser `true → false` sur la valeur de la ressource après simulation de publication → refus
-expliquant l'irréversibilité.
+🧪 **Test manuel.** Scalar : ajouter `kv main` à `core` avec `purgeProtection=false` à la création, mettre cette
+propriété à `true` en surcharge `dev`, simuler une publication, puis tenter d'effacer la surcharge ou de repasser à
+`false` → refus `RESOURCE_PROPERTY_IRREVERSIBLE`.
 
-🧠 **Mémoire.** `03-domain-model.md` (ressources, surcharges), `05-data-and-storage.md` (`jsonb`).
+🧠 **Mémoire.** `03-domain-model.md` (ressources, surcharges), `05-data-and-storage.md` (stockage relationnel,
+payloads JSON opaques en `text`, interdiction globale de `jsonb`).
 
 ### J0-12 — Moteur : cibles, présences, valeurs effectives et tags
 
@@ -824,7 +830,7 @@ déterministe) ; `ReferenceOutputTests` étendu à **toute** l'arborescence.
    UPDATE`, donc aucune modification concurrente du modèle), construire le `ModelSnapshot` courant, le sérialiser en JSON
    canonique (`ifs-project/v1`) avec la version du catalogue, le langage et la plateforme, calculer son empreinte, et
    l'écrire dans `revision_inputs (revision_id pk, model_version, catalog_version, iac_language, ci_platform,
-   snapshot jsonb, sha256)` ; la révision `Queued` et le message d'outbox sont écrits dans **la même** transaction. Le
+   snapshot text, sha256)` (instantané JSON canonique sérialisé) ; la révision `Queued` et le message d'outbox sont écrits dans **la même** transaction. Le
    worker ne lit **que** `revision_inputs`, jamais le modèle courant. Test d'acceptation : worker suspendu, génération
    demandée sur v10, modèle modifié en v11, worker repris → fichiers et métadonnées correspondent à v10.
 2. Worker : `GenerateRevisionJobHandler` ; `OutputChecker` (CLI Bicep épinglée, cache AVM, schéma YAML,

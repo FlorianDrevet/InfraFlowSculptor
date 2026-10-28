@@ -31,7 +31,7 @@ public sealed class UserIdempotencyKeyEntity
 
     public int? StatusCode { get; set; }
 
-    public System.Text.Json.JsonElement? Response { get; set; }
+    public string? Response { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
 }

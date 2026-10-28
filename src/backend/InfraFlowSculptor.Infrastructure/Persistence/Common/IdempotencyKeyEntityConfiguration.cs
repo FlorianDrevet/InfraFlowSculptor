@@ -13,7 +13,7 @@ public sealed class IdempotencyKeyEntityConfiguration : IEntityTypeConfiguration
         builder.Property(key => key.Key).ValueGeneratedNever();
         builder.Property(key => key.RequestHash).HasMaxLength(64).IsRequired();
         builder.Property(key => key.StatusCode);
-        builder.Property(key => key.Response).HasColumnType("jsonb");
+        builder.Property(key => key.Response).HasColumnType("text");
         builder.Property(key => key.CreatedAt).IsRequired();
         builder.HasIndex(key => key.CreatedAt);
     }

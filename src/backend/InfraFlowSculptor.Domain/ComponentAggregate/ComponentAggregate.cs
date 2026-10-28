@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Text.Json;
 using ErrorOr;
 using InfraFlowSculptor.Domain.Common;
 using InfraFlowSculptor.Domain.Common.Identifiers;
@@ -19,6 +20,7 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
     private Guid[] targetEnvironmentIds = [];
     private readonly List<ComponentTag> tags = [];
     private readonly List<ResourceGroup> resourceGroups = [];
+    private readonly List<Resource> resources = [];
 
     public ProjectId ProjectId { get; private set; }
 
@@ -45,6 +47,8 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
     }
 
     public IReadOnlyCollection<ResourceGroup> ResourceGroups => resourceGroups.AsReadOnly();
+
+    public IReadOnlyCollection<Resource> Resources => resources.AsReadOnly();
 
     public IReadOnlyCollection<ComponentTag> Tags => tags.AsReadOnly();
 
@@ -256,6 +260,11 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
             return candidate.Errors;
         }
 
+        if (SingleTarget is { } currentTarget && candidate.Value.SingleTarget is { } updatedTarget)
+        {
+            updatedTarget.PreserveIdentity(currentTarget.Id);
+        }
+
         Name = candidate.Value.Name;
         Code = candidate.Value.Code;
         NameKey = candidate.Value.NameKey;
@@ -267,6 +276,7 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
         SingleTarget = candidate.Value.SingleTarget;
         RemovedResourceBehavior = candidate.Value.RemovedResourceBehavior;
         DeletionProtectionEnabled = candidate.Value.DeletionProtectionEnabled;
+        SynchronizeResourceTargets(projectEnvironments);
         Touch();
         return Result.Success;
     }
@@ -341,6 +351,182 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
         return Result.Success;
     }
 
+    public ErrorOr<Resource> AddResource(
+        Guid id,
+        Guid resourceGroupId,
+        string type,
+        string logicalName,
+        string? description,
+        bool isExisting,
+        IEnumerable<Guid> targetEnvironmentIds,
+        IReadOnlyDictionary<string, JsonElement> properties,
+        IEnumerable<KeyValuePair<string, string>>? tags = null)
+    {
+        if (!resourceGroups.Any(group => group.Id == resourceGroupId))
+        {
+            return Error.NotFound("RESOURCE_GROUP_NOT_FOUND", "The resource group was not found.");
+        }
+
+        if (resources.Any(resource => string.Equals(resource.Type, type?.Trim(), StringComparison.OrdinalIgnoreCase)
+            && string.Equals(resource.LogicalName, logicalName?.Trim(), StringComparison.OrdinalIgnoreCase)))
+        {
+            return Error.Conflict("RESOURCE_LOGICAL_NAME_DUPLICATE", "A resource with this logical name and type already exists in the component.");
+        }
+
+        var created = Resource.Create(
+            id,
+            ProjectId,
+            OrganizationId,
+            resourceGroupId,
+            type,
+            logicalName,
+            description,
+            isExisting,
+            targetEnvironmentIds,
+            properties,
+            tags);
+        if (created.IsError)
+        {
+            return created.Errors;
+        }
+
+        resources.Add(created.Value);
+        Touch();
+        return created.Value;
+    }
+
+    public ErrorOr<Success> SetResourceProperties(Guid resourceId, IReadOnlyDictionary<string, JsonElement> properties)
+    {
+        var resource = FindResource(resourceId);
+        if (resource is null)
+        {
+            return Error.NotFound("RESOURCE_NOT_FOUND", "The resource was not found.");
+        }
+
+        var updated = resource.SetProperties(properties);
+        if (updated.IsError)
+        {
+            return updated.Errors;
+        }
+
+        Touch();
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> SetResourceOverride(Guid resourceId, Guid targetId, string propertyName, JsonElement value) =>
+        UpdateResource(resourceId, resource => resource.SetOverride(targetId, propertyName, value));
+
+    public ErrorOr<Success> ClearResourceOverride(Guid resourceId, Guid targetId, string propertyName) =>
+        UpdateResource(resourceId, resource => resource.ClearOverride(targetId, propertyName));
+
+    public ErrorOr<Success> SetResourcePresence(Guid resourceId, Guid targetId, bool isPresent) =>
+        UpdateResource(resourceId, resource => resource.SetPresence(targetId, isPresent));
+
+    public ErrorOr<Success> SetExistingResourceId(Guid resourceId, Guid targetId, string value) =>
+        UpdateResource(resourceId, resource => resource.SetExistingResourceId(targetId, value));
+
+    public ErrorOr<Success> SetResourceForcedName(Guid resourceId, Guid targetId, string name) =>
+        UpdateResource(resourceId, resource => resource.SetForcedName(targetId, name));
+
+    public ErrorOr<ResourceChild> AddResourceChild(
+        Guid resourceId,
+        Guid childId,
+        string type,
+        string name,
+        IReadOnlyDictionary<string, JsonElement> properties)
+    {
+        var resource = FindResource(resourceId);
+        if (resource is null)
+        {
+            return Error.NotFound("RESOURCE_NOT_FOUND", "The resource was not found.");
+        }
+
+        var created = resource.AddChild(childId, type, name, properties);
+        if (created.IsError)
+        {
+            return created.Errors;
+        }
+
+        Touch();
+        return created.Value;
+    }
+
+    public ErrorOr<Success> UpdateResourceChild(
+        Guid resourceId,
+        Guid childId,
+        string name,
+        IReadOnlyDictionary<string, JsonElement> properties)
+    {
+        var resource = FindResource(resourceId);
+        if (resource is null)
+        {
+            return Error.NotFound("RESOURCE_NOT_FOUND", "The resource was not found.");
+        }
+
+        var updated = resource.UpdateChild(childId, name, properties);
+        if (updated.IsError)
+        {
+            return updated.Errors;
+        }
+
+        Touch();
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> RemoveResourceChild(Guid resourceId, Guid childId)
+    {
+        var resource = FindResource(resourceId);
+        if (resource is null)
+        {
+            return Error.NotFound("RESOURCE_NOT_FOUND", "The resource was not found.");
+        }
+
+        var removed = resource.RemoveChild(childId);
+        if (removed.IsError)
+        {
+            return removed.Errors;
+        }
+
+        Touch();
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> MoveResource(Guid resourceId, Guid resourceGroupId)
+    {
+        var resource = FindResource(resourceId);
+        if (resource is null)
+        {
+            return Error.NotFound("RESOURCE_NOT_FOUND", "The resource was not found.");
+        }
+
+        if (!resourceGroups.Any(group => group.Id == resourceGroupId))
+        {
+            return Error.NotFound("RESOURCE_GROUP_NOT_FOUND", "The resource group was not found.");
+        }
+
+        var moved = resource.MoveTo(resourceGroupId);
+        if (moved.IsError)
+        {
+            return moved.Errors;
+        }
+
+        Touch();
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> RemoveResource(Guid resourceId)
+    {
+        var resource = FindResource(resourceId);
+        if (resource is null)
+        {
+            return Error.NotFound("RESOURCE_NOT_FOUND", "The resource was not found.");
+        }
+
+        resources.Remove(resource);
+        Touch();
+        return Result.Success;
+    }
+
     public ErrorOr<Success> SetTags(IEnumerable<KeyValuePair<string, string>> values)
     {
         var normalized = values
@@ -402,14 +588,84 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
         }
 
         targetEnvironmentIds = targetEnvironmentIds.Where(id => id != environmentId).ToArray();
+        RemoveResourceTargetEnvironment(environmentId);
         Touch();
         return Result.Success;
+    }
+
+    public bool AddResourceTargetEnvironment(Guid environmentId)
+    {
+        if (!TargetsEnvironment(environmentId))
+        {
+            return false;
+        }
+
+        var changed = false;
+        foreach (var resource in resources)
+        {
+            changed |= resource.AddTarget(environmentId);
+        }
+        if (changed)
+        {
+            Touch();
+        }
+
+        return changed;
+    }
+
+    public bool RemoveResourceTargetEnvironment(Guid environmentId)
+    {
+        var changed = false;
+        foreach (var resource in resources)
+        {
+            changed |= resource.RemoveTarget(environmentId);
+        }
+
+        if (changed)
+        {
+            Touch();
+        }
+
+        return changed;
     }
 
     public bool HasSingleTargetCode(string environmentCode) =>
         Mode == ComponentDeploymentMode.Single
         && SingleTarget is not null
         && string.Equals(SingleTarget.Code, environmentCode, StringComparison.OrdinalIgnoreCase);
+
+    private Resource? FindResource(Guid id) => resources.SingleOrDefault(resource => resource.Id == id);
+
+    private ErrorOr<Success> UpdateResource(Guid id, Func<Resource, ErrorOr<Success>> update)
+    {
+        var resource = FindResource(id);
+        if (resource is null)
+        {
+            return Error.NotFound("RESOURCE_NOT_FOUND", "The resource was not found.");
+        }
+
+        var result = update(resource);
+        if (result.IsError)
+        {
+            return result.Errors;
+        }
+
+        Touch();
+        return Result.Success;
+    }
+
+    private void SynchronizeResourceTargets(IEnumerable<ProjectEnvironment> projectEnvironments)
+    {
+        var targetIds = Mode == ComponentDeploymentMode.PerEnvironment
+            ? projectEnvironments.Where(environment => TargetsEnvironment(environment.Id))
+                .Select(environment => environment.Id)
+                .ToArray()
+            : SingleTarget is { } target ? [target.Id] : [];
+        foreach (var resource in resources)
+        {
+            resource.SynchronizeTargets(targetIds);
+        }
+    }
 
     public ErrorOr<Success> EnsureCanBeDeleted() => FirstPublishedAt is null
         ? Result.Success

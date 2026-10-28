@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.ComponentModel.DataAnnotations.Schema;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.Common.Models;
@@ -11,7 +12,6 @@ public sealed class OutboxMessageEntity : IOrganizationOwned
 
     private OutboxMessageEntity()
     {
-        Payload = default;
     }
 
     public OutboxMessageEntity(OutboxMessageData message)
@@ -21,7 +21,7 @@ public sealed class OutboxMessageEntity : IOrganizationOwned
         Queue = message.Queue;
         SessionId = message.SessionId;
         Type = message.Type;
-        Payload = message.Payload;
+        PayloadJson = message.Payload.GetRawText();
         CreatedAt = message.CreatedAt;
         NextAttemptAt = message.CreatedAt;
     }
@@ -36,7 +36,10 @@ public sealed class OutboxMessageEntity : IOrganizationOwned
 
     public string Type { get; private set; } = string.Empty;
 
-    public JsonElement Payload { get; private set; }
+    public string PayloadJson { get; private set; } = "null";
+
+    [NotMapped]
+    public JsonElement Payload => JsonDocument.Parse(PayloadJson).RootElement.Clone();
 
     public DateTimeOffset CreatedAt { get; private set; }
 
@@ -51,7 +54,7 @@ public sealed class OutboxMessageEntity : IOrganizationOwned
     public void MarkSent(DateTimeOffset sentAt)
     {
         SentAt = sentAt;
-        Payload = JsonSerializer.SerializeToElement<object?>(null);
+        PayloadJson = "null";
     }
 
     public bool RecordFailure(DateTimeOffset now)
@@ -61,7 +64,7 @@ public sealed class OutboxMessageEntity : IOrganizationOwned
         {
             FailedAt = now;
             NextAttemptAt = null;
-            Payload = JsonSerializer.SerializeToElement<object?>(null);
+            PayloadJson = "null";
             return true;
         }
 

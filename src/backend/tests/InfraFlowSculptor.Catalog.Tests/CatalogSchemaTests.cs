@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using InfraFlowSculptor.Catalog;
 using Json.Schema;
 
@@ -34,6 +35,21 @@ public sealed class CatalogSchemaTests
         {
             AssertValid("schema/step.schema.json", Path.GetRelativePath(CatalogRoot, stepPath));
         }
+    }
+
+    [Fact]
+    public void ResourcePropertySchemaAllowsAnOptionalPattern()
+    {
+        var path = Path.Combine(PilotRoot, "types", "SqlServer.json");
+        var descriptor = JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+        var collation = descriptor["children"]![0]!["properties"]!.AsArray()
+            .Single(property => property!["name"]!.GetValue<string>() == "collation")!
+            .AsObject();
+        collation["pattern"] = "^[A-Za-z0-9_]+$";
+        var schema = JsonSchema.FromText(File.ReadAllText(Path.Combine(CatalogRoot, "schema", "resource-type.schema.json")));
+        using var candidate = JsonDocument.Parse(descriptor.ToJsonString());
+
+        Assert.True(schema.Evaluate(candidate.RootElement).IsValid);
     }
 
     [Fact]

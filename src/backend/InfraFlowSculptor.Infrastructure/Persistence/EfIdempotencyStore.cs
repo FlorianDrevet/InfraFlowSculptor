@@ -180,24 +180,24 @@ public sealed class EfIdempotencyStore(IfsDbContext dbContext, TimeProvider cloc
         if (entity is IdempotencyKeyEntity organizationEntity)
         {
             organizationEntity.StatusCode = response.StatusCode;
-            organizationEntity.Response = JsonSerializer.SerializeToElement(response);
+            organizationEntity.Response = JsonSerializer.Serialize(response);
             return;
         }
 
         if (entity is UserIdempotencyKeyEntity userEntity)
         {
             userEntity.StatusCode = response.StatusCode;
-            userEntity.Response = JsonSerializer.SerializeToElement(response);
+            userEntity.Response = JsonSerializer.Serialize(response);
             return;
         }
 
         throw new InvalidOperationException("The idempotency reservation no longer exists.");
     }
 
-    private static IdempotencyEntry ToEntry(string requestHash, int? statusCode, JsonElement? json)
+    private static IdempotencyEntry ToEntry(string requestHash, int? statusCode, string? json)
     {
-        var response = json is { } storedJson
-            ? JsonSerializer.Deserialize<IdempotencyResponse>(storedJson.GetRawText())
+        var response = json is not null
+            ? JsonSerializer.Deserialize<IdempotencyResponse>(json)
             : null;
 
         if (statusCode is not null && response is not null && response.StatusCode != statusCode)

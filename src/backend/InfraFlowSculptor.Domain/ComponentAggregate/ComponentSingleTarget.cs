@@ -9,6 +9,8 @@ public sealed partial class ComponentSingleTarget
     private string[] approvers = [];
     private string[] runners = [];
 
+    public Guid Id { get; private set; }
+
     public string Code { get; private set; } = string.Empty;
 
     public Guid SubscriptionId { get; private set; }
@@ -36,6 +38,7 @@ public sealed partial class ComponentSingleTarget
     }
 
     private ComponentSingleTarget(
+        Guid id,
         string code,
         Guid subscriptionId,
         string region,
@@ -44,6 +47,7 @@ public sealed partial class ComponentSingleTarget
         IEnumerable<string> approvers,
         IEnumerable<string> runners)
     {
+        Id = id;
         Code = code;
         SubscriptionId = subscriptionId;
         Region = region;
@@ -63,7 +67,8 @@ public sealed partial class ComponentSingleTarget
         IEnumerable<string>? approvers,
         IEnumerable<string>? runners,
         IEnumerable<ProjectEnvironment> projectEnvironments,
-        IEnumerable<string>? projectDefaultRunners)
+        IEnumerable<string>? projectDefaultRunners,
+        Guid? id = null)
     {
         var normalizedProjectCode = projectCode?.Trim() ?? string.Empty;
         var normalizedCode = string.IsNullOrWhiteSpace(code) ? "shared" : code.Trim();
@@ -115,6 +120,7 @@ public sealed partial class ComponentSingleTarget
         }
 
         return new ComponentSingleTarget(
+            id ?? Guid.NewGuid(),
             normalizedCode,
             subscriptionId,
             normalizedRegion,
@@ -122,6 +128,12 @@ public sealed partial class ComponentSingleTarget
             protectedTarget,
             normalizedApprovers,
             Normalize(runners ?? projectDefaultRunners ?? []));
+    }
+
+    internal void PreserveIdentity(Guid id)
+    {
+        ArgumentOutOfRangeException.ThrowIfEqual(id, Guid.Empty);
+        Id = id;
     }
 
     private static string[] Normalize(IEnumerable<string> values) => values

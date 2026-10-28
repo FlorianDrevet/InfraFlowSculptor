@@ -39,7 +39,8 @@ public sealed class DeleteResourceGroupCommandHandler(
                 new Dictionary<string, object> { ["currentVersion"] = component.Version });
         }
 
-        var deleted = component.RemoveResourceGroup(command.ResourceGroupId, containsResources: false);
+        var containsResources = component.Resources.Any(resource => resource.ResourceGroupId == command.ResourceGroupId);
+        var deleted = component.RemoveResourceGroup(command.ResourceGroupId, containsResources);
         return deleted.IsError
             ? deleted.Errors
             : new ModelCommandOutcome($"Resource group {command.ResourceGroupId:D} deleted.", []);

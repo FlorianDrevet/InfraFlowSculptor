@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json;
 using InfraFlowSculptor.Application.Common.Extensibility;
 using InfraFlowSculptor.Application.Common.ModelCommands;
 
@@ -52,6 +53,12 @@ public sealed class ModelCommandSerializerTests
         if (type == typeof(Guid))
         {
             return Guid.NewGuid();
+        }
+
+        if (type == typeof(JsonElement))
+        {
+            using var document = JsonDocument.Parse("{}");
+            return document.RootElement.Clone();
         }
 
         if (type == typeof(string))

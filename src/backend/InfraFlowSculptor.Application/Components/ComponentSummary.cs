@@ -17,4 +17,5 @@ public sealed record ComponentSummary(
     bool DeletionProtectionEnabled,
     DateTimeOffset? FirstPublishedAt,
     IReadOnlyDictionary<string, string> Tags,
-    IReadOnlyList<ResourceGroupSummary> ResourceGroups);
+    IReadOnlyList<ResourceGroupSummary> ResourceGroups,
+    IReadOnlyList<ResourceSummary> Resources);
