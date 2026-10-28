@@ -48,7 +48,7 @@ test('Alice parcourt et gère les écrans du projet', async ({ page, browser }) 
   });
 
   await openOrCreateRecipeProject(page, projectCode, projectName);
-  const projectId = new URL(page.url()).pathname.match(/\/projects\/([^/]+)/)?.[1];
+  const projectId = projectIdFromPath(new URL(page.url()).pathname);
   expect(projectId).toBeTruthy();
   await normalizeRecipeProject(page, projectCode, projectName);
   await page.goto(`/o/${CONTOSO_ID}/projects/${projectId}`);
@@ -261,6 +261,14 @@ function recipeProjectName(page: Page): string {
   return (page.viewportSize()?.width ?? 1440) <= 760 ? PROJECT_NAME_MOBILE : PROJECT_NAME_DESKTOP;
 }
 
+function projectIdFromPath(pathname: string): string | undefined {
+  return pathname.match(/\/projects\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})$/i)?.[1];
+}
+
+async function waitForProjectOverview(page: Page): Promise<void> {
+  await page.waitForURL((url) => projectIdFromPath(url.pathname) !== undefined);
+}
+
 async function openOrCreateRecipeProject(
   page: Page,
   projectCode: string,
@@ -275,7 +283,6 @@ async function openOrCreateRecipeProject(
       await deletedCard.getByRole('button', { name: 'Restaurer', exact: true }).click();
     } else {
       await createRecipeProject(page, projectCode, projectName);
-      await page.waitForURL(/\/projects\/[^/]+$/);
       return;
     }
     await page.goto(`/o/${CONTOSO_ID}/projects`);
@@ -283,7 +290,7 @@ async function openOrCreateRecipeProject(
     projectCard = page.locator('.projects-page__card').filter({ hasText: projectCode });
   }
 
-  const projectNavigation = page.waitForURL(/\/projects\/[^/]+$/);
+  const projectNavigation = waitForProjectOverview(page);
   await projectCard.locator('.projects-page__project-name').click();
   await projectNavigation;
 }
@@ -508,7 +515,7 @@ async function createRecipeProject(
   await page.getByRole('button', { name: 'Passer', exact: true }).click();
   await page.getByRole('button', { name: 'Créer le projet', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Projet créé' })).toBeVisible();
-  const projectNavigation = page.waitForURL(/\/projects\/[^/]+$/);
+  const projectNavigation = waitForProjectOverview(page);
   await page.getByRole('button', { name: 'Ouvrir le projet', exact: true }).click();
   await projectNavigation;
 }
@@ -576,7 +583,7 @@ async function normalizeRecipeProject(
     recipeCard.getByRole('button', { name: 'Ajouter aux favoris', exact: true }),
   ).toHaveAttribute('aria-pressed', 'false');
   await recipeCard.locator('.projects-page__project-name').click();
-  const projectId = new URL(page.url()).pathname.match(/\/projects\/([^/]+)/)?.[1];
+  const projectId = projectIdFromPath(new URL(page.url()).pathname);
   expect(projectId).toBeTruthy();
 
   await page.goto(`/o/${CONTOSO_ID}/projects/${projectId}/settings`);
