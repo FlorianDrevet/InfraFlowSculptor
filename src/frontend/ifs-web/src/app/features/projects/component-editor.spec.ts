@@ -124,6 +124,8 @@ describe('ComponentEditor', () => {
     );
     await harness.fixture.whenStable();
     harness.fixture.detectChanges();
+    const editor = harness.routeNativeElement?.querySelector<HTMLElement>('.component-editor');
+    expect(editor).not.toBeNull();
     const inputs = harness.routeNativeElement?.querySelectorAll<HTMLInputElement>('input') ?? [];
     const componentName = [...inputs].find((input) => input.name === 'componentName');
     const componentCode = [...inputs].find((input) => input.name === 'componentCode');

@@ -97,11 +97,17 @@ describe('ProjectOverview', () => {
       '.project-overview__components',
     );
     const componentRow = componentList?.querySelector<HTMLElement>('li');
+    const overview = harness.routeNativeElement?.querySelector<HTMLElement>('.project-overview');
+    const section = harness.routeNativeElement?.querySelector<HTMLElement>(
+      '.project-overview__section',
+    );
     const componentLink = harness.routeNativeElement?.querySelector<HTMLAnchorElement>(
       'a[href*="components/88888888-8888-4888-8888-888888888888"]',
     );
     expect(componentList).not.toBeNull();
     expect(componentRow).not.toBeNull();
+    expect(overview).not.toBeNull();
+    expect(section).not.toBeNull();
     expect(getComputedStyle(componentList!).display).toBe('grid');
     expect(getComputedStyle(componentRow!).display).toBe('flex');
     expect(componentLink && getComputedStyle(componentLink).display).toBe('flex');

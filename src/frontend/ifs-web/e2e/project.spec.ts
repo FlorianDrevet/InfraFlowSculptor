@@ -377,6 +377,7 @@ async function runComponentRecipe(
   await expect(page).toHaveURL(/\/components\/[0-9a-f-]+$/i);
   await expect(page.getByRole('heading', { name: 'Platform', exact: true })).toBeVisible();
   await createMainResourceGroup(page);
+  await expect(page.locator('.component-detail')).toHaveCSS('row-gap', '24px');
   await assertNoSeriousAccessibilityViolations(page);
   const platformDetailUrl = page.url();
   await page.screenshot({
@@ -385,6 +386,7 @@ async function runComponentRecipe(
   });
   await page.getByRole('link', { name: 'Réglages', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Platform', exact: true })).toBeVisible();
+  await expect(page.locator('.component-editor')).toHaveCSS('row-gap', '24px');
   await assertNoSeriousAccessibilityViolations(page);
   await page.screenshot({
     path: resolve(screenshotDirectory, `ComponentSettings-${viewportWidth}.png`),
@@ -396,6 +398,9 @@ async function runComponentRecipe(
   await expect(
     page.getByRole('heading', { name: "Composants, dans l'ordre de déploiement", exact: true }),
   ).toBeVisible();
+  await expect(page.locator('.project-workspace')).toHaveCSS('row-gap', '24px');
+  await expect(page.locator('.project-overview')).toHaveCSS('row-gap', '24px');
+  await expect(page.locator('.project-overview__section').first()).toHaveCSS('padding-top', '24px');
   await assertComponentSummaryLayout(page, viewportWidth);
   await assertNoSeriousAccessibilityViolations(page);
   await page.screenshot({

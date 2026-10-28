@@ -60,6 +60,8 @@ describe('ProjectWorkspace', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     const workspace = fixture.nativeElement as HTMLElement;
+    const workspaceSection = workspace.querySelector<HTMLElement>('.project-workspace');
+    expect(workspaceSection).not.toBeNull();
     expect(workspace.querySelector('h1')?.textContent).toContain('Ancien nom');
     projectUpdates.next(updatedProject);
     await fixture.whenStable();
