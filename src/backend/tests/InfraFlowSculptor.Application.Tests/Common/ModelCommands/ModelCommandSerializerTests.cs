@@ -69,6 +69,11 @@ public sealed class ModelCommandSerializerTests
             return true;
         }
 
+        if (type.IsEnum)
+        {
+            return Enum.GetValues(type).GetValue(0)!;
+        }
+
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IReadOnlyList<>))
         {
             var itemType = type.GetGenericArguments()[0];
@@ -79,9 +84,17 @@ public sealed class ModelCommandSerializerTests
             return values;
         }
 
-        if (type == typeof(IReadOnlyDictionary<string, string>))
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>))
         {
-            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["team"] = "platform" };
+            var arguments = type.GetGenericArguments();
+            var dictionaryType = typeof(Dictionary<,>).MakeGenericType(arguments);
+            var dictionary = Activator.CreateInstance(dictionaryType)!;
+            dictionaryType.GetMethod("Add")!.Invoke(dictionary,
+            [
+                CreateValue(arguments[0], "Key"),
+                CreateValue(arguments[1], "Value")
+            ]);
+            return dictionary;
         }
 
         var constructor = type.GetConstructors().SingleOrDefault();

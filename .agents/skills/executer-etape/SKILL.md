@@ -37,8 +37,28 @@ Codex : Claude fournit des constats, Codex les vérifie et reste responsable du 
 - Suis la liste 🔧 **dans l'ordre**, avec les noms, chemins et commandes exacts.
 - **Test d'abord** pour tout code exécutable : écris le test, vérifie qu'il échoue pour la bonne raison, implémente
   jusqu'au vert, refactorise.
-- Interface : libellés mot pour mot de la maquette ; uniquement les zones retenues ; composants `app-ds-*` et variables
-  `--ifs-*` ; captures 1440 et 390 dans `docs/plan/revues/captures/<prochain R-nn>/<écran>-<largeur>.png`.
+- Interface : avant le code, associe chaque route et état livré à son fichier `preview/<Écran>.html` et délimite les
+  zones du jalon. Pour chaque écran maquetté, lance le front et la référence à la même taille (1440×900), compare-les
+  côte à côte, puis corrige et recapture jusqu'à obtenir une concordance trait pour trait dans les zones du jalon :
+  structure, hiérarchie, libellés, typographie, couleurs, espacements, dimensions et états des composants. Aucune
+  différence visible n'est acceptée dans le périmètre de la maquette, sauf donnée dynamique ou zone explicitement
+  exclue par le jalon ; consigne alors cette différence et sa raison. Si l'ouverture `file://` est bloquée, sers la
+  référence en local. Une capture du front, les tests E2E et Axe ne remplacent pas cette comparaison. Conserve les
+  libellés mot pour mot, utilise les composants `app-ds-*` et variables `--ifs-*`, et ne copie pas les données
+  d'exemple dans le produit. Utilise si besoin des fixtures de recette correspondant à la maquette pour la comparaison,
+  sans figer ces valeurs en production.
+- Interface mobile : capture aussi l'application en 390×844 et vérifie son adaptation selon le README Strata et
+  RG-UI-16. Les maquettes étant en 1440 px, ne prétends pas à une comparaison pixel à pixel mobile sans maquette
+  mobile ; vérifie la hiérarchie, les contenus, les contrôles, l'absence de débordement et les règles responsive prévues.
+- Preuve visuelle : dans `docs/plan/revues/captures/<prochain R-nn>/`, conserve les captures du front
+  `<écran>-1440.png` et `<écran>-390.png`, ainsi que la référence rendue `<écran>-reference-1440.png`. Note dans
+  `docs/plan/recettes/suivi.md` ou l'auto-revue le fichier de maquette utilisé, les tailles comparées, les
+  itérations/corrections et le résultat. Ne déclare pas une fidélité exacte sans avoir regardé la comparaison finale.
+- Interface sans maquette dédiée : ajoute une entrée dans `docs/design/maquette-v1/coverage.md` avant ou au début de
+  l'implémentation, avec la mention explicite « Aucune maquette dédiée », la route/état, l'étape, la référence la plus
+  proche et les captures. Implémente au plus près de cette référence et de Strata ; consigne les écarts et ne revendique
+  pas une correspondance exacte avec une maquette inexistante. Si une décision produit importante reste impossible à
+  déduire, applique la règle `BLOQUE` ci-dessous.
 - Nouvelle route : scénario d'isolation déclaré, `.WithName()`, politique de débit, `dotnet build` (OpenAPI) puis
   `npm run api:generate`.
 - Écart avec le code réel (nom, signature) : suis le code réel en restant fidèle à l'intention ; note l'écart dans la

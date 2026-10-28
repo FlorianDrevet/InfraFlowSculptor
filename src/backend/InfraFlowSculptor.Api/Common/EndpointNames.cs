@@ -50,4 +50,12 @@ public static class EndpointNames
     public const string GetCatalogVersions = "GetCatalogVersions";
     public const string GetCatalogTypes = "GetCatalogTypes";
     public const string GetCatalogType = "GetCatalogType";
+    public const string ListProjectComponents = "ListProjectComponents";
+    public const string CreateProjectComponent = "CreateProjectComponent";
+    public const string GetProjectComponent = "GetProjectComponent";
+    public const string UpdateProjectComponent = "UpdateProjectComponent";
+    public const string DeleteProjectComponent = "DeleteProjectComponent";
+    public const string CreateResourceGroup = "CreateResourceGroup";
+    public const string UpdateResourceGroup = "UpdateResourceGroup";
+    public const string DeleteResourceGroup = "DeleteResourceGroup";
 }

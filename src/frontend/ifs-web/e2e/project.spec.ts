@@ -10,6 +10,7 @@ const PROJECT_NAME_MOBILE = 'Recette écrans J0-09 mobile';
 const PROJECT_CODE_DESKTOP = 'j009recipe';
 const PROJECT_CODE_MOBILE = 'j009mobi';
 const SUBSCRIPTION_ID = '00000000-0000-4000-8000-000000000001';
+const SUBSCRIPTION_C_ID = '00000000-0000-4000-8000-000000000003';
 
 test.afterEach(async ({ page }, testInfo) => {
   if (testInfo.status === 'skipped') {
@@ -38,7 +39,7 @@ test('Alice parcourt et gère les écrans du projet', async ({ page, browser }) 
   await expect(shopCard.locator('.projects-page__metadata dd').first()).toHaveText(/\d+/);
   await assertNoSeriousAccessibilityViolations(page);
 
-  const screenshotDirectory = resolve(process.cwd(), '../../../docs/plan/revues/captures/R-05');
+  const screenshotDirectory = resolve(process.cwd(), 'e2e/__captures__/R-05');
   await mkdir(screenshotDirectory, { recursive: true });
   const viewportWidth = page.viewportSize()?.width ?? 1440;
   await page.screenshot({
@@ -76,6 +77,7 @@ test('Alice parcourt et gère les écrans du projet', async ({ page, browser }) 
     path: resolve(screenshotDirectory, `ProjectOverview-${viewportWidth}.png`),
     fullPage: true,
   });
+  await runComponentRecipe(page, projectId!, screenshotDirectory, viewportWidth);
 
   await clickProjectNavigationLink(page, 'Environnements');
   await expect(page.getByRole('heading', { name: 'Environnements', exact: true })).toBeVisible();
@@ -304,6 +306,155 @@ async function clickProjectNavigationLink(page: Page, label: string): Promise<vo
   if ((page.viewportSize()?.width ?? 1440) <= 760) {
     await page.keyboard.press('Escape');
   }
+}
+
+async function runComponentRecipe(
+  page: Page,
+  projectId: string,
+  screenshotDirectory: string,
+  viewportWidth: number,
+): Promise<void> {
+  const projectUrl = `/o/${CONTOSO_ID}/projects/${projectId}`;
+  const componentsUrl = `${projectUrl}/components`;
+  await page.goto(componentsUrl);
+  await expect(page.getByRole('heading', { name: 'Composants', exact: true })).toBeVisible();
+  await assertNoSeriousAccessibilityViolations(page);
+  await page.screenshot({
+    path: resolve(screenshotDirectory, `Components-Empty-${viewportWidth}.png`),
+    fullPage: false,
+  });
+
+  await createPerEnvironmentComponent(page, componentsUrl, 'Core', 'core');
+  await createPerEnvironmentComponent(page, componentsUrl, 'Orders', 'orders');
+
+  await page.getByRole('link', { name: 'Créer un composant', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Nouveau composant', exact: true })).toBeVisible();
+  await page.locator('input[name="componentName"]').fill('Platform');
+  await page.locator('input[name="componentCode"]').fill('platform');
+  await page.getByRole('button', { name: 'Unique', exact: true }).click();
+  await page.locator('input[name="targetCode"]').fill('dev');
+  await page.locator('input[name="targetSubscription"]').fill(SUBSCRIPTION_C_ID);
+  await page.locator('input[name="targetRegion"]').fill('francecentral');
+  const rejectedCreate = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname === `/v1/projects/${projectId}/components` &&
+      response.request().method() === 'POST'
+    );
+  });
+  await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+  const rejectedResponse = await rejectedCreate;
+  expect(rejectedResponse.status()).toBe(409);
+  const conflict = (await rejectedResponse.json()) as { code: string };
+  expect(conflict.code).toBe('COMPONENT_SINGLE_TARGET_ENVIRONMENT_CODE_CONFLICT');
+  await expect(page.getByRole('alert')).toContainText('Le composant n’a pas pu être enregistré.');
+  await page.screenshot({
+    path: resolve(screenshotDirectory, `ComponentSettings-CodeConflict-${viewportWidth}.png`),
+    fullPage: false,
+  });
+
+  await page.locator('input[name="targetCode"]').fill('shared');
+  await assertNoSeriousAccessibilityViolations(page);
+  const platformCreate = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname === `/v1/projects/${projectId}/components` &&
+      response.request().method() === 'POST'
+    );
+  });
+  await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+  expect((await platformCreate).status()).toBe(201);
+  await expect(page).toHaveURL(/\/components\/[0-9a-f-]+$/i);
+  await expect(page.getByRole('heading', { name: 'Platform', exact: true })).toBeVisible();
+  await createMainResourceGroup(page);
+  await assertNoSeriousAccessibilityViolations(page);
+  const platformDetailUrl = page.url();
+  await page.screenshot({
+    path: resolve(screenshotDirectory, `Component-${viewportWidth}.png`),
+    fullPage: false,
+  });
+  await page.getByRole('link', { name: 'Réglages', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Platform', exact: true })).toBeVisible();
+  await assertNoSeriousAccessibilityViolations(page);
+  await page.screenshot({
+    path: resolve(screenshotDirectory, `ComponentSettings-${viewportWidth}.png`),
+    fullPage: false,
+  });
+  await page.goto(platformDetailUrl);
+
+  await page.goto(projectUrl);
+  await assertNoSeriousAccessibilityViolations(page);
+  await page.screenshot({
+    path: resolve(screenshotDirectory, `ProjectOverview-${viewportWidth}.png`),
+    fullPage: false,
+  });
+
+  await page.goto(componentsUrl);
+  await page.screenshot({
+    path: resolve(screenshotDirectory, `Components-${viewportWidth}.png`),
+    fullPage: false,
+  });
+  for (const code of ['core', 'orders', 'platform']) {
+    const componentLink = page.locator('.project-components__list a').filter({ hasText: code });
+    await expect(componentLink).toBeVisible();
+    await componentLink.click();
+    await expect(
+      page.getByRole('heading', {
+        name: code === 'core' ? 'Core' : code === 'orders' ? 'Orders' : 'Platform',
+        exact: true,
+      }),
+    ).toBeVisible();
+    const group = page.locator('.component-detail__groups li').filter({ hasText: 'main' });
+    await expect(group).toBeVisible();
+    await group.getByRole('button', { name: 'Supprimer', exact: true }).click();
+    await group.getByRole('button', { name: 'Supprimer', exact: true }).click();
+    await expect(group).toHaveCount(0);
+    await page.getByRole('link', { name: 'Réglages', exact: true }).click();
+    const componentDelete = page.locator('.component-editor__delete');
+    await componentDelete
+      .getByRole('button', { name: 'Supprimer le composant', exact: true })
+      .click();
+    await componentDelete
+      .getByRole('button', { name: 'Supprimer le composant', exact: true })
+      .click();
+    await expect(page).toHaveURL(componentsUrl);
+  }
+  await expect(page.locator('.project-components__list li')).toHaveCount(0);
+}
+
+async function createPerEnvironmentComponent(
+  page: Page,
+  componentsUrl: string,
+  name: string,
+  code: string,
+): Promise<void> {
+  await page.goto(componentsUrl);
+  await page.getByRole('link', { name: 'Créer un composant', exact: true }).click();
+  await page.locator('input[name="componentName"]').fill(name);
+  await page.locator('input[name="componentCode"]').fill(code);
+  const response = page.waitForResponse((candidate) => {
+    const url = new URL(candidate.url());
+    return url.pathname.endsWith('/components') && candidate.request().method() === 'POST';
+  });
+  await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+  expect((await response).status()).toBe(201);
+  await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+  await createMainResourceGroup(page);
+}
+
+async function createMainResourceGroup(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Ajouter un groupe de ressources', exact: true }).click();
+  const groupForm = page.locator('.component-detail__group-form');
+  await groupForm.locator('input[name="groupName"]').fill('main');
+  const response = page.waitForResponse((candidate) => {
+    const url = new URL(candidate.url());
+    return url.pathname.endsWith('/resource-groups') && candidate.request().method() === 'POST';
+  });
+  await groupForm.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+  expect((await response).status()).toBe(201);
+  await expect(
+    page.locator('.component-detail__groups li').filter({ hasText: 'main' }),
+  ).toBeVisible();
 }
 
 async function createRecipeProject(

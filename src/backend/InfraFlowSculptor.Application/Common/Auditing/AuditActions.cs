@@ -15,4 +15,10 @@ public static class AuditActions
     public const string ProjectRoleAssigned = "project.role.assigned";
     public const string ProjectRoleRemoved = "project.role.removed";
     public const string ProjectOwnershipTaken = "project.ownership.taken";
+    public const string ComponentCreated = "component.created";
+    public const string ComponentUpdated = "component.updated";
+    public const string ComponentDeleted = "component.deleted";
+    public const string ResourceGroupCreated = "component.resource_group.created";
+    public const string ResourceGroupUpdated = "component.resource_group.updated";
+    public const string ResourceGroupDeleted = "component.resource_group.deleted";
 }

@@ -2,6 +2,7 @@ using ErrorOr;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Domain.Common.Identifiers;
+using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.OrganizationAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Domain.UserProfileAggregate;
@@ -69,6 +70,12 @@ public sealed class ListProjectsQueryHandler(
             .Where(favorite => favorite.UserProfileId == userProfileId)
             .Select(favorite => favorite.ProjectId)
             .ToHashSetAsync(cancellationToken);
+        var visibleProjectIds = visibleProjects.Select(project => project.Id).ToArray();
+        var componentCounts = await dbContext.Query<ComponentAggregate>()
+            .Where(component => visibleProjectIds.Contains(component.ProjectId))
+            .GroupBy(component => component.ProjectId)
+            .Select(group => new { ProjectId = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(item => item.ProjectId, item => item.Count, cancellationToken);
         var summaries = visibleProjects
             .OrderByDescending(project => favoriteProjectIds.Contains(project.Id))
             .ThenBy(project => project.Name, StringComparer.OrdinalIgnoreCase)
@@ -80,6 +87,7 @@ public sealed class ListProjectsQueryHandler(
                 project.Description,
                 project.ModelVersion,
                 project.Environments.Count,
+                componentCounts.GetValueOrDefault(project.Id),
                 project.FirstPublishedAt,
                 project.DeletedAt,
                 project.TenantId,

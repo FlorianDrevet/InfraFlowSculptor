@@ -3,6 +3,7 @@ using InfraFlowSculptor.Application.Common.ModelCommands;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Catalog;
+using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.Common.Security;
 using InfraFlowSculptor.Domain.ProjectAggregate;
@@ -10,6 +11,8 @@ using Mediator;
 using Microsoft.EntityFrameworkCore;
 
 namespace InfraFlowSculptor.Application.Projects.Commands.AddProjectEnvironment;
+
+using Component = InfraFlowSculptor.Domain.ComponentAggregate.ComponentAggregate;
 
 public sealed class AddProjectEnvironmentCommandHandler(
     IIfsDbContext dbContext,
@@ -59,6 +62,19 @@ public sealed class AddProjectEnvironmentCommandHandler(
         {
             return Error.Conflict("CONFLICT_VERSION", "The project changed. Reload it before adding an environment.",
                 new Dictionary<string, object> { ["currentVersion"] = project.Version });
+        }
+
+        var targetCodeConflict = await dbContext.Query<Component>()
+            .AnyAsync(component => component.ProjectId == projectId
+                && component.Mode == ComponentDeploymentMode.Single
+                && component.SingleTarget != null
+                && component.SingleTarget.Code == command.Code.Trim(),
+                cancellationToken);
+        if (targetCodeConflict)
+        {
+            return Error.Conflict(
+                "COMPONENT_SINGLE_TARGET_ENVIRONMENT_CODE_CONFLICT",
+                "An environment code cannot match a Single component target code.");
         }
 
         var catalogVersion = catalogProvider.GetVersion(project.CatalogVersion);

@@ -19,6 +19,8 @@ public static class IsolationScenarios
     private const string TestJobId = "55555555-5555-4555-8555-555555555555";
     private const string TestMemberId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
     private const string TestInvitationId = "66666666-6666-4666-8666-666666666666";
+    private const string TestComponentId = "77777777-7777-4777-8777-777777777777";
+    private const string TestResourceGroupId = "88888888-8888-4888-8888-888888888888";
     private const string TestInvitationToken = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
     private static readonly string ShopProjectId = DemoDataSeeder.ShopProjectId.Value.ToString("D");
     private static readonly string[] MemberRoles = ["Member"];
@@ -242,6 +244,92 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}",
                 HttpStatusCode.NotFound),
+            ["ListProjectComponents"] = OrganizationScenario(
+                "ListProjectComponents",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/components",
+                HttpStatusCode.NotFound),
+            ["CreateProjectComponent"] = OrganizationWriteScenario(
+                "CreateProjectComponent",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/components",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    name = "Isolated component",
+                    code = "isolated",
+                    description = "",
+                    mode = "PerEnvironment",
+                    targetsAllEnvironments = true,
+                    targetEnvironmentIds = Array.Empty<Guid>(),
+                    singleTarget = (object?)null,
+                    removedResourceBehavior = "Detach",
+                    deletionProtectionEnabled = true,
+                    tags = new Dictionary<string, string>(),
+                    expectedVersion = 1
+                }),
+            ["GetProjectComponent"] = OrganizationScenario(
+                "GetProjectComponent",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}",
+                HttpStatusCode.NotFound),
+            ["UpdateProjectComponent"] = OrganizationWriteScenario(
+                "UpdateProjectComponent",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    name = "Isolated component",
+                    code = "isolated",
+                    description = "",
+                    mode = "PerEnvironment",
+                    targetsAllEnvironments = true,
+                    targetEnvironmentIds = Array.Empty<Guid>(),
+                    singleTarget = (object?)null,
+                    removedResourceBehavior = "Detach",
+                    deletionProtectionEnabled = true,
+                    tags = new Dictionary<string, string>(),
+                    expectedVersion = 1
+                }),
+            ["DeleteProjectComponent"] = OrganizationWriteScenario(
+                "DeleteProjectComponent",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}",
+                HttpStatusCode.NotFound,
+                new { expectedVersion = 1 }),
+            ["CreateResourceGroup"] = OrganizationWriteScenario(
+                "CreateResourceGroup",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resource-groups",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    name = "main",
+                    region = (string?)null,
+                    tags = new Dictionary<string, string>(),
+                    forcedNames = new Dictionary<Guid, string>(),
+                    expectedVersion = 1
+                }),
+            ["UpdateResourceGroup"] = OrganizationWriteScenario(
+                "UpdateResourceGroup",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resource-groups/{TestResourceGroupId}",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    name = "main",
+                    region = (string?)null,
+                    tags = new Dictionary<string, string>(),
+                    forcedNames = new Dictionary<Guid, string>(),
+                    expectedVersion = 1
+                }),
+            ["DeleteResourceGroup"] = OrganizationWriteScenario(
+                "DeleteResourceGroup",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resource-groups/{TestResourceGroupId}",
+                HttpStatusCode.NotFound,
+                new { expectedVersion = 1 }),
             ["SetProjectFavorite"] = OrganizationWriteScenario(
                 "SetProjectFavorite",
                 HttpMethod.Put,
@@ -360,10 +448,11 @@ public static class IsolationScenarios
         string name,
         HttpMethod method,
         string path,
-        HttpStatusCode expectedStatusCode) =>
+        HttpStatusCode expectedStatusCode,
+        object? body = null) =>
         new(name, _ =>
         {
-            var request = CreateRequest(method, path, CreateDavidToken(), null);
+            var request = CreateRequest(method, path, CreateDavidToken(), body);
             request.Headers.Add("X-Ifs-Organization", ContosoOrganizationId);
             request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
             return request;

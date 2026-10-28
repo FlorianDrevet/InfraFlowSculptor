@@ -2,6 +2,7 @@ using ErrorOr;
 using InfraFlowSculptor.Application.Common.ModelCommands;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
+using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.Common.Security;
 using InfraFlowSculptor.Domain.ProjectAggregate;
@@ -9,6 +10,8 @@ using Mediator;
 using Microsoft.EntityFrameworkCore;
 
 namespace InfraFlowSculptor.Application.Projects.Commands.DeleteProjectEnvironment;
+
+using Component = InfraFlowSculptor.Domain.ComponentAggregate.ComponentAggregate;
 
 public sealed class DeleteProjectEnvironmentCommandHandler(
     IIfsDbContext dbContext,
@@ -69,11 +72,24 @@ public sealed class DeleteProjectEnvironmentCommandHandler(
                 new Dictionary<string, object> { ["currentVersion"] = project.Version });
         }
 
+        var targetedComponents = await dbContext.Query<Component>()
+            .Where(component => component.ProjectId == projectId
+                && component.Mode == ComponentDeploymentMode.PerEnvironment
+                && !component.TargetsAllEnvironments
+                && component.TargetEnvironmentIds.Contains(command.EnvironmentId))
+            .ToArrayAsync(cancellationToken);
+        if (targetedComponents.Any(component => component.WouldLoseLastTargetAfterRemoving(command.EnvironmentId)))
+        {
+            return Error.Conflict(
+                "COMPONENT_TARGET_REQUIRED",
+                "The environment cannot be deleted while it is the only target of a PerEnvironment component.");
+        }
+
         if (!command.ConfirmDeletion)
         {
             return Error.Conflict(
                 "ENVIRONMENT_DELETE_CONFIRMATION_REQUIRED",
-                "Review the affected environment data and confirm deletion. No components or resources are modeled in J0-07.",
+                "Review the affected environment and component targets, then confirm deletion.",
                 new Dictionary<string, object>
                 {
                     ["affectedData"] = new Dictionary<string, object>
@@ -82,10 +98,25 @@ public sealed class DeleteProjectEnvironmentCommandHandler(
                         ["name"] = environment.Name,
                         ["tags"] = environment.Tags.ToDictionary(tag => tag.Key, tag => tag.Value),
                         ["approvers"] = environment.Approvers,
-                        ["runnerOverrides"] = environment.Runners
+                        ["runnerOverrides"] = environment.Runners,
+                        ["components"] = targetedComponents.Select(component => new
+                        {
+                            id = component.Id.Value,
+                            component.Name,
+                            component.Code
+                        }).ToArray()
                     },
                     ["affectedResources"] = Array.Empty<string>()
                 });
+        }
+
+        foreach (var component in targetedComponents)
+        {
+            var targetRemoved = component.RemoveTargetEnvironment(command.EnvironmentId);
+            if (targetRemoved.IsError)
+            {
+                return targetRemoved.Errors;
+            }
         }
 
         var deleted = project.RemoveEnvironment(command.EnvironmentId);

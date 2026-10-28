@@ -8,6 +8,7 @@ public sealed record ProjectSummaryResponse(
     string Description,
     int ModelVersion,
     int EnvironmentCount,
+    int ComponentCount,
     DateTimeOffset? FirstPublishedAt,
     DateTimeOffset? DeletedAt,
     Guid TenantId,

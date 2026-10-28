@@ -2,6 +2,7 @@ using ErrorOr;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Application.Projects;
+using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Domain.UserProfileAggregate;
@@ -37,6 +38,8 @@ public sealed class GetProjectQueryHandler(IIfsDbContext dbContext, ICurrentUser
                 .AnyAsync(favorite => favorite.UserProfileId == new UserProfileId(userProfileId.Value)
                     && favorite.ProjectId == project.Id,
                     cancellationToken);
+        var componentCount = await dbContext.Query<ComponentAggregate>()
+            .CountAsync(candidate => candidate.ProjectId == project.Id, cancellationToken);
 
         return new ProjectSummary(
             project.Id.Value,
@@ -46,6 +49,7 @@ public sealed class GetProjectQueryHandler(IIfsDbContext dbContext, ICurrentUser
             project.Description,
             project.ModelVersion,
             project.Environments.Count,
+            componentCount,
             project.FirstPublishedAt,
             project.DeletedAt,
             project.TenantId,

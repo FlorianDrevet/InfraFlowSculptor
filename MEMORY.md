@@ -55,7 +55,7 @@
 2. Un seul moteur de calcul (`InfraFlowSculptor.Engine`), pur ; le frontend ne calcule rien.
 3. La sortie de référence (`reference/`) fait foi pour les émetteurs.
 4. Chaque route a son test d'isolation (EXG-01).
-5. Maquette = libellés et disposition ; Strata = valeurs (tokens) ; rien d'un jalon ultérieur n'apparaît.
+5. Maquette = libellés et disposition ; comparer le rendu à la référence en itérant ; sans maquette, inscrire l'écran dans [`docs/design/maquette-v1/coverage.md`](docs/design/maquette-v1/coverage.md) et suivre Strata au plus près. Rien d'un jalon ultérieur n'apparaît.
 
 ## Commandes
 

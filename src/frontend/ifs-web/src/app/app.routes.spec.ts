@@ -53,12 +53,7 @@ describe('routes', () => {
     );
     expect(projectListRoute?.loadComponent).toBeDefined();
     expect(deletedProjectsRoute?.data).toEqual({ includeDeleted: true });
-    expect(projectWorkspaceRoute?.children?.map((route) => route.path)).toEqual([
-      '',
-      'environments',
-      'environments/:environmentId',
-      'settings',
-      'members',
-    ]);
+    expect(projectWorkspaceRoute?.loadComponent).toBeDefined();
+    expect(projectWorkspaceRoute?.loadChildren).toBeDefined();
   });
 });
