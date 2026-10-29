@@ -102,3 +102,6 @@
 | 2026-10-29 08:48 | Codex | `J0-15` terminée | commit `c2ae2f5` |
 | 2026-10-29 11:19 | Codex | `J0-16` terminée | commit `170aeff` |
 | 2026-10-29 11:52 | Codex | `J0-17` terminée | commit `7f77630` |
+| 2026-10-29 12:44 | Codex | `J0-18` recette autonome à exécuter |  |
+| 2026-10-29 13:27 | Codex | `J0-18` reprise après recette autonome vérifiée |  |
+| 2026-10-29 13:36 | Codex | `J0-18` terminée | commit `44060e3` |
