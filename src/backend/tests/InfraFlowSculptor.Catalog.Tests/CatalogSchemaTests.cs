@@ -11,29 +11,168 @@ public sealed class CatalogSchemaTests
     private static readonly string CatalogRoot = Path.Combine(AppContext.BaseDirectory, "catalog");
     private static readonly string PilotRoot = Path.Combine(CatalogRoot, "2026.10-pilot");
 
+    private static IEnumerable<string> CatalogVersionDirectories() => Directory.GetDirectories(CatalogRoot)
+        .Where(path => File.Exists(Path.Combine(path, "catalog.json")))
+        .OrderBy(path => path, StringComparer.Ordinal);
+
     [Fact]
-    public void PublishedPilotContainsNineResourceDescriptors()
+    public void CatalogVersionSchemaAcceptsPatchReleaseOfPilot()
+    {
+        var schema = JsonSchema.FromText(File.ReadAllText(Path.Combine(CatalogRoot, "schema", "catalog-version.schema.json")));
+        using var candidate = JsonDocument.Parse("""
+            {
+              "version": "2026.10-pilot.2",
+              "status": "published",
+              "publishedAt": "2026-10-29",
+              "supportEndsAt": null,
+              "notes": "Correctif du catalogue pilote.",
+              "verifiedAgainstDocsOn": "2026-10-29"
+            }
+            """);
+
+        var result = schema.Evaluate(candidate.RootElement);
+
+        Assert.True(result.IsValid, result.ToString());
+    }
+
+    [Fact]
+    public void LogAnalyticsAccessIsEnabledByPatchWithoutMutatingPinnedPilot()
+    {
+        var provider = CatalogLoader.Load(typeof(CatalogLoader).Assembly);
+        var original = provider.GetVersion("2026.10-pilot");
+        var accessPatch = provider.GetVersion("2026.10-pilot.1");
+        var exposurePatch = provider.GetVersion("2026.10-pilot.2");
+        var latestPatch = provider.GetVersion("2026.10-pilot.3");
+        Assert.NotNull(original);
+        Assert.NotNull(accessPatch);
+        Assert.NotNull(exposurePatch);
+        Assert.NotNull(latestPatch);
+
+        var originalTargetLinks = original.GetResourceType("LogAnalyticsWorkspace")!.Definition
+            .GetProperty("links").GetProperty("asTarget").EnumerateArray();
+        var patchTargetLinks = accessPatch.GetResourceType("LogAnalyticsWorkspace")!.Definition
+            .GetProperty("links").GetProperty("asTarget").EnumerateArray();
+        var exposurePatchTargetLinks = exposurePatch.GetResourceType("LogAnalyticsWorkspace")!.Definition
+            .GetProperty("links").GetProperty("asTarget").EnumerateArray();
+        var latestPatchTargetLinks = latestPatch.GetResourceType("LogAnalyticsWorkspace")!.Definition
+            .GetProperty("links").GetProperty("asTarget").EnumerateArray();
+
+        Assert.DoesNotContain(originalTargetLinks, kind => kind.GetString() == "Access");
+        Assert.Contains(patchTargetLinks, kind => kind.GetString() == "Access");
+        Assert.Contains(exposurePatchTargetLinks, kind => kind.GetString() == "Access");
+        Assert.Contains(latestPatchTargetLinks, kind => kind.GetString() == "Access");
+        Assert.Equal("2026.10-pilot.3", provider.LatestPublished?.Version);
+    }
+
+    [Fact]
+    public void ExposurePropertiesArePublishedOnlyForTypesThatSupportThem()
+    {
+        var provider = CatalogLoader.Load(typeof(CatalogLoader).Assembly);
+        var original = provider.GetVersion("2026.10-pilot")!;
+        var accessPatch = provider.GetVersion("2026.10-pilot.1")!;
+        var exposurePatch = provider.GetVersion("2026.10-pilot.2")!;
+        var supportedTypes = new[] { "ContainerRegistry", "KeyVault", "SqlServer" };
+
+        foreach (var type in supportedTypes)
+        {
+            var descriptor = exposurePatch.GetResourceType(type)!;
+            var properties = descriptor.Definition.GetProperty("properties").EnumerateArray().ToArray();
+            var exposure = properties.Single(property => property.GetProperty("name").GetString() == "exposure");
+            var allowedRanges = properties.Single(property => property.GetProperty("name").GetString() == "allowedIpRanges");
+            var modes = descriptor.Definition.GetProperty("exposure").GetProperty("modes")
+                .EnumerateArray().Select(mode => mode.GetString()).ToArray();
+
+            Assert.Equal("enum", exposure.GetProperty("kind").GetString());
+            Assert.Equal("Public", exposure.GetProperty("default").GetString());
+            Assert.True(exposure.GetProperty("overridable").GetBoolean());
+            Assert.Equal(modes, exposure.GetProperty("values").EnumerateArray().Select(value => value.GetString()).ToArray());
+            Assert.Equal("array", allowedRanges.GetProperty("kind").GetString());
+            Assert.True(allowedRanges.GetProperty("overridable").GetBoolean());
+            Assert.Equal(100, allowedRanges.GetProperty("maxItems").GetInt32());
+            Assert.Equal("requires:exposure=Restricted", allowedRanges.GetProperty("condition").GetString());
+            Assert.Equal("string", allowedRanges.GetProperty("items").GetProperty("kind").GetString());
+            Assert.Equal("ipv4Cidr", allowedRanges.GetProperty("items").GetProperty("format").GetString());
+
+            Assert.DoesNotContain(original.GetResourceType(type)!.Definition.GetProperty("properties").EnumerateArray(),
+                property => property.GetProperty("name").GetString() == "exposure");
+            Assert.DoesNotContain(accessPatch.GetResourceType(type)!.Definition.GetProperty("properties").EnumerateArray(),
+                property => property.GetProperty("name").GetString() == "exposure");
+        }
+
+        foreach (var descriptor in exposurePatch.ResourceTypes.Where(resourceType => !supportedTypes.Contains(resourceType.Type)))
+        {
+            Assert.DoesNotContain(descriptor.Definition.GetProperty("properties").EnumerateArray(),
+                property => property.GetProperty("name").GetString() is "exposure" or "allowedIpRanges");
+        }
+    }
+
+    [Fact]
+    public void PublishedPilotVersionsContainNineResourceDescriptors()
     {
         var provider = CatalogLoader.Load(typeof(CatalogLoader).Assembly);
 
-        Assert.Equal(9, Assert.Single(provider.GetVersions()).ResourceTypes.Length);
+        Assert.Equal(9, provider.GetVersion("2026.10-pilot")!.ResourceTypes.Length);
+        Assert.Equal(9, provider.GetVersion("2026.10-pilot.1")!.ResourceTypes.Length);
+        Assert.Equal(9, provider.GetVersion("2026.10-pilot.2")!.ResourceTypes.Length);
+        Assert.Equal(9, provider.GetVersion("2026.10-pilot.3")!.ResourceTypes.Length);
+    }
+
+    [Fact]
+    public void ContainerBuildProfileIsAddedAsANewPublishedPatch()
+    {
+        var provider = CatalogLoader.Load(typeof(CatalogLoader).Assembly);
+        var containerCatalog = provider.GetVersion("2026.10-pilot.3");
+
+        Assert.NotNull(containerCatalog);
+        Assert.Equal("2026.10-pilot.3", provider.LatestPublished?.Version);
+
+        var buildProfilePath = Path.Combine(CatalogRoot, "2026.10-pilot.3", "build-profiles", "Container.json");
+        Assert.True(File.Exists(buildProfilePath), "The Container profile must be published in its own catalog patch.");
+
+        using var profile = JsonDocument.Parse(File.ReadAllText(buildProfilePath));
+        Assert.Equal("Container", profile.RootElement.GetProperty("name").GetString());
+        Assert.Equal("2026.10-pilot.2", provider.GetVersion("2026.10-pilot.2")?.Version);
+
+        Assert.Empty(provider.GetVersion("2026.10-pilot.2")!.BuildProfiles);
+        Assert.Equal("ContainerApp", containerCatalog.BuildProfiles.Single().ResourceTypes.Single());
+        Assert.Collection(
+            containerCatalog.BuildProfiles.Single().Steps,
+            step => Assert.Equal("DependencyCache", step),
+            step => Assert.Equal("ImageScan", step));
+        Assert.Contains(containerCatalog.PipelineSteps, step => step.Name == "DependencyCache" && step.DefaultEnabled);
+        var imageScan = Assert.Single(containerCatalog.PipelineSteps.Where(step => step.Name == "ImageScan"));
+        Assert.True(imageScan.DefaultBlocking);
+        Assert.Equal("CRITICAL", imageScan.Parameters.Single(parameter => parameter.Name == "minimumSeverity").DefaultValue);
     }
 
     [Fact]
     public void EveryCatalogDocumentSatisfiesItsPublishedSchema()
     {
-        AssertValid("schema/catalog-version.schema.json", "2026.10-pilot/catalog.json");
-        AssertValid("schema/regions.schema.json", "2026.10-pilot/regions.json");
-        AssertValid("schema/role-catalog.schema.json", "2026.10-pilot/roles.json");
-
-        foreach (var descriptorPath in Directory.GetFiles(Path.Combine(PilotRoot, "types"), "*.json"))
+        foreach (var versionDirectory in CatalogVersionDirectories())
         {
-            AssertValid("schema/resource-type.schema.json", Path.GetRelativePath(CatalogRoot, descriptorPath));
-        }
+            var version = Path.GetFileName(versionDirectory);
+            AssertValid("schema/catalog-version.schema.json", $"{version}/catalog.json");
+            AssertValid("schema/regions.schema.json", $"{version}/regions.json");
+            AssertValid("schema/role-catalog.schema.json", $"{version}/roles.json");
 
-        foreach (var stepPath in Directory.GetFiles(Path.Combine(PilotRoot, "steps"), "*.json"))
-        {
-            AssertValid("schema/step.schema.json", Path.GetRelativePath(CatalogRoot, stepPath));
+            foreach (var descriptorPath in Directory.GetFiles(Path.Combine(versionDirectory, "types"), "*.json"))
+            {
+                AssertValid("schema/resource-type.schema.json", Path.GetRelativePath(CatalogRoot, descriptorPath));
+            }
+
+            foreach (var stepPath in Directory.GetFiles(Path.Combine(versionDirectory, "steps"), "*.json"))
+            {
+                AssertValid("schema/step.schema.json", Path.GetRelativePath(CatalogRoot, stepPath));
+            }
+
+            var buildProfilesDirectory = Path.Combine(versionDirectory, "build-profiles");
+            if (Directory.Exists(buildProfilesDirectory))
+            {
+                foreach (var profilePath in Directory.GetFiles(buildProfilesDirectory, "*.json"))
+                {
+                    AssertValid("schema/build-profile.schema.json", Path.GetRelativePath(CatalogRoot, profilePath));
+                }
+            }
         }
     }
 
@@ -60,32 +199,37 @@ public sealed class CatalogSchemaTests
 
         foreach (var version in provider.GetVersions().Where(candidate => candidate.Status == "published"))
         {
-            var expected = hashes.RootElement.GetProperty(version.Version).GetString();
-            Assert.Equal(expected, version.Fingerprint);
+            Assert.True(
+                hashes.RootElement.TryGetProperty(version.Version, out var expected),
+                $"Add {version.Version} to published-hashes.json with fingerprint {version.Fingerprint}.");
+            Assert.Equal(expected.GetString(), version.Fingerprint);
         }
     }
 
     [Fact]
     public void EveryResourceDescriptorRoleExistsInThePinnedRoleCatalog()
     {
-        using var rolesDocument = JsonDocument.Parse(File.ReadAllText(Path.Combine(PilotRoot, "roles.json")));
-        var roleNames = rolesDocument.RootElement.GetProperty("roles")
-            .EnumerateArray()
-            .Select(role => role.GetProperty("name").GetString())
-            .ToHashSet(StringComparer.Ordinal);
-
-        foreach (var path in Directory.GetFiles(Path.Combine(PilotRoot, "types"), "*.json"))
+        foreach (var versionDirectory in CatalogVersionDirectories())
         {
-            using var descriptor = JsonDocument.Parse(File.ReadAllText(path));
-            var directRoles = descriptor.RootElement.GetProperty("roles").EnumerateArray()
-                .Select(role => role.GetString()!);
-            var equivalentRoles = descriptor.RootElement.GetProperty("roleEquivalences")
-                .EnumerateObject()
-                .SelectMany(group => group.Value.EnumerateArray())
-                .Select(role => role.GetString()!);
-            foreach (var role in directRoles.Concat(equivalentRoles))
+            using var rolesDocument = JsonDocument.Parse(File.ReadAllText(Path.Combine(versionDirectory, "roles.json")));
+            var roleNames = rolesDocument.RootElement.GetProperty("roles")
+                .EnumerateArray()
+                .Select(role => role.GetProperty("name").GetString())
+                .ToHashSet(StringComparer.Ordinal);
+
+            foreach (var path in Directory.GetFiles(Path.Combine(versionDirectory, "types"), "*.json"))
             {
-                Assert.Contains(role, roleNames);
+                using var descriptor = JsonDocument.Parse(File.ReadAllText(path));
+                var directRoles = descriptor.RootElement.GetProperty("roles").EnumerateArray()
+                    .Select(role => role.GetString()!);
+                var equivalentRoles = descriptor.RootElement.GetProperty("roleEquivalences")
+                    .EnumerateObject()
+                    .SelectMany(group => group.Value.EnumerateArray())
+                    .Select(role => role.GetString()!);
+                foreach (var role in directRoles.Concat(equivalentRoles))
+                {
+                    Assert.Contains(role, roleNames);
+                }
             }
         }
     }
@@ -93,39 +237,43 @@ public sealed class CatalogSchemaTests
     [Fact]
     public void EveryBicepMappingMatchesAParameterInItsRestoredAvmModule()
     {
-        using var pins = JsonDocument.Parse(File.ReadAllText(Path.Combine(PilotRoot, "pins.json")));
-        var modules = pins.RootElement.GetProperty("modules");
         var bicepCacheRoot = Environment.GetEnvironmentVariable("BICEP_CACHE_ROOT")
             ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".bicep", "br", "mcr.microsoft.com");
 
-        foreach (var descriptorPath in Directory.GetFiles(Path.Combine(PilotRoot, "types"), "*.json"))
+        foreach (var versionDirectory in CatalogVersionDirectories())
         {
-            using var descriptor = JsonDocument.Parse(File.ReadAllText(descriptorPath));
-            var generation = descriptor.RootElement.GetProperty("generation").GetProperty("Bicep");
-            var moduleReference = generation.GetProperty("module").GetString()!;
-            var versionPin = generation.GetProperty("versionPin").GetString()!;
-            var module = modules.EnumerateObject()
-                .Select(property => property.Value)
-                .Single(pin => pin.GetProperty("reference").GetString() == moduleReference);
-            var pinnedVersion = module.GetProperty("version").GetString()!;
-            Assert.Equal($"{pinnedVersion}.0", versionPin);
+            using var pins = JsonDocument.Parse(File.ReadAllText(Path.Combine(versionDirectory, "pins.json")));
+            var modules = pins.RootElement.GetProperty("modules");
 
-            var relativeModulePath = moduleReference
-                .Replace("br/public:", string.Empty, StringComparison.Ordinal)
-                .Split(':', 2)[0]
-                .Replace('/', '$');
-            var cacheModuleName = "bicep$" + relativeModulePath;
-            var moduleJson = Path.Combine(bicepCacheRoot, cacheModuleName, versionPin + "$", "main.json");
-            Assert.True(File.Exists(moduleJson), $"Restore the pinned module before testing: {moduleJson}");
-
-            using var moduleDocument = JsonDocument.Parse(File.ReadAllText(moduleJson));
-            var parameterNames = moduleDocument.RootElement.GetProperty("parameters")
-                .EnumerateObject()
-                .Select(parameter => parameter.Name)
-                .ToHashSet(StringComparer.Ordinal);
-            foreach (var mapping in generation.GetProperty("map").EnumerateObject())
+            foreach (var descriptorPath in Directory.GetFiles(Path.Combine(versionDirectory, "types"), "*.json"))
             {
-                Assert.Contains(mapping.Value.GetString()!, parameterNames);
+                using var descriptor = JsonDocument.Parse(File.ReadAllText(descriptorPath));
+                var generation = descriptor.RootElement.GetProperty("generation").GetProperty("Bicep");
+                var moduleReference = generation.GetProperty("module").GetString()!;
+                var versionPin = generation.GetProperty("versionPin").GetString()!;
+                var module = modules.EnumerateObject()
+                    .Select(property => property.Value)
+                    .Single(pin => pin.GetProperty("reference").GetString() == moduleReference);
+                var pinnedVersion = module.GetProperty("version").GetString()!;
+                Assert.Equal($"{pinnedVersion}.0", versionPin);
+
+                var relativeModulePath = moduleReference
+                    .Replace("br/public:", string.Empty, StringComparison.Ordinal)
+                    .Split(':', 2)[0]
+                    .Replace('/', '$');
+                var cacheModuleName = "bicep$" + relativeModulePath;
+                var moduleJson = Path.Combine(bicepCacheRoot, cacheModuleName, versionPin + "$", "main.json");
+                Assert.True(File.Exists(moduleJson), $"Restore the pinned module before testing: {moduleJson}");
+
+                using var moduleDocument = JsonDocument.Parse(File.ReadAllText(moduleJson));
+                var parameterNames = moduleDocument.RootElement.GetProperty("parameters")
+                    .EnumerateObject()
+                    .Select(parameter => parameter.Name)
+                    .ToHashSet(StringComparer.Ordinal);
+                foreach (var mapping in generation.GetProperty("map").EnumerateObject())
+                {
+                    Assert.Contains(mapping.Value.GetString()!, parameterNames);
+                }
             }
         }
     }
@@ -133,23 +281,26 @@ public sealed class CatalogSchemaTests
     [Fact]
     public void RegionsAndPinnedAzurePipelinesSchemaMatchTheirSourceData()
     {
-        using var regions = JsonDocument.Parse(File.ReadAllText(Path.Combine(PilotRoot, "regions.json")));
-        var regionItems = regions.RootElement.GetProperty("regions").EnumerateArray().ToArray();
-        Assert.Equal(24, regionItems.Length);
-        Assert.Equal(24, regionItems.Select(region => region.GetProperty("name").GetString()).Distinct().Count());
-        Assert.Equal(24, regionItems.Select(region => region.GetProperty("code").GetString()).Distinct().Count());
+        foreach (var versionDirectory in CatalogVersionDirectories())
+        {
+            using var regions = JsonDocument.Parse(File.ReadAllText(Path.Combine(versionDirectory, "regions.json")));
+            var regionItems = regions.RootElement.GetProperty("regions").EnumerateArray().ToArray();
+            Assert.Equal(24, regionItems.Length);
+            Assert.Equal(24, regionItems.Select(region => region.GetProperty("name").GetString()).Distinct().Count());
+            Assert.Equal(24, regionItems.Select(region => region.GetProperty("code").GetString()).Distinct().Count());
 
-        using var pins = JsonDocument.Parse(File.ReadAllText(Path.Combine(PilotRoot, "pins.json")));
-        var expectedHash = pins.RootElement
-            .GetProperty("pipelineValidation")
-            .GetProperty("azurePipelinesSchema")
-            .GetProperty("sha256")
-            .GetString()!;
-        var actualHash = Convert.ToHexString(SHA256.HashData(
-            File.ReadAllBytes(Path.Combine(PilotRoot, "schemas", "azure-pipelines.json"))))
-            .ToLowerInvariant();
+            using var pins = JsonDocument.Parse(File.ReadAllText(Path.Combine(versionDirectory, "pins.json")));
+            var expectedHash = pins.RootElement
+                .GetProperty("pipelineValidation")
+                .GetProperty("azurePipelinesSchema")
+                .GetProperty("sha256")
+                .GetString()!;
+            var actualHash = Convert.ToHexString(SHA256.HashData(
+                File.ReadAllBytes(Path.Combine(versionDirectory, "schemas", "azure-pipelines.json"))))
+                .ToLowerInvariant();
 
-        Assert.Equal(expectedHash, actualHash);
+            Assert.Equal(expectedHash, actualHash);
+        }
     }
 
     private static void AssertValid(string schemaRelativePath, string documentRelativePath)

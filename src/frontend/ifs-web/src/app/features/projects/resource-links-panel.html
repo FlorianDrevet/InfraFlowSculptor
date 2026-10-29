@@ -1,0 +1,365 @@
+<section class="resource-links" aria-labelledby="resource-links-heading">
+  <header class="resource-links__header">
+    <div>
+      <h3 id="resource-links-heading">{{ 'resource.outgoingLinks' | transloco }}</h3>
+      <p>{{ 'resource.linksHelp' | transloco: { name: resource().logicalName } }}</p>
+    </div>
+    @if (canEdit() && !resource().isExisting) {
+      <app-ds-button
+        variant="primary"
+        [disabled]="loading() || options().length === 0"
+        (click)="openAdd()"
+      >
+        {{ 'resource.addLink' | transloco }}
+      </app-ds-button>
+    }
+  </header>
+
+  @if (loading()) {
+    <p role="status">{{ 'resource.loadingLinks' | transloco }}</p>
+  } @else if (loadError()) {
+    <p role="alert" class="resource-links__error">{{ 'resource.linksLoadError' | transloco }}</p>
+    <app-ds-button variant="secondary" (click)="reload()">{{
+      'resource.retry' | transloco
+    }}</app-ds-button>
+  } @else {
+    @if (links()?.outgoing?.length) {
+      <ul class="resource-links__list">
+        @for (link of links()!.outgoing; track link.id) {
+          <li
+            class="resource-links__item"
+            [class.resource-links__item--implicit]="link.origin === 'Implicit'"
+          >
+            <div class="resource-links__main">
+              <span class="resource-links__kind">{{
+                localizedLabel(link.kindLabelFr, link.kindLabelEn)
+              }}</span>
+              <span class="resource-links__direction">{{ 'resource.linkUses' | transloco }}</span>
+              <span class="resource-links__target"
+                ><code>{{ linkComponentCode(link, true) }}</code> / {{ linkName(link, true) }}</span
+              >
+            </div>
+            <p class="resource-links__origin" [attr.title]="implicitOriginLabel(link)">
+              <span class="resource-links__origin-marker" aria-hidden="true"></span>
+              <span>{{ implicitOriginLabel(link) }}</span>
+              @if (link.origin === 'Implicit') {
+                <em>{{ 'resource.derivedLink' | transloco }}</em>
+              }
+            </p>
+            <div class="resource-links__details">
+              @if (link.roles.length) {
+                <span>{{ link.roles.join(', ') }}</span>
+              }
+              @if (link.identityKind !== 'None') {
+                <span>{{ identityLabel(link.identityKind, link.identityResourceId) }}</span>
+              }
+              @if (link.createsDeploymentDependency) {
+                <span>{{ 'resource.deploymentDependency' | transloco }}</span>
+              }
+            </div>
+            @if (link.findings.length) {
+              <ul class="resource-links__findings">
+                @for (finding of link.findings; track finding.code) {
+                  <li>{{ finding.message }}</li>
+                }
+              </ul>
+            }
+            @if (link.origin === 'Explicit' && canEdit()) {
+              <app-ds-button
+                size="sm"
+                variant="ghost"
+                [disabled]="saving()"
+                (click)="requestRemoval(link)"
+              >
+                {{ 'resource.removeLink' | transloco }}
+              </app-ds-button>
+            }
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="resource-links__empty">{{ 'resource.noOutgoingLinks' | transloco }}</p>
+    }
+
+    @if (links()?.incoming?.length) {
+      <section class="resource-links__incoming" aria-labelledby="incoming-links-heading">
+        <h4 id="incoming-links-heading">{{ 'resource.incomingLinks' | transloco }}</h4>
+        <ul class="resource-links__list">
+          @for (link of links()!.incoming; track link.id) {
+            <li
+              class="resource-links__item"
+              [class.resource-links__item--implicit]="link.origin === 'Implicit'"
+            >
+              <div class="resource-links__main">
+                <span class="resource-links__kind">{{
+                  localizedLabel(link.kindLabelFr, link.kindLabelEn)
+                }}</span>
+                <span class="resource-links__direction">{{
+                  'resource.linkUsedBy' | transloco
+                }}</span>
+                <span class="resource-links__target"
+                  ><code>{{ linkComponentCode(link, false) }}</code> /
+                  {{ linkName(link, false) }}</span
+                >
+              </div>
+              <p class="resource-links__origin" [attr.title]="implicitOriginLabel(link)">
+                <span class="resource-links__origin-marker" aria-hidden="true"></span>
+                <span>{{ implicitOriginLabel(link) }}</span>
+                @if (link.origin === 'Implicit') {
+                  <em>{{ 'resource.derivedLink' | transloco }}</em>
+                }
+              </p>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+    @if (removalError()) {
+      <p class="resource-links__error" role="alert">
+        {{ 'resource.linkRemovalError' | transloco }}
+      </p>
+    }
+  }
+
+  @if (addOpen()) {
+    <div class="resource-links__backdrop">
+      <section
+        class="resource-links__dialog"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="'resource.addLink' | transloco"
+        tabindex="-1"
+        cdkTrapFocus
+        [cdkTrapFocusAutoCapture]="true"
+      >
+        <header>
+          <h3>{{ 'resource.addLinkFrom' | transloco: { name: resource().logicalName } }}</h3>
+          <p>{{ 'resource.addLinkHelp' | transloco }}</p>
+        </header>
+        <div class="resource-links__form">
+          <fieldset class="resource-links__kind-options">
+            <legend>{{ 'resource.linkType' | transloco }}</legend>
+            @for (option of options(); track option.kind) {
+              <button
+                type="button"
+                class="resource-links__kind-option"
+                [attr.aria-pressed]="selectedKindKey() === option.kind"
+                (click)="selectKind(option.kind)"
+              >
+                {{ localizedLabel(option.labelFr, option.labelEn) }}
+              </button>
+            }
+          </fieldset>
+          <label>
+            {{ 'resource.linkTarget' | transloco }}
+            <select [ngModel]="selectedTargetId()" (ngModelChange)="selectTarget($event)">
+              @for (target of selectedKind()?.targets ?? []; track target.resourceId) {
+                <option [value]="target.resourceId">{{ targetOptionLabel(target) }}</option>
+              }
+            </select>
+          </label>
+          @if (selectedTarget()?.identities?.length) {
+            <label>
+              {{ 'resource.linkIdentity' | transloco }}
+              <select [ngModel]="selectedIdentityKey()" (ngModelChange)="selectIdentity($event)">
+                @for (
+                  identity of selectedTarget()!.identities;
+                  track identity.kind + ':' + identity.resourceId
+                ) {
+                  <option [value]="identity.kind + ':' + (identity.resourceId ?? '')">
+                    {{ identityLabel(identity.kind, identity.resourceName)
+                    }}{{
+                      identity.isDefault ? ' · ' + ('resource.defaultIdentity' | transloco) : ''
+                    }}
+                  </option>
+                }
+              </select>
+            </label>
+          }
+          @if (selectedTarget()?.roles?.length) {
+            <fieldset class="resource-links__choices">
+              <legend>{{ 'resource.linkRoles' | transloco }}</legend>
+              @for (role of selectedTarget()!.roles; track role) {
+                <label
+                  ><input
+                    type="checkbox"
+                    [checked]="selectedRoles().includes(role)"
+                    (change)="toggleRole(role, $any($event.target).checked)"
+                  />{{ role }}</label
+                >
+              }
+            </fieldset>
+          }
+          @if (selectedTarget()?.dataAccessLevels?.length) {
+            <label>
+              {{ 'resource.dataAccessLevel' | transloco }}
+              <select [ngModel]="selectedDataAccess()" (ngModelChange)="selectDataAccess($event)">
+                @for (level of selectedTarget()!.dataAccessLevels; track level) {
+                  <option [value]="level">{{ dataAccessLabel(level) }}</option>
+                }
+              </select>
+            </label>
+          }
+
+          <section class="resource-links__preview" aria-labelledby="link-preview-heading">
+            <h4 id="link-preview-heading">{{ 'resource.linkPreviewHeading' | transloco }}</h4>
+            @if (previewBusy()) {
+              <p role="status">{{ 'resource.linkPreviewLoading' | transloco }}</p>
+            }
+            @if (previewError()) {
+              <p class="resource-links__error" role="alert">
+                {{ 'resource.linkPreviewError' | transloco }}
+              </p>
+            }
+            @if (previewResult(); as preview) {
+              @for (
+                assignment of preview.roleAssignments;
+                track assignment.environmentId +
+                  assignment.roleName +
+                  assignment.principalResourceId
+              ) {
+                <p>
+                  {{ assignment.environmentCode }} : {{ assignment.roleName }} →
+                  {{ assignment.principalResourceName }} → {{ assignment.scopeResourceName }}
+                </p>
+              }
+              @for (
+                identity of preview.identities;
+                track identity.environmentId + identity.resourceId
+              ) {
+                <p>
+                  {{ identity.environmentCode }} : {{ 'resource.identityActivation' | transloco }}
+                  {{ identity.identityResourceName ?? identity.resourceName }}
+                </p>
+              }
+              @for (
+                access of preview.dataAccess;
+                track access.environmentId + access.sourceResourceId
+              ) {
+                <p>
+                  {{ access.environmentCode }} : {{ dataAccessLabel(access.level) }} —
+                  {{ access.databaseRoles.join(', ') }}
+                </p>
+              }
+              @for (
+                dependency of preview.dependencies;
+                track dependency.environmentId + dependency.sourceComponentId
+              ) {
+                <p>
+                  {{
+                    'resource.linkPreviewDependency'
+                      | transloco
+                        : {
+                            environment: dependency.environmentCode,
+                            sourceComponent: dependency.sourceComponentCode,
+                            targetComponent: dependency.targetComponentCode,
+                          }
+                  }}
+                </p>
+              }
+              @for (
+                setting of preview.applicationSettings;
+                track setting.environmentId + setting.name
+              ) {
+                <p>
+                  {{ setting.environmentCode }} : {{ setting.name
+                  }}{{
+                    setting.isSensitive ? ' · ' + ('resource.sensitiveValueHidden' | transloco) : ''
+                  }}
+                </p>
+              }
+              @for (finding of preview.findings; track finding.code + finding.resourceId) {
+                <p class="resource-links__finding">{{ finding.message }}</p>
+              }
+              @if (
+                !preview.roleAssignments.length &&
+                !preview.identities.length &&
+                !preview.dataAccess.length &&
+                !preview.dependencies.length &&
+                !preview.applicationSettings.length &&
+                !preview.findings.length
+              ) {
+                <p>{{ 'resource.noCalculatedEffects' | transloco }}</p>
+              }
+            } @else if (!previewBusy()) {
+              <p>{{ 'resource.linkPreviewHelp' | transloco }}</p>
+            }
+          </section>
+          @if (actionError()) {
+            <p class="resource-links__error" role="alert">
+              {{ 'resource.linkSaveError' | transloco }}
+            </p>
+          }
+        </div>
+        <footer>
+          <app-ds-button variant="ghost" [disabled]="saving()" (click)="closeAdd()">{{
+            'resource.cancel' | transloco
+          }}</app-ds-button>
+          <app-ds-button variant="secondary" [disabled]="!canPreview()" (click)="preview()">{{
+            'resource.previewLink' | transloco
+          }}</app-ds-button>
+          <app-ds-button
+            variant="primary"
+            [disabled]="saving() || previewBusy() || !previewResult()"
+            (click)="addLink()"
+            >{{ 'resource.addLink' | transloco }}</app-ds-button
+          >
+        </footer>
+      </section>
+    </div>
+  }
+
+  @if (removal(); as pending) {
+    <div class="resource-links__backdrop">
+      <section
+        class="resource-links__dialog"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="'resource.removeLink' | transloco"
+        tabindex="-1"
+        cdkTrapFocus
+        [cdkTrapFocusAutoCapture]="true"
+      >
+        <header>
+          <h3>{{ 'resource.removeLink' | transloco }}</h3>
+          <p>
+            {{ 'resource.linkRemovalSummary' | transloco: { name: linkName(pending.link, true) } }}
+          </p>
+        </header>
+        @if (pending.impact.severity === 'Blocker') {
+          <p class="resource-links__error" role="alert">
+            {{ 'resource.linkRemovalBlockerWarning' | transloco }}
+          </p>
+        }
+        @if (removalConflict()) {
+          <p class="resource-links__error" role="alert">
+            {{ 'resource.linkRemovalReviewRequired' | transloco }}
+          </p>
+        }
+        <ul class="resource-links__impact">
+          @for (item of pending.impact.items; track item.code + item.resourceId) {
+            <li>{{ impactMessage(item.code, item.message) }}</li>
+          }
+          @if (!pending.impact.items.length) {
+            <li>{{ 'resource.noLinkRemovalImpacts' | transloco }}</li>
+          }
+        </ul>
+        @if (removalError()) {
+          <p class="resource-links__error" role="alert">
+            {{ 'resource.linkRemovalError' | transloco }}
+          </p>
+        }
+        <footer>
+          <app-ds-button variant="ghost" [disabled]="removalBusy()" (click)="closeRemoval()">{{
+            'resource.cancel' | transloco
+          }}</app-ds-button>
+          <app-ds-button variant="danger" [disabled]="removalBusy()" (click)="confirmRemoval()">{{
+            removalBusy()
+              ? ('resource.removingLink' | transloco)
+              : ('resource.confirmRemoveLink' | transloco)
+          }}</app-ds-button>
+        </footer>
+      </section>
+    </div>
+  }
+</section>

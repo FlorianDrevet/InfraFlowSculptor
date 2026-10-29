@@ -5,4 +5,5 @@ public sealed record CatalogResourceTypeSummaryResponse(
     string Category,
     string LabelFr,
     string LabelEn,
-    string Icon);
+    string Icon,
+    string Abbreviation);

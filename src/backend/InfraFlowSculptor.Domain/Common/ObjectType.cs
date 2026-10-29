@@ -9,6 +9,7 @@ public enum ObjectType
     Resource,
     Link,
     AppSetting,
+    Application,
     Revision,
     Publication,
     Deployment,
@@ -17,5 +18,6 @@ public enum ObjectType
     OrganizationMember,
     ProjectRoleAssignment,
     AuditEvent,
-    ResourceGroup
+    ResourceGroup,
+    FindingAcknowledgment
 }

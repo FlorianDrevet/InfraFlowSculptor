@@ -1,0 +1,50 @@
+<fieldset class="st-cidr-field">
+  <legend class="st-field-label">{{ label() }}</legend>
+
+  @if (value().length > 0) {
+    <div class="st-cidr-field-list">
+      @for (range of value(); track $index; let index = $index) {
+        <div class="st-cidr-field-row">
+          <app-ds-text-field
+            [id]="itemId(index)"
+            [label]="label() + ' ' + (index + 1)"
+            [value]="range"
+            [mono]="true"
+            [error]="itemError(range)"
+            [disabled]="disabled() || controlDisabled()"
+            (valueChange)="onItemChange(index, $event)"
+          />
+          <app-ds-button
+            variant="ghost"
+            size="sm"
+            [ariaLabel]="removeLabel() + ' ' + (index + 1)"
+            [disabled]="disabled() || controlDisabled()"
+            (click)="removeRange(index)"
+          >
+            {{ removeLabel() }}
+          </app-ds-button>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="st-cidr-field-row st-cidr-field-entry">
+    <app-ds-text-field
+      [id]="draftId()"
+      [label]="inputLabel()"
+      [value]="draft()"
+      [mono]="true"
+      [error]="draftError()"
+      [disabled]="disabled() || controlDisabled()"
+      (valueChange)="onDraftChange($event)"
+    />
+    <app-ds-button
+      variant="secondary"
+      size="sm"
+      [disabled]="!canAdd()"
+      (click)="addRange()"
+    >
+      {{ addLabel() }}
+    </app-ds-button>
+  </div>
+</fieldset>

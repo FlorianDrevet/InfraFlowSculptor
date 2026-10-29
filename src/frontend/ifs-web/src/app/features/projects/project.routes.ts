@@ -22,9 +22,19 @@ export const PROJECT_ROUTES: Routes = [
     loadChildren: () => import('./components.routes').then((module) => module.COMPONENT_ROUTES),
   },
   {
+    path: 'findings',
+    loadComponent: () => import('./project-findings').then((module) => module.ProjectFindings),
+    title: 'Constats de validation',
+  },
+  {
     path: 'settings',
     loadComponent: () => import('./project-settings').then((module) => module.ProjectSettings),
     title: 'Paramètres du projet',
+  },
+  {
+    path: 'naming',
+    loadComponent: () => import('./project-naming').then((module) => module.ProjectNaming),
+    title: 'Nommage du projet',
   },
   {
     path: 'members',

@@ -1,0 +1,16 @@
+<section class="resource-network" aria-labelledby="resource-network-heading">
+  <header>
+    <h3 id="resource-network-heading">{{ 'resource.networkHeading' | transloco }}</h3>
+    <p>{{ 'resource.networkHelp' | transloco }}</p>
+  </header>
+  @if (rows().length) {
+    <app-property-grid
+      [rows]="rows()"
+      [disabled]="disabled()"
+      (updateValue)="updateValue.emit($event)"
+      (clearOverride)="clearOverride.emit($event)"
+    />
+  } @else {
+    <p>{{ 'resource.noNetworkProperties' | transloco }}</p>
+  }
+</section>

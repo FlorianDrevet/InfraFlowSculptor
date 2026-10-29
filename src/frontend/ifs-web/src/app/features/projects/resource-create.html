@@ -1,0 +1,189 @@
+<div class="resource-create__backdrop">
+  <section
+    class="resource-create"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="resource-create-title"
+    tabindex="-1"
+    cdkTrapFocus
+    [cdkTrapFocusAutoCapture]="true"
+  >
+    @if (loading()) {
+      <p class="resource-create__status" role="status">
+        {{ 'resource.loadingConfiguration' | transloco }}
+      </p>
+    } @else if (loadError() || !component() || !project()) {
+      <p class="resource-create__error" role="alert">
+        {{ 'resource.configurationLoadError' | transloco }}
+      </p>
+      <footer class="resource-create__footer">
+        <a [routerLink]="['../']">{{ 'resource.cancel' | transloco }}</a>
+      </footer>
+    } @else {
+      <header>
+        <div class="resource-create__title">
+          <app-ds-resource-icon [type]="type()" [size]="36" />
+          <div>
+            <h2 id="resource-create-title">
+              {{ 'resource.newTitle' | transloco: { type: typeSummary()?.labelFr ?? type() } }}
+            </h2>
+            <p>
+              {{ 'resource.inComponent' | transloco: { name: component()!.name } }} ·
+              <a [routerLink]="['../']">{{ 'resource.changeType' | transloco }}</a>
+            </p>
+          </div>
+        </div>
+        <a
+          class="resource-create__close"
+          [routerLink]="['../']"
+          [attr.aria-label]="'resource.closeAdd' | transloco"
+        >
+          <span aria-hidden="true">×</span>
+        </a>
+      </header>
+
+      <form (ngSubmit)="create()">
+        <div class="resource-create__fields">
+          <label>
+            {{ 'resource.logicalName' | transloco }}
+            <input
+              name="logicalName"
+              required
+              [value]="logicalName()"
+              (input)="updateLogicalName($any($event.target).value)"
+            />
+            <span>{{ 'resource.uniqueInComponent' | transloco }}</span>
+          </label>
+          <label>
+            {{ 'resource.resourceGroup' | transloco }}
+            <select
+              name="resourceGroup"
+              required
+              [value]="resourceGroupId()"
+              (change)="updateResourceGroup($any($event.target).value)"
+            >
+              @for (group of component()!.resourceGroups; track group.id) {
+                <option [value]="group.id">{{ group.name }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        @if (existingMode()) {
+          <fieldset>
+            <legend>{{ 'resource.existingIds' | transloco }}</legend>
+            @for (target of targets(); track target.id) {
+              <label>
+                {{ target.code }} · {{ target.region }}
+                <input
+                  [name]="'existing-' + target.id"
+                  [value]="existingIds()[target.id] ?? ''"
+                  [placeholder]="'resource.azureResourceId' | transloco"
+                  (input)="updateExistingId(target.id, $any($event.target).value)"
+                />
+              </label>
+            }
+            <p>{{ 'resource.existingSafety' | transloco }}</p>
+          </fieldset>
+        } @else {
+          <app-generated-names
+            [items]="generatedNames()"
+            [loading]="generatedNamesLoading()"
+            [error]="generatedNamesError()"
+          />
+          <section
+            class="resource-create__presence"
+            aria-labelledby="resource-create-presence-title"
+          >
+            <h3 id="resource-create-presence-title">{{ 'resource.presence' | transloco }}</h3>
+            @for (target of targets(); track target.id) {
+              <label class="resource-create__presence-target">
+                <input
+                  type="checkbox"
+                  role="switch"
+                  [checked]="targetIsPresent(target.id)"
+                  [attr.aria-checked]="targetIsPresent(target.id)"
+                  [attr.aria-label]="
+                    'resource.presenceForTarget' | transloco: { code: target.code }
+                  "
+                  (change)="updatePresence(target.id, $any($event.target).checked)"
+                />
+                <span>{{ target.code }}</span>
+              </label>
+            }
+          </section>
+        }
+
+        @if (saveError() && !conflict()) {
+          <p class="resource-create__error" role="alert">{{ saveErrorKey() | transloco }}</p>
+        }
+
+        <footer class="resource-create__footer">
+          <a [routerLink]="['../']">{{ 'resource.cancel' | transloco }}</a>
+          <app-ds-button
+            variant="primary"
+            type="submit"
+            [disabled]="
+              saving() ||
+              !canEditModel() ||
+              !resourceGroupId() ||
+              (existingMode() && !allExistingIdsProvided())
+            "
+          >
+            {{
+              saving()
+                ? ('resource.saving' | transloco)
+                : existingMode()
+                  ? ('resource.addExisting' | transloco)
+                  : ('resource.addNamed' | transloco: { name: logicalName() })
+            }}
+          </app-ds-button>
+        </footer>
+      </form>
+    }
+  </section>
+
+  @if (conflict() && conflictVersions(); as versions) {
+    <div class="resource-create__conflict-backdrop">
+      <section
+        class="resource-create__conflict"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="resource-create-conflict-title"
+        tabindex="-1"
+        cdkTrapFocus
+        [cdkTrapFocusAutoCapture]="true"
+      >
+        <header>
+          <h2 id="resource-create-conflict-title">{{ 'resource.conflictTitle' | transloco }}</h2>
+          <p>{{ 'resource.createConflictSummary' | transloco: versions }}</p>
+        </header>
+        <table>
+          <thead>
+            <tr>
+              <th>{{ 'resource.version' | transloco }}</th>
+              <th>{{ 'resource.savedVersion' | transloco }}</th>
+              <th>{{ 'resource.submittedVersion' | transloco }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">{{ 'resource.component' | transloco }}</th>
+              <td>{{ versions.submitted }}</td>
+              <td>{{ versions.current }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>{{ 'resource.createConflictHelp' | transloco }}</p>
+        <footer class="resource-create__footer">
+          <app-ds-button [disabled]="saving()" (click)="abandonCreate()">{{
+            'resource.abandon' | transloco
+          }}</app-ds-button>
+          <app-ds-button variant="primary" [disabled]="saving()" (click)="resumeCreate()">{{
+            'resource.resume' | transloco
+          }}</app-ds-button>
+        </footer>
+      </section>
+    </div>
+  }
+</div>

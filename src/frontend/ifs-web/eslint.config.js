@@ -6,7 +6,7 @@ const angular = require('angular-eslint');
 
 module.exports = defineConfig([
   {
-    ignores: ['src/app/core/api/generated/**'],
+    ignores: ['src/app/core/api/generated/**', 'playwright-report/**', 'test-results/**'],
   },
   {
     files: ['**/*.ts'],
@@ -19,10 +19,15 @@ module.exports = defineConfig([
             'e2e/organization-audit.spec.ts',
             'e2e/wizard.spec.ts',
             'e2e/project.spec.ts',
+            'e2e/project-findings.spec.ts',
+            'e2e/resources.spec.ts',
+            'e2e/links.spec.ts',
+            'e2e/resource-application.spec.ts',
             'e2e/support/login.ts',
             'playwright.config.ts',
           ],
           defaultProject: 'tsconfig.e2e.json',
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 12,
         },
       },
     },

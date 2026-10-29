@@ -34,8 +34,10 @@ test('Alice parcourt et gère les écrans du projet', async ({ page, browser }) 
   const projectName = recipeProjectName(page);
   await page.goto(`/o/${CONTOSO_ID}/projects`);
   await expect(page.getByRole('heading', { name: 'Projets', exact: true })).toBeVisible();
-  const shopCard = page.locator('.projects-page__card').filter({ hasText: 'shop' });
-  await expect(shopCard.getByRole('button', { name: 'shop', exact: true })).toBeVisible();
+  const shopCard = page.locator('.projects-page__card').filter({
+    has: page.locator('.projects-page__code').getByText('shop', { exact: true }),
+  });
+  await expect(shopCard.locator('.projects-page__project-name')).toHaveText('Boutique en ligne');
   await expect(shopCard.locator('.projects-page__metadata dd').first()).toHaveText(/\d+/);
   await assertNoSeriousAccessibilityViolations(page);
 
@@ -118,7 +120,9 @@ test('Alice parcourt et gère les écrans du projet', async ({ page, browser }) 
     await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
     await firstSaveRequest;
     expect((await firstSave).status()).toBe(200);
-    await expect(page).toHaveURL(/\/environments$/);
+    await expect(page).toHaveURL(
+      new RegExp(`/o/${CONTOSO_ID}/projects/${projectId}/environments$`),
+    );
 
     await secondPage.locator('#environment-description').fill(staleDescription);
     await secondPage.getByRole('button', { name: 'Enregistrer', exact: true }).click();

@@ -1,0 +1,8 @@
+{
+  "version": "2026.10-pilot.3",
+  "status": "published",
+  "publishedAt": "2026-10-29",
+  "supportEndsAt": null,
+  "notes": "Profil de build Container pour les applications du pilote.",
+  "verifiedAgainstDocsOn": "2026-10-29"
+}

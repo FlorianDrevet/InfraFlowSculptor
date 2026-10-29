@@ -11,6 +11,7 @@ namespace InfraFlowSculptor.Application.Components.Commands.DeleteResource;
 [ModelChange]
 [RequiresPermission(Permission.ModelEdit)]
 [Audited(AuditActions.ResourceDeleted, ObjectType.Resource)]
+[Audited(AuditActions.AppSettingDeleted, ObjectType.AppSetting)]
 public sealed record DeleteResourceCommand(
     Guid ProjectId,
     Guid ComponentId,

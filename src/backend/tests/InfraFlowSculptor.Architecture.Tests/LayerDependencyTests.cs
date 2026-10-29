@@ -1,5 +1,6 @@
 using InfraFlowSculptor.Api.Controllers;
-using InfraFlowSculptor.Application.Common.Extensibility;
+using InfraFlowSculptor.Application.Common.Notifications;
+using InfraFlowSculptor.Domain.Common.Extensibility;
 using InfraFlowSculptor.Domain.Common.Models;
 using InfraFlowSculptor.Engine.Naming;
 using NetArchTest.Rules;
@@ -49,7 +50,7 @@ public sealed class LayerDependencyTests
     [Fact]
     public void ApplicationDoesNotDependOnInfrastructure()
     {
-        var result = Types.InAssembly(typeof(Registry<,>).Assembly)
+        var result = Types.InAssembly(typeof(NotificationChannelRegistry).Assembly)
             .ShouldNot()
             .HaveDependencyOn("InfraFlowSculptor.Infrastructure")
             .GetResult();

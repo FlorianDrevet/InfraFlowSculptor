@@ -124,15 +124,41 @@ public sealed class EffectiveValueResolverTests
         values.Select(value => value.Name).Should().NotContain("payloadDependent");
     }
 
-    [Theory]
-    [InlineData("requires:unknown=Premium")]
-    [InlineData("requires:")]
-    public void RejectsAnEmptyOrUnknownConditionDependency(string condition)
+    [Fact]
+    public void RejectsAnEmptyConditionDependency()
     {
         using var descriptor = JsonDocument.Parse(
-            $$"""{"properties":[{"name":"sku","default":"Basic"},{"name":"dependent","default":true,"condition":"{{condition}}"}]}""");
+            """{"properties":[{"name":"sku","default":"Basic"},{"name":"dependent","default":true,"condition":"requires:"}]}""");
 
         Assert.Throws<ArgumentException>(() => EffectiveValueResolver.Resolve(Resource(), DevId, descriptor.RootElement));
+    }
+
+    [Fact]
+    public void UnknownConditionDependencyIsReturnedAsUnresolved()
+    {
+        using var descriptor = JsonDocument.Parse(
+            """{"properties":[{"name":"sku","default":"Basic"},{"name":"dependent","default":false,"condition":"requires:unknown=Premium"}]}""");
+
+        var result = EffectiveValueResolver.ResolveDetailed(Resource(), DevId, descriptor.RootElement);
+
+        Assert.Equal("sku", Assert.Single(result.Values).Name);
+        var issue = Assert.Single(result.UnresolvedConditions);
+        Assert.Equal("dependent", issue.PropertyName);
+        Assert.Equal("unknown", issue.DependencyName);
+        Assert.False(issue.HasNonDefaultValue);
+    }
+
+    [Fact]
+    public void UnknownConditionDependencyRecordsConfiguredNonDefaultValue()
+    {
+        using var descriptor = JsonDocument.Parse(
+            """{"properties":[{"name":"dependent","default":false,"condition":"requires:unknown=Premium"}]}""");
+        var resource = Resource(properties: Values(("dependent", true)));
+
+        var result = EffectiveValueResolver.ResolveDetailed(resource, DevId, descriptor.RootElement);
+
+        var issue = Assert.Single(result.UnresolvedConditions);
+        Assert.True(issue.HasNonDefaultValue);
     }
 
     [Fact]

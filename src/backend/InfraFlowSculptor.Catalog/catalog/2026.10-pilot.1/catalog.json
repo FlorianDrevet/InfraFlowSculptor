@@ -1,0 +1,8 @@
+{
+  "version": "2026.10-pilot.1",
+  "status": "published",
+  "publishedAt": "2026-10-29",
+  "supportEndsAt": null,
+  "notes": "Correctif 1 du catalogue pilote : autorise Accès vers Log Analytics conformément à DT-29 et à la spécification des liaisons.",
+  "verifiedAgainstDocsOn": "2026-10-29"
+}

@@ -1,0 +1,318 @@
+{
+  "type": "SqlServer",
+  "labels": {
+    "fr": "Serveur Azure SQL",
+    "en": "Azure SQL server"
+  },
+  "category": "data",
+  "icon": "sql-server",
+  "armType": "Microsoft.Sql/servers",
+  "availableFrom": "lot1",
+  "documentationUrl": "https://learn.microsoft.com/en-us/azure/templates/microsoft.sql/servers",
+  "verifiedAgainstDocsOn": "2026-10-27",
+  "naming": {
+    "abbreviation": "sql",
+    "allowed": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+    "case": "lower",
+    "separators": [
+      "-"
+    ],
+    "forbidConsecutiveSeparators": true,
+    "minLength": 1,
+    "maxLength": 63,
+    "firstChar": "alphanumeric",
+    "lastChar": "alphanumeric",
+    "uniqueness": "global",
+    "availabilityDomain": "database.windows.net"
+  },
+  "properties": [
+    {
+      "name": "authentication",
+      "labels": {
+        "fr": "Mode d’authentification",
+        "en": "Authentication mode"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "EntraSeule",
+      "values": [
+        "EntraSeule",
+        "EntraEtSql"
+      ]
+    },
+    {
+      "name": "administratorLogin",
+      "labels": {
+        "fr": "Login administrateur SQL",
+        "en": "SQL administrator login"
+      },
+      "kind": "string",
+      "overridable": true,
+      "default": "sqladmin",
+      "minimum": 1,
+      "maximum": 128,
+      "condition": "requiredWhen:authentication=EntraEtSql"
+    },
+    {
+      "name": "exposure",
+      "labels": {
+        "fr": "Exposition",
+        "en": "Exposure"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "Public",
+      "values": [
+        "Public",
+        "Restricted"
+      ]
+    },
+    {
+      "name": "allowedIpRanges",
+      "labels": {
+        "fr": "Plages IP autorisées",
+        "en": "Allowed IP ranges"
+      },
+      "kind": "array",
+      "overridable": true,
+      "default": [],
+      "condition": "requires:exposure=Restricted",
+      "items": {
+        "kind": "string",
+        "format": "ipv4Cidr"
+      },
+      "maxItems": 100
+    }
+  ],
+  "fixedValues": [
+    {
+      "name": "minimalTlsVersion",
+      "value": "1.2",
+      "labels": {
+        "fr": "TLS minimal",
+        "en": "Minimum TLS"
+      }
+    }
+  ],
+  "children": [
+    {
+      "type": "SqlDatabase",
+      "labels": {
+        "fr": "Base Azure SQL",
+        "en": "Azure SQL database"
+      },
+      "naming": {
+        "abbreviation": "sqldb",
+        "allowed": "^[^<>*%&:\\/?]{1,128}$",
+        "case": "mixed",
+        "separators": [],
+        "forbidConsecutiveSeparators": true,
+        "minLength": 1,
+        "maxLength": 128,
+        "firstChar": "any",
+        "lastChar": "notDot",
+        "uniqueness": "parent",
+        "availabilityDomain": null
+      },
+      "properties": [
+        {
+          "name": "sku",
+          "labels": {
+            "fr": "SKU",
+            "en": "SKU"
+          },
+          "kind": "enum",
+          "overridable": true,
+          "default": "GP_S_Gen5_1",
+          "values": [
+            "Basic",
+            "S0",
+            "S1",
+            "S2",
+            "S3",
+            "GP_S_Gen5_1",
+            "GP_S_Gen5_2",
+            "GP_S_Gen5_4",
+            "GP_Gen5_2",
+            "GP_Gen5_4",
+            "GP_Gen5_8",
+            "HS_Gen5_2",
+            "HS_Gen5_4"
+          ]
+        },
+        {
+          "name": "maxSizeGb",
+          "labels": {
+            "fr": "Taille maximale (Go)",
+            "en": "Maximum size (GB)"
+          },
+          "kind": "integer",
+          "overridable": true,
+          "default": 32,
+          "minimum": 1
+        },
+        {
+          "name": "autoPauseDelay",
+          "labels": {
+            "fr": "Pause automatique (minutes)",
+            "en": "Auto-pause (minutes)"
+          },
+          "kind": "integer",
+          "overridable": true,
+          "default": 60,
+          "minimum": 15,
+          "maximum": 10080
+        },
+        {
+          "name": "minCapacity",
+          "labels": {
+            "fr": "Capacité minimale (vCore)",
+            "en": "Minimum capacity (vCore)"
+          },
+          "kind": "number",
+          "overridable": true,
+          "default": 0.5,
+          "minimum": 0.5
+        },
+        {
+          "name": "zoneRedundant",
+          "labels": {
+            "fr": "Redondance de zone",
+            "en": "Zone redundancy"
+          },
+          "kind": "boolean",
+          "overridable": true,
+          "default": false
+        },
+        {
+          "name": "backupStorageRedundancy",
+          "labels": {
+            "fr": "Redondance des sauvegardes",
+            "en": "Backup storage redundancy"
+          },
+          "kind": "enum",
+          "overridable": true,
+          "default": "Geo",
+          "values": [
+            "Local",
+            "Zone",
+            "Geo"
+          ]
+        },
+        {
+          "name": "collation",
+          "labels": {
+            "fr": "Classement",
+            "en": "Collation"
+          },
+          "kind": "string",
+          "overridable": false,
+          "default": "SQL_Latin1_General_CP1_CI_AS",
+          "lockedAfterPublish": true
+        }
+      ]
+    }
+  ],
+  "identities": {
+    "system": false,
+    "userAssignedMax": 0
+  },
+  "links": {
+    "asSource": [],
+    "asTarget": [
+      "Hosting",
+      "Access"
+    ],
+    "required": []
+  },
+  "outputs": [
+    {
+      "name": "fullyQualifiedDomainName",
+      "description": "Nom DNS complet du serveur.",
+      "sensitive": false,
+      "computableFromName": false
+    },
+    {
+      "name": "name",
+      "description": "Nom du serveur.",
+      "sensitive": false,
+      "computableFromName": true
+    },
+    {
+      "name": "id",
+      "description": "Identifiant de la ressource.",
+      "sensitive": false,
+      "computableFromName": false
+    }
+  ],
+  "lifecycle": {
+    "family": "data"
+  },
+  "roles": [
+    "SQL Server Contributor",
+    "SQL Security Manager",
+    "Reader"
+  ],
+  "roleEquivalences": {},
+  "dataAccess": {
+    "supported": false,
+    "levels": [],
+    "databaseEngine": null
+  },
+  "exposure": {
+    "modes": [
+      "Public",
+      "Restricted"
+    ],
+    "privateGroupIds": [],
+    "privateDnsZones": [],
+    "conditions": []
+  },
+  "diagnostics": {
+    "supported": true
+  },
+  "applicationSettings": {
+    "destination": "none"
+  },
+  "languageSupport": {
+    "Bicep": "full",
+    "Terraform": "none",
+    "Pulumi": "none"
+  },
+  "generation": {
+    "Bicep": {
+      "module": "br/public:avm/res/sql/server:0.22.0",
+      "versionPin": "0.22.0",
+      "map": {
+        "name": "name",
+        "location": "location",
+        "administrators": "administrators",
+        "minimalTlsVersion": "minimalTlsVersion",
+        "publicNetworkAccess": "publicNetworkAccess"
+      }
+    }
+  },
+  "deprecations": [],
+  "privateDnsZones": [
+    {
+      "groupId": "sqlServer",
+      "zoneName": "privatelink.database.windows.net"
+    }
+  ],
+  "requiredNetworkRules": [],
+  "recommendedAlerts": [],
+  "pricing": {
+    "source": "azure-retail-prices",
+    "meters": [
+      {
+        "serviceName": "SQL Database",
+        "productName": "SQL Server",
+        "meterName": "Serverless vCore"
+      }
+    ],
+    "assumptions": [],
+    "estimated": false,
+    "unestimatedReason": "Aucun scénario tarifaire par défaut n’est estimé pour le profil du pilote."
+  },
+  "drift": []
+}

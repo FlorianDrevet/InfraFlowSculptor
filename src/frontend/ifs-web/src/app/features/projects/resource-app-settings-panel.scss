@@ -1,0 +1,159 @@
+.resource-app-settings {
+  display: grid;
+  gap: var(--ifs-space-4);
+  min-width: 0;
+}
+
+.resource-app-settings__header,
+.resource-app-settings__actions,
+.resource-app-settings__form footer {
+  display: flex;
+  align-items: center;
+  gap: var(--ifs-space-3);
+}
+
+.resource-app-settings__header {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.resource-app-settings__header h3,
+.resource-app-settings__header p,
+.resource-app-settings__form h4 {
+  margin: 0;
+}
+
+.resource-app-settings__header p,
+.resource-app-settings__empty {
+  color: var(--ifs-text-2);
+  font-size: 0.85rem;
+}
+
+.resource-app-settings__list {
+  display: grid;
+  gap: var(--ifs-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resource-app-settings__list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--ifs-space-3);
+  padding-block: var(--ifs-space-3);
+  border-bottom: 1px solid var(--ifs-line);
+}
+
+.resource-app-settings__list li > div:first-child {
+  display: grid;
+  gap: var(--ifs-space-1);
+  min-width: 0;
+}
+
+.resource-app-settings__list span {
+  color: var(--ifs-text-2);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.resource-app-settings__pipeline {
+  font-family: var(--ifs-font-mono);
+}
+
+.resource-app-settings__implicit {
+  color: var(--ifs-text-3) !important;
+  font-style: italic;
+}
+
+.resource-app-settings__warning,
+.resource-app-settings__error {
+  color: var(--ifs-warning-text) !important;
+}
+
+.resource-app-settings__form {
+  display: grid;
+  gap: var(--ifs-space-4);
+  max-width: 48rem;
+  padding: var(--ifs-space-4);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-1);
+}
+
+.resource-app-settings__form label {
+  display: grid;
+  gap: var(--ifs-space-2);
+  color: var(--ifs-text-2);
+  font-size: 0.82rem;
+}
+
+.resource-app-settings__form input,
+.resource-app-settings__form select {
+  min-width: 0;
+  min-height: 2.5rem;
+  padding: var(--ifs-space-2) var(--ifs-space-3);
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-sm);
+  background: var(--ifs-surface-0, var(--ifs-surface-1));
+  color: var(--ifs-text);
+  font: inherit;
+}
+
+.resource-app-settings__form input:focus-visible,
+.resource-app-settings__form select:focus-visible {
+  outline: 2px solid var(--ifs-signal);
+  outline-offset: 2px;
+}
+
+.resource-app-settings__form label span {
+  color: var(--ifs-text-3);
+  font-size: 0.78rem;
+}
+
+.resource-app-settings__form .resource-app-settings__non-secret-confirmation {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--ifs-space-2);
+}
+
+.resource-app-settings__form .resource-app-settings__non-secret-confirmation > input[type='checkbox'] {
+  width: 1rem;
+  min-width: 1rem;
+  min-height: 1rem;
+  margin-top: 0.1rem;
+  padding: 0;
+}
+
+.resource-app-settings__form .resource-app-settings__non-secret-confirmation > span {
+  color: var(--ifs-text-2);
+  font-size: inherit;
+}
+
+.resource-app-settings__form .resource-app-settings__non-secret-confirmation > span > span {
+  display: block;
+  margin-top: var(--ifs-space-1);
+  color: var(--ifs-text-3);
+  font-size: 0.78rem;
+}
+
+.resource-app-settings__form footer {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  padding-top: var(--ifs-space-3);
+  border-top: 1px solid var(--ifs-line);
+}
+
+@media (max-width: 760px) {
+  .resource-app-settings__header,
+  .resource-app-settings__list li {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .resource-app-settings__actions {
+    justify-content: flex-start;
+  }
+}

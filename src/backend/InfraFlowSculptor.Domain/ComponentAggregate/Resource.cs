@@ -38,6 +38,8 @@ public sealed partial class Resource : IOrganizationOwned, IHasVersion
 
     public bool IsExisting { get; private set; }
 
+    public Guid? DefaultIdentityResourceId { get; private set; }
+
     public int Version { get; private set; } = 1;
 
     public IReadOnlyCollection<ResourceValueNode> Values => values.AsReadOnly();
@@ -87,13 +89,15 @@ public sealed partial class Resource : IOrganizationOwned, IHasVersion
         bool isExisting,
         IEnumerable<Guid> targetEnvironmentIds,
         IReadOnlyDictionary<string, JsonElement> properties,
-        IEnumerable<KeyValuePair<string, string>>? tags = null)
+        IEnumerable<KeyValuePair<string, string>>? tags = null,
+        Guid? defaultIdentityResourceId = null)
     {
         var normalizedType = type?.Trim() ?? string.Empty;
         var normalizedName = logicalName?.Trim() ?? string.Empty;
         var normalizedDescription = description?.Trim() ?? string.Empty;
         if (id == Guid.Empty || projectId.Value == Guid.Empty || organizationId.Value == Guid.Empty
-            || resourceGroupId == Guid.Empty || normalizedType.Length is < 1 or > 100)
+            || resourceGroupId == Guid.Empty || normalizedType.Length is < 1 or > 100
+            || defaultIdentityResourceId == Guid.Empty)
         {
             return Error.Validation("RESOURCE_IDENTITY_INVALID", "A resource identifier, group, and descriptor type are required.");
         }
@@ -120,7 +124,10 @@ public sealed partial class Resource : IOrganizationOwned, IHasVersion
         }
 
         var resource = new Resource(
-            id, projectId, organizationId, resourceGroupId, normalizedType, normalizedName, normalizedDescription, isExisting);
+            id, projectId, organizationId, resourceGroupId, normalizedType, normalizedName, normalizedDescription, isExisting)
+        {
+            DefaultIdentityResourceId = defaultIdentityResourceId
+        };
         foreach (var environmentId in environments)
         {
             resource.presences.Add(new ResourcePresence(environmentId, !isExisting));
@@ -417,8 +424,71 @@ public sealed partial class Resource : IOrganizationOwned, IHasVersion
 
     internal ErrorOr<Success> SetTags(IEnumerable<KeyValuePair<string, string>> values)
     {
-        var normalized = values.Select(tag => new KeyValuePair<string, string>(tag.Key.Trim(), tag.Value.Trim())).ToArray();
-        if (normalized.Length > 50
+        var normalized = NormalizeTags(values);
+        if (normalized.IsError)
+        {
+            return normalized.Errors;
+        }
+
+        tags.Clear();
+        tags.AddRange(normalized.Value.Select(tag => new ResourceTag(tag.Key, tag.Value)));
+        Touch();
+        return Result.Success;
+    }
+
+    internal ErrorOr<Success> SetMetadata(string description, IEnumerable<KeyValuePair<string, string>> values)
+    {
+        var normalizedDescription = description?.Trim() ?? string.Empty;
+        if (normalizedDescription.Length > 500)
+        {
+            return Error.Validation("RESOURCE_DESCRIPTION_INVALID", "A resource description cannot exceed 500 characters.");
+        }
+
+        var normalizedTags = NormalizeTags(values);
+        if (normalizedTags.IsError)
+        {
+            return normalizedTags.Errors;
+        }
+
+        Description = normalizedDescription;
+        tags.Clear();
+        tags.AddRange(normalizedTags.Value.Select(tag => new ResourceTag(tag.Key, tag.Value)));
+        Touch();
+        return Result.Success;
+    }
+
+    internal ErrorOr<Success> SetDefaultIdentity(Guid? identityResourceId)
+    {
+        if (identityResourceId == Guid.Empty)
+        {
+            return Error.Validation("VAL-LIA-IDENTITE", "A default user-assigned identity must name a resource in the same component.");
+        }
+
+        DefaultIdentityResourceId = identityResourceId;
+        Touch();
+        return Result.Success;
+    }
+
+    private static ErrorOr<IReadOnlyList<KeyValuePair<string, string>>> NormalizeTags(
+        IEnumerable<KeyValuePair<string, string>>? values)
+    {
+        if (values is null)
+        {
+            return Error.Validation("RESOURCE_TAG_FORMAT", "Resource tags must be provided as a collection.");
+        }
+
+        var normalized = new List<KeyValuePair<string, string>>();
+        foreach (var tag in values)
+        {
+            if (tag.Key is null || tag.Value is null)
+            {
+                return Error.Validation("RESOURCE_TAG_FORMAT", "Resource tag keys and values cannot be null.");
+            }
+
+            normalized.Add(new KeyValuePair<string, string>(tag.Key.Trim(), tag.Value.Trim()));
+        }
+
+        if (normalized.Count > 50
             || normalized.Any(tag => tag.Key.Length is < 1 or > 512
                 || tag.Key.IndexOfAny(['<', '>', '%', '&', '\\', '?', '/']) >= 0
                 || tag.Value.Length > 256))
@@ -431,15 +501,12 @@ public sealed partial class Resource : IOrganizationOwned, IHasVersion
             return Error.Validation("RG-PRJ-06-SYSTEM-TAG-RESERVED", "System tag keys cannot be declared by a user.");
         }
 
-        if (normalized.Select(tag => tag.Key).Distinct(StringComparer.OrdinalIgnoreCase).Count() != normalized.Length)
+        if (normalized.Select(tag => tag.Key).Distinct(StringComparer.OrdinalIgnoreCase).Count() != normalized.Count)
         {
             return Error.Validation("RESOURCE_TAG_DUPLICATE", "Resource tag keys must be unique without regard to case.");
         }
 
-        tags.Clear();
-        tags.AddRange(normalized.Select(tag => new ResourceTag(tag.Key, tag.Value)));
-        Touch();
-        return Result.Success;
+        return normalized;
     }
 
     public IReadOnlyDictionary<string, JsonElement> GetProperties(Guid? environmentId = null)

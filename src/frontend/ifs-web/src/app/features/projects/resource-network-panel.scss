@@ -1,0 +1,22 @@
+.resource-network {
+  display: grid;
+  gap: var(--ifs-space-4);
+  min-width: 0;
+}
+
+.resource-network header {
+  display: grid;
+  gap: var(--ifs-space-2);
+}
+
+.resource-network h3,
+.resource-network p {
+  margin: 0;
+}
+
+.resource-network header p,
+.resource-network > p {
+  max-width: 70ch;
+  color: var(--ifs-text-2);
+  font-size: 0.85rem;
+}

@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-13`](docs/plan/02-jalon-0-pilote.md#j0-13--moteur--nommage) — Moteur : nommage |
+| **Étape courante** | [`R-05`](docs/plan/02-jalon-0-pilote.md#-r-05--revue-du-modèle-et-du-moteur) — Revue du modèle et du moteur |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-12`](docs/plan/02-jalon-0-pilote.md#j0-12--moteur--cibles-présences-valeurs-effectives-et-tags) — Moteur : cibles, présences, valeurs effectives et tags (commit `9d47792`) |
-| **Étape suivante** | `J0-14` — Écrans des ressources : ajout, général, propriétés, existante, suppression |
+| **Dernière étape terminée** | [`J0-20`](docs/plan/02-jalon-0-pilote.md#j0-20--ordre-des-composants-validation-et-constats) — Ordre des composants, validation et constats (commit `af75781`) |
+| **Étape suivante** | `J0-21` — Plan de déploiement |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
-| **Dernière mise à jour** | 2026-10-28 — Codex |
+| **Dernière mise à jour** | 2026-10-29 — Codex |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
@@ -38,7 +38,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 |---|---|---|
 | SDK .NET | `10.0.203` | Oui (`10.0.203`) |
 | Node | `24.15.0` | Oui (`24.15.0`) |
-| Docker | `27.0.0` | Oui (`29.4.3`, daemon répond ; prérequis vérifiés le 2026-10-27) |
+| Docker | `27.0.0` | Oui (`29.4.3` installé) ; service Windows `Stopped`, mais Docker Engine répond et Testcontainers fonctionne. Conteneurs préexistants laissés en marche. |
 | CLI Aspire | `13.5.x` | Oui (`13.5.4`, DCP `0.22.11`; packages AppHost épinglés à `13.5.3`) |
 | Python | `3.11` | Oui (`3.14.4`) |
 | PowerShell 7 | `7.5.0` | Oui (`7.6.5`) |
@@ -50,6 +50,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 
 | Élément | État | Depuis |
 |---|---|---|
+| PostgreSQL local — recettes J0-15/J0-16 | Projet `shop15` (`01a1867f-37d7-7b4b-9d3b-fd50709f2a86`) conservé actif comme fixture locale réutilisable. L’archiver ne réduirait aucun coût Azure; aucun service ni coût Azure associé. | 2026-10-29 |
 | Abonnements Azure de test (preuves) | Souscription `fc4fa56f-e4e7-41e9-8a0d-559fcd27b827`, tenant `c833b396-517c-465d-bcce-b79702eaf932` ; `francecentral` et les fournisseurs/SKU requis disponibles ; utilisateur connecté Owner au scope souscription et User Access Administrator au scope tenant ; même souscription pour dev/prd/shared | 2026-10-15 |
 | Décision de coût et estimation des preuves ([contrôle](docs/plan/recettes/01-preuves.md#01-surveillance-des-coûts-avant-toute-action-sur-les-ressources-azure)) | Le portail Cost Analysis avant #840 affichait 103,13 EUR MTD et 134,61 EUR projetés à 22:14Z. Après #840, l’API Cost Management donne 103,125364 EUR MTD (données jusqu’au 25/10), 30,254608 EUR de prévision restante du 25 au 31/10 et 133,379972 EUR projetés. Avec la réserve complète P4/P5/P7 de +22,15 EUR, l’estimation prudente est 155,529972 EUR HT, 44,470028 EUR sous l’alerte préexistante de 200 EUR, inchangée ; poursuite autorisée par Florian au profil minimal. Le rafraîchissement portail post-run a demandé une authentification ; l’API sert à cette vérification. C5 pré-run et post-run #840 : 174 ressources, 29 groupes, 7 piles, 63 rôles, 7 budgets, sans changement d’ID. Captures hors dépôt : %LOCALAPPDATA%/InfraFlowSculptor/P08/before-p4-rev4-ci839-20261025T221335Z/, %LOCALAPPDATA%/InfraFlowSculptor/P08/after-p4-rev4-run840-20261025T223927Z/ et %LOCALAPPDATA%/InfraFlowSculptor/P08/after-p4-rev4-run840-20261025T224325Z/. J+1 shop42 tenté le 2026-10-26, résultat inconclusif (données Cost Management disponibles jusqu’au 24/10). Préflight avant approbation PRD #843, après DEV, à 2026-10-25T23:15:51Z : ActualCost MTD 103,125364 EUR (données au 25/10), Forecast 27,045203 EUR du 26 au 31/10, projection 130,170566 EUR ; avec la réserve P4/P5/P7 de 22,15 EUR, total prudent 152,320566 EUR, soit 47,679434 EUR sous le budget indicatif de 200 EUR. C5 après DEV à 23:14:44Z : 174 ressources, 29 groupes, 7 piles, 63 rôles et 7 budgets, zéro ajout/retrait dans les cinq collections. Détails sous %LOCALAPPDATA%/InfraFlowSculptor/P08/after-p4-rev5-dev-20261025T231300Z/. Après #843, Cost Management API à 2026-10-25T23:30:13Z : ActualCost MTD 103,125364 EUR (usage jusqu’au 25/10), Forecast restant 27,045203 EUR du 26 au 31/10, projection 130,170566 EUR ; réserve complète P4/P5/P7 +22,15 EUR, estimation prudente 152,320566 EUR, marge 47,679434 EUR sous l’alerte non plafonnante de 200 EUR. Captures C5/coût : %LOCALAPPDATA%/InfraFlowSculptor/P08/after-p4-rev5-run843-20261025T232741Z/. | 2026-10-26 |
 | Préflight coût avant P1/P7 shop44 | ActualCost relu à `2026-10-26T19:09:58Z` : `150,954272 EUR HT` (données jusqu'au 26/10) ; Forecast du 27 au 31/10 `23,049120 EUR`, projection `174,003392 EUR HT`. Deux appels précédents ont répondu 415/400 pendant la mise au point du format, puis un 429 ; la lecture corrigée a réussi et confirme les montants de `19:02:54Z`. Borne complète P1+P7 : `15,00 EUR HT` avec marge de 20 %, incluant SQL serverless `GP_S_Gen5_1` à 1 vCore maximum et 4 h actives par base ; ACR Basic 2 jours ; 2 Go Log Analytics sans crédit gratuit ; stockage, sauvegardes, Container Apps, Key Vault, stockage technique et egress. Total prudent `189,003392 EUR HT`, `10,996608 EUR` sous l'alerte non plafonnante de 200 EUR ; taxes contractuelles absentes de `PreTaxCost`. Prix Retail France Central vérifiés : SQL `0,5739 EUR/vCore-h`, ACR Basic `0,1466 EUR/jour`, stockage ACR `0,088 EUR/Go-mois`, Log Analytics `2,4287 EUR/Go`, rétention `0,1056 EUR/Go-mois`, stockage SQL `0,1265 EUR/Go-mois`. C5 à `19:07:23Z` : 168/29/5/58/7 ; C3 vide (0 build actif/en file, 0 PR active). Bases DEV et PRD observées `Paused` à `19:06:05Z` après le contrôle SQL PRD à `18:50:46Z`. Captures hors dépôt : `%LOCALAPPDATA%/InfraFlowSculptor/P08/shop44-p1-orders-preflight-20261026T190723Z/` et lectures de coût dans le même répertoire.
@@ -92,6 +93,20 @@ Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suiv
 **Arbitrages reçus le 2026-10-28 :** RG-RES-07 sera couverte avec les liaisons en J0-15 et le constat `VAL-RES-PRESENCE` en J0-20 ; le DTO de la route `effective-values` est confirmé ; le nom API Key Vault est `purgeProtection` (la recette cite `enablePurgeProtection`, nom du paramètre Bicep). La route, ses tests et le client généré sont implémentés localement. La preuve des arbitrages est dans [le déblocage J0-12](docs/plan/revues/J0-12-deblocage-20261028.md).
 
 **Arbitrage `requiredWhen:` résolu le 2026-10-28 :** sur demande de Florian, Claude CLI a recommandé de traiter `requiredWhen:` comme une condition d'applicabilité, comme `requires:`. Le moteur masque `capacityReservationLevel` et `administratorLogin` hors condition et les inclut lorsque celle-ci est vraie. Tests ciblés 11/11 après reproduction rouge. [Décision et preuve de déblocage](docs/plan/revues/J0-12-deblocage-requiredwhen-20261028.md).
+
+### J0-13 — nommage — 2026-10-28
+
+Sur délégation de Florian, Claude CLI recommande de reporter RG-NOM-10 à J0-28 : les noms publiés seront disponibles avec les révisions (J0-24), et l'impact par cible ainsi que la révocation des accès dépendent du déploiement. J0-13 conserve les verrous après publication, y compris pour les noms forcés, avec tests de non-régression ; la page rend les réglages publiés en lecture seule. Le tableau de l'étape et la dette ont été alignés sur ce périmètre. Les constats de collision globale sur ressources existantes et le parcours d'erreur avec template d'un projet voisin ont été vérifiés/corrigés ; l'échec fermé est conservé si un template voisin ne peut pas être évalué. Preuves dans [`suivi.md`](docs/plan/recettes/suivi.md).
+
+### J0-15 — incompatibilité entre la recette Accès et le catalogue épinglé — 2026-10-29
+
+Sur demande de Florian, l'avis de Claude CLI est retenu : conserver `2026.10-pilot` immuable et bloquer J0-15. La recette manuelle exige une liaison Accès vers `log main`, mais le descripteur publié de Log Analytics n'autorise que les liaisons `Logging` et `Diagnostics` comme cibles. DEC-107 impose une nouvelle version pour toute évolution du catalogue. Pour reprendre, il faut préciser la version de catalogue à publier et comment la cible de démonstration l'utilisera, ou autoriser une correction du scénario manuel vers une cible compatible. RG-LIA-24 reste reportée à J2 conformément au plan et n'est pas bloquante. Détails et vérifications dans [`J0-15-blocage-20261029.md`](docs/plan/revues/J0-15-blocage-20261029.md).
+
+**Résolution — 2026-10-29 :** Florian a confié le choix à Codex après avis Claude. Le catalogue correctif `2026.10-pilot.1` autorise `Access` vers Log Analytics; seul le projet temporaire `shop15` l'utilise, tandis que `shop` garde la version publiée originale. La recette Scalar locale est passée et le projet temporaire a été archivé de façon récupérable. Voir [`J0-15-deblocage-20261029.md`](docs/plan/revues/J0-15-deblocage-20261029.md).
+
+### J0-20 — recette locale en attente — 2026-10-29
+
+Le code et les tests sans conteneurs passent. Les tests PostgreSQL/Testcontainers et le parcours authentifié ne démarrent pas sur ce PC : Windows refuse le démarrage du service Docker, et `IFS_E2E_PASSWORD` n'est pas configuré localement. Le test PostgreSQL d'un doublon d'acquittement est ajouté; la CI dispose du secret de recette et doit fournir les captures `/findings` en 1440/390 px. Comparaison de la capture bureau à `ProjectFindings.html` à faire avant de déclarer R-05 terminé. Aucun coût ni changement Azure.
 
 ### R-04 — portée d’idempotence de création d’organisation — 2026-10-27
 

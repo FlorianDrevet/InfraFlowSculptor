@@ -31,6 +31,83 @@ public sealed class ComponentAggregateTests
         Assert.True(result.Value.TargetsEnvironment(Guid.NewGuid()));
     }
 
+    [Fact]
+    public void ComponentStoresOptionalDefaultAndTypeSpecificNaming()
+    {
+        var (project, environments) = CreateProjectWithEnvironments();
+        var component = CreateComponent(project, environments, "Core", "core").Value;
+
+        var defaultNaming = InvokeRequired(component, "ConfigureDefaultNameTemplate", "{component}-{name}-{env}");
+        var typeNaming = InvokeRequired(component, "ConfigureTypeNamingOverride", "KeyVault", "kv-{component}-{name}-{env}", "vault");
+
+        Assert.False(ReadProperty<bool>(defaultNaming, "IsError"));
+        Assert.False(ReadProperty<bool>(typeNaming, "IsError"));
+        Assert.Equal("{component}-{name}-{env}", ReadProperty<string>(component, "DefaultNameTemplate"));
+        var naming = Assert.Single((System.Collections.IEnumerable)ReadProperty<object>(component, "NamingOverrides"));
+        Assert.Equal("KeyVault", ReadProperty<string>(naming!, "Type"));
+        Assert.Equal("kv-{component}-{name}-{env}", ReadProperty<string>(naming!, "Template"));
+        Assert.Equal("vault", ReadProperty<string>(naming!, "Abbreviation"));
+    }
+
+    [Fact]
+    public void ComponentStoresOptionalDefaultLogAnalyticsResource()
+    {
+        var (project, environments) = CreateProjectWithEnvironments();
+        var component = CreateComponent(project, environments, "Orders", "orders").Value;
+        var resourceId = Guid.NewGuid();
+
+        var configured = component.SetDefaultLogAnalyticsResource(resourceId);
+
+        Assert.False(configured.IsError);
+        Assert.Equal(resourceId, component.DefaultLogAnalyticsResourceId);
+
+        var cleared = component.SetDefaultLogAnalyticsResource(null);
+
+        Assert.False(cleared.IsError);
+        Assert.Null(component.DefaultLogAnalyticsResourceId);
+    }
+
+    [Fact]
+    public void ComponentRejectsAnEmptyDefaultLogAnalyticsResourceId()
+    {
+        var (project, environments) = CreateProjectWithEnvironments();
+        var component = CreateComponent(project, environments, "Orders", "orders").Value;
+
+        var result = component.SetDefaultLogAnalyticsResource(Guid.Empty);
+
+        Assert.Contains(result.Errors, error => error.Code == "COMPONENT_DEFAULT_LOG_ANALYTICS_INVALID");
+    }
+
+    [Fact]
+    public void PublishedComponentCannotChangeNamingTemplatesOrOverrides()
+    {
+        var (project, environments) = CreateProjectWithEnvironments();
+        var component = CreateComponent(project, environments, "Core", "core").Value;
+        component.RecordPublication(DateTimeOffset.UtcNow);
+
+        var defaultTemplate = component.ConfigureDefaultNameTemplate("{component}-{name}-{env}");
+        var typeOverride = component.ConfigureTypeNamingOverride("KeyVault", "kv-{component}-{name}-{env}", "vault");
+
+        Assert.Contains(defaultTemplate.Errors, error => error.Code == "PROJECT_NAMING_LOCKED_AFTER_PUBLICATION");
+        Assert.Contains(typeOverride.Errors, error => error.Code == "PROJECT_NAMING_LOCKED_AFTER_PUBLICATION");
+    }
+
+    [Fact]
+    public void PublishedComponentCannotChangeForcedResourceName()
+    {
+        var (project, environments) = CreateProjectWithEnvironments();
+        var component = CreateComponent(project, environments, "Core", "core").Value;
+        var group = component.AddResourceGroup(Guid.NewGuid(), "main").Value;
+        var resource = component.AddResource(
+            Guid.NewGuid(), group.Id, "KeyVault", "main", "", false,
+            environments.Select(environment => environment.Id), new Dictionary<string, JsonElement>()).Value;
+        component.RecordPublication(DateTimeOffset.UtcNow);
+
+        var result = component.SetResourceForcedName(resource.Id, environments.First().Id, "kv-shop-core-main-dev");
+
+        Assert.Contains(result.Errors, error => error.Code == "PROJECT_NAMING_LOCKED_AFTER_PUBLICATION");
+    }
+
     [Theory]
     [InlineData("1orders")]
     [InlineData("orders-")]
@@ -333,6 +410,20 @@ public sealed class ComponentAggregateTests
             "",
             ComponentDeploymentMode.PerEnvironment,
             environments);
+
+    private static object InvokeRequired(object target, string methodName, params object?[] arguments)
+    {
+        var method = target.GetType().GetMethod(methodName);
+        Assert.NotNull(method);
+        return method!.Invoke(target, arguments)!;
+    }
+
+    private static T ReadProperty<T>(object target, string propertyName)
+    {
+        var property = target.GetType().GetProperty(propertyName);
+        Assert.NotNull(property);
+        return Assert.IsAssignableFrom<T>(property!.GetValue(target));
+    }
 
     private static (Project Project, IReadOnlyCollection<ProjectEnvironment> Environments)
         CreateProjectWithEnvironments()

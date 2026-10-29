@@ -241,11 +241,71 @@ public static class IsolationScenarios
                     environments = new[] { new { code = "dev", region = "francecentral" } },
                     tags = new Dictionary<string, string>()
                 }),
+            ["GetProjectNaming"] = OrganizationScenario(
+                "GetProjectNaming",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/naming",
+                HttpStatusCode.NotFound),
+            ["SetProjectNaming"] = OrganizationWriteScenario(
+                "SetProjectNaming",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/naming",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    preset = "Compact",
+                    defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                    resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                    typeOverrides = Array.Empty<object>(),
+                    expectedVersion = 1
+                }),
+            ["PreviewProjectNaming"] = OrganizationScenario(
+                "PreviewProjectNaming",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/naming/preview",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    preset = "Compact",
+                    defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                    resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                    typeOverrides = Array.Empty<object>()
+                }),
             ["GetProject"] = OrganizationScenario(
                 "GetProject",
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}",
                 HttpStatusCode.NotFound),
+            ["GetProjectValidation"] = OrganizationScenario(
+                "GetProjectValidation",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/validation",
+                HttpStatusCode.NotFound),
+            ["AcknowledgeFinding"] = OrganizationScenario(
+                "AcknowledgeFinding",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/validation/findings/VAL-LIA-SQL-ADMIN/acknowledgment",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    subjectType = "Resource",
+                    subjectId = TestResourceId,
+                    environmentId = (Guid?)null,
+                    expectedObjectVersion = 1,
+                    comment = "Reviewed"
+                }),
+            ["ApplyFindingFix"] = OrganizationScenario(
+                "ApplyFindingFix",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/validation/findings/VAL-NET-IP-VIDE/fix",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    subjectType = "Resource",
+                    subjectId = TestResourceId,
+                    environmentId = Guid.NewGuid(),
+                    expectedObjectVersion = 1
+                }),
             ["ListProjectComponents"] = OrganizationScenario(
                 "ListProjectComponents",
                 HttpMethod.Get,
@@ -275,11 +335,156 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}/components/{TestComponentId}",
                 HttpStatusCode.NotFound),
+            ["SetComponentDefaultLogAnalytics"] = OrganizationWriteScenario(
+                "SetComponentDefaultLogAnalytics",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/default-log-analytics",
+                HttpStatusCode.NotFound,
+                new { workspaceResourceId = (Guid?)null, expectedVersion = 1 }),
             ["GetEffectiveValues"] = OrganizationScenario(
                 "GetEffectiveValues",
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}/resources/{TestResourceId}/effective-values",
                 HttpStatusCode.NotFound),
+            ["GetResourceDeletionImpact"] = OrganizationScenario(
+                "GetResourceDeletionImpact",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/delete-impact",
+                HttpStatusCode.NotFound),
+            ["GetResourceLinks"] = OrganizationScenario(
+                "GetResourceLinks",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links",
+                HttpStatusCode.NotFound),
+            ["GetResourceLinkOptions"] = OrganizationScenario(
+                "GetResourceLinkOptions",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links/options",
+                HttpStatusCode.NotFound),
+            ["PreviewLink"] = OrganizationScenario(
+                "PreviewLink",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links/preview",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    targetComponentId = TestComponentId,
+                    targetResourceId = TestResourceId,
+                    kind = "Access",
+                    identityKind = "System",
+                    identityResourceId = (Guid?)null,
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null
+                }),
+            ["GetAppSettings"] = OrganizationScenario(
+                "GetAppSettings",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/app-settings",
+                HttpStatusCode.NotFound),
+            ["GetResourceApplication"] = OrganizationScenario(
+                "GetResourceApplication",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/application",
+                HttpStatusCode.NotFound),
+            ["CreateAppSetting"] = OrganizationWriteScenario(
+                "CreateAppSetting",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/app-settings",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    name = "ISOLATION_SETTING",
+                    sourceKind = "Literal",
+                    literalValue = "isolated",
+                    overrides = new Dictionary<Guid, string?>(),
+                    sourceResourceId = (Guid?)null,
+                    outputName = (string?)null,
+                    keyVaultResourceId = (Guid?)null,
+                    secretName = (string?)null,
+                    secretFeedKind = (string?)null,
+                    pipelineVariableName = (string?)null,
+                    identityResourceId = (Guid?)null,
+                    forceNonSecret = false
+                }),
+            ["UpdateAppSetting"] = OrganizationWriteScenario(
+                "UpdateAppSetting",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/app-settings/{TestResourceChildId}",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    name = "ISOLATION_SETTING",
+                    sourceKind = "Literal",
+                    literalValue = "isolated",
+                    overrides = new Dictionary<Guid, string?>(),
+                    sourceResourceId = (Guid?)null,
+                    outputName = (string?)null,
+                    keyVaultResourceId = (Guid?)null,
+                    secretName = (string?)null,
+                    secretFeedKind = (string?)null,
+                    pipelineVariableName = (string?)null,
+                    identityResourceId = (Guid?)null,
+                    forceNonSecret = false,
+                    expectedVersion = 1
+                }),
+            ["DeleteAppSetting"] = OrganizationWriteScenario(
+                "DeleteAppSetting",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/app-settings/{TestResourceChildId}",
+                HttpStatusCode.NotFound,
+                new { expectedVersion = 1 }),
+            ["GetLinkRemovalImpact"] = OrganizationScenario(
+                "GetLinkRemovalImpact",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links/{TestResourceChildId}/impact",
+                HttpStatusCode.NotFound),
+            ["AddLink"] = OrganizationWriteScenario(
+                "AddLink",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    targetComponentId = TestComponentId,
+                    targetResourceId = TestResourceId,
+                    kind = "Access",
+                    identityKind = "System",
+                    identityResourceId = (Guid?)null,
+                    roles = new[] { "Reader" },
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedComponentVersion = 1
+                }),
+            ["UpdateLink"] = OrganizationWriteScenario(
+                "UpdateLink",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links/{TestResourceChildId}",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    targetComponentId = TestComponentId,
+                    targetResourceId = TestResourceId,
+                    kind = "Access",
+                    identityKind = "System",
+                    identityResourceId = (Guid?)null,
+                    roles = new[] { "Reader" },
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedLinkVersion = 1
+                }),
+            ["RemoveLink"] = OrganizationWriteScenario(
+                "RemoveLink",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links/{TestResourceChildId}",
+                HttpStatusCode.NotFound,
+                new { expectedLinkVersion = 1, expectedModelVersion = 1 }),
+            ["PreviewResourceName"] = OrganizationScenario(
+                "PreviewResourceName",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/preview-name",
+                HttpStatusCode.NotFound,
+                new { resourceGroupId = Guid.Parse(TestResourceGroupId), type = "KeyVault", logicalName = "isolated" }),
             ["UpdateProjectComponent"] = OrganizationWriteScenario(
                 "UpdateProjectComponent",
                 HttpMethod.Put,
@@ -297,6 +502,17 @@ public static class IsolationScenarios
                     removedResourceBehavior = "Detach",
                     deletionProtectionEnabled = true,
                     tags = new Dictionary<string, string>(),
+                    expectedVersion = 1
+                }),
+            ["SetComponentNaming"] = OrganizationWriteScenario(
+                "SetComponentNaming",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/naming",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    defaultTemplate = (string?)null,
+                    typeOverrides = Array.Empty<object>(),
                     expectedVersion = 1
                 }),
             ["DeleteProjectComponent"] = OrganizationWriteScenario(
@@ -359,6 +575,36 @@ public static class IsolationScenarios
                 $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/properties",
                 HttpStatusCode.NotFound,
                 new { properties = new { }, expectedVersion = 1 }),
+            ["SaveResourceApplication"] = OrganizationWriteScenario(
+                "SaveResourceApplication",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/application",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    expectedVersion = 0,
+                    name = "isolated",
+                    codeSourcePath = "src/isolated",
+                    dockerfilePath = "src/isolated/Dockerfile",
+                    buildContextPath = "src/isolated",
+                    imageRepository = "shop/orders/isolated",
+                    healthCheckPath = (string?)null,
+                    deploymentStrategy = "Direct",
+                    buildRegistryEnvironmentId = (Guid?)null,
+                    steps = Array.Empty<object>()
+                }),
+            ["SetResourceDefaultIdentity"] = OrganizationWriteScenario(
+                "SetResourceDefaultIdentity",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/default-identity",
+                HttpStatusCode.NotFound,
+                new { identityResourceId = (Guid?)null, expectedVersion = 1 }),
+            ["UpdateResourceMetadata"] = OrganizationWriteScenario(
+                "UpdateResourceMetadata",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/metadata",
+                HttpStatusCode.NotFound,
+                new { description = "isolated", tags = new Dictionary<string, string>(), expectedVersion = 1 }),
             ["SetOverride"] = OrganizationWriteScenario(
                 "SetOverride",
                 HttpMethod.Put,

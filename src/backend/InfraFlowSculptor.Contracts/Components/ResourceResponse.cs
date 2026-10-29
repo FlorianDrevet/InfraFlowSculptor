@@ -16,4 +16,5 @@ public sealed record ResourceResponse(
     IReadOnlyDictionary<Guid, string> ExistingIds,
     IReadOnlyDictionary<Guid, string> ForcedNames,
     IReadOnlyDictionary<string, string> Tags,
-    IReadOnlyList<ResourceChildResponse> Children);
+    IReadOnlyList<ResourceChildResponse> Children,
+    Guid? DefaultIdentityResourceId);

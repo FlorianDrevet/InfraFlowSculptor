@@ -7,12 +7,15 @@ using InfraFlowSculptor.Application.Common.Jobs;
 using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Application.Common.Plans;
 using InfraFlowSculptor.Application.Common.Features;
+using InfraFlowSculptor.Application.Naming.Availability;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Infrastructure.Azure;
 using InfraFlowSculptor.Infrastructure.Authentication;
 using InfraFlowSculptor.Infrastructure.Persistence;
 using InfraFlowSculptor.Infrastructure.Persistence.Admin;
 using InfraFlowSculptor.Infrastructure.Persistence.Auditing;
+using InfraFlowSculptor.Infrastructure.Persistence.Naming;
+using InfraFlowSculptor.Infrastructure.Dns;
 using InfraFlowSculptor.Application.Common.Auditing;
 using InfraFlowSculptor.Infrastructure.Features;
 using Microsoft.Extensions.Configuration;
@@ -51,6 +54,7 @@ public static class DependencyInjection
         services.TryAddScoped<IAuditWriter, EfAuditWriter>();
         services.TryAddScoped<IAuditEventReader, EfAuditEventReader>();
         services.TryAddScoped<IAuditEventPurger, EfAuditEventPurger>();
+        services.AddNameAvailabilityInfrastructure();
 
         var credential = new IfsAzureCredential();
         services.TryAddSingleton(credential);
@@ -97,6 +101,15 @@ public static class DependencyInjection
             }
         }
 
+        return services;
+    }
+
+    public static IServiceCollection AddNameAvailabilityInfrastructure(this IServiceCollection services)
+    {
+        services.TryAddScoped<INameAvailabilityStore, EfNameAvailabilityStore>();
+        services.TryAddSingleton<INameAvailabilityProbe>(_ => new DnsNameAvailabilityProbe(
+            (host, cancellationToken) => System.Net.Dns.GetHostAddressesAsync(host, cancellationToken),
+            TimeSpan.FromSeconds(3)));
         return services;
     }
 

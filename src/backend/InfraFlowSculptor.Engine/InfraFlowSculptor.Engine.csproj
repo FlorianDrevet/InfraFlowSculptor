@@ -2,4 +2,14 @@
   <PropertyGroup>
     <RootNamespace>InfraFlowSculptor.Engine</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\orders\infra\scripts\data-access.sql">
+      <LogicalName>InfraFlowSculptor.Engine.Links.AzureSql.DataAccess.sql</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\orders\infra\scripts\data-access-remove.sql">
+      <LogicalName>InfraFlowSculptor.Engine.Links.AzureSql.DataAccess.Remove.sql</LogicalName>
+    </EmbeddedResource>
+    <ProjectReference Include="..\InfraFlowSculptor.Catalog\InfraFlowSculptor.Catalog.csproj" />
+    <ProjectReference Include="..\InfraFlowSculptor.Domain\InfraFlowSculptor.Domain.csproj" />
+  </ItemGroup>
 </Project>

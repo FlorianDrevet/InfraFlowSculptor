@@ -38,7 +38,9 @@ appliqués. Les éléments implicites qui produiraient un tel accès suivent la 
 
 **RG-LIA-04 — Cardinalité et obligation.** Le descripteur fixe, par type de liaison, le nombre de
 liaisons permises (0..1, 1, 0..n) et si elle est obligatoire. Une liaison obligatoire absente est une
-erreur `VAL-LIA-OBLIGATOIRE`.
+erreur `VAL-LIA-OBLIGATOIRE`. Deux liaisons de même source, cible, type, identité, ensemble de rôles,
+portée et niveau d'accès sont un doublon et sont refusées (`VAL-LIA-DOUBLON`), même si la cardinalité
+autorise plusieurs liaisons ; l'ordre et la casse des rôles ne les distinguent pas.
 
 **RG-LIA-05 — Contraintes de placement.** Certains types exigent que source et cible soient dans le
 même abonnement et la même région (exemple : une Web App et son plan). Une violation est une erreur

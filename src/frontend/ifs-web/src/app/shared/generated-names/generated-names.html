@@ -1,0 +1,19 @@
+<section class="generated-names" aria-labelledby="generated-names-title">
+  <h3 id="generated-names-title">{{ 'resource.generatedNamesTitle' | transloco }}</h3>
+  @if (loading()) {
+    <p role="status">{{ 'resource.generatedNamesLoading' | transloco }}</p>
+  } @else if (error()) {
+    <p role="alert">{{ 'resource.generatedNamesError' | transloco }}</p>
+  } @else if (items().length === 0) {
+    <p>{{ 'resource.generatedNamesEmpty' | transloco }}</p>
+  } @else {
+    <ul>
+      @for (item of items(); track item.targetCode) {
+        <li>
+          <span>{{ item.targetCode }} · {{ item.region }}</span>
+          <span><code>{{ item.resourceName }}</code><small>{{ item.resourceGroupName }}</small></span>
+        </li>
+      }
+    </ul>
+  }
+</section>

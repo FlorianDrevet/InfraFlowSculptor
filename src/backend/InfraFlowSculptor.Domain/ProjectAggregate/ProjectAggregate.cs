@@ -19,6 +19,7 @@ public sealed partial class ProjectAggregate : AggregateRoot<ProjectId>, IOrgani
     private readonly List<ProjectRoleAssignment> roleAssignments = [];
     private readonly List<ProjectEnvironment> environments = [];
     private readonly List<ProjectTag> tags = [];
+    private readonly List<ResourceTypeNamingOverride> namingOverrides = [];
 
     public OrganizationId OrganizationId { get; private set; }
 
@@ -67,6 +68,8 @@ public sealed partial class ProjectAggregate : AggregateRoot<ProjectId>, IOrgani
     public IReadOnlyCollection<ProjectTag> Tags => tags.AsReadOnly();
 
     public IReadOnlyCollection<ProjectRoleAssignment> RoleAssignments => roleAssignments.AsReadOnly();
+
+    public IReadOnlyCollection<ResourceTypeNamingOverride> NamingOverrides => namingOverrides.AsReadOnly();
 
     private ProjectAggregate()
     {
@@ -446,9 +449,53 @@ public sealed partial class ProjectAggregate : AggregateRoot<ProjectId>, IOrgani
             return Error.Validation("PROJECT_NAMING_TEMPLATE_INVALID", "Naming templates must contain between 1 and 200 characters.");
         }
 
+        if (FirstPublishedAt is not null
+            && (!string.Equals(NamingPreset, normalizedPreset, StringComparison.Ordinal)
+                || !string.Equals(DefaultNameTemplate, normalizedDefaultTemplate, StringComparison.Ordinal)
+                || !string.Equals(ResourceGroupNameTemplate, normalizedResourceGroupTemplate, StringComparison.Ordinal)))
+        {
+            return Error.Conflict("PROJECT_NAMING_LOCKED_AFTER_PUBLICATION", "Naming settings cannot change after publication until the impact preview is available.");
+        }
+
         NamingPreset = normalizedPreset;
         DefaultNameTemplate = normalizedDefaultTemplate;
         ResourceGroupNameTemplate = normalizedResourceGroupTemplate;
+        Version = checked(Version + 1);
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> ConfigureTypeNamingOverride(string type, string? template, string? abbreviation)
+    {
+        var candidate = ResourceTypeNamingOverride.Create(type, template, abbreviation);
+        if (candidate.IsError)
+        {
+            return candidate.Errors;
+        }
+
+        var existing = namingOverrides.SingleOrDefault(value =>
+            string.Equals(value.Type, candidate.Value.Type, StringComparison.OrdinalIgnoreCase));
+        if (FirstPublishedAt is not null
+            && (existing is null
+                || !string.Equals(existing.Template, candidate.Value.Template, StringComparison.Ordinal)
+                || !string.Equals(existing.Abbreviation, candidate.Value.Abbreviation, StringComparison.Ordinal)))
+        {
+            return Error.Conflict("PROJECT_NAMING_LOCKED_AFTER_PUBLICATION", "Naming settings cannot change after publication until the impact preview is available.");
+        }
+
+        if (existing is not null && candidate.Value.Template is null && candidate.Value.Abbreviation is null)
+        {
+            namingOverrides.Remove(existing);
+        }
+        else if (existing is not null)
+        {
+            existing.SetValues(candidate.Value.Template, candidate.Value.Abbreviation);
+        }
+        else if (candidate.Value.Template is not null || candidate.Value.Abbreviation is not null)
+        {
+            namingOverrides.Add(candidate.Value);
+        }
+
+        Version = checked(Version + 1);
         return Result.Success;
     }
 

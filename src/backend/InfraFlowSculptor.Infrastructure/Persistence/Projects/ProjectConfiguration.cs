@@ -90,6 +90,7 @@ public sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectAggre
             environments.Property(environment => environment.Id)
                 .HasColumnName("environment_id")
                 .ValueGeneratedNever();
+            environments.Property(environment => environment.Version).IsRequired();
             environments.Property(environment => environment.Name).HasMaxLength(50).IsRequired();
             environments.Property(environment => environment.Code).HasMaxLength(8).IsRequired();
             environments.Property(environment => environment.Position).IsRequired();
@@ -117,5 +118,17 @@ public sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectAggre
             environments.Navigation(environment => environment.Tags).UsePropertyAccessMode(PropertyAccessMode.Field);
         });
         builder.Navigation(project => project.Environments).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.OwnsMany(project => project.NamingOverrides, overrides =>
+        {
+            overrides.ToTable("project_resource_type_naming_overrides");
+            overrides.WithOwner().HasForeignKey("ProjectId");
+            overrides.HasKey("ProjectId", nameof(ResourceTypeNamingOverride.Type))
+                .HasName("pk_project_resource_type_naming_overrides");
+            overrides.Property(value => value.Type).HasMaxLength(100).IsRequired();
+            overrides.Property(value => value.Template).HasMaxLength(200);
+            overrides.Property(value => value.Abbreviation).HasMaxLength(16);
+        });
+        builder.Navigation(project => project.NamingOverrides).UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

@@ -5,12 +5,14 @@ using System.Text.Json;
 using InfraFlowSculptor.Api.Configuration;
 using InfraFlowSculptor.Api.Tests.Common;
 using InfraFlowSculptor.Contracts.Projects;
+using InfraFlowSculptor.Contracts.Resources;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using ComponentRoot = InfraFlowSculptor.Domain.ComponentAggregate.ComponentAggregate;
 using InfraFlowSculptor.Infrastructure.Authentication;
 using InfraFlowSculptor.Infrastructure.Persistence;
+using InfraFlowSculptor.Infrastructure.Persistence.Admin;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -24,6 +26,11 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
     private static readonly Guid ProjectId = DemoDataSeeder.ShopProjectId.Value;
     private static readonly string AliceToken = TestTokens.CreateAccessToken();
     private static readonly string[] AliceApprovers = ["alice@contoso.example"];
+    private static readonly string[] KeyVaultSecretUserRoles = ["Key Vault Secrets User"];
+    private static readonly string[] ReaderRoleNames = ["Reader"];
+    private static readonly string[] DuplicateKeyVaultSecretUserRoles = [" key vault secrets user "];
+    private static readonly string[] WhitespaceKeyVaultSecretUserRoles = [" Key Vault Secrets User "];
+    private static readonly string[] DuplicateRoleEntries = ["Key Vault Secrets User", " key vault secrets user "];
     private readonly HttpClient client = factory.CreateClient();
 
     [Fact]
@@ -45,6 +52,1437 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
     [Fact]
     public Task EffectiveValuesExposeTargetPresenceTagsAndPropertyProvenance() =>
         RunSerialAsync(EffectiveValuesExposeTargetPresenceTagsAndPropertyProvenanceCore);
+
+    [Fact]
+    public Task ResourceDeletionImpactPreviewIsServerCalculatedAndReportsPartialCoverage() =>
+        RunSerialAsync(ResourceDeletionImpactPreviewIsServerCalculatedAndReportsPartialCoverageCore);
+
+    [Fact]
+    public Task ResourceLinksCanBeCreatedListedAndPreviewedBeforeRemoval() =>
+        RunSerialAsync(ResourceLinksCanBeCreatedListedAndPreviewedBeforeRemovalCore);
+
+    [Fact]
+    public Task LinkPreviewIsServerCalculatedPerEnvironmentWithoutChangingTheModel() =>
+        RunSerialAsync(LinkPreviewIsServerCalculatedPerEnvironmentWithoutChangingTheModelCore);
+
+    [Fact]
+    public Task ResourceLinkUpdateTrimsRolesBeforeCalculatingImpact() =>
+        RunSerialAsync(ResourceLinkUpdateTrimsRolesBeforeCalculatingImpactCore);
+
+    [Fact]
+    public Task ResourceLinkCanBeRemovedAfterReviewingImpact() =>
+        RunSerialAsync(ResourceLinkCanBeRemovedAfterReviewingImpactCore);
+
+    [Fact]
+    public Task ConcurrentHostingLinksRespectComponentVersionAndCardinality() =>
+        RunSerialAsync(ConcurrentHostingLinksRespectComponentVersionAndCardinalityCore);
+
+    [Fact]
+    public Task SqlAdministratorWarningCanBeAcknowledgedAndReadBack() =>
+        RunSerialAsync(SqlAdministratorWarningCanBeAcknowledgedAndReadBackCore);
+
+    [Fact]
+    public Task StaleComponentVersionWinsOverLinkCardinalityValidation() =>
+        RunSerialAsync(StaleComponentVersionWinsOverLinkCardinalityValidationCore);
+
+    [Fact]
+    public Task DeletingDefaultLogAnalyticsWorkspaceClearsComponentReference() =>
+        RunSerialAsync(DeletingDefaultLogAnalyticsWorkspaceClearsComponentReferenceCore);
+
+    [Fact]
+    public Task DefaultLogAnalyticsRejectsIncompatibleTargetComponents() =>
+        RunSerialAsync(DefaultLogAnalyticsRejectsIncompatibleTargetComponentsCore);
+
+    [Fact]
+    public Task DeletingUserAssignedIdentityUsedByALinkIsBlocked() =>
+        RunSerialAsync(DeletingUserAssignedIdentityUsedByALinkIsBlockedCore);
+
+    [Fact]
+    public Task DeletingComponentWithIncomingLinksIsBlocked() =>
+        RunSerialAsync(DeletingComponentWithIncomingLinksIsBlockedCore);
+
+    [Fact]
+    public Task NewResourceNamePreviewUsesTheServerNamingEngine() =>
+        RunSerialAsync(NewResourceNamePreviewUsesTheServerNamingEngineCore);
+
+    [Fact]
+    public Task ResourceMetadataCanBeUpdatedWithOptimisticConcurrency() =>
+        RunSerialAsync(ResourceMetadataCanBeUpdatedWithOptimisticConcurrencyCore);
+
+    [Fact]
+    public Task ResourceMetadataRejectsNullTagsAndValues() =>
+        RunSerialAsync(ResourceMetadataRejectsNullTagsAndValuesCore);
+
+    [Fact]
+    public Task SuspiciousApplicationSettingLiteralIsRejected() =>
+        RunSerialAsync(SuspiciousApplicationSettingLiteralIsRejectedCore);
+
+    [Fact]
+    public Task ForcedSuspiciousApplicationSettingIsAuditedWithoutItsValue() =>
+        RunSerialAsync(ForcedSuspiciousApplicationSettingIsAuditedWithoutItsValueCore);
+
+    [Fact]
+    public Task PilotPipelineSecretUsesExpectedVariableAndImplicitSecretRead() =>
+        RunSerialAsync(PilotPipelineSecretUsesExpectedVariableAndImplicitSecretReadCore);
+
+    [Fact]
+    public Task ApplicationSettingLiteralCanBeUpdatedAndDeleted() =>
+        RunSerialAsync(ApplicationSettingLiteralCanBeUpdatedAndDeletedCore);
+
+    [Fact]
+    public Task ApplicationIsUnavailableWhenThePinnedCatalogHasNoContainerProfile() =>
+        RunSerialAsync(ApplicationIsUnavailableWhenThePinnedCatalogHasNoContainerProfileCore);
+
+    [Fact]
+    public Task ContainerApplicationDefaultsComeFromThePinnedBuildProfile() =>
+        RunSerialAsync(ContainerApplicationDefaultsComeFromThePinnedBuildProfileCore);
+
+    [Fact]
+    public Task ContainerApplicationSettingsRoundTripThroughRelationalStorage() =>
+        RunSerialAsync(ContainerApplicationSettingsRoundTripThroughRelationalStorageCore);
+
+    [Fact]
+    public Task PipelineSecretVaultCannotShareConsumerComponent() =>
+        RunSerialAsync(PipelineSecretVaultCannotShareConsumerComponentCore);
+
+    [Fact]
+    public Task ProjectNamingSettingsCanBeSavedAndPreviewUsesComponentOverrides() =>
+        RunSerialAsync(ProjectNamingSettingsCanBeSavedAndPreviewUsesComponentOverridesCore);
+
+    [Fact]
+    public Task NamingPreviewRejectsTypesOutsideThePinnedCatalog() =>
+        RunSerialAsync(NamingPreviewRejectsTypesOutsideThePinnedCatalogCore);
+
+    [Fact]
+    public Task NamingEndpointsRejectNullTypeOverrideRows() =>
+        RunSerialAsync(NamingEndpointsRejectNullTypeOverrideRowsCore);
+
+    [Fact]
+    public Task NamingPreviewReportsGlobalNamesReservedBySiblingProjects() =>
+        RunSerialAsync(NamingPreviewReportsGlobalNamesReservedBySiblingProjectsCore);
+
+    private async Task NewResourceNamePreviewUsesTheServerNamingEngineCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            using var request = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/preview-name",
+                new { resourceGroupId, type = "KeyVault", logicalName = "preview-vault" });
+            using var response = await client.SendAsync(request);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var content = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            var item = Assert.Single(content.RootElement.GetProperty("items").EnumerateArray());
+            Assert.Equal(componentId, item.GetProperty("componentId").GetGuid());
+            Assert.Equal("KeyVault", item.GetProperty("resourceType").GetString());
+            Assert.Equal("preview-vault", item.GetProperty("logicalName").GetString());
+            Assert.Equal(environment.Code, item.GetProperty("targetCode").GetString());
+            Assert.False(string.IsNullOrWhiteSpace(item.GetProperty("resourceName").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(item.GetProperty("resourceGroupName").GetString()));
+
+            var resourceBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "KeyVault",
+                "preview-vault",
+                new Dictionary<string, object?>());
+            using var resource = JsonDocument.Parse(resourceBody);
+            var resourceId = resource.RootElement.GetProperty("id").GetGuid();
+            using var existingResourceRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/preview-name",
+                new { resourceGroupId, type = "KeyVault", logicalName = "preview-vault", resourceId });
+            using var existingResourceResponse = await client.SendAsync(existingResourceRequest);
+
+            Assert.Equal(HttpStatusCode.OK, existingResourceResponse.StatusCode);
+            using var existingPreview = await JsonDocument.ParseAsync(await existingResourceResponse.Content.ReadAsStreamAsync());
+            var existingItem = Assert.Single(existingPreview.RootElement.GetProperty("items").EnumerateArray());
+            Assert.Equal(resourceId, existingItem.GetProperty("resourceId").GetGuid());
+            Assert.Equal(item.GetProperty("resourceName").GetString(), existingItem.GetProperty("resourceName").GetString());
+
+            const string longSiblingName = "verylonglogicalnameresourcename";
+            var siblingBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "KeyVault",
+                longSiblingName,
+                new Dictionary<string, object?>());
+            using var sibling = JsonDocument.Parse(siblingBody);
+            var siblingId = sibling.RootElement.GetProperty("id").GetGuid();
+
+            using var siblingPreviewRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/preview-name",
+                new { resourceGroupId, type = "KeyVault", logicalName = longSiblingName, resourceId = siblingId });
+            using var siblingPreviewResponse = await client.SendAsync(siblingPreviewRequest);
+            Assert.Equal(HttpStatusCode.OK, siblingPreviewResponse.StatusCode);
+            using var siblingPreview = await JsonDocument.ParseAsync(await siblingPreviewResponse.Content.ReadAsStreamAsync());
+            Assert.Contains(
+                siblingPreview.RootElement.GetProperty("issues").EnumerateArray(),
+                issue => issue.GetProperty("resourceId").GetGuid() == siblingId);
+
+            using var candidatePreviewRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/preview-name",
+                new { resourceGroupId, type = "KeyVault", logicalName = "short-candidate" });
+            using var candidatePreviewResponse = await client.SendAsync(candidatePreviewRequest);
+            Assert.Equal(HttpStatusCode.OK, candidatePreviewResponse.StatusCode);
+            using var candidatePreview = await JsonDocument.ParseAsync(await candidatePreviewResponse.Content.ReadAsStreamAsync());
+            Assert.DoesNotContain(
+                candidatePreview.RootElement.GetProperty("issues").EnumerateArray(),
+                issue => issue.TryGetProperty("resourceId", out var issueResourceId)
+                    && issueResourceId.ValueKind == JsonValueKind.String
+                    && issueResourceId.GetGuid() == siblingId);
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task ContainerApplicationDefaultsComeFromThePinnedBuildProfileCore()
+    {
+        await PrepareAsync();
+        var originalCatalogVersion = await PinProjectCatalogVersionAsync("2026.10-pilot.3");
+        Guid? testComponentId = null;
+
+        try
+        {
+            var environment = await GetEditableEnvironmentAsync();
+            var componentId = await CreateResourceTestComponentAsync(environment);
+            testComponentId = componentId;
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var applicationBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>());
+            using var application = JsonDocument.Parse(applicationBody);
+            var resourceId = application.RootElement.GetProperty("id").GetGuid();
+
+            using var request = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{resourceId:D}/application");
+            using var response = await client.SendAsync(request);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var configuration = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            Assert.True(configuration.RootElement.GetProperty("available").GetBoolean());
+            Assert.Equal("2026.10-pilot.3", configuration.RootElement.GetProperty("catalogVersion").GetString());
+            var values = configuration.RootElement.GetProperty("application");
+            Assert.Equal("api", values.GetProperty("name").GetString());
+            Assert.Equal("src/api", values.GetProperty("codeSourcePath").GetString());
+            Assert.Equal("src/api/Dockerfile", values.GetProperty("dockerfilePath").GetString());
+            Assert.Equal("src/api", values.GetProperty("buildContextPath").GetString());
+            Assert.Matches("^shop/[a-z0-9-]+/api$", values.GetProperty("imageRepository").GetString()!);
+            Assert.Equal(2, values.GetProperty("steps").GetArrayLength());
+            var imageScan = values.GetProperty("steps").EnumerateArray()
+                .Single(step => step.GetProperty("name").GetString() == "ImageScan");
+            Assert.True(imageScan.GetProperty("blocking").GetBoolean());
+            Assert.Contains(imageScan.GetProperty("parameters").EnumerateArray(), parameter =>
+                parameter.GetProperty("name").GetString() == "minimumSeverity"
+                && parameter.GetProperty("value").GetString() == "CRITICAL");
+        }
+        finally
+        {
+            try
+            {
+                if (testComponentId is { } componentId)
+                {
+                    await CleanupResourceTestComponentAsync(componentId);
+                }
+            }
+            finally
+            {
+                await PinProjectCatalogVersionAsync(originalCatalogVersion);
+            }
+        }
+    }
+
+    private async Task ContainerApplicationSettingsRoundTripThroughRelationalStorageCore()
+    {
+        await PrepareAsync();
+        var originalCatalogVersion = await PinProjectCatalogVersionAsync("2026.10-pilot.3");
+        Guid? testComponentId = null;
+
+        try
+        {
+            var environment = await GetEditableEnvironmentAsync();
+            var componentId = await CreateResourceTestComponentAsync(environment);
+            testComponentId = componentId;
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var applicationBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>());
+            using var application = JsonDocument.Parse(applicationBody);
+            var resourceId = application.RootElement.GetProperty("id").GetGuid();
+            using var saveRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{resourceId:D}/application",
+                new
+                {
+                    expectedVersion = 0,
+                    name = "api",
+                    codeSourcePath = "src/api",
+                    dockerfilePath = "src/api/Dockerfile",
+                    buildContextPath = "src/api",
+                    imageRepository = "shop/orders/api",
+                    healthCheckPath = "/healthz",
+                    deploymentStrategy = "Direct",
+                    buildRegistryEnvironmentId = (Guid?)null,
+                    steps = new object[]
+                    {
+                        new { name = "DependencyCache", enabled = true, blocking = false, position = "BeforeBuild", parameters = Array.Empty<object>() },
+                        new
+                        {
+                            name = "ImageScan",
+                            enabled = true,
+                            blocking = true,
+                            position = "AfterBuild",
+                            parameters = new object[]
+                            {
+                                new { name = "tool", value = "Trivy" },
+                                new { name = "minimumSeverity", value = "CRITICAL" },
+                                new { name = "exceptions", value = "" }
+                            }
+                        }
+                    }
+                });
+            saveRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var saveResponse = await client.SendAsync(saveRequest);
+
+            Assert.Equal(HttpStatusCode.OK, saveResponse.StatusCode);
+            using var saved = await JsonDocument.ParseAsync(await saveResponse.Content.ReadAsStreamAsync());
+            Assert.Equal(1, saved.RootElement.GetProperty("application").GetProperty("version").GetInt32());
+            Assert.Equal("CRITICAL", saved.RootElement.GetProperty("application").GetProperty("steps").EnumerateArray()
+                .Single(step => step.GetProperty("name").GetString() == "ImageScan")
+                .GetProperty("parameters").EnumerateArray()
+                .Single(parameter => parameter.GetProperty("name").GetString() == "minimumSeverity")
+                .GetProperty("value").GetString());
+
+            using var readRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{resourceId:D}/application");
+            using var readResponse = await client.SendAsync(readRequest);
+            Assert.Equal(HttpStatusCode.OK, readResponse.StatusCode);
+            using var reread = await JsonDocument.ParseAsync(await readResponse.Content.ReadAsStreamAsync());
+            Assert.Equal("/healthz", reread.RootElement.GetProperty("application").GetProperty("healthCheckPath").GetString());
+            Assert.Equal(2, reread.RootElement.GetProperty("application").GetProperty("steps").GetArrayLength());
+        }
+        finally
+        {
+            try
+            {
+                if (testComponentId is { } componentId)
+                {
+                    await CleanupResourceTestComponentAsync(componentId);
+                }
+            }
+            finally
+            {
+                await PinProjectCatalogVersionAsync(originalCatalogVersion);
+            }
+        }
+    }
+
+    private async Task ResourceMetadataCanBeUpdatedWithOptimisticConcurrencyCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var resourceBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "KeyVault",
+                "metadata-vault",
+                new Dictionary<string, object?>());
+            using var created = JsonDocument.Parse(resourceBody);
+            var resourceId = created.RootElement.GetProperty("id").GetGuid();
+            var version = created.RootElement.GetProperty("version").GetInt32();
+            var tags = new Dictionary<string, string> { ["team"] = "platform" };
+
+            using var request = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{resourceId:D}/metadata",
+                new { description = "Vault de la recette", tags, expectedVersion = version });
+            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var response = await client.SendAsync(request);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var updated = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            Assert.Equal("Vault de la recette", updated.RootElement.GetProperty("description").GetString());
+            Assert.Equal("platform", updated.RootElement.GetProperty("tags").GetProperty("team").GetString());
+            Assert.True(updated.RootElement.GetProperty("version").GetInt32() > version);
+
+            using var staleRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{resourceId:D}/metadata",
+                new { description = "Modification périmée", tags, expectedVersion = version });
+            staleRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var staleResponse = await client.SendAsync(staleRequest);
+            Assert.Equal(HttpStatusCode.Conflict, staleResponse.StatusCode);
+
+            using var resourceRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}");
+            using var resourceResponse = await client.SendAsync(resourceRequest);
+            Assert.Equal(HttpStatusCode.OK, resourceResponse.StatusCode);
+            using var current = await JsonDocument.ParseAsync(await resourceResponse.Content.ReadAsStreamAsync());
+            var currentResource = Assert.Single(
+                current.RootElement.GetProperty("resources").EnumerateArray(),
+                item => item.GetProperty("id").GetGuid() == resourceId);
+            Assert.Equal("Vault de la recette", currentResource.GetProperty("description").GetString());
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task ResourceMetadataRejectsNullTagsAndValuesCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var resourceBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "KeyVault",
+                "invalid-metadata-vault",
+                new Dictionary<string, object?>());
+            using var created = JsonDocument.Parse(resourceBody);
+            var resourceId = created.RootElement.GetProperty("id").GetGuid();
+            var version = created.RootElement.GetProperty("version").GetInt32();
+            var initialDescription = created.RootElement.GetProperty("description").GetString();
+            var initialTags = created.RootElement.GetProperty("tags").EnumerateObject()
+                .ToDictionary(tag => tag.Name, tag => tag.Value.GetString(), StringComparer.Ordinal);
+            object[] invalidRequests =
+            [
+                new { description = "Invalid null tags", tags = (object?)null, expectedVersion = version },
+                new
+                {
+                    description = "Invalid null tag value",
+                    tags = new Dictionary<string, string?> { ["team"] = null },
+                    expectedVersion = version
+                }
+            ];
+
+            foreach (var invalidRequest in invalidRequests)
+            {
+                using var request = CreateRequest(
+                    HttpMethod.Put,
+                    $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{resourceId:D}/metadata",
+                    invalidRequest);
+                request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+                using var response = await client.SendAsync(request);
+
+                Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+                Assert.Contains("RESOURCE_TAG_FORMAT", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+            }
+
+            using var currentRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}");
+            using var currentResponse = await client.SendAsync(currentRequest);
+            Assert.Equal(HttpStatusCode.OK, currentResponse.StatusCode);
+            using var current = await JsonDocument.ParseAsync(await currentResponse.Content.ReadAsStreamAsync());
+            var currentResource = Assert.Single(
+                current.RootElement.GetProperty("resources").EnumerateArray(),
+                item => item.GetProperty("id").GetGuid() == resourceId);
+            Assert.Equal(initialDescription, currentResource.GetProperty("description").GetString());
+            Assert.Equal(version, currentResource.GetProperty("version").GetInt32());
+            var currentTags = currentResource.GetProperty("tags").EnumerateObject()
+                .ToDictionary(tag => tag.Name, tag => tag.Value.GetString(), StringComparer.Ordinal);
+            Assert.Equal(initialTags.OrderBy(tag => tag.Key), currentTags.OrderBy(tag => tag.Key));
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task SuspiciousApplicationSettingLiteralIsRejectedCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var applicationBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>());
+            using var application = JsonDocument.Parse(applicationBody);
+            var applicationResourceId = application.RootElement.GetProperty("id").GetGuid();
+            const string token = "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+            using var request = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationResourceId:D}/app-settings",
+                new
+                {
+                    name = "Test__Token",
+                    sourceKind = "Literal",
+                    literalValue = token,
+                    overrides = new Dictionary<Guid, string?>(),
+                    forceNonSecret = false
+                });
+            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var response = await client.SendAsync(request);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            var body = await response.Content.ReadAsStringAsync();
+            Assert.True(body.Contains("VAL-PAR-SECRET-SUSPECT", StringComparison.Ordinal), body);
+
+            using var scope = factory.Services.CreateScope();
+            scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+            var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+            Assert.False(await dbContext.AppSettings.AnyAsync(setting => setting.ApplicationResourceId == applicationResourceId));
+            Assert.False(await dbContext.AuditEvents.AnyAsync(audit => audit.Diff.Contains(token)));
+            Assert.DoesNotContain(await dbContext.OutboxMessages.ToArrayAsync(), message => message.Payload.GetRawText().Contains(token, StringComparison.Ordinal));
+            Assert.False(await dbContext.IdempotencyKeys.AnyAsync(key => key.Response != null && key.Response.Contains(token)));
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task ForcedSuspiciousApplicationSettingIsAuditedWithoutItsValueCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var applicationBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>());
+            using var application = JsonDocument.Parse(applicationBody);
+            var applicationResourceId = application.RootElement.GetProperty("id").GetGuid();
+            const string token = "ghp_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+            using var request = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationResourceId:D}/app-settings",
+                new
+                {
+                    name = "Test__Token",
+                    sourceKind = "Literal",
+                    literalValue = token,
+                    overrides = new Dictionary<Guid, string?>(),
+                    forceNonSecret = true
+                });
+            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var response = await client.SendAsync(request);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Assert.DoesNotContain(token, responseBody, StringComparison.Ordinal);
+            using var responseDocument = JsonDocument.Parse(responseBody);
+            Assert.Contains(responseDocument.RootElement.GetProperty("warnings").EnumerateArray(),
+                warning => warning.GetString()!.Contains("VAL-PAR-SECRET-SUSPECT", StringComparison.Ordinal));
+
+            using var scope = factory.Services.CreateScope();
+            scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+            var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+            var setting = await dbContext.AppSettings.SingleAsync(candidate => candidate.ApplicationResourceId == applicationResourceId);
+            Assert.Equal(token, setting.LiteralSource!.Value);
+            var audits = await dbContext.AuditEvents.Where(candidate => candidate.ObjectId == setting.Id).ToArrayAsync();
+            Assert.Contains(audits, audit => audit.Action == "component.app_setting.created");
+            Assert.Single(audits, audit => audit.Action == "component.app_setting.value_forced_non_secret");
+            Assert.All(audits, audit => Assert.DoesNotContain(token, audit.Diff, StringComparison.Ordinal));
+            Assert.False(await dbContext.IdempotencyKeys.AnyAsync(key => key.Response != null && key.Response.Contains(token)));
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task PilotPipelineSecretUsesExpectedVariableAndImplicitSecretReadCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        Guid? vaultComponentId = null;
+        Guid? applicationComponentId = null;
+        try
+        {
+            vaultComponentId = await CreateResourceTestComponentAsync(environment);
+            var vaultGroupId = await CreateResourceTestGroupAsync(vaultComponentId.Value);
+            var vaultBody = await CreateResourceAsync(
+                vaultComponentId.Value,
+                vaultGroupId,
+                "KeyVault",
+                "main",
+                new Dictionary<string, object?>());
+            using var vault = JsonDocument.Parse(vaultBody);
+            var vaultId = vault.RootElement.GetProperty("id").GetGuid();
+
+            applicationComponentId = await CreateResourceTestComponentAsync(environment);
+            var applicationGroupId = await CreateResourceTestGroupAsync(applicationComponentId.Value);
+            var identityBody = await CreateResourceAsync(
+                applicationComponentId.Value,
+                applicationGroupId,
+                "UserAssignedIdentity",
+                "id-api",
+                new Dictionary<string, object?>());
+            using var identity = JsonDocument.Parse(identityBody);
+            var identityId = identity.RootElement.GetProperty("id").GetGuid();
+            var readerIdentityBody = await CreateResourceAsync(
+                applicationComponentId.Value,
+                applicationGroupId,
+                "UserAssignedIdentity",
+                "id-secret-reader",
+                new Dictionary<string, object?>());
+            using var readerIdentity = JsonDocument.Parse(readerIdentityBody);
+            var readerIdentityId = readerIdentity.RootElement.GetProperty("id").GetGuid();
+            var applicationBody = await CreateResourceAsync(
+                applicationComponentId.Value,
+                applicationGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>(),
+                defaultIdentityResourceId: identityId);
+            using var application = JsonDocument.Parse(applicationBody);
+            var applicationId = application.RootElement.GetProperty("id").GetGuid();
+            Assert.Equal(identityId, application.RootElement.GetProperty("defaultIdentityResourceId").GetGuid());
+
+            using var paddedImplicitNameRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/app-settings",
+                new
+                {
+                    name = " AZURE_CLIENT_ID ",
+                    sourceKind = "Literal",
+                    literalValue = "safe-value",
+                    overrides = new Dictionary<Guid, string?>(),
+                    forceNonSecret = false
+                });
+            paddedImplicitNameRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var paddedImplicitNameResponse = await client.SendAsync(paddedImplicitNameRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, paddedImplicitNameResponse.StatusCode);
+            Assert.Equal("VAL-PAR-IMPLICITE-CONFLIT", await GetProblemCodeAsync(paddedImplicitNameResponse));
+
+            using var missingNameRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/app-settings",
+                new
+                {
+                    name = (string?)null,
+                    sourceKind = "Literal",
+                    literalValue = "safe-value",
+                    overrides = new Dictionary<Guid, string?>(),
+                    forceNonSecret = false
+                });
+            missingNameRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var missingNameResponse = await client.SendAsync(missingNameRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, missingNameResponse.StatusCode);
+            Assert.Equal("VAL-PAR-01", await GetProblemCodeAsync(missingNameResponse));
+
+            using var request = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/app-settings",
+                new
+                {
+                    name = "Payments__ApiKey",
+                    sourceKind = "KeyVaultSecret",
+                    literalValue = (string?)null,
+                    overrides = (object?)null,
+                    sourceResourceId = (Guid?)null,
+                    outputName = (string?)null,
+                    keyVaultResourceId = (Guid?)vaultId,
+                    secretName = "payments-api-key",
+                    secretFeedKind = "PipelineSecret",
+                    pipelineVariableName = (string?)null,
+                    identityResourceId = (Guid?)readerIdentityId,
+                    forceNonSecret = false
+                });
+            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var response = await client.SendAsync(request);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            using var created = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            var explicitSettingId = created.RootElement.GetProperty("id").GetGuid();
+            Assert.Equal("MAIN_PAYMENTS_API_KEY", created.RootElement.GetProperty("pipelineVariableName").GetString());
+            Assert.Equal(vaultId, created.RootElement.GetProperty("keyVaultResourceId").GetGuid());
+            Assert.Equal(readerIdentityId, created.RootElement.GetProperty("identityResourceId").GetGuid());
+
+            using var defaultIdentitySettingRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/app-settings",
+                new
+                {
+                    name = "Payments__CustomerToken",
+                    sourceKind = "KeyVaultSecret",
+                    literalValue = (string?)null,
+                    overrides = (object?)null,
+                    sourceResourceId = (Guid?)null,
+                    outputName = (string?)null,
+                    keyVaultResourceId = (Guid?)vaultId,
+                    secretName = "customer-token",
+                    secretFeedKind = "ManagedOutsideIfs",
+                    pipelineVariableName = (string?)null,
+                    identityResourceId = (Guid?)null,
+                    forceNonSecret = false
+                });
+            defaultIdentitySettingRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var defaultIdentitySettingResponse = await client.SendAsync(defaultIdentitySettingRequest);
+            Assert.Equal(HttpStatusCode.Created, defaultIdentitySettingResponse.StatusCode);
+            using var defaultIdentitySetting = await JsonDocument.ParseAsync(await defaultIdentitySettingResponse.Content.ReadAsStreamAsync());
+            var defaultSettingId = defaultIdentitySetting.RootElement.GetProperty("id").GetGuid();
+
+            using var linksRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/links");
+            using var linksResponse = await client.SendAsync(linksRequest);
+            Assert.Equal(HttpStatusCode.OK, linksResponse.StatusCode);
+            using var links = await JsonDocument.ParseAsync(await linksResponse.Content.ReadAsStreamAsync());
+            var secretReads = links.RootElement.GetProperty("outgoing").EnumerateArray()
+                .Where(link => link.GetProperty("kind").GetString() == "SecretRead")
+                .ToArray();
+            var explicitIdentityRead = Assert.Single(secretReads,
+                link => link.GetProperty("identityResourceId").GetGuid() == readerIdentityId);
+            var defaultIdentityRead = Assert.Single(secretReads,
+                link => link.GetProperty("identityResourceId").GetGuid() == identityId);
+            Assert.Equal("Implicit", explicitIdentityRead.GetProperty("origin").GetString());
+            Assert.Equal("ApplicationSetting", explicitIdentityRead.GetProperty("originSource").GetProperty("kind").GetString());
+            Assert.Equal(explicitSettingId, explicitIdentityRead.GetProperty("originSource").GetProperty("id").GetGuid());
+            Assert.Equal("Payments__ApiKey", explicitIdentityRead.GetProperty("originSource").GetProperty("name").GetString());
+            Assert.Equal(vaultId, explicitIdentityRead.GetProperty("targetResourceId").GetGuid());
+            Assert.Contains("Key Vault Secrets User", explicitIdentityRead.GetProperty("roles").EnumerateArray()
+                .Select(role => role.GetString()), StringComparer.Ordinal);
+            Assert.Equal(vaultId, defaultIdentityRead.GetProperty("targetResourceId").GetGuid());
+            Assert.Equal(defaultSettingId, defaultIdentityRead.GetProperty("originSource").GetProperty("id").GetGuid());
+
+            using var settingsRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/app-settings");
+            using var settingsResponse = await client.SendAsync(settingsRequest);
+            Assert.Equal(HttpStatusCode.OK, settingsResponse.StatusCode);
+            using var settings = await JsonDocument.ParseAsync(await settingsResponse.Content.ReadAsStreamAsync());
+            var clientId = Assert.Single(settings.RootElement.EnumerateArray(),
+                setting => setting.GetProperty("name").GetString() == "AZURE_CLIENT_ID");
+            Assert.Equal(identityId, clientId.GetProperty("sourceResourceId").GetGuid());
+            Assert.Equal("clientId", clientId.GetProperty("outputName").GetString());
+
+            using var identityImpactRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{identityId:D}/delete-impact");
+            using var identityImpactResponse = await client.SendAsync(identityImpactRequest);
+            Assert.Equal(HttpStatusCode.OK, identityImpactResponse.StatusCode);
+            using var identityImpact = await JsonDocument.ParseAsync(await identityImpactResponse.Content.ReadAsStreamAsync());
+            Assert.Equal("Blocked", identityImpact.RootElement.GetProperty("status").GetString());
+            Assert.Contains(identityImpact.RootElement.GetProperty("items").EnumerateArray(), item =>
+                item.GetProperty("code").GetString() == "APP_SETTING_RESOURCE_IN_USE"
+                && item.GetProperty("name").GetString() == "AZURE_CLIENT_ID");
+
+            using var deleteIdentityRequest = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{identityId:D}",
+                new { expectedVersion = identity.RootElement.GetProperty("version").GetInt32() });
+            deleteIdentityRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var deleteIdentityResponse = await client.SendAsync(deleteIdentityRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, deleteIdentityResponse.StatusCode);
+            Assert.Equal("APP_SETTING_RESOURCE_IN_USE", await GetProblemCodeAsync(deleteIdentityResponse));
+
+            using var changeDefaultIdentityRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/default-identity",
+                new
+                {
+                    identityResourceId = (Guid?)readerIdentityId,
+                    expectedVersion = application.RootElement.GetProperty("version").GetInt32()
+                });
+            changeDefaultIdentityRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var changeDefaultIdentityResponse = await client.SendAsync(changeDefaultIdentityRequest);
+            Assert.Equal(HttpStatusCode.OK, changeDefaultIdentityResponse.StatusCode);
+            using var changedDefaultIdentity = await JsonDocument.ParseAsync(await changeDefaultIdentityResponse.Content.ReadAsStreamAsync());
+            Assert.Equal(readerIdentityId, changedDefaultIdentity.RootElement.GetProperty("defaultIdentityResourceId").GetGuid());
+
+            using var clearDefaultIdentityRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/default-identity",
+                new
+                {
+                    identityResourceId = (Guid?)null,
+                    expectedVersion = changedDefaultIdentity.RootElement.GetProperty("version").GetInt32()
+                });
+            clearDefaultIdentityRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var clearDefaultIdentityResponse = await client.SendAsync(clearDefaultIdentityRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, clearDefaultIdentityResponse.StatusCode);
+            Assert.Equal("RG-LIA-08-IDENTITY-REQUIRED", await GetProblemCodeAsync(clearDefaultIdentityResponse));
+
+            using var impactRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{vaultComponentId.Value:D}/resources/{vaultId:D}/delete-impact");
+            using var impactResponse = await client.SendAsync(impactRequest);
+            Assert.Equal(HttpStatusCode.OK, impactResponse.StatusCode);
+            using var impact = await JsonDocument.ParseAsync(await impactResponse.Content.ReadAsStreamAsync());
+            Assert.Equal("Blocked", impact.RootElement.GetProperty("status").GetString());
+            Assert.Contains(impact.RootElement.GetProperty("items").EnumerateArray(), item =>
+                item.GetProperty("code").GetString() == "APP_SETTING_RESOURCE_IN_USE"
+                && item.GetProperty("name").GetString() == "Payments__ApiKey");
+
+            using var deleteVaultRequest = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{vaultComponentId.Value:D}/resources/{vaultId:D}",
+                new { expectedVersion = vault.RootElement.GetProperty("version").GetInt32() });
+            deleteVaultRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var deleteVaultResponse = await client.SendAsync(deleteVaultRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, deleteVaultResponse.StatusCode);
+            Assert.Equal("APP_SETTING_RESOURCE_IN_USE", await GetProblemCodeAsync(deleteVaultResponse));
+        }
+        finally
+        {
+            if (applicationComponentId is { } applicationId)
+            {
+                await CleanupResourceTestComponentAsync(applicationId);
+            }
+
+            if (vaultComponentId is { } vaultId)
+            {
+                await CleanupResourceTestComponentAsync(vaultId);
+            }
+        }
+    }
+
+    private async Task ApplicationSettingLiteralCanBeUpdatedAndDeletedCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var applicationBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>());
+            using var application = JsonDocument.Parse(applicationBody);
+            var applicationId = application.RootElement.GetProperty("id").GetGuid();
+
+            using var createRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationId:D}/app-settings",
+                new
+                {
+                    name = "PORT",
+                    sourceKind = "Literal",
+                    literalValue = "8080",
+                    overrides = new Dictionary<Guid, string?>(),
+                    forceNonSecret = false
+                });
+            createRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var createResponse = await client.SendAsync(createRequest);
+            Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+            using var created = await JsonDocument.ParseAsync(await createResponse.Content.ReadAsStreamAsync());
+            var settingId = created.RootElement.GetProperty("id").GetGuid();
+
+            using var readRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationId:D}/app-settings");
+            using var readResponse = await client.SendAsync(readRequest);
+            Assert.Equal(HttpStatusCode.OK, readResponse.StatusCode);
+            using var readSettings = await JsonDocument.ParseAsync(await readResponse.Content.ReadAsStreamAsync());
+            var readSetting = Assert.Single(readSettings.RootElement.EnumerateArray());
+            Assert.Equal("8080", readSetting.GetProperty("literalValue").GetString());
+            Assert.False(readSetting.GetProperty("isImplicit").GetBoolean());
+
+            using var updateRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationId:D}/app-settings/{settingId:D}",
+                new
+                {
+                    name = "PORT",
+                    sourceKind = "Literal",
+                    literalValue = "8081",
+                    overrides = new Dictionary<Guid, string?>(),
+                    forceNonSecret = false,
+                    expectedVersion = 1
+                });
+            updateRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var updateResponse = await client.SendAsync(updateRequest);
+            Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+            using var updated = await JsonDocument.ParseAsync(await updateResponse.Content.ReadAsStreamAsync());
+            Assert.Equal(2, updated.RootElement.GetProperty("version").GetInt32());
+            Assert.False(updated.RootElement.TryGetProperty("literalValue", out _));
+
+            using var deleteRequest = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationId:D}/app-settings/{settingId:D}",
+                new { expectedVersion = 2 });
+            deleteRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var deleteResponse = await client.SendAsync(deleteRequest);
+            Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+            using var getRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationId:D}/app-settings");
+            using var getResponse = await client.SendAsync(getRequest);
+            Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+            Assert.Empty(await getResponse.Content.ReadFromJsonAsync<AppSettingResponse[]>() ?? []);
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task ApplicationIsUnavailableWhenThePinnedCatalogHasNoContainerProfileCore()
+    {
+        await PrepareAsync();
+        var originalCatalogVersion = await PinProjectCatalogVersionAsync("2026.10-pilot");
+        Guid? testComponentId = null;
+
+        try
+        {
+            var environment = await GetEditableEnvironmentAsync();
+            var componentId = await CreateResourceTestComponentAsync(environment);
+            testComponentId = componentId;
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var applicationBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>());
+            using var application = JsonDocument.Parse(applicationBody);
+            var resourceId = application.RootElement.GetProperty("id").GetGuid();
+
+            using var request = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{resourceId:D}/application");
+            using var response = await client.SendAsync(request);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var configuration = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            Assert.False(configuration.RootElement.GetProperty("available").GetBoolean());
+            Assert.Equal("2026.10-pilot", configuration.RootElement.GetProperty("catalogVersion").GetString());
+            Assert.Equal("Container", configuration.RootElement.GetProperty("buildProfile").GetString());
+        }
+        finally
+        {
+            try
+            {
+                if (testComponentId is { } componentId)
+                {
+                    await CleanupResourceTestComponentAsync(componentId);
+                }
+            }
+            finally
+            {
+                await PinProjectCatalogVersionAsync(originalCatalogVersion);
+            }
+        }
+    }
+
+    private async Task PipelineSecretVaultCannotShareConsumerComponentCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var vaultBody = await CreateResourceAsync(
+                componentId, resourceGroupId, "KeyVault", "main", new Dictionary<string, object?>());
+            using var vault = JsonDocument.Parse(vaultBody);
+            var vaultId = vault.RootElement.GetProperty("id").GetGuid();
+            var identityBody = await CreateResourceAsync(
+                componentId, resourceGroupId, "UserAssignedIdentity", "id-api", new Dictionary<string, object?>());
+            using var identity = JsonDocument.Parse(identityBody);
+            var identityId = identity.RootElement.GetProperty("id").GetGuid();
+            var applicationBody = await CreateResourceAsync(
+                componentId, resourceGroupId, "ContainerApp", "api", new Dictionary<string, object?>());
+            using var application = JsonDocument.Parse(applicationBody);
+            var applicationId = application.RootElement.GetProperty("id").GetGuid();
+
+            using var request = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationId:D}/app-settings",
+                new
+                {
+                    name = "Payments__ApiKey",
+                    sourceKind = "KeyVaultSecret",
+                    keyVaultResourceId = (Guid?)vaultId,
+                    secretName = "payments-api-key",
+                    secretFeedKind = "PipelineSecret",
+                    identityResourceId = (Guid?)identityId,
+                    overrides = new Dictionary<Guid, string?>(),
+                    forceNonSecret = false
+                });
+            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var response = await client.SendAsync(request);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal("VAL-SEC-ORDRE", await GetProblemCodeAsync(response));
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task NamingPreviewReportsGlobalNamesReservedBySiblingProjectsCore()
+    {
+        await PrepareAsync();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var logicalName = $"shared{suffix}";
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        Guid? siblingProjectId = null;
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var resourceBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "KeyVault",
+                logicalName,
+                new Dictionary<string, object?>());
+            using var resource = JsonDocument.Parse(resourceBody);
+            var resourceId = resource.RootElement.GetProperty("id").GetGuid();
+
+            siblingProjectId = await SeedSiblingProjectWithGlobalKeyVaultAsync(
+                suffix,
+                logicalName,
+                environment.Code,
+                environment.Region);
+
+            using var previewRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/naming/preview",
+                new
+                {
+                    preset = "Compact",
+                    defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                    resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                    typeOverrides = new[] { new { type = "KeyVault", template = "{abbr}-{name}-{env}", abbreviation = (string?)null } }
+                });
+            using var previewResponse = await client.SendAsync(previewRequest);
+
+            Assert.True(previewResponse.StatusCode == HttpStatusCode.OK, await previewResponse.Content.ReadAsStringAsync());
+            using var preview = await JsonDocument.ParseAsync(await previewResponse.Content.ReadAsStreamAsync());
+            var issues = preview.RootElement.GetProperty("issues").EnumerateArray();
+            Assert.Contains(issues, issue =>
+                issue.GetProperty("code").GetString() == "VAL-NOM-COLLISION"
+                && issue.GetProperty("message").GetString()!.Contains("dans un autre projet de l’organisation", StringComparison.Ordinal)
+                && issue.GetProperty("resourceId").GetGuid() == resourceId
+                && issue.GetProperty("value").GetString() == $"kv-{logicalName}-{environment.Code}");
+        }
+        finally
+        {
+            await CleanupNamingPreviewFixturesAsync(componentId, siblingProjectId);
+        }
+    }
+
+    private async Task<Guid> SeedSiblingProjectWithGlobalKeyVaultAsync(
+        string suffix,
+        string logicalName,
+        string environmentCode,
+        string region)
+    {
+        using var scope = factory.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        var sourceProject = await dbContext.Projects.SingleAsync(project => project.Id == new ProjectId(ProjectId));
+        var alice = await dbContext.UserProfiles.SingleAsync(profile =>
+            profile.ObjectId == Guid.Parse("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"));
+        var siblingProject = ProjectAggregate.Create(
+            new ProjectId(Guid.NewGuid()),
+            new OrganizationId(OrganizationId),
+            $"Reserved names {suffix}",
+            $"r{suffix}",
+            sourceProject.TenantId,
+            string.Empty,
+            sourceProject.CatalogVersion,
+            alice.Id).Value;
+        Assert.False(siblingProject.ConfigureTypeNamingOverride("KeyVault", "{abbr}-{name}-{env}", null).IsError);
+        var siblingEnvironment = siblingProject.AddEnvironment(
+            Guid.NewGuid(),
+            "Development",
+            environmentCode,
+            Guid.NewGuid(),
+            region,
+            1,
+            false,
+            [],
+            [],
+            "Sibling project naming test").Value;
+        var siblingComponent = ComponentRoot.Create(
+            new ComponentId(Guid.NewGuid()),
+            siblingProject.Id,
+            siblingProject.OrganizationId,
+            $"Sibling {suffix}",
+            $"reserved-{suffix}",
+            "Global naming reservation test",
+            ComponentDeploymentMode.PerEnvironment,
+            siblingProject.Environments).Value;
+        var resourceGroup = siblingComponent.AddResourceGroup(Guid.NewGuid(), "main").Value;
+        Assert.False(siblingComponent.AddResource(
+            Guid.NewGuid(),
+            resourceGroup.Id,
+            "KeyVault",
+            logicalName,
+            "Global name reservation test",
+            false,
+            [siblingEnvironment.Id],
+            new Dictionary<string, JsonElement>()).IsError);
+
+        dbContext.Projects.Add(siblingProject);
+        dbContext.Components.Add(siblingComponent);
+        await dbContext.SaveChangesAsync();
+        return siblingProject.Id.Value;
+    }
+
+    private async Task CleanupNamingPreviewFixturesAsync(Guid componentId, Guid? siblingProjectId)
+    {
+        using var scope = factory.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        var componentsToRemove = new List<ComponentRoot>();
+        var component = await dbContext.Components
+            .Include(value => value.Resources)
+            .Include(value => value.ResourceGroups)
+            .SingleOrDefaultAsync(value => value.Id == new ComponentId(componentId));
+        if (component is not null)
+        {
+            componentsToRemove.Add(component);
+        }
+
+        if (siblingProjectId is { } siblingId)
+        {
+            componentsToRemove.AddRange(await dbContext.Components
+                .Include(value => value.Resources)
+                .Include(value => value.ResourceGroups)
+                .Where(component => component.ProjectId == new ProjectId(siblingId))
+                .ToArrayAsync());
+        }
+
+        foreach (var componentToRemove in componentsToRemove)
+        {
+            foreach (var resource in componentToRemove.Resources.ToArray())
+            {
+                Assert.False(componentToRemove.RemoveResource(resource.Id).IsError);
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+        foreach (var componentToRemove in componentsToRemove)
+        {
+            foreach (var resourceGroup in componentToRemove.ResourceGroups.ToArray())
+            {
+                Assert.False(componentToRemove.RemoveResourceGroup(resourceGroup.Id, containsResources: false).IsError);
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+        dbContext.Components.RemoveRange(componentsToRemove);
+        if (siblingProjectId is { } projectId)
+        {
+            var siblingProject = await dbContext.Projects
+                .SingleOrDefaultAsync(project => project.Id == new ProjectId(projectId));
+            if (siblingProject is not null)
+            {
+                dbContext.Projects.Remove(siblingProject);
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+    }
+
+    private async Task CleanupResourceTestComponentAsync(Guid componentId)
+    {
+        using var scope = factory.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        var component = await dbContext.Components
+            .Include(value => value.Resources)
+            .Include(value => value.ResourceGroups)
+            .SingleOrDefaultAsync(value => value.Id == new ComponentId(componentId));
+        if (component is null) return;
+
+        var resourceIds = component.Resources.Select(resource => resource.Id).ToArray();
+        var links = await dbContext.Set<LinkAggregate>()
+            .Where(link => resourceIds.Contains(link.SourceResourceId) || resourceIds.Contains(link.TargetResourceId))
+            .ToArrayAsync();
+        dbContext.Set<LinkAggregate>().RemoveRange(links);
+        var appSettings = await dbContext.AppSettings
+            .Where(setting => resourceIds.Contains(setting.ApplicationResourceId)
+                || setting.SourceResourceId != null && resourceIds.Contains(setting.SourceResourceId.Value)
+                || setting.KeyVaultResourceId != null && resourceIds.Contains(setting.KeyVaultResourceId.Value)
+                || setting.IdentityResourceId != null && resourceIds.Contains(setting.IdentityResourceId.Value))
+            .ToArrayAsync();
+        dbContext.AppSettings.RemoveRange(appSettings);
+
+        foreach (var resource in component.Resources.ToArray())
+        {
+            Assert.False(component.RemoveResource(resource.Id).IsError);
+        }
+
+        await dbContext.SaveChangesAsync();
+        foreach (var group in component.ResourceGroups.ToArray())
+        {
+            Assert.False(component.RemoveResourceGroup(group.Id, containsResources: false).IsError);
+        }
+
+        await dbContext.SaveChangesAsync();
+        dbContext.Components.Remove(component);
+        await dbContext.SaveChangesAsync();
+    }
+
+    private async Task NamingPreviewRejectsTypesOutsideThePinnedCatalogCore()
+    {
+        await PrepareAsync();
+        using var preview = CreateRequest(
+            HttpMethod.Post,
+            $"/v1/projects/{ProjectId:D}/naming/preview",
+            new
+            {
+                preset = "Compact",
+                defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                typeOverrides = new[] { new { type = "UnknownType", template = "{abbr}-{name}", abbreviation = (string?)null } }
+            });
+
+        using var response = await client.SendAsync(preview);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    private async Task NamingEndpointsRejectNullTypeOverrideRowsCore()
+    {
+        await PrepareAsync();
+        using var getSettings = CreateRequest(HttpMethod.Get, $"/v1/projects/{ProjectId:D}/naming");
+        using var getResponse = await client.SendAsync(getSettings);
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        using var settings = await JsonDocument.ParseAsync(await getResponse.Content.ReadAsStreamAsync());
+        var projectVersion = settings.RootElement.GetProperty("version").GetInt32();
+
+        using var preview = CreateRequest(
+            HttpMethod.Post,
+            $"/v1/projects/{ProjectId:D}/naming/preview",
+            new
+            {
+                preset = "Compact",
+                defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                typeOverrides = new object?[] { null }
+            });
+        using var previewResponse = await client.SendAsync(preview);
+        Assert.Equal(HttpStatusCode.BadRequest, previewResponse.StatusCode);
+
+        using var updateProjectNaming = CreateRequest(
+            HttpMethod.Put,
+            $"/v1/projects/{ProjectId:D}/naming",
+            new
+            {
+                preset = "Compact",
+                defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                typeOverrides = new object?[] { null },
+                expectedVersion = projectVersion
+            });
+        updateProjectNaming.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var updateProjectResponse = await client.SendAsync(updateProjectNaming);
+        Assert.Equal(HttpStatusCode.BadRequest, updateProjectResponse.StatusCode);
+
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var componentVersion = await GetComponentVersionFromApiAsync(componentId);
+            using var updateComponentNaming = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/naming",
+                new
+                {
+                    defaultTemplate = (string?)null,
+                    typeOverrides = new object?[] { null },
+                    expectedVersion = componentVersion
+                });
+            updateComponentNaming.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var updateComponentResponse = await client.SendAsync(updateComponentNaming);
+            Assert.Equal(HttpStatusCode.BadRequest, updateComponentResponse.StatusCode);
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task ProjectNamingSettingsCanBeSavedAndPreviewUsesComponentOverridesCore()
+    {
+        await PrepareAsync();
+        using var getSettings = CreateRequest(HttpMethod.Get, $"/v1/projects/{ProjectId:D}/naming");
+        using var getResponse = await client.SendAsync(getSettings);
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        using var original = await JsonDocument.ParseAsync(await getResponse.Content.ReadAsStreamAsync());
+        var originalSettings = original.RootElement.Clone();
+        var initialVersion = original.RootElement.GetProperty("version").GetInt32();
+
+        using var updateProjectNaming = CreateRequest(
+            HttpMethod.Put,
+            $"/v1/projects/{ProjectId:D}/naming",
+            new
+            {
+                preset = "Compact",
+                defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                typeOverrides = new[] { new { type = "KeyVault", template = "{abbr}-{project}-{name}-{env}", abbreviation = "vault" } },
+                expectedVersion = initialVersion
+            });
+        updateProjectNaming.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var projectNamingResponse = await client.SendAsync(updateProjectNaming);
+        Assert.True(projectNamingResponse.StatusCode == HttpStatusCode.OK, await projectNamingResponse.Content.ReadAsStringAsync());
+        using var updatedNaming = await JsonDocument.ParseAsync(await projectNamingResponse.Content.ReadAsStreamAsync());
+        Assert.True(updatedNaming.RootElement.GetProperty("version").GetInt32() > initialVersion);
+        Assert.Equal("vault", updatedNaming.RootElement.GetProperty("typeOverrides")[0].GetProperty("abbreviation").GetString());
+
+        try
+        {
+            using var invalidProjectNaming = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/naming",
+                new
+                {
+                    preset = "Compact",
+                    defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                    resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                    typeOverrides = new[] { new { type = "UnknownType", template = "{abbr}-{name}", abbreviation = (string?)null } },
+                    expectedVersion = updatedNaming.RootElement.GetProperty("version").GetInt32()
+                });
+            invalidProjectNaming.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var invalidProjectNamingResponse = await client.SendAsync(invalidProjectNaming);
+            Assert.Equal(HttpStatusCode.BadRequest, invalidProjectNamingResponse.StatusCode);
+
+            var environment = await GetEditableEnvironmentAsync();
+            var componentId = await CreateResourceTestComponentAsync(environment);
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var resourceBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "KeyVault",
+                "main",
+                new Dictionary<string, object?>());
+            using var resource = JsonDocument.Parse(resourceBody);
+            var resourceId = resource.RootElement.GetProperty("id").GetGuid();
+            var componentVersion = await GetComponentVersionFromApiAsync(componentId);
+
+            using var setComponentNaming = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/naming",
+                new
+                {
+                    defaultTemplate = (string?)null,
+                    typeOverrides = new[] { new { type = "KeyVault", template = "vault-{component}-{name}-{env}", abbreviation = (string?)null } },
+                    expectedVersion = componentVersion
+                });
+            setComponentNaming.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var componentNamingResponse = await client.SendAsync(setComponentNaming);
+            Assert.True(componentNamingResponse.StatusCode == HttpStatusCode.OK, await componentNamingResponse.Content.ReadAsStringAsync());
+
+            using var preview = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/naming/preview",
+                new
+                {
+                    preset = "Compact",
+                    defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                    resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                    typeOverrides = new[] { new { type = "KeyVault", template = "{abbr}-{project}-{name}-{env}-{region}", abbreviation = "kv" } }
+                });
+            using var previewResponse = await client.SendAsync(preview);
+            Assert.True(previewResponse.StatusCode == HttpStatusCode.OK, await previewResponse.Content.ReadAsStringAsync());
+            using var previewContent = await JsonDocument.ParseAsync(await previewResponse.Content.ReadAsStreamAsync());
+            var item = Assert.Single(
+                previewContent.RootElement.GetProperty("items").EnumerateArray(),
+                value => value.GetProperty("resourceId").GetGuid() == resourceId);
+            Assert.Equal("vault-res-", item.GetProperty("resourceName").GetString()![..10]);
+            Assert.Equal("ComponentType", item.GetProperty("explanation").GetProperty("level").GetString());
+            Assert.Contains(
+                previewContent.RootElement.GetProperty("issues").EnumerateArray(),
+                issue => issue.GetProperty("code").GetString() == "VAL-NOM-LONGUEUR"
+                    && issue.GetProperty("resourceId").GetGuid() == resourceId);
+
+            var componentVersionAfterPreview = await GetComponentVersionFromApiAsync(componentId);
+            using var clearComponentNaming = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/naming",
+                new { defaultTemplate = (string?)null, typeOverrides = Array.Empty<object>(), expectedVersion = componentVersionAfterPreview });
+            clearComponentNaming.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var clearComponentNamingResponse = await client.SendAsync(clearComponentNaming);
+            Assert.Equal(HttpStatusCode.OK, clearComponentNamingResponse.StatusCode);
+
+            using var normalizedPreview = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/naming/preview",
+                new
+                {
+                    preset = "Compact",
+                    defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                    resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                    typeOverrides = new[] { new { type = " KeyVault ", template = "{abbr}-{project}-{name}-{env}", abbreviation = "vault" } }
+                });
+            using var normalizedPreviewResponse = await client.SendAsync(normalizedPreview);
+            Assert.Equal(HttpStatusCode.OK, normalizedPreviewResponse.StatusCode);
+            using var normalizedPreviewContent = await JsonDocument.ParseAsync(await normalizedPreviewResponse.Content.ReadAsStreamAsync());
+            var normalizedItem = Assert.Single(
+                normalizedPreviewContent.RootElement.GetProperty("items").EnumerateArray(),
+                value => value.GetProperty("resourceId").GetGuid() == resourceId);
+            Assert.Equal("vault-shop-main-dev", normalizedItem.GetProperty("resourceName").GetString());
+        }
+        finally
+        {
+            using var restoreNaming = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/naming",
+                new
+                {
+                    preset = originalSettings.GetProperty("preset").GetString(),
+                    defaultTemplate = originalSettings.GetProperty("defaultTemplate").GetString(),
+                    resourceGroupTemplate = originalSettings.GetProperty("resourceGroupTemplate").GetString(),
+                    typeOverrides = originalSettings.GetProperty("typeOverrides").EnumerateArray()
+                        .Select(value => new
+                        {
+                            type = value.GetProperty("type").GetString(),
+                            template = value.GetProperty("template").ValueKind == JsonValueKind.Null
+                                ? null
+                                : value.GetProperty("template").GetString(),
+                            abbreviation = value.GetProperty("abbreviation").ValueKind == JsonValueKind.Null
+                                ? null
+                                : value.GetProperty("abbreviation").GetString()
+                        }).ToArray(),
+                    expectedVersion = await GetProjectVersionFromApiAsync()
+                });
+            restoreNaming.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var restoreResponse = await client.SendAsync(restoreNaming);
+            Assert.Equal(HttpStatusCode.OK, restoreResponse.StatusCode);
+        }
+    }
 
     private async Task EffectiveValuesExposeTargetPresenceTagsAndPropertyProvenanceCore()
     {
@@ -165,6 +1603,1142 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         var existingTarget = Assert.Single(existingResult.RootElement.EnumerateArray());
         Assert.False(existingTarget.GetProperty("isPresent").GetBoolean());
         Assert.Empty(existingTarget.GetProperty("properties").EnumerateArray());
+    }
+
+    private async Task ResourceDeletionImpactPreviewIsServerCalculatedAndReportsPartialCoverageCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var resourceBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "SqlServer",
+                $"sql-{Guid.NewGuid():N}"[..10],
+                new Dictionary<string, object?>());
+            using var resource = JsonDocument.Parse(resourceBody);
+            var resourceId = resource.RootElement.GetProperty("id").GetGuid();
+            var initialVersion = resource.RootElement.GetProperty("version").GetInt32();
+
+            using var addChild = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{resourceId:D}/children",
+                new
+                {
+                    type = "SqlDatabase",
+                    name = "db1",
+                    properties = new Dictionary<string, object?> { ["maxSizeGb"] = 64 },
+                    expectedVersion = initialVersion
+                });
+            addChild.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var addResponse = await client.SendAsync(addChild);
+            Assert.Equal(HttpStatusCode.OK, addResponse.StatusCode);
+            using var updatedResource = await JsonDocument.ParseAsync(await addResponse.Content.ReadAsStreamAsync());
+            var currentVersion = updatedResource.RootElement.GetProperty("version").GetInt32();
+
+            using var request = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{resourceId:D}/delete-impact");
+            using var response = await client.SendAsync(request);
+
+            Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+            using var result = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            Assert.Equal(currentVersion, result.RootElement.GetProperty("resourceVersion").GetInt32());
+            Assert.Equal("Partial", result.RootElement.GetProperty("status").GetString());
+            Assert.Contains(
+                result.RootElement.GetProperty("pendingAreas").EnumerateArray(),
+                area => area.GetString() == "ImplicitEffects");
+            Assert.DoesNotContain(
+                result.RootElement.GetProperty("pendingAreas").EnumerateArray(),
+                area => area.GetString() == "ApplicationParameters");
+            var child = Assert.Single(result.RootElement.GetProperty("items").EnumerateArray());
+            Assert.Equal("Child", child.GetProperty("kind").GetString());
+            Assert.Equal("SqlDatabase", child.GetProperty("type").GetString());
+            Assert.Equal("db1", child.GetProperty("name").GetString());
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task ResourceLinksCanBeCreatedListedAndPreviewedBeforeRemovalCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        Guid? unrelatedComponentId = null;
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var targetBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerAppsEnvironment",
+                "environment",
+                new Dictionary<string, object?>());
+            using var target = JsonDocument.Parse(targetBody);
+            var targetResourceId = target.RootElement.GetProperty("id").GetGuid();
+
+            var replacementTargetBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerAppsEnvironment",
+                "replacement-environment",
+                new Dictionary<string, object?>());
+            using var replacementTarget = JsonDocument.Parse(replacementTargetBody);
+            var replacementTargetResourceId = replacementTarget.RootElement.GetProperty("id").GetGuid();
+
+            var sourceBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "application",
+                new Dictionary<string, object?>());
+            using var source = JsonDocument.Parse(sourceBody);
+            var sourceResourceId = source.RootElement.GetProperty("id").GetGuid();
+
+            var otherSourceBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "other-application",
+                new Dictionary<string, object?>());
+            using var otherSource = JsonDocument.Parse(otherSourceBody);
+            var otherSourceResourceId = otherSource.RootElement.GetProperty("id").GetGuid();
+
+            var expectedComponentVersion = await GetComponentVersionFromApiAsync(componentId);
+
+            using var addLink = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links",
+                new
+                {
+                    targetComponentId = componentId,
+                    targetResourceId,
+                    kind = "Hosting",
+                    identityKind = "None",
+                    identityResourceId = (Guid?)null,
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedComponentVersion
+                });
+            addLink.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var addResponse = await client.SendAsync(addLink);
+            Assert.True(addResponse.StatusCode == HttpStatusCode.Created, await addResponse.Content.ReadAsStringAsync());
+            using var created = await JsonDocument.ParseAsync(await addResponse.Content.ReadAsStreamAsync());
+            var linkId = created.RootElement.GetProperty("linkId").GetGuid();
+            Assert.True(await GetComponentVersionFromApiAsync(componentId) > expectedComponentVersion);
+
+            using var linkOptionsRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links/options");
+            using var linkOptionsResponse = await client.SendAsync(linkOptionsRequest);
+            Assert.Equal(HttpStatusCode.OK, linkOptionsResponse.StatusCode);
+            using var linkOptions = await JsonDocument.ParseAsync(await linkOptionsResponse.Content.ReadAsStreamAsync());
+            Assert.DoesNotContain(
+                linkOptions.RootElement.GetProperty("kinds").EnumerateArray(),
+                option => option.GetProperty("kind").GetString() == "Hosting");
+
+            using var unsupportedRolesRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{otherSourceResourceId:D}/links",
+                new
+                {
+                    targetComponentId = componentId,
+                    targetResourceId = replacementTargetResourceId,
+                    kind = "Hosting",
+                    identityKind = "None",
+                    identityResourceId = (Guid?)null,
+                    roles = ReaderRoleNames,
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedComponentVersion = await GetComponentVersionFromApiAsync(componentId)
+                });
+            unsupportedRolesRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var unsupportedRolesResponse = await client.SendAsync(unsupportedRolesRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, unsupportedRolesResponse.StatusCode);
+            Assert.Equal("LINK_ROLE_UNSUPPORTED", await GetProblemCodeAsync(unsupportedRolesResponse));
+
+            using var invalidLevelRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{otherSourceResourceId:D}/links",
+                new
+                {
+                    targetComponentId = componentId,
+                    targetResourceId = replacementTargetResourceId,
+                    kind = "Hosting",
+                    identityKind = "None",
+                    identityResourceId = (Guid?)null,
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = "Schema",
+                    expectedComponentVersion = await GetComponentVersionFromApiAsync(componentId)
+                });
+            invalidLevelRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var invalidLevelResponse = await client.SendAsync(invalidLevelRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, invalidLevelResponse.StatusCode);
+            Assert.Equal("LINK_DATA_ACCESS_LEVEL_UNSUPPORTED", await GetProblemCodeAsync(invalidLevelResponse));
+
+            var unsupportedLink = LinkAggregate.Create(
+                Guid.NewGuid(),
+                new ProjectId(ProjectId),
+                new OrganizationId(OrganizationId),
+                componentId,
+                sourceResourceId,
+                componentId,
+                targetResourceId,
+                LinkKind.Access,
+                LinkIdentityKind.None,
+                null,
+                [],
+                LinkAccessScope.Resource,
+                null);
+            Assert.False(unsupportedLink.IsError);
+            using (var scope = factory.Services.CreateScope())
+            {
+                scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+                var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+                dbContext.Set<LinkAggregate>().Add(unsupportedLink.Value);
+                await dbContext.SaveChangesAsync();
+            }
+
+            using var sourceLinksRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links");
+            using var sourceLinksResponse = await client.SendAsync(sourceLinksRequest);
+            Assert.Equal(HttpStatusCode.OK, sourceLinksResponse.StatusCode);
+            using var sourceLinks = await JsonDocument.ParseAsync(await sourceLinksResponse.Content.ReadAsStreamAsync());
+            var outgoingLinks = sourceLinks.RootElement.GetProperty("outgoing").EnumerateArray().ToArray();
+            Assert.Equal(2, outgoingLinks.Length);
+            var outgoing = Assert.Single(outgoingLinks, link => link.GetProperty("id").GetGuid() == linkId);
+            Assert.Equal("Hosting", outgoing.GetProperty("kind").GetString());
+            Assert.Equal("Hébergement", outgoing.GetProperty("kindLabelFr").GetString());
+            Assert.Equal("Hosting", outgoing.GetProperty("kindLabelEn").GetString());
+            Assert.Equal("Explicit", outgoing.GetProperty("origin").GetString());
+            Assert.Equal(1, outgoing.GetProperty("version").GetInt32());
+            Assert.Equal(targetResourceId, outgoing.GetProperty("targetResourceId").GetGuid());
+            Assert.True(outgoing.GetProperty("createsDeploymentDependency").GetBoolean());
+            Assert.Empty(outgoing.GetProperty("findings").EnumerateArray());
+            var unsupported = Assert.Single(outgoingLinks, link => link.GetProperty("id").GetGuid() != linkId);
+            Assert.Contains(
+                unsupported.GetProperty("findings").EnumerateArray(),
+                finding => finding.GetProperty("code").GetString() == "VAL-LIA-TYPE");
+
+            using var wrongSourceUpdate = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{otherSourceResourceId:D}/links/{linkId:D}",
+                new
+                {
+                    targetComponentId = componentId,
+                    targetResourceId = replacementTargetResourceId,
+                    kind = "Hosting",
+                    identityKind = "None",
+                    identityResourceId = (Guid?)null,
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedLinkVersion = 1
+                });
+            wrongSourceUpdate.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var wrongSourceUpdateResponse = await client.SendAsync(wrongSourceUpdate);
+            Assert.Equal(HttpStatusCode.NotFound, wrongSourceUpdateResponse.StatusCode);
+
+            using var updateLink = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links/{linkId:D}",
+                new
+                {
+                    targetComponentId = componentId,
+                    targetResourceId = replacementTargetResourceId,
+                    kind = "Hosting",
+                    identityKind = "None",
+                    identityResourceId = (Guid?)null,
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedLinkVersion = 1
+                });
+            updateLink.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var updateResponse = await client.SendAsync(updateLink);
+            Assert.True(updateResponse.StatusCode == HttpStatusCode.OK, await updateResponse.Content.ReadAsStringAsync());
+
+            using var targetLinksRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{replacementTargetResourceId:D}/links");
+            using var targetLinksResponse = await client.SendAsync(targetLinksRequest);
+            Assert.Equal(HttpStatusCode.OK, targetLinksResponse.StatusCode);
+            using var targetLinks = await JsonDocument.ParseAsync(await targetLinksResponse.Content.ReadAsStreamAsync());
+            var incoming = Assert.Single(targetLinks.RootElement.GetProperty("incoming").EnumerateArray());
+            Assert.Equal(linkId, incoming.GetProperty("id").GetGuid());
+            Assert.Equal(sourceResourceId, incoming.GetProperty("sourceResourceId").GetGuid());
+
+            using var impactRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links/{linkId:D}/impact");
+            using var impactResponse = await client.SendAsync(impactRequest);
+            Assert.Equal(HttpStatusCode.OK, impactResponse.StatusCode);
+            using var impact = await JsonDocument.ParseAsync(await impactResponse.Content.ReadAsStreamAsync());
+            Assert.Equal("Blocker", impact.RootElement.GetProperty("severity").GetString());
+            var previewModelVersion = impact.RootElement.GetProperty("modelVersion").GetInt32();
+            Assert.Equal(previewModelVersion, await GetProjectModelVersionFromApiAsync());
+            unrelatedComponentId = await CreateResourceTestComponentAsync(environment);
+            var modelVersionAfterUnrelatedChange = await GetProjectModelVersionFromApiAsync();
+            Assert.True(modelVersionAfterUnrelatedChange > previewModelVersion);
+            Assert.Contains(
+                impact.RootElement.GetProperty("items").EnumerateArray(),
+                item => item.GetProperty("code").GetString() == "IMPACT-LIA-OBLIGATOIRE-ROMPU");
+
+            using var currentLinksRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links");
+            using var currentLinksResponse = await client.SendAsync(currentLinksRequest);
+            Assert.Equal(HttpStatusCode.OK, currentLinksResponse.StatusCode);
+            using var currentLinks = await JsonDocument.ParseAsync(await currentLinksResponse.Content.ReadAsStreamAsync());
+            var currentLink = Assert.Single(
+                currentLinks.RootElement.GetProperty("outgoing").EnumerateArray(),
+                candidate => candidate.GetProperty("id").GetGuid() == linkId);
+
+            using var missingModelVersionRemove = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links/{linkId:D}",
+                new { expectedLinkVersion = currentLink.GetProperty("version").GetInt32() });
+            missingModelVersionRemove.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var missingModelVersionResponse = await client.SendAsync(missingModelVersionRemove);
+            Assert.Equal(HttpStatusCode.BadRequest, missingModelVersionResponse.StatusCode);
+
+            using var staleRemoveLink = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links/{linkId:D}",
+                new
+                {
+                    expectedLinkVersion = currentLink.GetProperty("version").GetInt32(),
+                    expectedModelVersion = previewModelVersion
+                });
+            staleRemoveLink.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var staleRemoveResponse = await client.SendAsync(staleRemoveLink);
+            Assert.Equal(HttpStatusCode.Conflict, staleRemoveResponse.StatusCode);
+            Assert.Equal("CONFLICT_VERSION", await GetProblemCodeAsync(staleRemoveResponse));
+
+            using var refreshedImpactRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links/{linkId:D}/impact");
+            using var refreshedImpactResponse = await client.SendAsync(refreshedImpactRequest);
+            Assert.Equal(HttpStatusCode.OK, refreshedImpactResponse.StatusCode);
+            using var refreshedImpact = await JsonDocument.ParseAsync(await refreshedImpactResponse.Content.ReadAsStreamAsync());
+            var refreshedModelVersion = refreshedImpact.RootElement.GetProperty("modelVersion").GetInt32();
+            Assert.Equal(modelVersionAfterUnrelatedChange, refreshedModelVersion);
+
+            using var removeRequiredLink = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links/{linkId:D}",
+                new
+                {
+                    expectedLinkVersion = currentLink.GetProperty("version").GetInt32(),
+                    expectedModelVersion = refreshedModelVersion
+                });
+            removeRequiredLink.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var removeRequiredLinkResponse = await client.SendAsync(removeRequiredLink);
+            Assert.True(removeRequiredLinkResponse.StatusCode == HttpStatusCode.OK,
+                await removeRequiredLinkResponse.Content.ReadAsStringAsync());
+
+            using var validationRequest = CreateRequest(HttpMethod.Get, $"/v1/projects/{ProjectId:D}/validation");
+            using var validationResponse = await client.SendAsync(validationRequest);
+            Assert.Equal(HttpStatusCode.OK, validationResponse.StatusCode);
+            using var validation = await JsonDocument.ParseAsync(await validationResponse.Content.ReadAsStreamAsync());
+            Assert.Contains(
+                validation.RootElement.GetProperty("findings").EnumerateArray(),
+                finding => finding.GetProperty("code").GetString() == "VAL-LIA-OBLIGATOIRE"
+                    && finding.GetProperty("subjectId").GetGuid() == sourceResourceId);
+        }
+        finally
+        {
+            if (unrelatedComponentId is { } id)
+            {
+                await CleanupResourceTestComponentAsync(id);
+            }
+
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task LinkPreviewIsServerCalculatedPerEnvironmentWithoutChangingTheModelCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            using var identity = JsonDocument.Parse(await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "UserAssignedIdentity",
+                "api-identity",
+                new Dictionary<string, object?>()));
+            using var source = JsonDocument.Parse(await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>()));
+            using var target = JsonDocument.Parse(await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "KeyVault",
+                "main-vault",
+                new Dictionary<string, object?>()));
+            var identityId = identity.RootElement.GetProperty("id").GetGuid();
+            var sourceId = source.RootElement.GetProperty("id").GetGuid();
+            var targetId = target.RootElement.GetProperty("id").GetGuid();
+            var versionBeforePreview = await GetComponentVersionFromApiAsync(componentId);
+
+            using var optionsRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links/options");
+            using var optionsResponse = await client.SendAsync(optionsRequest);
+            Assert.True(optionsResponse.StatusCode == HttpStatusCode.OK,
+                await optionsResponse.Content.ReadAsStringAsync());
+            using var options = await JsonDocument.ParseAsync(await optionsResponse.Content.ReadAsStreamAsync());
+            var kinds = options.RootElement.GetProperty("kinds").EnumerateArray().ToArray();
+            var labels = kinds.Select(kind => kind.GetProperty("labelFr").GetString()!).ToArray();
+            Assert.Equal(labels.Order(StringComparer.OrdinalIgnoreCase), labels);
+            var access = Assert.Single(kinds,
+                kind => kind.GetProperty("kind").GetString() == "Access");
+            Assert.Equal("Accès", access.GetProperty("labelFr").GetString());
+            Assert.Equal("Access", access.GetProperty("labelEn").GetString());
+            var targetOption = Assert.Single(access.GetProperty("targets").EnumerateArray(),
+                option => option.GetProperty("resourceId").GetGuid() == targetId);
+            Assert.Contains(targetOption.GetProperty("roles").EnumerateArray(),
+                role => role.GetString() == "Key Vault Secrets User");
+            Assert.Contains(targetOption.GetProperty("identities").EnumerateArray(),
+                option => option.GetProperty("kind").GetString() == "UserAssigned"
+                    && option.GetProperty("resourceId").GetGuid() == identityId);
+
+            using var previewRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links/preview",
+                new
+                {
+                    targetComponentId = componentId,
+                    targetResourceId = targetId,
+                    kind = "Access",
+                    identityKind = "UserAssigned",
+                    identityResourceId = identityId,
+                    roles = KeyVaultSecretUserRoles,
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null
+                });
+            using var previewResponse = await client.SendAsync(previewRequest);
+            Assert.True(previewResponse.StatusCode == HttpStatusCode.OK,
+                await previewResponse.Content.ReadAsStringAsync());
+            using var preview = await JsonDocument.ParseAsync(await previewResponse.Content.ReadAsStreamAsync());
+            var role = Assert.Single(preview.RootElement.GetProperty("roleAssignments").EnumerateArray());
+            Assert.Equal(environment.Id, role.GetProperty("environmentId").GetGuid());
+            Assert.Equal(environment.Code, role.GetProperty("environmentCode").GetString());
+            Assert.Equal("Key Vault Secrets User", role.GetProperty("roleName").GetString());
+            Assert.Equal(identityId, role.GetProperty("principalResourceId").GetGuid());
+            Assert.Empty(preview.RootElement.GetProperty("findings").EnumerateArray());
+            Assert.Equal(versionBeforePreview, await GetComponentVersionFromApiAsync(componentId));
+
+            using var linksRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links");
+            using var linksResponse = await client.SendAsync(linksRequest);
+            Assert.Equal(HttpStatusCode.OK, linksResponse.StatusCode);
+            using var links = await JsonDocument.ParseAsync(await linksResponse.Content.ReadAsStreamAsync());
+            Assert.DoesNotContain(links.RootElement.GetProperty("outgoing").EnumerateArray(),
+                link => link.GetProperty("origin").GetString() == "Explicit");
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task ResourceLinkUpdateTrimsRolesBeforeCalculatingImpactCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            using var identity = JsonDocument.Parse(await CreateResourceAsync(
+                componentId, resourceGroupId, "UserAssignedIdentity", "role-normalization-identity", new Dictionary<string, object?>()));
+            using var source = JsonDocument.Parse(await CreateResourceAsync(
+                componentId, resourceGroupId, "ContainerApp", "role-normalization-source", new Dictionary<string, object?>()));
+            using var target = JsonDocument.Parse(await CreateResourceAsync(
+                componentId, resourceGroupId, "KeyVault", "role-normalization-target", new Dictionary<string, object?>()));
+            var identityId = identity.RootElement.GetProperty("id").GetGuid();
+            var sourceId = source.RootElement.GetProperty("id").GetGuid();
+            var targetId = target.RootElement.GetProperty("id").GetGuid();
+
+            using var addLinkRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links",
+                new
+                {
+                    targetComponentId = componentId,
+                    targetResourceId = targetId,
+                    kind = "Access",
+                    identityKind = "UserAssigned",
+                    identityResourceId = identityId,
+                    roles = KeyVaultSecretUserRoles,
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedComponentVersion = await GetComponentVersionFromApiAsync(componentId)
+                });
+            addLinkRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var addLinkResponse = await client.SendAsync(addLinkRequest);
+            Assert.True(addLinkResponse.StatusCode == HttpStatusCode.Created, await addLinkResponse.Content.ReadAsStringAsync());
+            using var created = await JsonDocument.ParseAsync(await addLinkResponse.Content.ReadAsStreamAsync());
+            var linkId = created.RootElement.GetProperty("linkId").GetGuid();
+
+            using var updateLinkRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links/{linkId:D}",
+                new
+                {
+                    targetComponentId = componentId,
+                    targetResourceId = targetId,
+                    kind = "Access",
+                    identityKind = "UserAssigned",
+                    identityResourceId = identityId,
+                    roles = WhitespaceKeyVaultSecretUserRoles,
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedLinkVersion = 1
+                });
+            updateLinkRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var updateLinkResponse = await client.SendAsync(updateLinkRequest);
+            Assert.True(updateLinkResponse.StatusCode == HttpStatusCode.OK, await updateLinkResponse.Content.ReadAsStringAsync());
+            using var updated = await JsonDocument.ParseAsync(await updateLinkResponse.Content.ReadAsStreamAsync());
+            Assert.DoesNotContain(updated.RootElement.GetProperty("findings").EnumerateArray(), finding =>
+                finding.GetString()!.Contains("révoqué", StringComparison.OrdinalIgnoreCase));
+
+            using var linksRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links");
+            using var linksResponse = await client.SendAsync(linksRequest);
+            Assert.Equal(HttpStatusCode.OK, linksResponse.StatusCode);
+            using var links = await JsonDocument.ParseAsync(await linksResponse.Content.ReadAsStreamAsync());
+            var outgoing = Assert.Single(links.RootElement.GetProperty("outgoing").EnumerateArray());
+            Assert.Equal("Key Vault Secrets User", Assert.Single(outgoing.GetProperty("roles").EnumerateArray()).GetString());
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task ResourceLinkCanBeRemovedAfterReviewingImpactCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            using var identity = JsonDocument.Parse(await CreateResourceAsync(
+                componentId, resourceGroupId, "UserAssignedIdentity", "removal-identity", new Dictionary<string, object?>()));
+            using var source = JsonDocument.Parse(await CreateResourceAsync(
+                componentId, resourceGroupId, "ContainerApp", "removal-source", new Dictionary<string, object?>()));
+            using var target = JsonDocument.Parse(await CreateResourceAsync(
+                componentId, resourceGroupId, "KeyVault", "removal-target", new Dictionary<string, object?>()));
+            var identityId = identity.RootElement.GetProperty("id").GetGuid();
+            var sourceId = source.RootElement.GetProperty("id").GetGuid();
+            var targetId = target.RootElement.GetProperty("id").GetGuid();
+
+            using var addLinkRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links",
+                new
+                {
+                    targetComponentId = componentId,
+                    targetResourceId = targetId,
+                    kind = "Access",
+                    identityKind = "UserAssigned",
+                    identityResourceId = identityId,
+                    roles = KeyVaultSecretUserRoles,
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedComponentVersion = await GetComponentVersionFromApiAsync(componentId)
+                });
+            addLinkRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var addLinkResponse = await client.SendAsync(addLinkRequest);
+            Assert.True(addLinkResponse.StatusCode == HttpStatusCode.Created, await addLinkResponse.Content.ReadAsStringAsync());
+            using var created = await JsonDocument.ParseAsync(await addLinkResponse.Content.ReadAsStreamAsync());
+            var linkId = created.RootElement.GetProperty("linkId").GetGuid();
+
+            using var impactRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links/{linkId:D}/impact");
+            using var impactResponse = await client.SendAsync(impactRequest);
+            Assert.Equal(HttpStatusCode.OK, impactResponse.StatusCode);
+            using var impact = await JsonDocument.ParseAsync(await impactResponse.Content.ReadAsStreamAsync());
+            Assert.Equal("Critical", impact.RootElement.GetProperty("severity").GetString());
+            var previewModelVersion = impact.RootElement.GetProperty("modelVersion").GetInt32();
+            Assert.Contains(impact.RootElement.GetProperty("items").EnumerateArray(), item =>
+                item.GetProperty("code").GetString() == "IMPACT-LIA-ROLE-REVOKED");
+
+            using var removeLinkRequest = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links/{linkId:D}",
+                new { expectedLinkVersion = 1, expectedModelVersion = previewModelVersion });
+            removeLinkRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var removeLinkResponse = await client.SendAsync(removeLinkRequest);
+            Assert.Equal(HttpStatusCode.OK, removeLinkResponse.StatusCode);
+            using var removed = await JsonDocument.ParseAsync(await removeLinkResponse.Content.ReadAsStreamAsync());
+            Assert.Contains(removed.RootElement.GetProperty("findings").EnumerateArray(), finding =>
+                finding.GetString()!.Contains("révoqué", StringComparison.OrdinalIgnoreCase));
+
+            using var linksRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links");
+            using var linksResponse = await client.SendAsync(linksRequest);
+            Assert.Equal(HttpStatusCode.OK, linksResponse.StatusCode);
+            using var links = await JsonDocument.ParseAsync(await linksResponse.Content.ReadAsStreamAsync());
+            Assert.DoesNotContain(links.RootElement.GetProperty("outgoing").EnumerateArray(), item =>
+                item.GetProperty("id").GetGuid() == linkId);
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task StaleComponentVersionWinsOverLinkCardinalityValidationCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            using var firstTarget = JsonDocument.Parse(await CreateResourceAsync(
+                componentId, resourceGroupId, "ContainerAppsEnvironment", "stale-first-environment", new Dictionary<string, object?>()));
+            using var secondTarget = JsonDocument.Parse(await CreateResourceAsync(
+                componentId, resourceGroupId, "ContainerAppsEnvironment", "stale-second-environment", new Dictionary<string, object?>()));
+            using var source = JsonDocument.Parse(await CreateResourceAsync(
+                componentId, resourceGroupId, "ContainerApp", "stale-version-application", new Dictionary<string, object?>()));
+            var sourceId = source.RootElement.GetProperty("id").GetGuid();
+            var firstTargetId = firstTarget.RootElement.GetProperty("id").GetGuid();
+            var secondTargetId = secondTarget.RootElement.GetProperty("id").GetGuid();
+            var initialVersion = await GetComponentVersionFromApiAsync(componentId);
+
+            HttpRequestMessage CreateHostingRequest(Guid targetId, int expectedVersion)
+            {
+                var request = CreateRequest(
+                    HttpMethod.Post,
+                    $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links",
+                    new
+                    {
+                        targetComponentId = componentId,
+                        targetResourceId = targetId,
+                        kind = "Hosting",
+                        identityKind = "None",
+                        identityResourceId = (Guid?)null,
+                        roles = Array.Empty<string>(),
+                        accessScope = "Resource",
+                        dataAccessLevel = (string?)null,
+                        expectedComponentVersion = expectedVersion
+                    });
+                request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+                return request;
+            }
+
+            using var firstRequest = CreateHostingRequest(firstTargetId, initialVersion);
+            using var firstResponse = await client.SendAsync(firstRequest);
+            Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
+
+            using var staleRequest = CreateHostingRequest(secondTargetId, initialVersion);
+            using var staleResponse = await client.SendAsync(staleRequest);
+            Assert.Equal(HttpStatusCode.Conflict, staleResponse.StatusCode);
+            Assert.Equal("CONFLICT_VERSION", await GetProblemCodeAsync(staleResponse));
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task ConcurrentHostingLinksRespectComponentVersionAndCardinalityCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var firstTargetBody = await CreateResourceAsync(componentId, resourceGroupId,
+                "ContainerAppsEnvironment", "first-environment", new Dictionary<string, object?>());
+            var secondTargetBody = await CreateResourceAsync(componentId, resourceGroupId,
+                "ContainerAppsEnvironment", "second-environment", new Dictionary<string, object?>());
+            var sourceBody = await CreateResourceAsync(componentId, resourceGroupId,
+                "ContainerApp", "concurrent-application", new Dictionary<string, object?>());
+            using var firstTarget = JsonDocument.Parse(firstTargetBody);
+            using var secondTarget = JsonDocument.Parse(secondTargetBody);
+            using var source = JsonDocument.Parse(sourceBody);
+            var sourceResourceId = source.RootElement.GetProperty("id").GetGuid();
+            var expectedVersion = await GetComponentVersionFromApiAsync(componentId);
+
+            HttpRequestMessage CreateLinkRequest(Guid targetResourceId, int componentVersion = -1)
+            {
+                var request = CreateRequest(
+                    HttpMethod.Post,
+                    $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links",
+                    new
+                    {
+                        targetComponentId = componentId,
+                        targetResourceId,
+                        kind = "Hosting",
+                        identityKind = "None",
+                        identityResourceId = (Guid?)null,
+                        roles = Array.Empty<string>(),
+                        accessScope = "Resource",
+                        dataAccessLevel = (string?)null,
+                        expectedComponentVersion = componentVersion < 0 ? expectedVersion : componentVersion
+                    });
+                request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+                return request;
+            }
+
+            using var firstRequest = CreateLinkRequest(firstTarget.RootElement.GetProperty("id").GetGuid());
+            using var secondRequest = CreateLinkRequest(secondTarget.RootElement.GetProperty("id").GetGuid());
+            var responses = await Task.WhenAll(client.SendAsync(firstRequest), client.SendAsync(secondRequest));
+            using var firstResponse = responses[0];
+            using var secondResponse = responses[1];
+            var successfulCount = responses.Count(response => response.StatusCode == HttpStatusCode.Created);
+            Assert.Equal(1, successfulCount);
+            var rejected = Assert.Single(responses, response => response.StatusCode != HttpStatusCode.Created);
+            Assert.True(rejected.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.BadRequest);
+            var problemCode = await GetProblemCodeAsync(rejected);
+            Assert.True(problemCode is "CONFLICT_VERSION" or "LINK_CARDINALITY_EXCEEDED");
+
+            using var linksRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links");
+            using var linksResponse = await client.SendAsync(linksRequest);
+            Assert.Equal(HttpStatusCode.OK, linksResponse.StatusCode);
+            using var links = await JsonDocument.ParseAsync(await linksResponse.Content.ReadAsStreamAsync());
+            var existingLink = Assert.Single(links.RootElement.GetProperty("outgoing").EnumerateArray());
+            Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Created));
+
+            var linkedTargetId = existingLink.GetProperty("targetResourceId").GetGuid();
+            var unlinkedTargetId = firstTarget.RootElement.GetProperty("id").GetGuid() == linkedTargetId
+                ? secondTarget.RootElement.GetProperty("id").GetGuid()
+                : firstTarget.RootElement.GetProperty("id").GetGuid();
+            using var cardinalityRequest = CreateLinkRequest(
+                unlinkedTargetId,
+                await GetComponentVersionFromApiAsync(componentId));
+            using var cardinalityResponse = await client.SendAsync(cardinalityRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, cardinalityResponse.StatusCode);
+            Assert.Equal("LINK_CARDINALITY_EXCEEDED", await GetProblemCodeAsync(cardinalityResponse));
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task DefaultLogAnalyticsRejectsIncompatibleTargetComponentsCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var targetComponentId = await CreateResourceTestComponentAsync(environment);
+        Guid? singleComponentId = null;
+        Guid? allEnvironmentComponentId = null;
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(targetComponentId);
+            using var workspace = JsonDocument.Parse(await CreateResourceAsync(
+                targetComponentId,
+                resourceGroupId,
+                "LogAnalyticsWorkspace",
+                "default-workspace",
+                new Dictionary<string, object?>()));
+            var workspaceId = workspace.RootElement.GetProperty("id").GetGuid();
+
+            var singleSuffix = Guid.NewGuid().ToString("N")[..8];
+            using var singleComponentResponse = await SendCreateComponentAsync(new
+            {
+                name = $"Single {singleSuffix}",
+                code = $"single-{singleSuffix}",
+                description = "Single source for Log Analytics compatibility test",
+                mode = "Single",
+                targetsAllEnvironments = false,
+                targetEnvironmentIds = Array.Empty<Guid>(),
+                singleTarget = new
+                {
+                    code = $"s{singleSuffix[..4]}",
+                    subscriptionId = Guid.NewGuid(),
+                    region = "francecentral",
+                    deploymentConnection = (string?)null,
+                    isProtected = false,
+                    approvers = Array.Empty<string>(),
+                    runners = Array.Empty<string>()
+                },
+                removedResourceBehavior = "Detach",
+                deletionProtectionEnabled = true,
+                tags = new Dictionary<string, string>(),
+                expectedVersion = await GetProjectVersionFromApiAsync()
+            });
+            Assert.Equal(HttpStatusCode.Created, singleComponentResponse.StatusCode);
+            using var singleComponent = await JsonDocument.ParseAsync(await singleComponentResponse.Content.ReadAsStreamAsync());
+            singleComponentId = singleComponent.RootElement.GetProperty("id").GetGuid();
+
+            using var singleDefaultRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{singleComponentId:D}/default-log-analytics",
+                new
+                {
+                    workspaceResourceId = workspaceId,
+                    expectedVersion = await GetComponentVersionFromApiAsync(singleComponentId.Value)
+                });
+            singleDefaultRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var singleDefaultResponse = await client.SendAsync(singleDefaultRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, singleDefaultResponse.StatusCode);
+            Assert.Equal("VAL-CMP-SENS", await GetProblemCodeAsync(singleDefaultResponse));
+
+            var allEnvironmentsSuffix = Guid.NewGuid().ToString("N")[..8];
+            using var allEnvironmentsResponse = await SendCreateComponentAsync(new
+            {
+                name = $"All environments {allEnvironmentsSuffix}",
+                code = $"all-{allEnvironmentsSuffix}",
+                description = "Per-environment source for Log Analytics compatibility test",
+                mode = "PerEnvironment",
+                targetsAllEnvironments = true,
+                targetEnvironmentIds = Array.Empty<Guid>(),
+                singleTarget = (object?)null,
+                removedResourceBehavior = "Detach",
+                deletionProtectionEnabled = true,
+                tags = new Dictionary<string, string>(),
+                expectedVersion = await GetProjectVersionFromApiAsync()
+            });
+            Assert.Equal(HttpStatusCode.Created, allEnvironmentsResponse.StatusCode);
+            using var allEnvironmentsComponent = await JsonDocument.ParseAsync(await allEnvironmentsResponse.Content.ReadAsStreamAsync());
+            allEnvironmentComponentId = allEnvironmentsComponent.RootElement.GetProperty("id").GetGuid();
+
+            using var allEnvironmentDefaultRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{allEnvironmentComponentId:D}/default-log-analytics",
+                new
+                {
+                    workspaceResourceId = workspaceId,
+                    expectedVersion = await GetComponentVersionFromApiAsync(allEnvironmentComponentId.Value)
+                });
+            allEnvironmentDefaultRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var allEnvironmentDefaultResponse = await client.SendAsync(allEnvironmentDefaultRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, allEnvironmentDefaultResponse.StatusCode);
+            Assert.Equal("VAL-CMP-ENVIRONNEMENTS", await GetProblemCodeAsync(allEnvironmentDefaultResponse));
+        }
+        finally
+        {
+            if (singleComponentId is { } singleId)
+            {
+                await CleanupResourceTestComponentAsync(singleId);
+            }
+
+            if (allEnvironmentComponentId is { } allEnvironmentsId)
+            {
+                await CleanupResourceTestComponentAsync(allEnvironmentsId);
+            }
+
+            await CleanupResourceTestComponentAsync(targetComponentId);
+        }
+    }
+
+    private async Task DeletingDefaultLogAnalyticsWorkspaceClearsComponentReferenceCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var sourceComponentId = await CreateResourceTestComponentAsync(environment);
+        var workspaceComponentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var sourceGroupId = await CreateResourceTestGroupAsync(sourceComponentId);
+            var workspaceGroupId = await CreateResourceTestGroupAsync(workspaceComponentId);
+            var workspaceBody = await CreateResourceAsync(
+                workspaceComponentId,
+                workspaceGroupId,
+                "LogAnalyticsWorkspace",
+                "default-workspace",
+                new Dictionary<string, object?>());
+            using var workspace = JsonDocument.Parse(workspaceBody);
+            var workspaceId = workspace.RootElement.GetProperty("id").GetGuid();
+            var resourceVersion = workspace.RootElement.GetProperty("version").GetInt32();
+            var sourceBody = await CreateResourceAsync(
+                sourceComponentId,
+                sourceGroupId,
+                "KeyVault",
+                "diagnostic-source",
+                new Dictionary<string, object?>());
+            using var source = JsonDocument.Parse(sourceBody);
+            var sourceResourceId = source.RootElement.GetProperty("id").GetGuid();
+
+            using var setDefaultRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{sourceComponentId:D}/default-log-analytics",
+                new
+                {
+                    workspaceResourceId = workspaceId,
+                    expectedVersion = await GetComponentVersionFromApiAsync(sourceComponentId)
+                });
+            setDefaultRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var setDefaultResponse = await client.SendAsync(setDefaultRequest);
+            Assert.True(setDefaultResponse.StatusCode == HttpStatusCode.OK, await setDefaultResponse.Content.ReadAsStringAsync());
+            using var componentResponse = await JsonDocument.ParseAsync(await setDefaultResponse.Content.ReadAsStreamAsync());
+            Assert.Equal(workspaceId,
+                componentResponse.RootElement.GetProperty("defaultLogAnalyticsResourceId").GetGuid());
+
+            using var linksRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{sourceComponentId:D}/resources/{sourceResourceId:D}/links");
+            using var linksResponse = await client.SendAsync(linksRequest);
+            Assert.Equal(HttpStatusCode.OK, linksResponse.StatusCode);
+            using var links = await JsonDocument.ParseAsync(await linksResponse.Content.ReadAsStreamAsync());
+            var implicitDiagnostic = Assert.Single(links.RootElement.GetProperty("outgoing").EnumerateArray());
+            Assert.Equal("Diagnostics", implicitDiagnostic.GetProperty("kind").GetString());
+            Assert.Equal("Implicit", implicitDiagnostic.GetProperty("origin").GetString());
+            Assert.Equal(workspaceId, implicitDiagnostic.GetProperty("targetResourceId").GetGuid());
+
+            using var impactRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{workspaceComponentId:D}/resources/{workspaceId:D}/delete-impact");
+            using var impactResponse = await client.SendAsync(impactRequest);
+            Assert.Equal(HttpStatusCode.OK, impactResponse.StatusCode);
+            using var impact = await JsonDocument.ParseAsync(await impactResponse.Content.ReadAsStreamAsync());
+            Assert.Contains(impact.RootElement.GetProperty("items").EnumerateArray(), item =>
+                item.GetProperty("code").GetString() == "IMPACT-LIA-LINK-IMPLICITE-RETIRE"
+                && item.GetProperty("resourceId").GetGuid() == sourceResourceId);
+
+            using var deleteRequest = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{workspaceComponentId:D}/resources/{workspaceId:D}",
+                new { expectedVersion = resourceVersion });
+            deleteRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var deleteResponse = await client.SendAsync(deleteRequest);
+            Assert.True(deleteResponse.StatusCode == HttpStatusCode.NoContent, await deleteResponse.Content.ReadAsStringAsync());
+
+            using var checkComponentRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{sourceComponentId:D}");
+            using var checkComponentResponse = await client.SendAsync(checkComponentRequest);
+            Assert.Equal(HttpStatusCode.OK, checkComponentResponse.StatusCode);
+            using var persistedComponent = await JsonDocument.ParseAsync(await checkComponentResponse.Content.ReadAsStreamAsync());
+            Assert.Equal(JsonValueKind.Null,
+                persistedComponent.RootElement.GetProperty("defaultLogAnalyticsResourceId").ValueKind);
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(sourceComponentId);
+            await CleanupResourceTestComponentAsync(workspaceComponentId);
+        }
+    }
+
+    private async Task DeletingUserAssignedIdentityUsedByALinkIsBlockedCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            using var identity = JsonDocument.Parse(await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "UserAssignedIdentity",
+                "api-identity",
+                new Dictionary<string, object?>()));
+            using var source = JsonDocument.Parse(await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>()));
+            using var target = JsonDocument.Parse(await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "KeyVault",
+                "main-vault",
+                new Dictionary<string, object?>()));
+            var identityId = identity.RootElement.GetProperty("id").GetGuid();
+            var identityVersion = identity.RootElement.GetProperty("version").GetInt32();
+            var sourceId = source.RootElement.GetProperty("id").GetGuid();
+            var targetId = target.RootElement.GetProperty("id").GetGuid();
+
+            using var addLinkRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links",
+                new
+                {
+                    targetComponentId = componentId,
+                    targetResourceId = targetId,
+                    kind = "Access",
+                    identityKind = "UserAssigned",
+                    identityResourceId = identityId,
+                    roles = KeyVaultSecretUserRoles,
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedComponentVersion = await GetComponentVersionFromApiAsync(componentId)
+                });
+            addLinkRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var addLinkResponse = await client.SendAsync(addLinkRequest);
+            Assert.True(addLinkResponse.StatusCode == HttpStatusCode.Created, await addLinkResponse.Content.ReadAsStringAsync());
+
+            using var duplicateLinkRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links",
+                new
+                {
+                    targetComponentId = componentId,
+                    targetResourceId = targetId,
+                    kind = "Access",
+                    identityKind = "UserAssigned",
+                    identityResourceId = identityId,
+                    roles = DuplicateKeyVaultSecretUserRoles,
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedComponentVersion = await GetComponentVersionFromApiAsync(componentId)
+                });
+            duplicateLinkRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var duplicateLinkResponse = await client.SendAsync(duplicateLinkRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, duplicateLinkResponse.StatusCode);
+            Assert.Equal("VAL-LIA-DOUBLON", await GetProblemCodeAsync(duplicateLinkResponse));
+
+            using var duplicateRolesRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links",
+                new
+                {
+                    targetComponentId = componentId,
+                    targetResourceId = targetId,
+                    kind = "Access",
+                    identityKind = "UserAssigned",
+                    identityResourceId = identityId,
+                    roles = DuplicateRoleEntries,
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedComponentVersion = await GetComponentVersionFromApiAsync(componentId)
+                });
+            duplicateRolesRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var duplicateRolesResponse = await client.SendAsync(duplicateRolesRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, duplicateRolesResponse.StatusCode);
+            Assert.Equal("LINK_ROLE_DUPLICATE", await GetProblemCodeAsync(duplicateRolesResponse));
+
+            using var impactRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{identityId:D}/delete-impact");
+            using var impactResponse = await client.SendAsync(impactRequest);
+            Assert.Equal(HttpStatusCode.OK, impactResponse.StatusCode);
+            using var impact = await JsonDocument.ParseAsync(await impactResponse.Content.ReadAsStreamAsync());
+            Assert.Equal("Blocked", impact.RootElement.GetProperty("status").GetString());
+            Assert.Contains(impact.RootElement.GetProperty("items").EnumerateArray(), item =>
+                item.GetProperty("code").GetString() == "IMPACT-LIA-IDENTITE-UTILISEE");
+
+            using var deleteRequest = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{identityId:D}",
+                new { expectedVersion = identityVersion });
+            deleteRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var deleteResponse = await client.SendAsync(deleteRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, deleteResponse.StatusCode);
+            Assert.Equal("RESOURCE_DELETE_BLOCKED", await GetProblemCodeAsync(deleteResponse));
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task DeletingComponentWithIncomingLinksIsBlockedCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var sourceComponentId = await CreateResourceTestComponentAsync(environment);
+        var targetComponentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var sourceGroupId = await CreateResourceTestGroupAsync(sourceComponentId);
+            var targetGroupId = await CreateResourceTestGroupAsync(targetComponentId);
+            using var source = JsonDocument.Parse(await CreateResourceAsync(
+                sourceComponentId,
+                sourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>()));
+            using var target = JsonDocument.Parse(await CreateResourceAsync(
+                targetComponentId,
+                targetGroupId,
+                "ContainerAppsEnvironment",
+                "environment",
+                new Dictionary<string, object?>()));
+            var sourceResourceId = source.RootElement.GetProperty("id").GetGuid();
+            var targetResourceId = target.RootElement.GetProperty("id").GetGuid();
+            var targetVersionBeforeLink = await GetComponentVersionFromApiAsync(targetComponentId);
+
+            using var addLinkRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{sourceComponentId:D}/resources/{sourceResourceId:D}/links",
+                new
+                {
+                    targetComponentId,
+                    targetResourceId,
+                    kind = "Hosting",
+                    identityKind = "None",
+                    identityResourceId = (Guid?)null,
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedComponentVersion = await GetComponentVersionFromApiAsync(sourceComponentId)
+                });
+            addLinkRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var addLinkResponse = await client.SendAsync(addLinkRequest);
+            Assert.Equal(HttpStatusCode.Created, addLinkResponse.StatusCode);
+            Assert.Equal(targetVersionBeforeLink + 1, await GetComponentVersionFromApiAsync(targetComponentId));
+
+            using var deleteComponentRequest = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{targetComponentId:D}",
+                new { expectedVersion = await GetComponentVersionFromApiAsync(targetComponentId) });
+            deleteComponentRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var deleteComponentResponse = await client.SendAsync(deleteComponentRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, deleteComponentResponse.StatusCode);
+            using var deleteProblem = JsonDocument.Parse(await deleteComponentResponse.Content.ReadAsStringAsync());
+            Assert.Equal("COMPONENT_DELETE_BLOCKED", deleteProblem.RootElement.GetProperty("code").GetString());
+            Assert.Contains(deleteProblem.RootElement.GetProperty("affectedResources").EnumerateArray(),
+                resourceId => resourceId.GetString() == sourceResourceId.ToString("D"));
+
+            using var linksRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{sourceComponentId:D}/resources/{sourceResourceId:D}/links");
+            using var linksResponse = await client.SendAsync(linksRequest);
+            Assert.Equal(HttpStatusCode.OK, linksResponse.StatusCode);
+            using var links = await JsonDocument.ParseAsync(await linksResponse.Content.ReadAsStreamAsync());
+            Assert.Single(links.RootElement.GetProperty("outgoing").EnumerateArray());
+
+            using var deletedComponentRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{targetComponentId:D}");
+            using var deletedComponentResponse = await client.SendAsync(deletedComponentRequest);
+            Assert.Equal(HttpStatusCode.OK, deletedComponentResponse.StatusCode);
+
+            using var deletedResourceLinksRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{targetComponentId:D}/resources/{targetResourceId:D}/links");
+            using var deletedResourceLinksResponse = await client.SendAsync(deletedResourceLinksRequest);
+            Assert.Equal(HttpStatusCode.OK, deletedResourceLinksResponse.StatusCode);
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(sourceComponentId);
+            await CleanupResourceTestComponentAsync(targetComponentId);
+        }
     }
 
     private async Task SingleTargetResourceUsesThePersistedSingleTargetIdCore()
@@ -671,7 +3245,8 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         string type,
         string logicalName,
         IReadOnlyDictionary<string, object?> properties,
-        bool isExisting = false)
+        bool isExisting = false,
+        Guid? defaultIdentityResourceId = null)
     {
         var expectedVersion = await GetComponentVersionFromApiAsync(componentId);
         using var request = CreateRequest(
@@ -684,6 +3259,7 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
                 logicalName,
                 description = "Resource value persistence test",
                 isExisting,
+                defaultIdentityResourceId,
                 properties,
                 tags = new Dictionary<string, string>(),
                 expectedVersion
@@ -745,6 +3321,18 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         return project.Version;
     }
 
+    private async Task<string> PinProjectCatalogVersionAsync(string catalogVersion)
+    {
+        using var scope = factory.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        var project = await dbContext.Projects.SingleAsync(candidate => candidate.Id == new ProjectId(ProjectId));
+        var originalCatalogVersion = project.CatalogVersion;
+        dbContext.Entry(project).Property(candidate => candidate.CatalogVersion).CurrentValue = catalogVersion;
+        await dbContext.SaveChangesAsync();
+        return originalCatalogVersion;
+    }
+
     private async Task<int> CountComponentsAsync()
     {
         using var scope = factory.Services.CreateScope();
@@ -761,6 +3349,147 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         using var project = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
         return project.RootElement.GetProperty("version").GetInt32();
+    }
+
+    private async Task<int> GetProjectModelVersionFromApiAsync()
+    {
+        using var request = CreateRequest(HttpMethod.Get, $"/v1/projects/{ProjectId:D}");
+        using var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var project = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        return project.RootElement.GetProperty("modelVersion").GetInt32();
+    }
+
+    private async Task SqlAdministratorWarningCanBeAcknowledgedAndReadBackCore()
+    {
+        const string comment = "J0-20 acknowledgement integration check";
+        var testProjectId = await SeedAcknowledgmentProjectAsync();
+        try
+        {
+            using var getValidation = CreateRequest(HttpMethod.Get, $"/v1/projects/{testProjectId.Value:D}/validation");
+            using var initialResponse = await client.SendAsync(getValidation);
+            Assert.Equal(HttpStatusCode.OK, initialResponse.StatusCode);
+            using var initial = await JsonDocument.ParseAsync(await initialResponse.Content.ReadAsStreamAsync());
+            var finding = Assert.Single(
+                initial.RootElement.GetProperty("findings").EnumerateArray(),
+                candidate => candidate.GetProperty("code").GetString() == "VAL-LIA-SQL-ADMIN");
+            var subjectId = finding.GetProperty("subjectId").GetGuid();
+            var objectVersion = finding.GetProperty("objectVersion").GetInt32();
+            var detailKey = finding.GetProperty("detailKey").ValueKind == JsonValueKind.Null
+                ? null
+                : finding.GetProperty("detailKey").GetString();
+            Assert.True(objectVersion > 0);
+
+            using var acknowledge = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{testProjectId.Value:D}/validation/findings/VAL-LIA-SQL-ADMIN/acknowledgment",
+                new
+                {
+                    subjectType = "Resource",
+                    subjectId,
+                    environmentId = (Guid?)null,
+                    expectedObjectVersion = objectVersion,
+                    comment,
+                    detailKey
+                });
+            acknowledge.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var acknowledgeResponse = await client.SendAsync(acknowledge);
+            Assert.Equal(HttpStatusCode.NoContent, acknowledgeResponse.StatusCode);
+
+            using var duplicateAcknowledge = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{testProjectId.Value:D}/validation/findings/VAL-LIA-SQL-ADMIN/acknowledgment",
+                new
+                {
+                    subjectType = "Resource",
+                    subjectId,
+                    environmentId = (Guid?)null,
+                    expectedObjectVersion = objectVersion,
+                    comment,
+                    detailKey
+                });
+            duplicateAcknowledge.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var duplicateResponse = await client.SendAsync(duplicateAcknowledge);
+            Assert.Equal(HttpStatusCode.Conflict, duplicateResponse.StatusCode);
+            Assert.Equal("FINDING_ALREADY_ACKNOWLEDGED", await GetProblemCodeAsync(duplicateResponse));
+
+            using var readBack = CreateRequest(HttpMethod.Get, $"/v1/projects/{testProjectId.Value:D}/validation");
+            using var readBackResponse = await client.SendAsync(readBack);
+            Assert.Equal(HttpStatusCode.OK, readBackResponse.StatusCode);
+            using var validation = await JsonDocument.ParseAsync(await readBackResponse.Content.ReadAsStreamAsync());
+            var acknowledgedFinding = Assert.Single(
+                validation.RootElement.GetProperty("findings").EnumerateArray(),
+                candidate => candidate.GetProperty("code").GetString() == "VAL-LIA-SQL-ADMIN");
+            Assert.Equal(comment, acknowledgedFinding.GetProperty("acknowledgment").GetProperty("comment").GetString());
+        }
+        finally
+        {
+            using var scope = factory.Services.CreateScope();
+            scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>()
+                .Set(new OrganizationId(OrganizationId));
+            var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+            var acknowledgments = await dbContext.Set<FindingAcknowledgmentAggregate>()
+                .Where(acknowledgment => acknowledgment.ProjectId == testProjectId
+                    && acknowledgment.Comment == comment)
+                .ToArrayAsync();
+            dbContext.Set<FindingAcknowledgmentAggregate>().RemoveRange(acknowledgments);
+            await dbContext.SaveChangesAsync();
+            var componentIds = await dbContext.Components
+                .Where(component => component.ProjectId == testProjectId)
+                .Select(component => component.Id.Value)
+                .ToArrayAsync();
+            foreach (var componentId in componentIds)
+            {
+                await CleanupResourceTestComponentAsync(componentId);
+            }
+
+            var testProject = await dbContext.Projects
+                .SingleOrDefaultAsync(project => project.Id == testProjectId);
+            if (testProject is not null)
+            {
+                dbContext.Projects.Remove(testProject);
+                await dbContext.SaveChangesAsync();
+            }
+        }
+    }
+
+    private async Task<ProjectId> SeedAcknowledgmentProjectAsync()
+    {
+        var projectId = new ProjectId(Guid.NewGuid());
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        using var scope = factory.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        await DemoDataSeeder.SeedAsync(dbContext, TimeProvider.System, includeProjects: false);
+
+        var alice = await dbContext.UserProfiles.SingleAsync(profile =>
+            profile.ObjectId == Guid.Parse("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"));
+        var bob = await dbContext.UserProfiles.SingleAsync(profile =>
+            profile.ObjectId == Guid.Parse("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"));
+        var chloe = await dbContext.UserProfiles.SingleAsync(profile =>
+            profile.ObjectId == Guid.Parse("cccccccc-cccc-4ccc-8ccc-cccccccccccc"));
+        var projectResult = ProjectAggregate.Create(
+            projectId,
+            new OrganizationId(OrganizationId),
+            $"Acknowledgment {suffix}",
+            $"a{suffix}",
+            alice.TenantId,
+            string.Empty,
+            "2026.10-pilot.3",
+            alice.Id);
+        Assert.False(projectResult.IsError);
+        dbContext.Projects.Add(projectResult.Value);
+        await dbContext.SaveChangesAsync();
+
+        await new EfDemoProjectSeeder(dbContext).SeedShopAsync(
+            projectId,
+            new OrganizationId(OrganizationId),
+            alice.Id,
+            bob.Id,
+            chloe.Id,
+            "2026.10-pilot.3",
+            seedReferenceModel: true);
+        return projectId;
     }
 
     private static HttpRequestMessage CreateRequest(HttpMethod method, string path, object? body = null)

@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\InfraFlowSculptor.Catalog\InfraFlowSculptor.Catalog.csproj" />
+    <ProjectReference Include="..\..\InfraFlowSculptor.Domain\InfraFlowSculptor.Domain.csproj" />
     <ProjectReference Include="..\..\InfraFlowSculptor.Engine\InfraFlowSculptor.Engine.csproj" />
   </ItemGroup>
 </Project>

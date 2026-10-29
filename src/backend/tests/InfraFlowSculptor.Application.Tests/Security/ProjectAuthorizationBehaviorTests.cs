@@ -1,6 +1,8 @@
 using ErrorOr;
 using InfraFlowSculptor.Application.Common.Behaviors;
+using InfraFlowSculptor.Application.Common.ModelCommands;
 using InfraFlowSculptor.Application.Common.Security;
+using InfraFlowSculptor.Application.Components.Commands.SetComponentDefaultLogAnalytics;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.Common.Security;
 using InfraFlowSculptor.Domain.OrganizationAggregate;
@@ -88,6 +90,39 @@ public sealed class ProjectAuthorizationBehaviorTests
 
         Assert.False(result.IsError);
         Assert.True(nextWasCalled);
+    }
+
+    [Fact]
+    public async Task DeveloperCannotChangeDefaultLogAnalyticsWithoutComponentsManage()
+    {
+        var permissions = ProjectRoles.PermissionsFor(ProjectRole.Developer);
+        var projectAuthorizer = CreateProjectAuthorizer(new ProjectAuthorizationContext(permissions, IsOwner: false));
+        var currentUser = Substitute.For<ICurrentUser>();
+        currentUser.Key.Returns(CurrentUserKey);
+        var currentOrganization = Substitute.For<ICurrentOrganization>();
+        currentOrganization.Id.Returns(ActiveOrganizationId);
+        var behavior = new AuthorizationBehavior<SetComponentDefaultLogAnalyticsCommand, ErrorOr<ModelCommandOutcome>>(
+            currentUser,
+            currentOrganization,
+            Substitute.For<IOrganizationRoleAuthorizer>(),
+            projectAuthorizer);
+        var nextWasCalled = false;
+
+        var result = await behavior.Handle(
+            new SetComponentDefaultLogAnalyticsCommand(Guid.NewGuid(), Guid.NewGuid(), null, 1),
+            (_, _) =>
+            {
+                nextWasCalled = true;
+                return ValueTask.FromResult<ErrorOr<ModelCommandOutcome>>(
+                    new ModelCommandOutcome("unexpected", []));
+            },
+            CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.False(nextWasCalled);
+        var error = Assert.Single(result.Errors);
+        Assert.Equal(ErrorType.Forbidden, error.Type);
+        Assert.Equal(Permission.ComponentsManage, error.Metadata!["permission"]);
     }
 
     private static AuthorizationBehavior<TRequest, ErrorOr<Success>> CreateBehavior<TRequest>(

@@ -15,6 +15,7 @@ public static class AuditActions
     public const string ProjectRoleAssigned = "project.role.assigned";
     public const string ProjectRoleRemoved = "project.role.removed";
     public const string ProjectOwnershipTaken = "project.ownership.taken";
+    public const string ProjectNamingUpdated = "project.naming.updated";
     public const string ComponentCreated = "component.created";
     public const string ComponentUpdated = "component.updated";
     public const string ComponentDeleted = "component.deleted";
@@ -24,4 +25,13 @@ public static class AuditActions
     public const string ResourceCreated = "component.resource.created";
     public const string ResourceUpdated = "component.resource.updated";
     public const string ResourceDeleted = "component.resource.deleted";
+    public const string AppSettingCreated = "component.app_setting.created";
+    public const string AppSettingUpdated = "component.app_setting.updated";
+    public const string AppSettingDeleted = "component.app_setting.deleted";
+    public const string AppSettingValueForcedNonSecret = "component.app_setting.value_forced_non_secret";
+    public const string ApplicationUpdated = "component.application.updated";
+    public const string LinkCreated = "component.link.created";
+    public const string LinkUpdated = "component.link.updated";
+    public const string LinkDeleted = "component.link.deleted";
+    public const string FindingAcknowledged = "project.finding.acknowledged";
 }
