@@ -29,6 +29,8 @@
 - **2026-10-28** : J0-12 ajoute les résolveurs de cibles, présences, tags et valeurs effectives et leur route API. La suite Release passe 335/335; la recette Scalar locale confirme `dev=false` par surcharge et `prd=true` par valeur de ressource, puis supprime le projet de recette. Voir `.github/memory/12-engine.md`, `10-api-endpoints.md` et `docs/plan/recettes/suivi.md`.
 - **2026-10-28–29** : J0-13 ajoute le moteur de nommage; J0-14 livre l'interface des ressources, les métadonnées et la suppression à impact partiel; 376 tests .NET, 91 Angular et E2E desktop/mobile validés. RG-NOM-10 reste verrouillée jusqu'à J0-28. Voir `.github/memory/03-domain-model.md`, `04-frontend.md`, `10-api-endpoints.md`, `12-engine.md` et `docs/plan/recettes/suivi.md`.
 
+- **2026-10-29** : J0-15 termine les liaisons, le câblage moteur et les impacts. Claude a recommandé un catalogue correctif `2026.10-pilot.1` pour le seul projet temporaire `shop15`; `shop` reste sur `2026.10-pilot`. Recette Scalar locale passée, projet temporaire archivé de façon réversible, aucun changement Azure. Voir le déblocage J0-15 et les mémoires modèle, API et moteur.
+
 ## Fichiers thématiques
 
 - **2026-10-06** : S-08 ajoute le worker/outbox avec 57 tests verts et des conteneurs locaux persistants. S-09 ajoute Angular 22; connexion Keycloak Bob, `/v1/me`, déconnexion, session après rechargement et configuration runtime vérifiés. 57 tests .NET, 4 Python et 3 Angular passent; OIDC limite le bearer token à `/v1/`.

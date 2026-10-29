@@ -41,6 +41,7 @@ describe('ProjectOverview', () => {
       name: 'Core',
       code: 'core',
       description: '',
+      defaultLogAnalyticsResourceId: null,
       mode: 'PerEnvironment',
       targetsAllEnvironments: true,
       targetEnvironmentIds: [],

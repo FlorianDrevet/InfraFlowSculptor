@@ -1,0 +1,20 @@
+{
+  "name": "DependencyCache",
+  "labels": {
+    "fr": "Cache des dépendances",
+    "en": "Dependency cache"
+  },
+  "description": "Met en cache les dépendances restaurées pour accélérer les exécutions suivantes.",
+  "availableFrom": "lot1",
+  "defaults": {
+    "enabled": true,
+    "blocking": false,
+    "position": "beforeBuild"
+  },
+  "parameters": [],
+  "pipeline": {
+    "provider": "AzurePipelines",
+    "template": ".ifs/templates/steps/DependencyCache.yml"
+  },
+  "verifiedAgainstDocsOn": "2026-10-27"
+}

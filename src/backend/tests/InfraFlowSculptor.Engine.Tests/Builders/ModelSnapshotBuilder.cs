@@ -6,7 +6,7 @@ namespace InfraFlowSculptor.Engine.Tests.Builders;
 
 public sealed class ModelSnapshotBuilder
 {
-    private static readonly CatalogVersion PilotCatalog = CatalogLoader.Load().LatestPublished!;
+    private static readonly CatalogVersion PilotCatalog = CatalogLoader.Load().GetVersion("2026.10-pilot")!;
 
     private ProjectSnapshot project = new("Boutique en ligne", "shop", string.Empty)
     {

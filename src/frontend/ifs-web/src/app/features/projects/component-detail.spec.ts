@@ -36,6 +36,7 @@ class StaticTranslationLoader implements TranslocoLoader {
         cancel: 'Annuler',
         confirmDeleteByName: 'Tapez {name} pour confirmer',
         delete: 'Supprimer du modèle',
+        deletedWithResource: 'Supprimé avec elle',
         deleteAlreadyRemoved: 'Cette ressource a déjà été supprimée par une autre action.',
         deleteSuccess: 'Ressource supprimée du modèle.',
         deleteConflict: 'La ressource a changé. Vérifiez l’impact recalculé.',
@@ -94,6 +95,7 @@ function createTestComponent(resource = createTestResource()): ComponentResponse
     name: 'Core',
     code: 'core',
     description: '',
+    defaultLogAnalyticsResourceId: null,
     mode: 'PerEnvironment',
     targetsAllEnvironments: true,
     targetEnvironmentIds: [],
@@ -185,6 +187,54 @@ function confirmTestDeletion(harness: RouterTestingHarness, dialog: HTMLElement)
 }
 
 describe('ComponentDetail', () => {
+  it('renders link impacts as messages instead of resource names', async () => {
+    const message = 'Une liaison implicite disparaîtra au prochain déploiement.';
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const impact = {
+      resourceVersion: 8,
+      status: 'Partial',
+      severity: 'Information',
+      items: [
+        {
+          code: 'IMPACT-LIA-LINK-IMPLICITE-RETIRE',
+          kind: 'Impact',
+          type: 'Impact',
+          name: message,
+          severity: 'Information',
+          message,
+          linkId: null,
+          resourceId: testResourceId,
+        },
+        {
+          code: 'IMPACT-LIA-LINK-IMPLICITE-RETIRE',
+          kind: 'Impact',
+          type: 'Impact',
+          name: message,
+          severity: 'Information',
+          message,
+          linkId: '77777777-7777-4777-8777-777777777777',
+          resourceId: testResourceId,
+        },
+      ],
+      pendingAreas: [],
+    } as ResourceDeletionImpactResponse;
+    const component = { get: vi.fn().mockReturnValue(of(createTestComponent())) };
+    const resources = {
+      deletionImpact: vi.fn().mockReturnValue(of(impact)),
+      delete: vi.fn(),
+    };
+    const { harness, componentElement } = await renderComponentDetail(component, resources);
+
+    const dialog = await openTestDeleteDialog(harness, componentElement);
+
+    expect(dialog.textContent).toContain(message);
+    expect(dialog.querySelector('code')).toBeNull();
+    expect(dialog.textContent).not.toContain('Impact');
+    expect(dialog.querySelectorAll('li')).toHaveLength(2);
+    expect(warning.mock.calls.flat().join(' ')).not.toContain('NG0955');
+    warning.mockRestore();
+  });
+
   it('ignores an impact response that arrives after the dialog is cancelled and reopened', async () => {
     const projectId = '77777777-7777-4777-8777-777777777777';
     const componentId = '88888888-8888-4888-8888-888888888888';
@@ -212,6 +262,7 @@ describe('ComponentDetail', () => {
       name: 'Core',
       code: 'core',
       description: '',
+      defaultLogAnalyticsResourceId: null,
       mode: 'PerEnvironment',
       targetsAllEnvironments: true,
       targetEnvironmentIds: [],
@@ -228,12 +279,14 @@ describe('ComponentDetail', () => {
     const staleImpact = {
       resourceVersion: 3,
       status: 'Partial',
+      severity: 'Information',
       items: [],
       pendingAreas: ['IncomingLinks'],
     } as ResourceDeletionImpactResponse;
     const currentImpact = {
       resourceVersion: 8,
       status: 'Partial',
+      severity: 'Information',
       items: [],
       pendingAreas: ['IncomingLinks'],
     } as ResourceDeletionImpactResponse;
@@ -354,6 +407,7 @@ describe('ComponentDetail', () => {
       name: 'Core',
       code: 'core',
       description: '',
+      defaultLogAnalyticsResourceId: null,
       mode: 'PerEnvironment',
       targetsAllEnvironments: true,
       targetEnvironmentIds: [],
@@ -370,6 +424,7 @@ describe('ComponentDetail', () => {
     const impact = {
       resourceVersion: 8,
       status: 'Partial',
+      severity: 'Information',
       items: [],
       pendingAreas: ['IncomingLinks'],
     } as ResourceDeletionImpactResponse;
@@ -498,6 +553,7 @@ describe('ComponentDetail', () => {
       name: 'Core',
       code: 'core',
       description: '',
+      defaultLogAnalyticsResourceId: null,
       mode: 'PerEnvironment',
       targetsAllEnvironments: true,
       targetEnvironmentIds: [],
@@ -514,6 +570,7 @@ describe('ComponentDetail', () => {
     const impact = {
       resourceVersion: 8,
       status: 'Partial',
+      severity: 'Information',
       items: [],
       pendingAreas: ['IncomingLinks'],
     } as ResourceDeletionImpactResponse;
@@ -640,6 +697,7 @@ describe('ComponentDetail', () => {
     const impact: ResourceDeletionImpactResponse = {
       resourceVersion: 8,
       status: 'Partial',
+      severity: 'Information',
       items: [],
       pendingAreas: ['IncomingLinks'],
     };
@@ -673,6 +731,7 @@ describe('ComponentDetail', () => {
     const impact: ResourceDeletionImpactResponse = {
       resourceVersion: 8,
       status: 'Partial',
+      severity: 'Information',
       items: [],
       pendingAreas: ['IncomingLinks'],
     };
@@ -731,6 +790,7 @@ describe('ComponentDetail', () => {
       name: 'Core',
       code: 'core',
       description: '',
+      defaultLogAnalyticsResourceId: null,
       mode: 'PerEnvironment',
       targetsAllEnvironments: true,
       targetEnvironmentIds: [],
@@ -747,6 +807,7 @@ describe('ComponentDetail', () => {
     const impact = {
       resourceVersion: 8,
       status: 'Partial',
+      severity: 'Information',
       items: [],
       pendingAreas: ['IncomingLinks'],
     } as ResourceDeletionImpactResponse;

@@ -32,6 +32,7 @@ public sealed class ComponentConfiguration : IEntityTypeConfiguration<ComponentA
             .HasMaxLength(16)
             .IsRequired();
         builder.Property(component => component.DeletionProtectionEnabled).IsRequired();
+        builder.Property(component => component.DefaultLogAnalyticsResourceId);
         builder.Property(component => component.Version).IsConcurrencyToken();
         builder.Property(component => component.FirstPublishedAt);
         builder.HasIndex(component => new { component.ProjectId, component.NameKey })

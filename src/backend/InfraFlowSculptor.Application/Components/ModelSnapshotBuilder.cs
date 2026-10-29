@@ -6,6 +6,7 @@ using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Catalog;
 using InfraFlowSculptor.Engine.Model;
+using InfraFlowSculptor.Engine.Links;
 using InfraFlowSculptor.Engine.Naming;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,8 +39,11 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
         var components = await dbContext.Query<ComponentAggregate>()
             .Where(component => component.ProjectId == new ProjectId(projectId))
             .ToArrayAsync(cancellationToken);
+        var links = await dbContext.Query<LinkAggregate>()
+            .Where(link => link.ProjectId == new ProjectId(projectId))
+            .ToArrayAsync(cancellationToken);
 
-        var snapshot = CreateSnapshot(project, components);
+        var snapshot = CreateSnapshot(project, components, links);
         if (snapshot.IsError)
         {
             return snapshot.Errors;
@@ -71,7 +75,8 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
         {
             var otherSnapshot = CreateSnapshot(
                 otherProject,
-                otherComponents.Where(component => component.ProjectId == otherProject.Id).ToArray());
+                otherComponents.Where(component => component.ProjectId == otherProject.Id).ToArray(),
+                []);
             if (otherSnapshot.IsError)
             {
                 return otherSnapshot.Errors;
@@ -105,7 +110,10 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
         return separatorIndex < 0 ? normalizedId : normalizedId[(separatorIndex + 1)..];
     }
 
-    private ErrorOr<ModelSnapshot> CreateSnapshot(ProjectAggregate project, IReadOnlyList<ComponentAggregate> components)
+    private ErrorOr<ModelSnapshot> CreateSnapshot(
+        ProjectAggregate project,
+        IReadOnlyList<ComponentAggregate> components,
+        IReadOnlyList<LinkAggregate> links)
     {
         var catalog = catalogProvider.GetVersion(project.CatalogVersion);
         if (catalog is null)
@@ -148,7 +156,20 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
             components.Select(MapComponent).ToArray())
         {
             NamingRules = CatalogNamingSnapshotMapper.CreateRules(catalog),
-            RegionCodes = CatalogNamingSnapshotMapper.CreateRegionCodes(catalog)
+            RegionCodes = CatalogNamingSnapshotMapper.CreateRegionCodes(catalog),
+            Links = links.Select(link => new LinkSnapshot(
+                link.Id,
+                link.SourceComponentId,
+                link.SourceResourceId,
+                link.TargetComponentId,
+                link.TargetResourceId,
+                link.Kind,
+                link.Origin,
+                link.IdentityKind,
+                link.IdentityResourceId,
+                link.Roles.Select(role => role.Name).ToArray(),
+                link.AccessScope,
+                link.DataAccessLevel)).ToArray()
         };
     }
 
@@ -205,6 +226,7 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
                     .Where(value => value.Abbreviation is not null)
                     .ToDictionary(value => value.Type, value => value.Abbreviation!, StringComparer.OrdinalIgnoreCase))
             : null,
+        DefaultLogAnalyticsResourceId = component.DefaultLogAnalyticsResourceId,
         Tags = component.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase)
     };
 }

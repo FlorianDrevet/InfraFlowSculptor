@@ -59,6 +59,8 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
 
     public ComponentSingleTarget? SingleTarget { get; private set; }
 
+    public Guid? DefaultLogAnalyticsResourceId { get; private set; }
+
     public RemovedResourceBehavior RemovedResourceBehavior { get; private set; }
 
     public bool DeletionProtectionEnabled { get; private set; }
@@ -637,6 +639,25 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
         Touch();
         return Result.Success;
     }
+
+    public ErrorOr<Success> SetDefaultLogAnalyticsResource(Guid? resourceId)
+    {
+        if (resourceId == Guid.Empty)
+        {
+            return Error.Validation("COMPONENT_DEFAULT_LOG_ANALYTICS_INVALID", "The default Log Analytics resource is invalid.");
+        }
+
+        if (DefaultLogAnalyticsResourceId == resourceId)
+        {
+            return Result.Success;
+        }
+
+        DefaultLogAnalyticsResourceId = resourceId;
+        Touch();
+        return Result.Success;
+    }
+
+    public void RecordLinkChange() => Touch();
 
     public bool TargetsEnvironment(Guid environmentId) =>
         Mode == ComponentDeploymentMode.PerEnvironment

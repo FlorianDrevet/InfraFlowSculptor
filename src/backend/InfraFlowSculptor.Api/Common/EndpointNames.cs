@@ -58,6 +58,7 @@ public static class EndpointNames
     public const string GetProjectComponent = "GetProjectComponent";
     public const string UpdateProjectComponent = "UpdateProjectComponent";
     public const string SetComponentNaming = "SetComponentNaming";
+    public const string SetComponentDefaultLogAnalytics = "SetComponentDefaultLogAnalytics";
     public const string DeleteProjectComponent = "DeleteProjectComponent";
     public const string CreateResourceGroup = "CreateResourceGroup";
     public const string UpdateResourceGroup = "UpdateResourceGroup";
@@ -67,6 +68,11 @@ public static class EndpointNames
     public const string UpdateResourceMetadata = "UpdateResourceMetadata";
     public const string GetEffectiveValues = "GetEffectiveValues";
     public const string GetResourceDeletionImpact = "GetResourceDeletionImpact";
+    public const string GetResourceLinks = "GetResourceLinks";
+    public const string GetLinkRemovalImpact = "GetLinkRemovalImpact";
+    public const string AddLink = "AddLink";
+    public const string UpdateLink = "UpdateLink";
+    public const string RemoveLink = "RemoveLink";
     public const string SetResourceProperties = "SetResourceProperties";
     public const string SetOverride = "SetOverride";
     public const string ClearOverride = "ClearOverride";

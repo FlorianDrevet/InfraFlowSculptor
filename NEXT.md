@@ -10,12 +10,12 @@
 | | |
 |---|---|
 | **Étape courante** | [`J0-15`](docs/plan/02-jalon-0-pilote.md#j0-15--liaisons-identités-attributions-de-rôles-et-impact) — Liaisons, identités, attributions de rôles et impact |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`J0-14`](docs/plan/02-jalon-0-pilote.md#j0-14--écrans-des-ressources--ajout-général-propriétés-existante-suppression) — Écrans des ressources : ajout, général, propriétés, existante, suppression (commit `407e564`) |
 | **Étape suivante** | `J0-16` — Paramètres applicatifs et secrets de pipeline |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
-| **Dernière mise à jour** | 2026-10-29 — Codex |
+| **Dernière mise à jour** | 2026-10-29 — Codex (blocage résolu) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
@@ -96,6 +96,12 @@ Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suiv
 ### J0-13 — nommage — 2026-10-28
 
 Sur délégation de Florian, Claude CLI recommande de reporter RG-NOM-10 à J0-28 : les noms publiés seront disponibles avec les révisions (J0-24), et l'impact par cible ainsi que la révocation des accès dépendent du déploiement. J0-13 conserve les verrous après publication, y compris pour les noms forcés, avec tests de non-régression ; la page rend les réglages publiés en lecture seule. Le tableau de l'étape et la dette ont été alignés sur ce périmètre. Les constats de collision globale sur ressources existantes et le parcours d'erreur avec template d'un projet voisin ont été vérifiés/corrigés ; l'échec fermé est conservé si un template voisin ne peut pas être évalué. Preuves dans [`suivi.md`](docs/plan/recettes/suivi.md).
+
+### J0-15 — incompatibilité entre la recette Accès et le catalogue épinglé — 2026-10-29
+
+Sur demande de Florian, l'avis de Claude CLI est retenu : conserver `2026.10-pilot` immuable et bloquer J0-15. La recette manuelle exige une liaison Accès vers `log main`, mais le descripteur publié de Log Analytics n'autorise que les liaisons `Logging` et `Diagnostics` comme cibles. DEC-107 impose une nouvelle version pour toute évolution du catalogue. Pour reprendre, il faut préciser la version de catalogue à publier et comment la cible de démonstration l'utilisera, ou autoriser une correction du scénario manuel vers une cible compatible. RG-LIA-24 reste reportée à J2 conformément au plan et n'est pas bloquante. Détails et vérifications dans [`J0-15-blocage-20261029.md`](docs/plan/revues/J0-15-blocage-20261029.md).
+
+**Résolution — 2026-10-29 :** Florian a confié le choix à Codex après avis Claude. Le catalogue correctif `2026.10-pilot.1` autorise `Access` vers Log Analytics; seul le projet temporaire `shop15` l'utilise, tandis que `shop` garde la version publiée originale. La recette Scalar locale est passée et le projet temporaire a été archivé de façon récupérable. Voir [`J0-15-deblocage-20261029.md`](docs/plan/revues/J0-15-deblocage-20261029.md).
 
 ### R-04 — portée d’idempotence de création d’organisation — 2026-10-27
 

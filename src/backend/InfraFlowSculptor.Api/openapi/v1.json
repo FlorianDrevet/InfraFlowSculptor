@@ -3221,6 +3221,106 @@
         ]
       }
     },
+    "/v1/projects/{projectId}/components/{componentId}/default-log-analytics": {
+      "put": {
+        "tags": [
+          "Components"
+        ],
+        "summary": "Définir l'espace Log Analytics par défaut du composant.",
+        "operationId": "SetComponentDefaultLogAnalytics",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetComponentDefaultLogAnalyticsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComponentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/projects/{projectId}/components/{componentId}/resource-groups": {
       "post": {
         "tags": [
@@ -3679,6 +3779,514 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/components/{componentId}/resources/{resourceId}/links": {
+      "get": {
+        "tags": [
+          "Resources"
+        ],
+        "summary": "Lister les liaisons sortantes et entrantes explicites et implicites d'une ressource.",
+        "operationId": "GetResourceLinks",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceLinksResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Resources"
+        ],
+        "summary": "Créer une liaison explicite entre deux ressources du projet.",
+        "operationId": "AddLink",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddLinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/components/{componentId}/resources/{resourceId}/links/{linkId}/impact": {
+      "get": {
+        "tags": [
+          "Resources"
+        ],
+        "summary": "Prévisualiser les effets du retrait d'une liaison.",
+        "operationId": "GetLinkRemovalImpact",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkImpactResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/components/{componentId}/resources/{resourceId}/links/{linkId}": {
+      "put": {
+        "tags": [
+          "Resources"
+        ],
+        "summary": "Modifier une liaison explicite.",
+        "operationId": "UpdateLink",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Resources"
+        ],
+        "summary": "Retirer une liaison explicite après examen de son impact.",
+        "operationId": "RemoveLink",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveLinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5873,6 +6481,70 @@
   },
   "components": {
     "schemas": {
+      "AddLinkRequest": {
+        "required": [
+          "targetComponentId",
+          "targetResourceId",
+          "kind",
+          "identityKind",
+          "identityResourceId",
+          "roles",
+          "accessScope",
+          "dataAccessLevel",
+          "expectedComponentVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "targetComponentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetResourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LinkKind"
+          },
+          "identityKind": {
+            "$ref": "#/components/schemas/LinkIdentityKind"
+          },
+          "identityResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "accessScope": {
+            "$ref": "#/components/schemas/LinkAccessScope"
+          },
+          "dataAccessLevel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataAccessLevel"
+              }
+            ]
+          },
+          "expectedComponentVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "AddProjectEnvironmentRequest": {
         "required": [
           "name",
@@ -6280,7 +6952,8 @@
           "namingOverrides",
           "tags",
           "resourceGroups",
-          "resources"
+          "resources",
+          "defaultLogAnalyticsResourceId"
         ],
         "type": "object",
         "properties": {
@@ -6374,6 +7047,13 @@
             "items": {
               "$ref": "#/components/schemas/ResourceResponse"
             }
+          },
+          "defaultLogAnalyticsResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -6573,6 +7253,14 @@
             }
           }
         }
+      },
+      "DataAccessLevel": {
+        "enum": [
+          "Lecture",
+          "LectureEcriture",
+          "Schema",
+          null
+        ]
       },
       "DeleteProjectEnvironmentRequest": {
         "required": [
@@ -6939,6 +7627,123 @@
         }
       },
       "JsonElement": { },
+      "LinkAccessScope": {
+        "enum": [
+          "Resource",
+          "ResourceGroup"
+        ]
+      },
+      "LinkIdentityKind": {
+        "enum": [
+          "None",
+          "System",
+          "UserAssigned"
+        ]
+      },
+      "LinkImpactItemResponse": {
+        "required": [
+          "code",
+          "severity",
+          "message",
+          "linkId",
+          "resourceId"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/ResourceImpactSeverity"
+          },
+          "message": {
+            "type": "string"
+          },
+          "linkId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "resourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "LinkImpactResponse": {
+        "required": [
+          "severity",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "severity": {
+            "$ref": "#/components/schemas/ResourceImpactSeverity"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkImpactItemResponse"
+            }
+          }
+        }
+      },
+      "LinkKind": {
+        "enum": [
+          "Hosting",
+          "Logging",
+          "Diagnostics",
+          "Telemetry",
+          "ImagePull",
+          "HostStorage",
+          "ConfigurationRead",
+          "Access",
+          "DataAccess",
+          "ValueDependency",
+          "SecretRead"
+        ]
+      },
+      "LinkMutationResponse": {
+        "required": [
+          "linkId",
+          "summary",
+          "effects",
+          "findings"
+        ],
+        "type": "object",
+        "properties": {
+          "linkId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "LinkOrigin": {
+        "enum": [
+          "Explicit",
+          "Implicit"
+        ]
+      },
       "MePreferencesResponse": {
         "required": [
           "preferredLanguage",
@@ -8016,6 +8821,22 @@
           }
         }
       },
+      "RemoveLinkRequest": {
+        "required": [
+          "expectedLinkVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "expectedLinkVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "RemovedResourceBehavior": {
         "enum": [
           "Detach",
@@ -8068,7 +8889,12 @@
         "required": [
           "kind",
           "type",
-          "name"
+          "name",
+          "code",
+          "severity",
+          "message",
+          "linkId",
+          "resourceId"
         ],
         "type": "object",
         "properties": {
@@ -8080,18 +8906,43 @@
           },
           "name": {
             "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/ResourceImpactSeverity"
+          },
+          "message": {
+            "type": "string"
+          },
+          "linkId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "resourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
       "ResourceDeletionImpactKind": {
         "enum": [
-          "Child"
+          "Child",
+          "Impact"
         ]
       },
       "ResourceDeletionImpactResponse": {
         "required": [
           "resourceVersion",
           "status",
+          "severity",
           "pendingAreas",
           "items"
         ],
@@ -8107,6 +8958,9 @@
           },
           "status": {
             "$ref": "#/components/schemas/ResourceDeletionImpactStatus"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/ResourceImpactSeverity"
           },
           "pendingAreas": {
             "type": "array",
@@ -8125,7 +8979,8 @@
       "ResourceDeletionImpactStatus": {
         "enum": [
           "Partial",
-          "Complete"
+          "Complete",
+          "Blocked"
         ]
       },
       "ResourceGroupResponse": {
@@ -8170,6 +9025,154 @@
             "type": "object",
             "additionalProperties": {
               "type": "string"
+            }
+          }
+        }
+      },
+      "ResourceImpactSeverity": {
+        "enum": [
+          "Blocker",
+          "Critical",
+          "Information"
+        ]
+      },
+      "ResourceLinkIssueResponse": {
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ResourceLinkResponse": {
+        "required": [
+          "id",
+          "kind",
+          "origin",
+          "sourceComponentId",
+          "sourceComponentCode",
+          "sourceResourceId",
+          "sourceResourceName",
+          "targetComponentId",
+          "targetComponentCode",
+          "targetResourceId",
+          "targetResourceName",
+          "identityKind",
+          "identityResourceId",
+          "accessScope",
+          "dataAccessLevel",
+          "roles",
+          "isExternal",
+          "createsDeploymentDependency",
+          "findings"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LinkKind"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/LinkOrigin"
+          },
+          "sourceComponentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceComponentCode": {
+            "type": "string"
+          },
+          "sourceResourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceResourceName": {
+            "type": "string"
+          },
+          "targetComponentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetComponentCode": {
+            "type": "string"
+          },
+          "targetResourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetResourceName": {
+            "type": "string"
+          },
+          "identityKind": {
+            "$ref": "#/components/schemas/LinkIdentityKind"
+          },
+          "identityResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "accessScope": {
+            "$ref": "#/components/schemas/LinkAccessScope"
+          },
+          "dataAccessLevel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataAccessLevel"
+              }
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "isExternal": {
+            "type": "boolean"
+          },
+          "createsDeploymentDependency": {
+            "type": "boolean"
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceLinkIssueResponse"
+            }
+          }
+        }
+      },
+      "ResourceLinksResponse": {
+        "required": [
+          "outgoing",
+          "incoming"
+        ],
+        "type": "object",
+        "properties": {
+          "outgoing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceLinkResponse"
+            }
+          },
+          "incoming": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceLinkResponse"
             }
           }
         }
@@ -8496,6 +9499,30 @@
           }
         }
       },
+      "SetComponentDefaultLogAnalyticsRequest": {
+        "required": [
+          "workspaceResourceId",
+          "expectedVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "workspaceResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "expectedVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "SetExistingResourceIdRequest": {
         "required": [
           "targetId",
@@ -8693,6 +9720,70 @@
         "type": "object",
         "properties": {
           "expectedVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "UpdateLinkRequest": {
+        "required": [
+          "targetComponentId",
+          "targetResourceId",
+          "kind",
+          "identityKind",
+          "identityResourceId",
+          "roles",
+          "accessScope",
+          "dataAccessLevel",
+          "expectedLinkVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "targetComponentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetResourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LinkKind"
+          },
+          "identityKind": {
+            "$ref": "#/components/schemas/LinkIdentityKind"
+          },
+          "identityResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "accessScope": {
+            "$ref": "#/components/schemas/LinkAccessScope"
+          },
+          "dataAccessLevel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataAccessLevel"
+              }
+            ]
+          },
+          "expectedLinkVersion": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",

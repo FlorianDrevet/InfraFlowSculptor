@@ -9,6 +9,7 @@ import { ResourceGroupResponse } from '../models/resource-group-response';
 import { ResourceResponse } from '../models/resource-response';
 export interface ComponentResponse {
   code: string;
+  defaultLogAnalyticsResourceId: (string | null);
   defaultNameTemplate: (string | null);
   deletionProtectionEnabled: boolean;
   description: string;

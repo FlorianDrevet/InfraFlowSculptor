@@ -4,9 +4,11 @@
 import { ResourceDeletionImpactArea } from '../models/resource-deletion-impact-area';
 import { ResourceDeletionImpactItemResponse } from '../models/resource-deletion-impact-item-response';
 import { ResourceDeletionImpactStatus } from '../models/resource-deletion-impact-status';
+import { ResourceImpactSeverity } from '../models/resource-impact-severity';
 export interface ResourceDeletionImpactResponse {
   items: Array<ResourceDeletionImpactItemResponse>;
   pendingAreas: Array<ResourceDeletionImpactArea>;
   resourceVersion: (number | string);
+  severity: ResourceImpactSeverity;
   status: ResourceDeletionImpactStatus;
 }

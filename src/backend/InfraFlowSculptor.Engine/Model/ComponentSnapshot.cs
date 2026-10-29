@@ -16,6 +16,8 @@ public sealed record ComponentSnapshot(
 
     public ComponentNamingSnapshot? Naming { get; init; }
 
+    public Guid? DefaultLogAnalyticsResourceId { get; init; }
+
     public IReadOnlyDictionary<string, string> Tags { get; init; } =
         ImmutableDictionary<string, string>.Empty.WithComparers(StringComparer.OrdinalIgnoreCase);
 }

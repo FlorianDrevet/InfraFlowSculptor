@@ -1,0 +1,45 @@
+{
+  "name": "ImageScan",
+  "labels": {
+    "fr": "Scan de l’image",
+    "en": "Image scan"
+  },
+  "description": "Analyse l’image de conteneur avec Trivy et échoue au seuil de gravité configuré.",
+  "availableFrom": "lot1",
+  "defaults": {
+    "enabled": true,
+    "blocking": true,
+    "position": "afterBuild"
+  },
+  "parameters": [
+    {
+      "name": "tool",
+      "kind": "enum",
+      "default": "Trivy",
+      "values": [
+        "Trivy"
+      ]
+    },
+    {
+      "name": "minimumSeverity",
+      "kind": "enum",
+      "default": "HIGH",
+      "values": [
+        "CRITICAL",
+        "HIGH",
+        "MEDIUM",
+        "LOW"
+      ]
+    },
+    {
+      "name": "exceptions",
+      "kind": "string",
+      "default": ""
+    }
+  ],
+  "pipeline": {
+    "provider": "AzurePipelines",
+    "template": ".ifs/templates/steps/ImageScan.yml"
+  },
+  "verifiedAgainstDocsOn": "2026-10-27"
+}

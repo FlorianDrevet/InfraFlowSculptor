@@ -21,4 +21,5 @@ public sealed record ComponentSummary(
     IReadOnlyList<NamingOverrideValue> NamingOverrides,
     IReadOnlyDictionary<string, string> Tags,
     IReadOnlyList<ResourceGroupSummary> ResourceGroups,
-    IReadOnlyList<ResourceSummary> Resources);
+    IReadOnlyList<ResourceSummary> Resources,
+    Guid? DefaultLogAnalyticsResourceId);

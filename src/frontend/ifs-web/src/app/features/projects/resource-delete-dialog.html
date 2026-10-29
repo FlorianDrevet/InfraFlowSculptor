@@ -27,9 +27,13 @@
         <section>
           <h3>{{ 'resource.deletedWithResource' | transloco }}</h3>
           <ul>
-            @for (item of preview.items; track item.type + item.name) {
+            @for (item of preview.items; track $index) {
               <li>
-                <code>{{ item.name }}</code> · {{ item.type }}
+                @if (item.kind === 'Impact') {
+                  {{ item.message }}
+                } @else {
+                  <code>{{ item.name }}</code> · {{ item.type }}
+                }
               </li>
             }
           </ul>

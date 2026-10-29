@@ -1,0 +1,34 @@
+using InfraFlowSculptor.Catalog;
+using InfraFlowSculptor.Domain.Common.Extensibility;
+using InfraFlowSculptor.Domain.ProjectAggregate;
+using InfraFlowSculptor.Engine.Model;
+
+namespace InfraFlowSculptor.Engine.Links;
+
+public interface ILinkKindHandler : IKeyed<LinkKind>
+{
+    bool IsImplicitOnly { get; }
+
+    bool CreatesDeploymentDependency { get; }
+
+    LinkIdentityRequirement IdentityRequirement { get; }
+
+    LinkFormDefinition Form { get; }
+
+    string? RoleEquivalenceKey { get; }
+
+    bool SourceActsAsIdentity(CatalogResourceTypeDescriptor source);
+
+    LinkCardinality GetCardinality(CatalogResourceTypeDescriptor source);
+
+    bool Supports(CatalogResourceTypeDescriptor source, CatalogResourceTypeDescriptor target);
+
+    IReadOnlyList<LinkSnapshot> GetImplicitLinks(ModelSnapshot snapshot, CatalogVersion catalog);
+
+    LinkIdentityRequirement GetIdentityRequirement(IReadOnlyDictionary<string, System.Text.Json.JsonElement> targetProperties);
+
+    IReadOnlyList<string> GetRequiredRoles(
+        LinkSnapshot link,
+        IReadOnlyDictionary<string, System.Text.Json.JsonElement> targetProperties,
+        CatalogResourceTypeDescriptor targetDescriptor);
+}

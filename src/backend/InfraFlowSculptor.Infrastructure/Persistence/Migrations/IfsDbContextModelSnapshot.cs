@@ -40,6 +40,10 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("code_key");
 
+                    b.Property<Guid?>("DefaultLogAnalyticsResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("default_log_analytics_resource_id");
+
                     b.Property<string>("DefaultNameTemplate")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
@@ -215,6 +219,86 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasName("pk_organizations");
 
                     b.ToTable("organizations", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.LinkAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AccessScope")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("access_scope");
+
+                    b.Property<string>("DataAccessLevel")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("data_access_level");
+
+                    b.Property<string>("IdentityKind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("identity_kind");
+
+                    b.Property<Guid?>("IdentityResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("identity_resource_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("Origin")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("origin");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid>("SourceComponentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_component_id");
+
+                    b.Property<Guid>("SourceResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_resource_id");
+
+                    b.Property<Guid>("TargetComponentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_component_id");
+
+                    b.Property<Guid>("TargetResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_resource_id");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_links");
+
+                    b.HasIndex("ProjectId", "SourceResourceId")
+                        .HasDatabaseName("ix_project_links_source");
+
+                    b.HasIndex("ProjectId", "TargetResourceId")
+                        .HasDatabaseName("ix_project_links_target");
+
+                    b.ToTable("project_links", (string)null);
                 });
 
             modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", b =>
@@ -1570,6 +1654,39 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.LinkAggregate", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_links_projects_project_id");
+
+                    b.OwnsMany("InfraFlowSculptor.Domain.ProjectAggregate.LinkRole", "Roles", b1 =>
+                        {
+                            b1.Property<Guid>("LinkId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("link_id");
+
+                            b1.Property<string>("Name")
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("name");
+
+                            b1.HasKey("LinkId", "Name")
+                                .HasName("pk_project_link_roles");
+
+                            b1.ToTable("project_link_roles", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("LinkId")
+                                .HasConstraintName("fk_project_link_roles_project_links_link_id");
+                        });
+
+                    b.Navigation("Roles");
                 });
 
             modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", b =>

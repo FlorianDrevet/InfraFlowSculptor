@@ -1,4 +1,4 @@
-namespace InfraFlowSculptor.Application.Common.Extensibility;
+namespace InfraFlowSculptor.Domain.Common.Extensibility;
 
 public interface IKeyed<TKey> where TKey : notnull
 {

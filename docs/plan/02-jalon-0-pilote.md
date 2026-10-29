@@ -573,9 +573,11 @@ elle.
 ✅ **Vérification automatique.** Tests par règle ; **tous** les éléments implicites de [reference-pilote § 2.3](reference-pilote.md#23-éléments-implicites-par-environnement)
 calculés à l'identique ; déduplication (deux origines, retrait de l'une → l'attribution reste).
 
-🧪 **Test manuel.** Scalar : sur le projet de démonstration complet, liaisons de `ca api` → AcrPull implicite
-(origine « tirage d'image », portée abonnement C) ; impact du retrait de la liaison Accès vers `log main` →
-« accès révoqué dans Azure au prochain déploiement, y compris en production », gravité Critique.
+🧪 **Test manuel.** Scalar : sur un projet temporaire `shopNN` créé selon [`reference-pilote.md`](reference-pilote.md)
+et épinglé sur `2026.10-pilot.1`, vérifier les liaisons de `ca api` → AcrPull implicite (origine « tirage d'image »,
+portée abonnement C), puis l'impact du retrait de la liaison Accès vers `log main` → « accès révoqué dans Azure au
+prochain déploiement, y compris en production », gravité Critique. Laisser le projet `shop` existant épinglé sur
+`2026.10-pilot` ; supprimer logiquement le projet temporaire après la recette.
 
 🧠 **Mémoire.** `12-engine.md`.
 

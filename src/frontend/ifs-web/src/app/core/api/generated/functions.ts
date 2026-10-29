@@ -99,6 +99,8 @@ export type { DeleteProjectComponent$Params as DeleteProjectComponent$Params } f
 export { deleteProjectComponent as deleteProjectComponent } from './fn/components/delete-project-component';
 export type { SetComponentNaming$Params as SetComponentNaming$Params } from './fn/components/set-component-naming';
 export { setComponentNaming as setComponentNaming } from './fn/components/set-component-naming';
+export type { SetComponentDefaultLogAnalytics$Params as SetComponentDefaultLogAnalytics$Params } from './fn/components/set-component-default-log-analytics';
+export { setComponentDefaultLogAnalytics as setComponentDefaultLogAnalytics } from './fn/components/set-component-default-log-analytics';
 export type { CreateResourceGroup$Params as CreateResourceGroup$Params } from './fn/components/create-resource-group';
 export { createResourceGroup as createResourceGroup } from './fn/components/create-resource-group';
 export type { UpdateResourceGroup$Params as UpdateResourceGroup$Params } from './fn/components/update-resource-group';
@@ -109,6 +111,16 @@ export type { PreviewResourceName$Params as PreviewResourceName$Params } from '.
 export { previewResourceName as previewResourceName } from './fn/resources/preview-resource-name';
 export type { GetResourceDeletionImpact$Params as GetResourceDeletionImpact$Params } from './fn/resources/get-resource-deletion-impact';
 export { getResourceDeletionImpact as getResourceDeletionImpact } from './fn/resources/get-resource-deletion-impact';
+export type { GetResourceLinks$Params as GetResourceLinks$Params } from './fn/resources/get-resource-links';
+export { getResourceLinks as getResourceLinks } from './fn/resources/get-resource-links';
+export type { AddLink$Params as AddLink$Params } from './fn/resources/add-link';
+export { addLink as addLink } from './fn/resources/add-link';
+export type { GetLinkRemovalImpact$Params as GetLinkRemovalImpact$Params } from './fn/resources/get-link-removal-impact';
+export { getLinkRemovalImpact as getLinkRemovalImpact } from './fn/resources/get-link-removal-impact';
+export type { UpdateLink$Params as UpdateLink$Params } from './fn/resources/update-link';
+export { updateLink as updateLink } from './fn/resources/update-link';
+export type { RemoveLink$Params as RemoveLink$Params } from './fn/resources/remove-link';
+export { removeLink as removeLink } from './fn/resources/remove-link';
 export type { AddResource$Params as AddResource$Params } from './fn/resources/add-resource';
 export { addResource as addResource } from './fn/resources/add-resource';
 export type { SetResourceProperties$Params as SetResourceProperties$Params } from './fn/resources/set-resource-properties';

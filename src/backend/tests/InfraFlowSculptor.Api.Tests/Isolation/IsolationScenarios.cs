@@ -305,6 +305,12 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}/components/{TestComponentId}",
                 HttpStatusCode.NotFound),
+            ["SetComponentDefaultLogAnalytics"] = OrganizationWriteScenario(
+                "SetComponentDefaultLogAnalytics",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/default-log-analytics",
+                HttpStatusCode.NotFound,
+                new { workspaceResourceId = (Guid?)null, expectedVersion = 1 }),
             ["GetEffectiveValues"] = OrganizationScenario(
                 "GetEffectiveValues",
                 HttpMethod.Get,
@@ -315,6 +321,56 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/delete-impact",
                 HttpStatusCode.NotFound),
+            ["GetResourceLinks"] = OrganizationScenario(
+                "GetResourceLinks",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links",
+                HttpStatusCode.NotFound),
+            ["GetLinkRemovalImpact"] = OrganizationScenario(
+                "GetLinkRemovalImpact",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links/{TestResourceChildId}/impact",
+                HttpStatusCode.NotFound),
+            ["AddLink"] = OrganizationWriteScenario(
+                "AddLink",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    targetComponentId = TestComponentId,
+                    targetResourceId = TestResourceId,
+                    kind = "Access",
+                    identityKind = "System",
+                    identityResourceId = (Guid?)null,
+                    roles = new[] { "Reader" },
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedComponentVersion = 1
+                }),
+            ["UpdateLink"] = OrganizationWriteScenario(
+                "UpdateLink",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links/{TestResourceChildId}",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    targetComponentId = TestComponentId,
+                    targetResourceId = TestResourceId,
+                    kind = "Access",
+                    identityKind = "System",
+                    identityResourceId = (Guid?)null,
+                    roles = new[] { "Reader" },
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedLinkVersion = 1
+                }),
+            ["RemoveLink"] = OrganizationWriteScenario(
+                "RemoveLink",
+                HttpMethod.Delete,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links/{TestResourceChildId}",
+                HttpStatusCode.NotFound,
+                new { expectedLinkVersion = 1 }),
             ["PreviewResourceName"] = OrganizationScenario(
                 "PreviewResourceName",
                 HttpMethod.Post,

@@ -4,10 +4,12 @@ using InfraFlowSculptor.Api.Errors;
 using InfraFlowSculptor.Application.Common.ModelCommands;
 using InfraFlowSculptor.Application.Components;
 using InfraFlowSculptor.Application.Components.Commands.AddChild;
+using InfraFlowSculptor.Application.Components.Commands.AddLink;
 using InfraFlowSculptor.Application.Components.Commands.AddResource;
 using InfraFlowSculptor.Application.Components.Commands.ClearOverride;
 using InfraFlowSculptor.Application.Components.Commands.DeleteResource;
 using InfraFlowSculptor.Application.Components.Commands.MoveResource;
+using InfraFlowSculptor.Application.Components.Commands.RemoveLink;
 using InfraFlowSculptor.Application.Components.Commands.RemoveChild;
 using InfraFlowSculptor.Application.Components.Commands.SetExistingResourceId;
 using InfraFlowSculptor.Application.Components.Commands.SetForcedName;
@@ -15,15 +17,19 @@ using InfraFlowSculptor.Application.Components.Commands.SetOverride;
 using InfraFlowSculptor.Application.Components.Commands.SetPresence;
 using InfraFlowSculptor.Application.Components.Commands.SetResourceProperties;
 using InfraFlowSculptor.Application.Components.Commands.UpdateResourceMetadata;
+using InfraFlowSculptor.Application.Components.Commands.UpdateLink;
 using InfraFlowSculptor.Application.Components.Commands.UpdateChild;
 using InfraFlowSculptor.Application.Components.Queries.GetEffectiveValues;
 using InfraFlowSculptor.Application.Components.Queries.GetResourceDeletionImpact;
+using InfraFlowSculptor.Application.Components.Queries.GetResourceLinks;
+using InfraFlowSculptor.Application.Components.Queries.GetLinkRemovalImpact;
 using InfraFlowSculptor.Application.Components.Queries.GetProjectComponent;
 using InfraFlowSculptor.Application.Components.Queries.PreviewResourceName;
 using InfraFlowSculptor.Contracts.Components;
 using InfraFlowSculptor.Contracts.Naming;
 using InfraFlowSculptor.Contracts.Resources;
 using InfraFlowSculptor.Domain.Common.Features;
+using InfraFlowSculptor.Engine.Links;
 using InfraFlowSculptor.Engine.Naming;
 using Mediator;
 using Microsoft.AspNetCore.Mvc;
@@ -83,16 +89,30 @@ public static class ResourcesController
                 return result.Match<IResult>(
                     summary => Results.Ok(new ResourceDeletionImpactResponse(
                         summary.ResourceVersion,
-                        ResourceDeletionImpactStatus.Partial,
-                        [
-                            ResourceDeletionImpactArea.IncomingLinks,
-                            ResourceDeletionImpactArea.ApplicationParameters,
-                            ResourceDeletionImpactArea.ImplicitEffects
-                        ],
+                        summary.LinkImpact.Severity == ImpactSeverity.Blocker
+                            ? ResourceDeletionImpactStatus.Blocked
+                            : ResourceDeletionImpactStatus.Partial,
+                        MapSeverity(summary.LinkImpact.Severity),
+                        [ResourceDeletionImpactArea.ApplicationParameters],
                         summary.Items.Select(item => new ResourceDeletionImpactItemResponse(
-                            ResourceDeletionImpactKind.Child,
-                            item.Type,
-                            item.Name)).ToArray())),
+                                ResourceDeletionImpactKind.Child,
+                                item.Type,
+                                item.Name,
+                                "RESOURCE_CHILD_DELETED",
+                                ResourceImpactSeverity.Information,
+                                "L’objet enfant sera supprimé avec la ressource.",
+                                null,
+                                resourceId))
+                            .Concat(summary.LinkImpact.Items.Select(item => new ResourceDeletionImpactItemResponse(
+                                ResourceDeletionImpactKind.Impact,
+                                "Impact",
+                                item.Message,
+                                item.Code,
+                                MapSeverity(item.Severity),
+                                item.Message,
+                                item.LinkId,
+                                item.ResourceId)))
+                            .ToArray())),
                     errors => errors.ToProblem());
             })
             .WithName(EndpointNames.GetResourceDeletionImpact)
@@ -102,6 +122,167 @@ public static class ResourcesController
             .Produces<ResourceDeletionImpactResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
+
+        resources.MapGet("/{resourceId:guid}/links", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(
+                    new GetResourceLinksQuery(projectId, componentId, resourceId),
+                    cancellationToken);
+                return result.Match<IResult>(
+                    summary => Results.Ok(new ResourceLinksResponse(
+                        summary.Outgoing.Select(Map).ToArray(),
+                        summary.Incoming.Select(Map).ToArray())),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.GetResourceLinks)
+            .WithSummary("Lister les liaisons sortantes et entrantes explicites et implicites d'une ressource.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces<ResourceLinksResponse>()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        resources.MapGet("/{resourceId:guid}/links/{linkId:guid}/impact", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                Guid linkId,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(
+                    new GetLinkRemovalImpactQuery(projectId, componentId, resourceId, linkId),
+                    cancellationToken);
+                return result.Match<IResult>(
+                    impact => Results.Ok(new LinkImpactResponse(
+                        MapSeverity(impact.Severity),
+                        impact.Items.Select(item => new LinkImpactItemResponse(
+                            item.Code,
+                            MapSeverity(item.Severity),
+                            item.Message,
+                            item.LinkId,
+                            item.ResourceId)).ToArray())),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.GetLinkRemovalImpact)
+            .WithSummary("Prévisualiser les effets du retrait d'une liaison.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces<LinkImpactResponse>()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        resources.MapPost("/{resourceId:guid}/links", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                AddLinkRequest request,
+                IModelCommandExecutor executor,
+                TimeProvider clock,
+                CancellationToken cancellationToken) =>
+            {
+                var linkId = Guid.CreateVersion7(clock.GetUtcNow());
+                var command = new AddLinkCommand(
+                    projectId,
+                    componentId,
+                    linkId,
+                    resourceId,
+                    request.TargetComponentId,
+                    request.TargetResourceId,
+                    request.Kind,
+                    request.IdentityKind,
+                    request.IdentityResourceId,
+                    request.Roles,
+                    request.AccessScope,
+                    request.DataAccessLevel,
+                    request.ExpectedComponentVersion);
+                var result = await executor.ExecuteAsync([command], ModelCommandMode.Apply, cancellationToken);
+                return result.Match<IResult>(
+                    execution => Results.Created(
+                        $"/v1/projects/{projectId:D}/components/{componentId:D}/resources/{resourceId:D}/links/{linkId:D}",
+                        new LinkMutationResponse(linkId, execution.Summary, execution.Effects, execution.Findings)),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.AddLink)
+            .WithSummary("Créer une liaison explicite entre deux ressources du projet.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces<LinkMutationResponse>(StatusCodes.Status201Created)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        resources.MapPut("/{resourceId:guid}/links/{linkId:guid}", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                Guid linkId,
+                UpdateLinkRequest request,
+                IModelCommandExecutor executor,
+                CancellationToken cancellationToken) =>
+            {
+                var command = new UpdateLinkCommand(
+                    projectId,
+                    componentId,
+                    linkId,
+                    resourceId,
+                    request.TargetComponentId,
+                    request.TargetResourceId,
+                    request.Kind,
+                    request.IdentityKind,
+                    request.IdentityResourceId,
+                    request.Roles,
+                    request.AccessScope,
+                    request.DataAccessLevel,
+                    request.ExpectedLinkVersion);
+                var result = await executor.ExecuteAsync([command], ModelCommandMode.Apply, cancellationToken);
+                return result.Match<IResult>(
+                    execution => Results.Ok(new LinkMutationResponse(linkId, execution.Summary, execution.Effects, execution.Findings)),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.UpdateLink)
+            .WithSummary("Modifier une liaison explicite.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces<LinkMutationResponse>()
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        resources.MapDelete("/{resourceId:guid}/links/{linkId:guid}", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                Guid linkId,
+                [FromBody] RemoveLinkRequest request,
+                IModelCommandExecutor executor,
+                CancellationToken cancellationToken) =>
+            {
+                var command = new RemoveLinkCommand(projectId, componentId, resourceId, linkId, request.ExpectedLinkVersion);
+                var result = await executor.ExecuteAsync([command], ModelCommandMode.Apply, cancellationToken);
+                return result.Match<IResult>(
+                    execution => Results.Ok(new LinkMutationResponse(linkId, execution.Summary, execution.Effects, execution.Findings)),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.RemoveLink)
+            .WithSummary("Retirer une liaison explicite après examen de son impact.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces<LinkMutationResponse>()
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         effectiveValues.MapGet("/{resourceId:guid}/effective-values", async (
                 Guid projectId,
@@ -514,6 +695,27 @@ public static class ResourcesController
             child.Name,
             child.Properties)).ToArray());
 
+    private static ResourceLinkResponse Map(ResourceLinkSummary link) => new(
+        link.Id,
+        link.Kind,
+        link.Origin,
+        link.SourceComponentId,
+        link.SourceComponentCode,
+        link.SourceResourceId,
+        link.SourceResourceName,
+        link.TargetComponentId,
+        link.TargetComponentCode,
+        link.TargetResourceId,
+        link.TargetResourceName,
+        link.IdentityKind,
+        link.IdentityResourceId,
+        link.AccessScope,
+        link.DataAccessLevel,
+        link.Roles,
+        link.IsExternal,
+        link.CreatesDeploymentDependency,
+        link.Findings.Select(finding => new ResourceLinkIssueResponse(finding.Code, finding.Message)).ToArray());
+
     private static EffectiveValueTargetResponse Map(EffectiveValueTargetSummary target) => new(
         target.Id,
         target.Code,
@@ -552,6 +754,13 @@ public static class ResourcesController
             issue.Value,
             issue.ValueLength,
             issue.Limit)).ToArray());
+
+    private static ResourceImpactSeverity MapSeverity(ImpactSeverity severity) => severity switch
+    {
+        ImpactSeverity.Blocker => ResourceImpactSeverity.Blocker,
+        ImpactSeverity.Critical => ResourceImpactSeverity.Critical,
+        _ => ResourceImpactSeverity.Information
+    };
 
     private static NamingExplanationResponse? MapExplanation(NamingExplanation? explanation) =>
         explanation is null

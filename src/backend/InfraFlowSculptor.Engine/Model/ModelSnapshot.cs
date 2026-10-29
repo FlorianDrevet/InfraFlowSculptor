@@ -1,3 +1,5 @@
+using InfraFlowSculptor.Engine.Links;
+
 namespace InfraFlowSculptor.Engine.Model;
 
 public sealed record ModelSnapshot(
@@ -14,4 +16,6 @@ public sealed record ModelSnapshot(
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
     public IReadOnlyList<GlobalNameReservationSnapshot> OrganizationGlobalNames { get; init; } = [];
+
+    public IReadOnlyList<LinkSnapshot> Links { get; init; } = [];
 }

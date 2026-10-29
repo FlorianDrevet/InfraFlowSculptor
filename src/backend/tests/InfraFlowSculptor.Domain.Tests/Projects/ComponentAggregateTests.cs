@@ -50,6 +50,35 @@ public sealed class ComponentAggregateTests
     }
 
     [Fact]
+    public void ComponentStoresOptionalDefaultLogAnalyticsResource()
+    {
+        var (project, environments) = CreateProjectWithEnvironments();
+        var component = CreateComponent(project, environments, "Orders", "orders").Value;
+        var resourceId = Guid.NewGuid();
+
+        var configured = component.SetDefaultLogAnalyticsResource(resourceId);
+
+        Assert.False(configured.IsError);
+        Assert.Equal(resourceId, component.DefaultLogAnalyticsResourceId);
+
+        var cleared = component.SetDefaultLogAnalyticsResource(null);
+
+        Assert.False(cleared.IsError);
+        Assert.Null(component.DefaultLogAnalyticsResourceId);
+    }
+
+    [Fact]
+    public void ComponentRejectsAnEmptyDefaultLogAnalyticsResourceId()
+    {
+        var (project, environments) = CreateProjectWithEnvironments();
+        var component = CreateComponent(project, environments, "Orders", "orders").Value;
+
+        var result = component.SetDefaultLogAnalyticsResource(Guid.Empty);
+
+        Assert.Contains(result.Errors, error => error.Code == "COMPONENT_DEFAULT_LOG_ANALYTICS_INVALID");
+    }
+
+    [Fact]
     public void PublishedComponentCannotChangeNamingTemplatesOrOverrides()
     {
         var (project, environments) = CreateProjectWithEnvironments();

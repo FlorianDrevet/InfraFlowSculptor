@@ -9,6 +9,7 @@ using InfraFlowSculptor.Application.Components.Commands.CreateResourceGroup;
 using InfraFlowSculptor.Application.Components.Commands.DeleteComponent;
 using InfraFlowSculptor.Application.Components.Commands.DeleteResourceGroup;
 using InfraFlowSculptor.Application.Components.Commands.UpdateComponent;
+using InfraFlowSculptor.Application.Components.Commands.SetComponentDefaultLogAnalytics;
 using InfraFlowSculptor.Application.Components.Commands.SetComponentNaming;
 using InfraFlowSculptor.Application.Components.Commands.UpdateResourceGroup;
 using InfraFlowSculptor.Application.Naming;
@@ -205,6 +206,39 @@ public static class ComponentsController
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        components.MapPut("/{componentId:guid}/default-log-analytics", async (
+                Guid projectId,
+                Guid componentId,
+                SetComponentDefaultLogAnalyticsRequest request,
+                IMediator mediator,
+                IModelCommandExecutor executor,
+                CancellationToken cancellationToken) =>
+            {
+                var command = new SetComponentDefaultLogAnalyticsCommand(
+                    projectId,
+                    componentId,
+                    request.WorkspaceResourceId,
+                    request.ExpectedVersion);
+                var executed = await executor.ExecuteAsync([command], ModelCommandMode.Apply, cancellationToken);
+                if (executed.IsError)
+                {
+                    return executed.Errors.ToProblem();
+                }
+
+                var result = await mediator.Send(new GetProjectComponentQuery(projectId, componentId), cancellationToken);
+                return result.Match<IResult>(value => Results.Ok(Map(value)), errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.SetComponentDefaultLogAnalytics)
+            .WithSummary("Définir l'espace Log Analytics par défaut du composant.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces<ComponentResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
         components.MapDelete("/{componentId:guid}", async (
                 Guid projectId,
                 Guid componentId,
@@ -373,7 +407,8 @@ public static class ComponentsController
             value.Abbreviation)).ToArray(),
         component.Tags,
         component.ResourceGroups.Select(Map).ToArray(),
-        component.Resources.Select(Map).ToArray());
+        component.Resources.Select(Map).ToArray(),
+        component.DefaultLogAnalyticsResourceId);
 
     private static ResourceGroupResponse Map(ResourceGroupSummary group) => new(
         group.Id,
