@@ -99,3 +99,4 @@
 | 2026-10-29 00:22 | Codex | `J0-14` terminée | commit `407e564` |
 | 2026-10-29 03:00 | Codex | `J0-15` blocage confirmé | docs/plan/revues/J0-15-blocage-20261029.md |
 | 2026-10-29 08:46 | Codex | `J0-15` blocage résolu | docs/plan/revues/J0-15-deblocage-20261029.md |
+| 2026-10-29 08:48 | Codex | `J0-15` terminée | commit `c2ae2f5` |
