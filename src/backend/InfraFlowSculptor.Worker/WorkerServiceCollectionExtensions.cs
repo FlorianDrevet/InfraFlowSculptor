@@ -14,6 +14,8 @@ public static class WorkerServiceCollectionExtensions
         services.TryAddSingleton<IVerifiedEmailResolver, VerifiedEmailResolver>();
         services.TryAddScoped<ICurrentUser, HttpCurrentUser>();
         services.TryAddScoped<IOrganizationRoleAuthorizer, EfOrganizationRoleAuthorizer>();
+        services.TryAddScoped<IProjectAuthorizer, EfProjectAuthorizer>();
+        services.TryAddScoped<IProjectOwnershipCheck, EfProjectOwnershipCheck>();
         services.TryAddScoped<IPlanLimitGuard, UnlimitedPlanLimitGuard>();
         return services;
     }

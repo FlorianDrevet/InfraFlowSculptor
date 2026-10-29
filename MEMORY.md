@@ -24,6 +24,7 @@
 
 - **2026-10-29** : J0-16/17 terminent les paramètres applicatifs, puis l’exposition publique/restreinte, les plages CIDR et la projection typée par environnement. Le catalogue immuable `2026.10-pilot.2` conserve le correctif Access de `.1`; `shop15` est gardé comme fixture PostgreSQL locale sans coût Azure. Les validations J0-17 passent, et l’écran réseau sera vérifié dans J0-18. Voir `.github/memory/12-engine.md` et `docs/plan/recettes/suivi.md`.
 - **2026-10-29** : J0-20 implémente l'ordre, les constats, corrections et acquittements relationnels. Suite .NET 588/588; CI [40957874902](https://github.com/FlorianDrevet/InfraFlowSculptor/actions/runs/40957874902) verte, 32/32 E2E et captures desktop/mobile comparées. Aucun changement ni coût Azure. Voir les mémoires thématiques et `docs/plan/recettes/suivi.md`.
+- **2026-10-29** : préparation R-05 : AppHost et Keycloak locaux sains, connexion Alice confirmée; correction des dépendances DI du Worker vérifiée (Infrastructure.Tests 81/81, build Release strict). La recette manuelle M1–M13 reste à valider; un test de langue et une fixture locale persistante ont des écarts consignés dans `docs/plan/recettes/suivi.md`.
 
 ## Fichiers thématiques
 

@@ -76,7 +76,12 @@ test('signed-in shell is usable and accessible', async ({ page }, testInfo) => {
 
   if (testInfo.project.name === 'desktop') {
     await expect(page.locator('app-theme-switch button')).toHaveCount(0);
+    const englishPreferenceSaved = page.waitForResponse(
+      (response) =>
+        response.url().includes('/v1/me/preferences') && response.request().method() === 'PUT',
+    );
     await page.getByRole('group', { name: 'Langue' }).getByRole('button', { name: 'EN' }).click();
+    expect((await englishPreferenceSaved).ok()).toBe(true);
     await expect(
       page.getByRole('heading', { name: `Hello ${expectedName}`, exact: true }),
     ).toBeVisible({ timeout: HOME_GREETING_TIMEOUT });
@@ -87,7 +92,12 @@ test('signed-in shell is usable and accessible', async ({ page }, testInfo) => {
       page.getByRole('heading', { name: `Hello ${expectedName}`, exact: true }),
     ).toBeVisible({ timeout: HOME_GREETING_TIMEOUT });
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    const frenchPreferenceSaved = page.waitForResponse(
+      (response) =>
+        response.url().includes('/v1/me/preferences') && response.request().method() === 'PUT',
+    );
     await page.getByRole('group', { name: 'Language' }).getByRole('button', { name: 'FR' }).click();
+    expect((await frenchPreferenceSaved).ok()).toBe(true);
     await expect(
       page.getByRole('heading', { name: `Bonjour ${expectedName}`, exact: true }),
     ).toBeVisible({ timeout: HOME_GREETING_TIMEOUT });
