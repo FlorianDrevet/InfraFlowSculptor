@@ -32,7 +32,7 @@
 - **2026-10-29** : J0-15 termine les liaisons, le câblage moteur et les impacts. Claude a recommandé un catalogue correctif `2026.10-pilot.1` pour le seul projet temporaire `shop15`; `shop` reste sur `2026.10-pilot`. Recette Scalar locale passée, projet temporaire archivé de façon réversible, aucun changement Azure. Voir le déblocage J0-15 et les mémoires modèle, API et moteur.
 
 - **2026-10-29** : J0-16/17 terminent les paramètres applicatifs, puis l’exposition publique/restreinte, les plages CIDR et la projection typée par environnement. Le catalogue immuable `2026.10-pilot.2` conserve le correctif Access de `.1`; `shop15` est gardé comme fixture PostgreSQL locale sans coût Azure. Les validations J0-17 passent, et l’écran réseau sera vérifié dans J0-18. Voir `.github/memory/12-engine.md` et `docs/plan/recettes/suivi.md`.
-- **2026-10-29** : J0-18 livre les panneaux de liaison, identité, paramètres et réseau. Recette Alice desktop/mobile, 472 tests .NET, 105 tests front, lint et OpenAPI passent; le constat SQL sans plage reste explicitement reporté à J0-20, car `shop15` est épinglé au catalogue `.1`. J0-19 est l'étape courante; le verrou R-05 suit J0-20. Voir `.github/memory/04-frontend.md`, `.github/memory/10-api-endpoints.md`, `.github/memory/12-engine.md` et `docs/plan/recettes/suivi.md`.
+- **2026-10-29** : J0-19 livre l'application conteneur, les étapes de pipeline, le registre de build et le contrôle de santé; migration relationnelle sans JSONB et catalogue `.3`. Backend Release 487/487, frontend et client OpenAPI validés; E2E complet 25/30 avec écarts persistants consignés. J0-20 est courant; R-05 suit cette étape. Voir les mémoires modèle, front, données, API, moteur et `docs/plan/recettes/suivi.md`.
 
 ## Fichiers thématiques
 

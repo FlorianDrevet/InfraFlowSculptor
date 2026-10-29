@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-19`](docs/plan/02-jalon-0-pilote.md#j0-19--applications--build-conteneur-étapes-santé-stratégie-directe) — Applications : build conteneur, étapes, santé, stratégie directe |
+| **Étape courante** | [`J0-20`](docs/plan/02-jalon-0-pilote.md#j0-20--ordre-des-composants-validation-et-constats) — Ordre des composants, validation et constats |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-18`](docs/plan/02-jalon-0-pilote.md#j0-18--écrans-liaisons-identité-paramètres-réseau) — Écrans liaisons, identité, paramètres, réseau (commit `44060e3`) |
-| **Étape suivante** | `J0-20` — Ordre des composants, validation et constats |
+| **Dernière étape terminée** | [`J0-19`](docs/plan/02-jalon-0-pilote.md#j0-19--applications--build-conteneur-étapes-santé-stratégie-directe) — Applications : build conteneur, étapes, santé, stratégie directe (commit `51a06ab`) |
+| **Étape suivante** | `R-05` — Revue du modèle et du moteur |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
 | **Dernière mise à jour** | 2026-10-29 — Codex |

@@ -18,7 +18,7 @@ Le constructeur limite automatiquement la génération de `graph.html` aux graph
 le rapport restent les sorties de référence. Le dépôt contient 278 fichiers de code et 152 documents détectés avant
 l'amorçage S-17. La génération S-17 a extrait 370 fichiers et produit le graphe, son rapport et `graph.html` ; consulter
 `graphify-out/GRAPH_REPORT.md` pour les compteurs du dernier build. Les fichiers `graphify-out/` sont ignorés par Git.
-Dernière mise à jour après J0-14, le 2026-10-29 : 3 769 nœuds, 7 404 arêtes et 595 communautés.
+Dernière mise à jour après J0-19, le 2026-10-29 : 4 564 nœuds, 9 207 arêtes et 782 communautés.
 
 ```powershell
 python -m graphify update .
