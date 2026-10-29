@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-20`](docs/plan/02-jalon-0-pilote.md#j0-20--ordre-des-composants-validation-et-constats) — Ordre des composants, validation et constats |
+| **Étape courante** | [`R-05`](docs/plan/02-jalon-0-pilote.md#-r-05--revue-du-modèle-et-du-moteur) — Revue du modèle et du moteur |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-19`](docs/plan/02-jalon-0-pilote.md#j0-19--applications--build-conteneur-étapes-santé-stratégie-directe) — Applications : build conteneur, étapes, santé, stratégie directe (commit `51a06ab`) |
-| **Étape suivante** | `R-05` — Revue du modèle et du moteur |
+| **Dernière étape terminée** | [`J0-20`](docs/plan/02-jalon-0-pilote.md#j0-20--ordre-des-composants-validation-et-constats) — Ordre des composants, validation et constats (commit `af75781`) |
+| **Étape suivante** | `J0-21` — Plan de déploiement |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
 | **Dernière mise à jour** | 2026-10-29 — Codex |
@@ -38,7 +38,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 |---|---|---|
 | SDK .NET | `10.0.203` | Oui (`10.0.203`) |
 | Node | `24.15.0` | Oui (`24.15.0`) |
-| Docker | `27.0.0` | Oui (`29.4.3` installé) ; service/daemon arrêté le 2026-10-29, démarrage refusé par Windows faute de droits. |
+| Docker | `27.0.0` | Oui (`29.4.3` installé) ; service Windows `Stopped`, mais Docker Engine répond et Testcontainers fonctionne. Conteneurs préexistants laissés en marche. |
 | CLI Aspire | `13.5.x` | Oui (`13.5.4`, DCP `0.22.11`; packages AppHost épinglés à `13.5.3`) |
 | Python | `3.11` | Oui (`3.14.4`) |
 | PowerShell 7 | `7.5.0` | Oui (`7.6.5`) |

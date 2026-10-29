@@ -23,7 +23,7 @@
 - **2026-10-29** : J0-15 termine les liaisons, le câblage moteur et les impacts. Claude a recommandé un catalogue correctif `2026.10-pilot.1` pour le seul projet temporaire `shop15`; `shop` reste sur `2026.10-pilot`. Recette Scalar locale passée, projet temporaire archivé de façon réversible, aucun changement Azure. Voir le déblocage J0-15 et les mémoires modèle, API et moteur.
 
 - **2026-10-29** : J0-16/17 terminent les paramètres applicatifs, puis l’exposition publique/restreinte, les plages CIDR et la projection typée par environnement. Le catalogue immuable `2026.10-pilot.2` conserve le correctif Access de `.1`; `shop15` est gardé comme fixture PostgreSQL locale sans coût Azure. Les validations J0-17 passent, et l’écran réseau sera vérifié dans J0-18. Voir `.github/memory/12-engine.md` et `docs/plan/recettes/suivi.md`.
-- **2026-10-29** : J0-20 implémente l'ordre, les constats, corrections et acquittements relationnels. Suite .NET 588/588, frontend 108 tests Angular + scripts, lint, OpenAPI et build passent. Docker Engine local permet Testcontainers; E2E authentifiée et comparaison visuelle attendent la CI, Keycloak 8080 et le secret E2E local étant absents. Aucun coût Azure. Voir les mémoires thématiques et `docs/plan/recettes/suivi.md`.
+- **2026-10-29** : J0-20 implémente l'ordre, les constats, corrections et acquittements relationnels. Suite .NET 588/588; CI [40957874902](https://github.com/FlorianDrevet/InfraFlowSculptor/actions/runs/40957874902) verte, 32/32 E2E et captures desktop/mobile comparées. Aucun changement ni coût Azure. Voir les mémoires thématiques et `docs/plan/recettes/suivi.md`.
 
 ## Fichiers thématiques
 

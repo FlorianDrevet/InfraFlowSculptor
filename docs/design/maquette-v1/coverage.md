@@ -57,7 +57,7 @@ preuve seule.
 
 | Écran / route | Maquette | Référence et preuve |
 |---|---|---|
-| Constats — `/o/:orgId/projects/:projectId/findings` | [ProjectFindings](preview/ProjectFindings.html) | E2E authentifiée ajoutée : ouvre le projet démo, vérifie `0 erreur`, `1 avertissement`, `1 info`, les deux codes attendus, et capture 1440/390 dans `e2e/__captures__/R-05/`. La liste E2E compile (32 cas); exécution CI et comparaison visuelle finale en attente, car Docker est arrêté et `IFS_E2E_PASSWORD` n'est pas configuré localement. Aucune fidélité visuelle n'est revendiquée avant inspection des captures. |
+| Constats — `/o/:orgId/projects/:projectId/findings` | [ProjectFindings](preview/ProjectFindings.html) | CI [40957874902](https://github.com/FlorianDrevet/InfraFlowSculptor/actions/runs/40957874902) : 32/32 E2E, aucun échec ni saut. Alice vérifie `0 erreur`, `1 avertissement`, `1 info`, les deux codes, l’ordre, la correction en un clic et l’invalidation d’acquittement après modification. Comparaison à 1440 px : hiérarchie, badges et cartes cohérents avec la référence; contenu dynamique différent (la maquette contient 2 avertissements, 2 infos et un acquittement, la fixture 1 avertissement et 1 info), et l’en-tête du projet ajoute le contexte de navigation hors de la zone de cette étape. Le rendu 390 px a été contrôlé : les badges et cartes se replient sans débordement; aucune comparaison pixel à pixel mobile n’est revendiquée. Captures assainies : [bureau](../../plan/revues/captures/R-05/ProjectFindings-1440.png), [mobile](../../plan/revues/captures/R-05/ProjectFindings-390.png). Aucun coût Azure.
 
 ## Modèle pour une nouvelle interface sans maquette
 

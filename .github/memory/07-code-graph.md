@@ -18,7 +18,7 @@ Le constructeur limite automatiquement la génération de `graph.html` aux graph
 le rapport restent les sorties de référence. Le dépôt contient 278 fichiers de code et 152 documents détectés avant
 l'amorçage S-17. La génération S-17 a extrait 370 fichiers et produit le graphe, son rapport et `graph.html` ; consulter
 `graphify-out/GRAPH_REPORT.md` pour les compteurs du dernier build. Les fichiers `graphify-out/` sont ignorés par Git.
-Dernière mise à jour après J0-19, le 2026-10-29 : 4 564 nœuds, 9 207 arêtes et 782 communautés.
+Dernière mise à jour après J0-20, le 2026-10-29 : 5 021 nœuds, 10 949 arêtes et 825 communautés. Le rapport et le graphe JSON ont été actualisés; la génération du HTML échoue au plafond de 5 000 nœuds. L’option `--no-viz` suggérée par le message d’erreur n’est pas prise en charge par cette CLI.
 
 ```powershell
 python -m graphify update .
