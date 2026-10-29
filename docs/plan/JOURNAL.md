@@ -101,3 +101,4 @@
 | 2026-10-29 08:46 | Codex | `J0-15` blocage résolu | docs/plan/revues/J0-15-deblocage-20261029.md |
 | 2026-10-29 08:48 | Codex | `J0-15` terminée | commit `c2ae2f5` |
 | 2026-10-29 11:19 | Codex | `J0-16` terminée | commit `170aeff` |
+| 2026-10-29 11:52 | Codex | `J0-17` terminée | commit `7f77630` |

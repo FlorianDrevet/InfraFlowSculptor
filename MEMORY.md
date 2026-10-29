@@ -31,6 +31,8 @@
 
 - **2026-10-29** : J0-15 termine les liaisons, le câblage moteur et les impacts. Claude a recommandé un catalogue correctif `2026.10-pilot.1` pour le seul projet temporaire `shop15`; `shop` reste sur `2026.10-pilot`. Recette Scalar locale passée, projet temporaire archivé de façon réversible, aucun changement Azure. Voir le déblocage J0-15 et les mémoires modèle, API et moteur.
 
+- **2026-10-29** : J0-16/17 terminent les paramètres applicatifs, puis l’exposition publique/restreinte, les plages CIDR et la projection typée par environnement. Le catalogue immuable `2026.10-pilot.2` conserve le correctif Access de `.1`; `shop15` est gardé comme fixture PostgreSQL locale sans coût Azure. Les validations J0-17 passent, et l’écran réseau sera vérifié dans J0-18. Voir `.github/memory/12-engine.md` et `docs/plan/recettes/suivi.md`.
+
 ## Fichiers thématiques
 
 - **2026-10-06** : S-08 ajoute le worker/outbox avec 57 tests verts et des conteneurs locaux persistants. S-09 ajoute Angular 22; connexion Keycloak Bob, `/v1/me`, déconnexion, session après rechargement et configuration runtime vérifiés. 57 tests .NET, 4 Python et 3 Angular passent; OIDC limite le bearer token à `/v1/`.
