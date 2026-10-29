@@ -53,3 +53,4 @@
 - Règle active : aucune colonne PostgreSQL `jsonb`. Le JSON sérialisé en `text` est réservé aux protocoles opaques
   existants ; les données requêtables du modèle sont relationnelles. Test d'intégration `JsonbMigrationTests` vérifie
   conservation des valeurs et zéro colonne `jsonb` après migration.
+- J0-19 ajoute `applications`, `application_steps` et `application_step_parameters` par la migration `20261029125723_J0_19_ApplicationsBuildAndDeployment`. Les étapes et paramètres sont des lignes relationnelles; la migration, le snapshot EF et le mapping n'ajoutent aucune colonne `jsonb`.

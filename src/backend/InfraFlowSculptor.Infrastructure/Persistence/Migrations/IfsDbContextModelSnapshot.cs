@@ -136,6 +136,101 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.ToTable("app_settings", (string)null);
                 });
 
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ComponentAggregate.ApplicationAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BuildContextPath")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("build_context_path");
+
+                    b.Property<Guid?>("BuildRegistryEnvironmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("build_registry_environment_id");
+
+                    b.Property<string>("CodeSourcePath")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("code_source_path");
+
+                    b.Property<Guid>("ComponentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("component_id");
+
+                    b.Property<string>("DeploymentStrategy")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("deployment_strategy");
+
+                    b.Property<string>("DockerfilePath")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("dockerfile_path");
+
+                    b.Property<string>("HealthCheckPath")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("health_check_path");
+
+                    b.Property<string>("ImageRepository")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("image_repository");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("NameKey")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("name_key");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_applications");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("ix_applications_project_id");
+
+                    b.HasIndex("ResourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_applications_resource");
+
+                    b.HasIndex("ComponentId", "NameKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_applications_component_name");
+
+                    b.ToTable("applications", (string)null);
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Domain.ComponentAggregate.ComponentAggregate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1117,6 +1212,93 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("LiteralSource");
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ComponentAggregate.ApplicationAggregate", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.ComponentAggregate.ComponentAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("ComponentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_applications_components_component_id");
+
+                    b.HasOne("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_applications_projects_project_id");
+
+                    b.OwnsMany("InfraFlowSculptor.Domain.ComponentAggregate.ApplicationStepDefinition", "Steps", b1 =>
+                        {
+                            b1.Property<Guid>("ApplicationId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("application_id");
+
+                            b1.Property<string>("Name")
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("name");
+
+                            b1.Property<bool>("Blocking")
+                                .HasColumnType("boolean")
+                                .HasColumnName("blocking");
+
+                            b1.Property<bool>("Enabled")
+                                .HasColumnType("boolean")
+                                .HasColumnName("enabled");
+
+                            b1.Property<string>("Position")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("character varying(32)")
+                                .HasColumnName("position");
+
+                            b1.HasKey("ApplicationId", "Name")
+                                .HasName("pk_application_steps");
+
+                            b1.ToTable("application_steps", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ApplicationId")
+                                .HasConstraintName("fk_application_steps_applications_application_id");
+
+                            b1.OwnsMany("InfraFlowSculptor.Domain.ComponentAggregate.ApplicationStepParameter", "Parameters", b2 =>
+                                {
+                                    b2.Property<Guid>("ApplicationId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("application_id");
+
+                                    b2.Property<string>("StepName")
+                                        .HasColumnType("character varying(64)")
+                                        .HasColumnName("step_name");
+
+                                    b2.Property<string>("Name")
+                                        .HasMaxLength(64)
+                                        .HasColumnType("character varying(64)")
+                                        .HasColumnName("name");
+
+                                    b2.Property<string>("Value")
+                                        .IsRequired()
+                                        .HasMaxLength(4096)
+                                        .HasColumnType("character varying(4096)")
+                                        .HasColumnName("value");
+
+                                    b2.HasKey("ApplicationId", "StepName", "Name")
+                                        .HasName("pk_application_step_parameters");
+
+                                    b2.ToTable("application_step_parameters", (string)null);
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ApplicationId", "StepName")
+                                        .HasConstraintName("fk_application_step_parameters_application_steps_application_i");
+                                });
+
+                            b1.Navigation("Parameters");
+                        });
+
+                    b.Navigation("Steps");
                 });
 
             modelBuilder.Entity("InfraFlowSculptor.Domain.ComponentAggregate.ComponentAggregate", b =>

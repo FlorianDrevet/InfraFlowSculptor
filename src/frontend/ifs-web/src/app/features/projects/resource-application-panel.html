@@ -1,0 +1,272 @@
+<section class="resource-application" aria-labelledby="resource-application-heading">
+  <header class="resource-application__header">
+    <div>
+      <h3 id="resource-application-heading">{{ 'resource.applicationHeading' | transloco }}</h3>
+      <p>{{ 'resource.applicationHelp' | transloco }}</p>
+    </div>
+    @if (response(); as result) {
+      <span class="resource-application__catalog">{{ result.catalogVersion }}</span>
+    }
+  </header>
+
+  @if (loading()) {
+    <p role="status">{{ 'resource.loadingApplication' | transloco }}</p>
+  } @else if (loadError()) {
+    <p class="resource-application__error" role="alert">
+      {{ 'resource.applicationLoadError' | transloco }}
+    </p>
+  } @else if (response(); as result) {
+    @if (!result.available) {
+      <div class="resource-application__notice" role="status">
+        <strong>{{ 'resource.applicationUnavailable' | transloco }}</strong>
+        <p>{{ result.unavailableReason }}</p>
+      </div>
+    } @else if (configuration(); as application) {
+      <form class="resource-application__form" (ngSubmit)="save()">
+        <section
+          class="resource-application__section"
+          aria-labelledby="application-delivery-heading"
+        >
+          <h4 id="application-delivery-heading">
+            {{ 'resource.applicationDelivery' | transloco }}
+          </h4>
+          <div class="resource-application__delivery">
+            <span>{{ 'resource.deliveryPipeline' | transloco }}</span>
+            <strong>Pipelines IFS</strong>
+          </div>
+          <div class="resource-application__grid">
+            <label>
+              {{ 'resource.applicationName' | transloco }}
+              <input
+                name="applicationName"
+                required
+                maxlength="40"
+                [disabled]="!canEdit() || saving()"
+                [ngModel]="draft()?.name"
+                (ngModelChange)="updateText('name', $event)"
+              />
+            </label>
+            <label>
+              {{ 'resource.applicationSourcePath' | transloco }}
+              <input
+                name="applicationSourcePath"
+                required
+                [disabled]="!canEdit() || saving()"
+                [ngModel]="draft()?.codeSourcePath"
+                (ngModelChange)="updateText('codeSourcePath', $event)"
+              />
+            </label>
+            <label>
+              {{ 'resource.dockerfile' | transloco }}
+              <input
+                name="dockerfilePath"
+                required
+                [disabled]="!canEdit() || saving()"
+                [ngModel]="draft()?.dockerfilePath"
+                (ngModelChange)="updateText('dockerfilePath', $event)"
+              />
+            </label>
+            <label>
+              {{ 'resource.buildContext' | transloco }}
+              <input
+                name="buildContextPath"
+                required
+                [disabled]="!canEdit() || saving()"
+                [ngModel]="draft()?.buildContextPath"
+                (ngModelChange)="updateText('buildContextPath', $event)"
+              />
+            </label>
+            <label>
+              {{ 'resource.imageRepository' | transloco }}
+              <input
+                name="imageRepository"
+                required
+                [disabled]="!canEdit() || saving()"
+                [ngModel]="draft()?.imageRepository"
+                (ngModelChange)="updateText('imageRepository', $event)"
+              />
+            </label>
+          </div>
+        </section>
+
+        <section class="resource-application__section" aria-labelledby="build-registry-heading">
+          <h4 id="build-registry-heading">{{ 'resource.buildRegistry' | transloco }}</h4>
+          @if (application.buildRegistry.options.length > 0) {
+            <label>
+              {{ 'resource.buildRegistry' | transloco }}
+              <select
+                name="buildRegistryEnvironment"
+                [disabled]="!canEdit() || saving()"
+                [ngModel]="draft()?.buildRegistryEnvironmentId ?? ''"
+                (ngModelChange)="updateBuildRegistryEnvironment($event)"
+              >
+                @for (option of application.buildRegistry.options; track option.environmentId) {
+                  <option [value]="option.environmentId">
+                    {{ option.environmentCode }} · {{ option.registryName }}
+                  </option>
+                }
+              </select>
+            </label>
+          } @else if (application.buildRegistry.available) {
+            <p class="resource-application__registry">
+              {{ application.buildRegistry.displayName }} ·
+              <code>{{ application.buildRegistry.registryName }}</code>
+            </p>
+          } @else {
+            <p class="resource-application__muted">
+              {{ 'resource.buildRegistryUnavailable' | transloco }}
+            </p>
+          }
+          @if (application.buildRegistry.promotionRequired) {
+            <p class="resource-application__muted">
+              {{ 'resource.imagePromotionHelp' | transloco }}
+            </p>
+          }
+        </section>
+
+        <section class="resource-application__section" aria-labelledby="pipeline-steps-heading">
+          <h4 id="pipeline-steps-heading">{{ 'resource.pipelineSteps' | transloco }}</h4>
+          @if (application.findings.length > 0) {
+            <ul class="resource-application__findings">
+              @for (
+                finding of application.findings;
+                track finding.code + finding.stepName + finding.parameterName
+              ) {
+                <li role="alert">{{ finding.message }}</li>
+              }
+            </ul>
+          }
+          <div class="resource-application__steps">
+            @for (step of application.steps; track step.name; let stepIndex = $index) {
+              <article class="resource-application__step">
+                <header>
+                  <div>
+                    <h5>{{ step.label }}</h5>
+                    <p>{{ step.description }}</p>
+                  </div>
+                  <label class="resource-application__toggle">
+                    <input
+                      type="checkbox"
+                      [disabled]="!canEdit() || saving()"
+                      [checked]="draft()?.steps?.[stepIndex]?.enabled"
+                      (change)="updateStep(stepIndex, { enabled: isChecked($event) })"
+                    />
+                    {{ 'resource.stepEnabled' | transloco }}
+                  </label>
+                </header>
+                <div class="resource-application__step-fields">
+                  <label class="resource-application__toggle">
+                    <input
+                      type="checkbox"
+                      [disabled]="!canEdit() || saving()"
+                      [checked]="draft()?.steps?.[stepIndex]?.blocking"
+                      (change)="updateStep(stepIndex, { blocking: isChecked($event) })"
+                    />
+                    {{ 'resource.stepBlocking' | transloco }}
+                  </label>
+                  <label>
+                    {{ 'resource.stepPosition' | transloco }}
+                    <select
+                      [disabled]="!canEdit() || saving()"
+                      [ngModel]="draft()?.steps?.[stepIndex]?.position"
+                      [name]="'step-position-' + step.name"
+                      (ngModelChange)="updateStep(stepIndex, { position: $event })"
+                    >
+                      <option value="BeforeBuild">
+                        {{ 'resource.positionBeforeBuild' | transloco }}
+                      </option>
+                      <option value="AfterBuild">
+                        {{ 'resource.positionAfterBuild' | transloco }}
+                      </option>
+                      <option value="AfterDeployment">
+                        {{ 'resource.positionAfterDeployment' | transloco }}
+                      </option>
+                    </select>
+                  </label>
+                  @for (
+                    parameter of step.parameters;
+                    track parameter.name;
+                    let parameterIndex = $index
+                  ) {
+                    @if (parameter.values.length > 0) {
+                      <label [for]="'step-param-' + step.name + '-' + parameter.name">
+                        {{ stepParameterLabelKey(parameter.name) | transloco }}
+                        <select
+                          [disabled]="!canEdit() || saving()"
+                          [id]="'step-param-' + step.name + '-' + parameter.name"
+                          [ngModel]="
+                            draft()?.steps?.[stepIndex]?.parameters?.[parameterIndex]?.value
+                          "
+                          [name]="'step-param-' + step.name + '-' + parameter.name"
+                          (ngModelChange)="updateParameter(stepIndex, parameterIndex, $event)"
+                        >
+                          @for (value of parameter.values; track value) {
+                            <option [value]="value">{{ value }}</option>
+                          }
+                        </select>
+                      </label>
+                    } @else {
+                      <label [for]="'step-param-' + step.name + '-' + parameter.name">
+                        {{ stepParameterLabelKey(parameter.name) | transloco }}
+                        <input
+                          [disabled]="!canEdit() || saving()"
+                          [id]="'step-param-' + step.name + '-' + parameter.name"
+                          [ngModel]="
+                            draft()?.steps?.[stepIndex]?.parameters?.[parameterIndex]?.value
+                          "
+                          [name]="'step-param-' + step.name + '-' + parameter.name"
+                          (ngModelChange)="updateParameter(stepIndex, parameterIndex, $event)"
+                        />
+                      </label>
+                    }
+                  }
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+
+        <section class="resource-application__section" aria-labelledby="health-check-heading">
+          <h4 id="health-check-heading">{{ 'resource.healthCheck' | transloco }}</h4>
+          <label>
+            {{ 'resource.healthCheckPath' | transloco }}
+            <input
+              name="healthCheckPath"
+              [disabled]="!canEdit() || saving()"
+              [ngModel]="draft()?.healthCheckPath ?? ''"
+              (ngModelChange)="updateHealthCheckPath($event)"
+            />
+          </label>
+          <p class="resource-application__muted">{{ 'resource.healthCheckHelp' | transloco }}</p>
+        </section>
+
+        <section
+          class="resource-application__section"
+          aria-labelledby="deployment-strategy-heading"
+        >
+          <h4 id="deployment-strategy-heading">{{ 'resource.deploymentStrategy' | transloco }}</h4>
+          <p class="resource-application__strategy">
+            {{ 'resource.directDeployment' | transloco }}
+          </p>
+        </section>
+
+        @if (actionError()) {
+          <p class="resource-application__error" role="alert">
+            {{ 'resource.applicationSaveError' | transloco }}
+          </p>
+        }
+        @if (canEdit()) {
+          <footer>
+            <app-ds-button type="submit" variant="primary" [disabled]="!canSave()">
+              {{
+                saving()
+                  ? ('resource.savingApplication' | transloco)
+                  : ('resource.save' | transloco)
+              }}
+            </app-ds-button>
+          </footer>
+        }
+      </form>
+    }
+  }
+</section>

@@ -78,6 +78,12 @@ public sealed class DeleteResourceCommandHandler(
 
         dbContext.Query<AppSettingAggregate>().RemoveRange(applicationSettings);
 
+        var applications = await dbContext.Query<ApplicationAggregate>()
+            .Where(application => application.ProjectId == new ProjectId(command.ProjectId)
+                && application.ResourceId == resource.Id)
+            .ToArrayAsync(cancellationToken);
+        dbContext.Query<ApplicationAggregate>().RemoveRange(applications);
+
         var built = await snapshotBuilder.BuildAsync(command.ProjectId, cancellationToken);
         if (built.IsError)
         {

@@ -3630,6 +3630,192 @@
         ]
       }
     },
+    "/v1/projects/{projectId}/components/{componentId}/resources/{resourceId}/application": {
+      "get": {
+        "tags": [
+          "Resources"
+        ],
+        "summary": "Consulter le profil de build d'une application conteneur.",
+        "operationId": "GetResourceApplication",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceApplicationResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Resources"
+        ],
+        "summary": "Enregistrer les réglages de build d'une application conteneur.",
+        "operationId": "SaveResourceApplication",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveApplicationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceApplicationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/projects/{projectId}/components/{componentId}/resources/{resourceId}/app-settings": {
       "get": {
         "tags": [
@@ -7763,6 +7949,281 @@
           }
         }
       },
+      "ApplicationBuildRegistryOptionResponse": {
+        "required": [
+          "environmentId",
+          "environmentCode",
+          "registryName"
+        ],
+        "type": "object",
+        "properties": {
+          "environmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "environmentCode": {
+            "type": "string"
+          },
+          "registryName": {
+            "type": "string"
+          }
+        }
+      },
+      "ApplicationBuildRegistryResponse": {
+        "required": [
+          "available",
+          "displayName",
+          "registryName",
+          "promotionRequired",
+          "selectedEnvironmentId",
+          "hasValidSelection",
+          "options"
+        ],
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "registryName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "promotionRequired": {
+            "type": "boolean"
+          },
+          "selectedEnvironmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "hasValidSelection": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationBuildRegistryOptionResponse"
+            }
+          }
+        }
+      },
+      "ApplicationConfigurationResponse": {
+        "required": [
+          "version",
+          "name",
+          "codeSourcePath",
+          "dockerfilePath",
+          "buildContextPath",
+          "imageRepository",
+          "healthCheckPath",
+          "deploymentStrategy",
+          "buildRegistry",
+          "steps",
+          "findings"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "codeSourcePath": {
+            "type": "string"
+          },
+          "dockerfilePath": {
+            "type": "string"
+          },
+          "buildContextPath": {
+            "type": "string"
+          },
+          "imageRepository": {
+            "type": "string"
+          },
+          "healthCheckPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deploymentStrategy": {
+            "type": "string"
+          },
+          "buildRegistry": {
+            "$ref": "#/components/schemas/ApplicationBuildRegistryResponse"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationStepResponse"
+            }
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationFindingResponse"
+            }
+          }
+        }
+      },
+      "ApplicationFindingResponse": {
+        "required": [
+          "code",
+          "stepName",
+          "parameterName",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "stepName": {
+            "type": "string"
+          },
+          "parameterName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApplicationStepParameterRequest": {
+        "required": [
+          "name",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "ApplicationStepParameterResponse": {
+        "required": [
+          "name",
+          "kind",
+          "value",
+          "defaultValue",
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "defaultValue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ApplicationStepRequest": {
+        "required": [
+          "name",
+          "enabled",
+          "blocking",
+          "position",
+          "parameters"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "blocking": {
+            "type": "boolean"
+          },
+          "position": {
+            "type": "string"
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationStepParameterRequest"
+            }
+          }
+        }
+      },
+      "ApplicationStepResponse": {
+        "required": [
+          "name",
+          "label",
+          "description",
+          "enabled",
+          "blocking",
+          "position",
+          "parameters"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "blocking": {
+            "type": "boolean"
+          },
+          "position": {
+            "type": "string"
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationStepParameterResponse"
+            }
+          }
+        }
+      },
       "AssignProjectRoleRequest": {
         "required": [
           "role",
@@ -9581,6 +10042,7 @@
           "Resource",
           "Link",
           "AppSetting",
+          "Application",
           "Revision",
           "Publication",
           "Deployment",
@@ -10392,6 +10854,43 @@
           }
         }
       },
+      "ResourceApplicationResponse": {
+        "required": [
+          "available",
+          "catalogVersion",
+          "buildProfile",
+          "unavailableReason",
+          "application"
+        ],
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "catalogVersion": {
+            "type": "string"
+          },
+          "buildProfile": {
+            "type": "string"
+          },
+          "unavailableReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "application": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ApplicationConfigurationResponse"
+              }
+            ]
+          }
+        }
+      },
       "ResourceChildResponse": {
         "required": [
           "id",
@@ -11004,6 +11503,68 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "SaveApplicationRequest": {
+        "required": [
+          "expectedVersion",
+          "name",
+          "codeSourcePath",
+          "dockerfilePath",
+          "buildContextPath",
+          "imageRepository",
+          "healthCheckPath",
+          "deploymentStrategy",
+          "buildRegistryEnvironmentId",
+          "steps"
+        ],
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "codeSourcePath": {
+            "type": "string"
+          },
+          "dockerfilePath": {
+            "type": "string"
+          },
+          "buildContextPath": {
+            "type": "string"
+          },
+          "imageRepository": {
+            "type": "string"
+          },
+          "healthCheckPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deploymentStrategy": {
+            "type": "string"
+          },
+          "buildRegistryEnvironmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationStepRequest"
+            }
           }
         }
       },

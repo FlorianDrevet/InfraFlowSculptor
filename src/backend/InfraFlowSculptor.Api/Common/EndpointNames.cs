@@ -72,6 +72,8 @@ public static class EndpointNames
     public const string GetResourceLinkOptions = "GetResourceLinkOptions";
     public const string PreviewLink = "PreviewLink";
     public const string GetAppSettings = "GetAppSettings";
+    public const string GetResourceApplication = "GetResourceApplication";
+    public const string SaveResourceApplication = "SaveResourceApplication";
     public const string CreateAppSetting = "CreateAppSetting";
     public const string UpdateAppSetting = "UpdateAppSetting";
     public const string DeleteAppSetting = "DeleteAppSetting";

@@ -59,6 +59,8 @@ public class IfsDbContext(
 
     public DbSet<AppSettingAggregate> AppSettings => Set<AppSettingAggregate>();
 
+    public DbSet<ApplicationAggregate> Applications => Set<ApplicationAggregate>();
+
     public DbSet<ProjectWizardDraft> ProjectWizardDrafts => Set<ProjectWizardDraft>();
 
     public DbSet<InvitationAggregate> Invitations => Set<InvitationAggregate>();

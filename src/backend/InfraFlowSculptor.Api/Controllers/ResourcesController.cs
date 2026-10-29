@@ -1,6 +1,7 @@
 using InfraFlowSculptor.Api.Common;
 using InfraFlowSculptor.Api.Common.Idempotency;
 using InfraFlowSculptor.Api.Errors;
+using ErrorOr;
 using InfraFlowSculptor.Application.Common.ModelCommands;
 using InfraFlowSculptor.Application.Components;
 using InfraFlowSculptor.Application.Components.Commands.AddChild;
@@ -26,6 +27,8 @@ using InfraFlowSculptor.Application.Components.Commands.UpdateAppSetting;
 using InfraFlowSculptor.Application.Components.Queries.GetAppSettings;
 using InfraFlowSculptor.Application.Components.Queries.GetEffectiveValues;
 using InfraFlowSculptor.Application.Components.Queries.GetResourceDeletionImpact;
+using InfraFlowSculptor.Application.Components.Queries.GetResourceApplication;
+using InfraFlowSculptor.Application.Components.Commands.SaveApplication;
 using InfraFlowSculptor.Application.Components.Queries.GetResourceLinks;
 using InfraFlowSculptor.Application.Components.Queries.GetLinkRemovalImpact;
 using InfraFlowSculptor.Application.Components.Queries.GetResourceLinkOptions;
@@ -36,8 +39,11 @@ using InfraFlowSculptor.Contracts.Components;
 using InfraFlowSculptor.Contracts.Naming;
 using InfraFlowSculptor.Contracts.Resources;
 using InfraFlowSculptor.Domain.Common.Features;
+using InfraFlowSculptor.Domain.ComponentAggregate;
+using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Engine.Links;
 using InfraFlowSculptor.Engine.Naming;
+using InfraFlowSculptor.Engine.Applications;
 using Mediator;
 using Microsoft.AspNetCore.Mvc;
 
@@ -55,6 +61,65 @@ public static class ResourcesController
             .WithTags("Resources")
             .RequireFeature(Features.Organizations)
             .RequireFeature(Features.ProjectSetup);
+
+        resources.MapGet("/{resourceId:guid}/application", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(
+                    new GetResourceApplicationQuery(projectId, componentId, resourceId),
+                    cancellationToken);
+                return result.Match<IResult>(summary => Results.Ok(MapApplication(summary)), errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.GetResourceApplication)
+            .WithSummary("Consulter le profil de build d'une application conteneur.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces<ResourceApplicationResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        resources.MapPut("/{resourceId:guid}/application", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                SaveApplicationRequest request,
+                IModelCommandExecutor executor,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var definition = ToApplicationDefinition(request);
+                if (definition.IsError)
+                {
+                    return definition.Errors.ToProblem();
+                }
+
+                var command = new SaveApplicationCommand(
+                    projectId, componentId, resourceId, definition.Value, request.ExpectedVersion);
+                var executed = await executor.ExecuteAsync([command], ModelCommandMode.Apply, cancellationToken);
+                if (executed.IsError)
+                {
+                    return executed.Errors.ToProblem();
+                }
+
+                var result = await mediator.Send(
+                    new GetResourceApplicationQuery(projectId, componentId, resourceId),
+                    cancellationToken);
+                return result.Match<IResult>(summary => Results.Ok(MapApplication(summary)), errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.SaveResourceApplication)
+            .WithSummary("Enregistrer les réglages de build d'une application conteneur.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces<ResourceApplicationResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         resources.MapGet("/{resourceId:guid}/app-settings", async (
                 Guid projectId,
@@ -1094,6 +1159,114 @@ public static class ResourcesController
             property.Name,
             property.Value,
             property.Provenance)).ToArray());
+
+    private static ResourceApplicationResponse MapApplication(ResourceApplicationSummary summary)
+    {
+        if (!summary.Available || summary.Definition is null || summary.BuildRegistry is null)
+        {
+            return new ResourceApplicationResponse(
+                false,
+                summary.CatalogVersion,
+                summary.BuildProfile,
+                summary.UnavailableReason,
+                null);
+        }
+
+        var descriptors = summary.StepDescriptors.ToDictionary(step => step.Name, StringComparer.Ordinal);
+        var steps = summary.Definition.Steps.Select(step =>
+        {
+            descriptors.TryGetValue(step.Name, out var descriptor);
+            var parameters = step.Parameters.Select(parameter =>
+            {
+                var parameterDescriptor = descriptor?.Parameters.SingleOrDefault(candidate =>
+                    string.Equals(candidate.Name, parameter.Name, StringComparison.Ordinal));
+                return new ApplicationStepParameterResponse(
+                    parameter.Name,
+                    parameterDescriptor?.Kind ?? "string",
+                    parameter.Value,
+                    parameterDescriptor?.DefaultValue,
+                    parameterDescriptor?.Values ?? []);
+            }).ToArray();
+            return new ApplicationStepResponse(
+                step.Name,
+                descriptor?.LabelFr ?? step.Name,
+                descriptor?.Description ?? string.Empty,
+                step.Enabled,
+                step.Blocking,
+                step.Position.ToString(),
+                parameters);
+        }).ToArray();
+        var registry = summary.BuildRegistry;
+        return new ResourceApplicationResponse(
+            true,
+            summary.CatalogVersion,
+            summary.BuildProfile,
+            null,
+            new ApplicationConfigurationResponse(
+                summary.SavedApplication?.Version ?? 0,
+                summary.Definition.Name,
+                summary.Definition.CodeSourcePath,
+                summary.Definition.DockerfilePath,
+                summary.Definition.BuildContextPath,
+                summary.Definition.ImageRepository,
+                summary.Definition.HealthCheckPath,
+                summary.Definition.DeploymentStrategy.ToString(),
+                new ApplicationBuildRegistryResponse(
+                    registry.IsAvailable,
+                    registry.DisplayName,
+                    registry.RegistryName,
+                    registry.PromotionRequired,
+                    registry.SelectedEnvironmentId,
+                    registry.HasValidSelection,
+                    registry.Options.Select(option => new ApplicationBuildRegistryOptionResponse(
+                        option.EnvironmentId,
+                        option.EnvironmentCode,
+                        option.RegistryName)).ToArray()),
+                steps,
+                summary.Findings.Select(finding => new ApplicationFindingResponse(
+                    finding.Code,
+                    finding.StepName,
+                    finding.ParameterName,
+                    finding.Message)).ToArray()));
+    }
+
+    private static ErrorOr<InfraFlowSculptor.Domain.ComponentAggregate.ApplicationDefinition> ToApplicationDefinition(
+        SaveApplicationRequest request)
+    {
+        if (!Enum.TryParse<DeploymentStrategyKind>(request.DeploymentStrategy, true, out var strategy)
+            || !Enum.IsDefined(strategy))
+        {
+            return Error.Validation("APPLICATION_DEPLOYMENT_STRATEGY_INVALID", "The deployment strategy is unsupported.");
+        }
+
+        var steps = new List<ApplicationStepDefinition>();
+        foreach (var step in request.Steps ?? [])
+        {
+            if (!Enum.TryParse<ApplicationStepPosition>(step.Position, true, out var position)
+                || !Enum.IsDefined(position))
+            {
+                return Error.Validation("APPLICATION_STEP_INVALID", "The application step position is unsupported.");
+            }
+
+            steps.Add(new ApplicationStepDefinition(
+                step.Name,
+                step.Enabled,
+                step.Blocking,
+                position,
+                (step.Parameters ?? []).Select(parameter => new ApplicationStepParameter(parameter.Name, parameter.Value)).ToArray()));
+        }
+
+        return new InfraFlowSculptor.Domain.ComponentAggregate.ApplicationDefinition(
+            request.Name,
+            request.CodeSourcePath,
+            request.DockerfilePath,
+            request.BuildContextPath,
+            request.ImageRepository,
+            request.HealthCheckPath,
+            strategy,
+            request.BuildRegistryEnvironmentId,
+            steps);
+    }
 
     private static ProjectNamingPreviewResponse MapPreview(NamingPreviewResult preview) => new(
         preview.Items.Select(item => new ProjectNamingPreviewItemResponse(

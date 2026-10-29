@@ -36,6 +36,18 @@ public static class CatalogLoader
                 .OrderBy(file => file.Path, StringComparer.Ordinal)
                 .Select(ParseResourceType)
                 .ToImmutableArray();
+            var buildProfiles = files
+                .Where(file => file.Path.StartsWith($"{versionPrefix}build-profiles/", StringComparison.Ordinal)
+                    && file.Path.EndsWith(".json", StringComparison.Ordinal))
+                .OrderBy(file => file.Path, StringComparer.Ordinal)
+                .Select(ParseBuildProfile)
+                .ToImmutableArray();
+            var pipelineSteps = files
+                .Where(file => file.Path.StartsWith($"{versionPrefix}steps/", StringComparison.Ordinal)
+                    && file.Path.EndsWith(".json", StringComparison.Ordinal))
+                .OrderBy(file => file.Path, StringComparer.Ordinal)
+                .Select(ParsePipelineStep)
+                .ToImmutableArray();
 
             var regionFile = files.Single(file => string.Equals(file.Path, $"{versionPrefix}regions.json", StringComparison.Ordinal));
             using var regionDocument = JsonDocument.Parse(regionFile.Content);
@@ -61,6 +73,8 @@ public static class CatalogLoader
                 metadata.GetProperty("notes").GetString()!,
                 DateOnly.Parse(metadata.GetProperty("verifiedAgainstDocsOn").GetString()!, System.Globalization.CultureInfo.InvariantCulture),
                 descriptors,
+                buildProfiles,
+                pipelineSteps,
                 regions,
                 fingerprint));
         }
@@ -94,6 +108,18 @@ public static class CatalogLoader
     {
         using var document = JsonDocument.Parse(file.Content);
         return new CatalogResourceTypeDescriptor(document.RootElement);
+    }
+
+    private static CatalogBuildProfileDescriptor ParseBuildProfile(EmbeddedJsonFile file)
+    {
+        using var document = JsonDocument.Parse(file.Content);
+        return new CatalogBuildProfileDescriptor(document.RootElement);
+    }
+
+    private static CatalogPipelineStepDescriptor ParsePipelineStep(EmbeddedJsonFile file)
+    {
+        using var document = JsonDocument.Parse(file.Content);
+        return new CatalogPipelineStepDescriptor(document.RootElement);
     }
 
     private static string ComputeFingerprint(IEnumerable<CatalogFingerprintInput> sourceFiles)

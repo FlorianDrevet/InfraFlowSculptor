@@ -7,6 +7,7 @@ using InfraFlowSculptor.Application.Common.Jobs;
 using InfraFlowSculptor.Application.Common.ModelCommands;
 using InfraFlowSculptor.Application.Components;
 using InfraFlowSculptor.Application.Naming.Availability;
+using InfraFlowSculptor.Engine.Applications;
 using InfraFlowSculptor.Engine.Exposure;
 using InfraFlowSculptor.Engine.Links;
 
@@ -38,6 +39,8 @@ public static class DependencyInjection
         services.TryAddSingleton<ExposureResolver>();
         services.TryAddSingleton(_ => new LinkKindRegistry(PilotLinkKindHandlers.Create()));
         services.TryAddSingleton(_ => new DataAccessProviderRegistry([new AzureSqlDataAccessProvider()]));
+        services.TryAddSingleton<DeploymentStrategyRegistry>(provider => new DeploymentStrategyRegistry(
+            [new DirectDeploymentStrategy()]));
         services.TryAddSingleton<WiringEngine>();
         services.TryAddSingleton<LinkPreviewAnalyzer>();
         services.TryAddSingleton<ImpactAnalyzer>();

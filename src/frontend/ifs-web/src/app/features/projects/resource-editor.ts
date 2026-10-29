@@ -33,6 +33,7 @@ import type { GeneratedNameRow } from '../../shared/generated-names/generated-na
 import { ResourceLinksPanel } from './resource-links-panel';
 import { ResourceIdentityPanel } from './resource-identity-panel';
 import { ResourceAppSettingsPanel } from './resource-app-settings-panel';
+import { ResourceApplicationPanel } from './resource-application-panel';
 import { ResourceNetworkPanel } from './resource-network-panel';
 import { PropertyGrid } from '../../shared/property-grid/property-grid';
 import type { PropertyGridUpdate } from '../../shared/property-grid/property-grid-update';
@@ -55,6 +56,7 @@ import {
     ResourceLinksPanel,
     ResourceIdentityPanel,
     ResourceAppSettingsPanel,
+    ResourceApplicationPanel,
     ResourceNetworkPanel,
     RouterLink,
     TranslocoPipe,
@@ -74,6 +76,9 @@ export class ResourceEditor implements OnInit {
   protected readonly resource = signal<ResourceResponse | null>(null);
   protected readonly resourceType = signal<CatalogResourceTypeSummaryResponse | null>(null);
   protected readonly applicationSettingsAvailable = signal(false);
+  protected readonly applicationAvailable = computed(
+    () => this.resource()?.type === 'ContainerApp',
+  );
   protected readonly networkAvailable = signal(false);
   protected readonly effectiveValues = signal<EffectiveValueTargetResponse[]>([]);
   protected readonly definitions = signal<ResourcePropertyDefinition[]>([]);
@@ -116,9 +121,11 @@ export class ResourceEditor implements OnInit {
         )
       : [];
   });
-  protected readonly networkRows = computed(() => this.rows().filter((row) =>
-    row.definition.name === 'exposure' || row.definition.itemsFormat === 'ipv4Cidr',
-  ));
+  protected readonly networkRows = computed(() =>
+    this.rows().filter(
+      (row) => row.definition.name === 'exposure' || row.definition.itemsFormat === 'ipv4Cidr',
+    ),
+  );
   protected readonly activeTab = computed(() =>
     this.isSupportedTab(this.tab()) ? this.tab() : 'general',
   );
@@ -549,13 +556,18 @@ export class ResourceEditor implements OnInit {
 
   private isSupportedTab(tab: string): boolean {
     if (tab === 'properties') return !this.resource()?.isExisting;
+    if (tab === 'application') return this.applicationAvailable();
     if (tab === 'settings') return this.applicationSettingsAvailable();
     if (tab === 'network') return this.networkAvailable();
     return tab === 'general' || tab === 'links' || tab === 'identity';
   }
 
   private applicationSettingsSupported(descriptor: JsonElement): boolean {
-    const destination = this.descriptorSectionValue(descriptor, 'applicationSettings', 'destination');
+    const destination = this.descriptorSectionValue(
+      descriptor,
+      'applicationSettings',
+      'destination',
+    );
     return destination !== null && destination !== 'none';
   }
 
@@ -565,12 +577,23 @@ export class ResourceEditor implements OnInit {
     return Array.isArray(modes) && modes.some((mode) => mode === 'Public' || mode === 'Restricted');
   }
 
-  private descriptorSectionValue(descriptor: JsonElement, sectionName: string, propertyName: string): string | null {
-    return this.descriptorSection(descriptor, sectionName)?.[propertyName] as string | undefined ?? null;
+  private descriptorSectionValue(
+    descriptor: JsonElement,
+    sectionName: string,
+    propertyName: string,
+  ): string | null {
+    return (
+      (this.descriptorSection(descriptor, sectionName)?.[propertyName] as string | undefined) ??
+      null
+    );
   }
 
-  private descriptorSection(descriptor: JsonElement, sectionName: string): Record<string, JsonElement> | null {
-    if (typeof descriptor !== 'object' || descriptor === null || Array.isArray(descriptor)) return null;
+  private descriptorSection(
+    descriptor: JsonElement,
+    sectionName: string,
+  ): Record<string, JsonElement> | null {
+    if (typeof descriptor !== 'object' || descriptor === null || Array.isArray(descriptor))
+      return null;
     const section = descriptor[sectionName];
     return typeof section === 'object' && section !== null && !Array.isArray(section)
       ? section

@@ -34,7 +34,9 @@ test('Alice parcourt et gère les écrans du projet', async ({ page, browser }) 
   const projectName = recipeProjectName(page);
   await page.goto(`/o/${CONTOSO_ID}/projects`);
   await expect(page.getByRole('heading', { name: 'Projets', exact: true })).toBeVisible();
-  const shopCard = page.locator('.projects-page__card').filter({ hasText: 'shop' });
+  const shopCard = page.locator('.projects-page__card').filter({
+    has: page.locator('.projects-page__code').getByText('shop', { exact: true }),
+  });
   await expect(shopCard.getByRole('button', { name: 'shop', exact: true })).toBeVisible();
   await expect(shopCard.locator('.projects-page__metadata dd').first()).toHaveText(/\d+/);
   await assertNoSeriousAccessibilityViolations(page);

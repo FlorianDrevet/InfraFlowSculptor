@@ -352,6 +352,11 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/app-settings",
                 HttpStatusCode.NotFound),
+            ["GetResourceApplication"] = OrganizationScenario(
+                "GetResourceApplication",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/application",
+                HttpStatusCode.NotFound),
             ["CreateAppSetting"] = OrganizationWriteScenario(
                 "CreateAppSetting",
                 HttpMethod.Post,
@@ -540,6 +545,24 @@ public static class IsolationScenarios
                 $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/properties",
                 HttpStatusCode.NotFound,
                 new { properties = new { }, expectedVersion = 1 }),
+            ["SaveResourceApplication"] = OrganizationWriteScenario(
+                "SaveResourceApplication",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/application",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    expectedVersion = 0,
+                    name = "isolated",
+                    codeSourcePath = "src/isolated",
+                    dockerfilePath = "src/isolated/Dockerfile",
+                    buildContextPath = "src/isolated",
+                    imageRepository = "shop/orders/isolated",
+                    healthCheckPath = (string?)null,
+                    deploymentStrategy = "Direct",
+                    buildRegistryEnvironmentId = (Guid?)null,
+                    steps = Array.Empty<object>()
+                }),
             ["SetResourceDefaultIdentity"] = OrganizationWriteScenario(
                 "SetResourceDefaultIdentity",
                 HttpMethod.Put,

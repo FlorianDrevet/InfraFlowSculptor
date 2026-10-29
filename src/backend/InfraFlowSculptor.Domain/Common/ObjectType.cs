@@ -9,6 +9,7 @@ public enum ObjectType
     Resource,
     Link,
     AppSetting,
+    Application,
     Revision,
     Publication,
     Deployment,

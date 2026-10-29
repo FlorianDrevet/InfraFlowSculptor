@@ -17,7 +17,9 @@ test('Alice ajoute, règle et supprime des ressources du catalogue', async ({ pa
 
   await loginAsAlice(page);
   await page.goto(`/o/${CONTOSO_ID}/projects`);
-  const shopCard = page.locator('.projects-page__card').filter({ hasText: 'shop' });
+  const shopCard = page.locator('.projects-page__card').filter({
+    has: page.locator('.projects-page__code').getByText('shop', { exact: true }),
+  });
   await expect(shopCard).toBeVisible();
   const projectNavigation = page.waitForURL(/\/projects\/[0-9a-f-]+$/i);
   await shopCard.locator('.projects-page__project-name').click();

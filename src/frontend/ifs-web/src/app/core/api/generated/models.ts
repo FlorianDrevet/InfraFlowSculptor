@@ -3,6 +3,14 @@
 
 export type { AddLinkRequest } from './models/add-link-request';
 export type { AddProjectEnvironmentRequest } from './models/add-project-environment-request';
+export type { ApplicationBuildRegistryOptionResponse } from './models/application-build-registry-option-response';
+export type { ApplicationBuildRegistryResponse } from './models/application-build-registry-response';
+export type { ApplicationConfigurationResponse } from './models/application-configuration-response';
+export type { ApplicationFindingResponse } from './models/application-finding-response';
+export type { ApplicationStepParameterRequest } from './models/application-step-parameter-request';
+export type { ApplicationStepParameterResponse } from './models/application-step-parameter-response';
+export type { ApplicationStepRequest } from './models/application-step-request';
+export type { ApplicationStepResponse } from './models/application-step-response';
 export type { AppSettingMutationResponse } from './models/app-setting-mutation-response';
 export type { AppSettingRequest } from './models/app-setting-request';
 export type { AppSettingResponse } from './models/app-setting-response';
@@ -94,6 +102,7 @@ export type { ProjectWizardEnvironmentRequest } from './models/project-wizard-en
 export type { RemovedResourceBehavior } from './models/removed-resource-behavior';
 export type { RemoveLinkRequest } from './models/remove-link-request';
 export type { RenameOrganizationRequest } from './models/rename-organization-request';
+export type { ResourceApplicationResponse } from './models/resource-application-response';
 export type { ResourceChildResponse } from './models/resource-child-response';
 export type { ResourceDeletionImpactArea } from './models/resource-deletion-impact-area';
 export type { ResourceDeletionImpactItemResponse } from './models/resource-deletion-impact-item-response';
@@ -112,6 +121,7 @@ export type { ResourceLinksResponse } from './models/resource-links-response';
 export type { ResourceLinkTargetOptionResponse } from './models/resource-link-target-option-response';
 export type { ResourceResponse } from './models/resource-response';
 export type { RestoreProjectRequest } from './models/restore-project-request';
+export type { SaveApplicationRequest } from './models/save-application-request';
 export type { SaveComponentRequest } from './models/save-component-request';
 export type { SaveResourceChildRequest } from './models/save-resource-child-request';
 export type { SaveResourceGroupRequest } from './models/save-resource-group-request';

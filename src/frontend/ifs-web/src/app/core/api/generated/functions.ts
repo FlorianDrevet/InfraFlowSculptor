@@ -107,6 +107,10 @@ export type { UpdateResourceGroup$Params as UpdateResourceGroup$Params } from '.
 export { updateResourceGroup as updateResourceGroup } from './fn/components/update-resource-group';
 export type { DeleteResourceGroup$Params as DeleteResourceGroup$Params } from './fn/components/delete-resource-group';
 export { deleteResourceGroup as deleteResourceGroup } from './fn/components/delete-resource-group';
+export type { GetResourceApplication$Params as GetResourceApplication$Params } from './fn/resources/get-resource-application';
+export { getResourceApplication as getResourceApplication } from './fn/resources/get-resource-application';
+export type { SaveResourceApplication$Params as SaveResourceApplication$Params } from './fn/resources/save-resource-application';
+export { saveResourceApplication as saveResourceApplication } from './fn/resources/save-resource-application';
 export type { GetAppSettings$Params as GetAppSettings$Params } from './fn/resources/get-app-settings';
 export { getAppSettings as getAppSettings } from './fn/resources/get-app-settings';
 export type { CreateAppSetting$Params as CreateAppSetting$Params } from './fn/resources/create-app-setting';

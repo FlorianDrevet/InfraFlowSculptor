@@ -48,6 +48,14 @@
         [queryParams]="{ tab: 'identity' }"
         >{{ 'resource.identityTab' | transloco }}</a
       >
+      @if (applicationAvailable()) {
+        <a
+          [attr.aria-current]="activeTab() === 'application' ? 'page' : null"
+          [routerLink]="[]"
+          [queryParams]="{ tab: 'application' }"
+          >{{ 'resource.applicationTab' | transloco }}</a
+        >
+      }
       @if (applicationSettingsAvailable()) {
         <a
           [attr.aria-current]="activeTab() === 'settings' ? 'page' : null"
@@ -280,6 +288,13 @@
       <app-resource-app-settings-panel
         [projectId]="projectId()"
         [component]="component()!"
+        [resource]="resource()!"
+        [canEdit]="canEditModel()"
+      />
+    } @else if (activeTab() === 'application') {
+      <app-resource-application-panel
+        [projectId]="projectId()"
+        [componentId]="componentId()"
         [resource]="resource()!"
         [canEdit]="canEditModel()"
       />

@@ -125,6 +125,18 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         RunSerialAsync(ApplicationSettingLiteralCanBeUpdatedAndDeletedCore);
 
     [Fact]
+    public Task ApplicationIsUnavailableWhenThePinnedCatalogHasNoContainerProfile() =>
+        RunSerialAsync(ApplicationIsUnavailableWhenThePinnedCatalogHasNoContainerProfileCore);
+
+    [Fact]
+    public Task ContainerApplicationDefaultsComeFromThePinnedBuildProfile() =>
+        RunSerialAsync(ContainerApplicationDefaultsComeFromThePinnedBuildProfileCore);
+
+    [Fact]
+    public Task ContainerApplicationSettingsRoundTripThroughRelationalStorage() =>
+        RunSerialAsync(ContainerApplicationSettingsRoundTripThroughRelationalStorageCore);
+
+    [Fact]
     public Task PipelineSecretVaultCannotShareConsumerComponent() =>
         RunSerialAsync(PipelineSecretVaultCannotShareConsumerComponentCore);
 
@@ -218,6 +230,131 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
                 issue => issue.TryGetProperty("resourceId", out var issueResourceId)
                     && issueResourceId.ValueKind == JsonValueKind.String
                     && issueResourceId.GetGuid() == siblingId);
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task ContainerApplicationDefaultsComeFromThePinnedBuildProfileCore()
+    {
+        await PrepareAsync();
+        await PinProjectCatalogVersionAsync("2026.10-pilot.3");
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var applicationBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>());
+            using var application = JsonDocument.Parse(applicationBody);
+            var resourceId = application.RootElement.GetProperty("id").GetGuid();
+
+            using var request = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{resourceId:D}/application");
+            using var response = await client.SendAsync(request);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var configuration = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            Assert.True(configuration.RootElement.GetProperty("available").GetBoolean());
+            Assert.Equal("2026.10-pilot.3", configuration.RootElement.GetProperty("catalogVersion").GetString());
+            var values = configuration.RootElement.GetProperty("application");
+            Assert.Equal("api", values.GetProperty("name").GetString());
+            Assert.Equal("src/api", values.GetProperty("codeSourcePath").GetString());
+            Assert.Equal("src/api/Dockerfile", values.GetProperty("dockerfilePath").GetString());
+            Assert.Equal("src/api", values.GetProperty("buildContextPath").GetString());
+            Assert.Matches("^shop/[a-z0-9-]+/api$", values.GetProperty("imageRepository").GetString()!);
+            Assert.Equal(2, values.GetProperty("steps").GetArrayLength());
+            var imageScan = values.GetProperty("steps").EnumerateArray()
+                .Single(step => step.GetProperty("name").GetString() == "ImageScan");
+            Assert.True(imageScan.GetProperty("blocking").GetBoolean());
+            Assert.Contains(imageScan.GetProperty("parameters").EnumerateArray(), parameter =>
+                parameter.GetProperty("name").GetString() == "minimumSeverity"
+                && parameter.GetProperty("value").GetString() == "CRITICAL");
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task ContainerApplicationSettingsRoundTripThroughRelationalStorageCore()
+    {
+        await PrepareAsync();
+        await PinProjectCatalogVersionAsync("2026.10-pilot.3");
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var applicationBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>());
+            using var application = JsonDocument.Parse(applicationBody);
+            var resourceId = application.RootElement.GetProperty("id").GetGuid();
+            using var saveRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{resourceId:D}/application",
+                new
+                {
+                    expectedVersion = 0,
+                    name = "api",
+                    codeSourcePath = "src/api",
+                    dockerfilePath = "src/api/Dockerfile",
+                    buildContextPath = "src/api",
+                    imageRepository = "shop/orders/api",
+                    healthCheckPath = "/healthz",
+                    deploymentStrategy = "Direct",
+                    buildRegistryEnvironmentId = (Guid?)null,
+                    steps = new object[]
+                    {
+                        new { name = "DependencyCache", enabled = true, blocking = false, position = "BeforeBuild", parameters = Array.Empty<object>() },
+                        new
+                        {
+                            name = "ImageScan",
+                            enabled = true,
+                            blocking = true,
+                            position = "AfterBuild",
+                            parameters = new object[]
+                            {
+                                new { name = "tool", value = "Trivy" },
+                                new { name = "minimumSeverity", value = "CRITICAL" },
+                                new { name = "exceptions", value = "" }
+                            }
+                        }
+                    }
+                });
+            saveRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var saveResponse = await client.SendAsync(saveRequest);
+
+            Assert.Equal(HttpStatusCode.OK, saveResponse.StatusCode);
+            using var saved = await JsonDocument.ParseAsync(await saveResponse.Content.ReadAsStreamAsync());
+            Assert.Equal(1, saved.RootElement.GetProperty("application").GetProperty("version").GetInt32());
+            Assert.Equal("CRITICAL", saved.RootElement.GetProperty("application").GetProperty("steps").EnumerateArray()
+                .Single(step => step.GetProperty("name").GetString() == "ImageScan")
+                .GetProperty("parameters").EnumerateArray()
+                .Single(parameter => parameter.GetProperty("name").GetString() == "minimumSeverity")
+                .GetProperty("value").GetString());
+
+            using var readRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{resourceId:D}/application");
+            using var readResponse = await client.SendAsync(readRequest);
+            Assert.Equal(HttpStatusCode.OK, readResponse.StatusCode);
+            using var reread = await JsonDocument.ParseAsync(await readResponse.Content.ReadAsStreamAsync());
+            Assert.Equal("/healthz", reread.RootElement.GetProperty("application").GetProperty("healthCheckPath").GetString());
+            Assert.Equal(2, reread.RootElement.GetProperty("application").GetProperty("steps").GetArrayLength());
         }
         finally
         {
@@ -779,6 +916,43 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         finally
         {
             await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task ApplicationIsUnavailableWhenThePinnedCatalogHasNoContainerProfileCore()
+    {
+        await PrepareAsync();
+        await PinProjectCatalogVersionAsync("2026.10-pilot");
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var applicationBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>());
+            using var application = JsonDocument.Parse(applicationBody);
+            var resourceId = application.RootElement.GetProperty("id").GetGuid();
+
+            using var request = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{resourceId:D}/application");
+            using var response = await client.SendAsync(request);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var configuration = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            Assert.False(configuration.RootElement.GetProperty("available").GetBoolean());
+            Assert.Equal("2026.10-pilot", configuration.RootElement.GetProperty("catalogVersion").GetString());
+            Assert.Equal("Container", configuration.RootElement.GetProperty("buildProfile").GetString());
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+            await PinProjectCatalogVersionAsync("2026.10-pilot.3");
         }
     }
 
@@ -2964,6 +3138,16 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         }
 
         return project.Version;
+    }
+
+    private async Task PinProjectCatalogVersionAsync(string catalogVersion)
+    {
+        using var scope = factory.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        var project = await dbContext.Projects.SingleAsync(candidate => candidate.Id == new ProjectId(ProjectId));
+        dbContext.Entry(project).Property(candidate => candidate.CatalogVersion).CurrentValue = catalogVersion;
+        await dbContext.SaveChangesAsync();
     }
 
     private async Task<int> CountComponentsAsync()

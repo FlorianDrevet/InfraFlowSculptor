@@ -41,22 +41,27 @@ public sealed class CatalogSchemaTests
         var provider = CatalogLoader.Load(typeof(CatalogLoader).Assembly);
         var original = provider.GetVersion("2026.10-pilot");
         var accessPatch = provider.GetVersion("2026.10-pilot.1");
-        var latestPatch = provider.GetVersion("2026.10-pilot.2");
+        var exposurePatch = provider.GetVersion("2026.10-pilot.2");
+        var latestPatch = provider.GetVersion("2026.10-pilot.3");
         Assert.NotNull(original);
         Assert.NotNull(accessPatch);
+        Assert.NotNull(exposurePatch);
         Assert.NotNull(latestPatch);
 
         var originalTargetLinks = original.GetResourceType("LogAnalyticsWorkspace")!.Definition
             .GetProperty("links").GetProperty("asTarget").EnumerateArray();
         var patchTargetLinks = accessPatch.GetResourceType("LogAnalyticsWorkspace")!.Definition
             .GetProperty("links").GetProperty("asTarget").EnumerateArray();
+        var exposurePatchTargetLinks = exposurePatch.GetResourceType("LogAnalyticsWorkspace")!.Definition
+            .GetProperty("links").GetProperty("asTarget").EnumerateArray();
         var latestPatchTargetLinks = latestPatch.GetResourceType("LogAnalyticsWorkspace")!.Definition
             .GetProperty("links").GetProperty("asTarget").EnumerateArray();
 
         Assert.DoesNotContain(originalTargetLinks, kind => kind.GetString() == "Access");
         Assert.Contains(patchTargetLinks, kind => kind.GetString() == "Access");
+        Assert.Contains(exposurePatchTargetLinks, kind => kind.GetString() == "Access");
         Assert.Contains(latestPatchTargetLinks, kind => kind.GetString() == "Access");
-        Assert.Equal("2026.10-pilot.2", provider.LatestPublished?.Version);
+        Assert.Equal("2026.10-pilot.3", provider.LatestPublished?.Version);
     }
 
     [Fact]
@@ -109,6 +114,35 @@ public sealed class CatalogSchemaTests
         Assert.Equal(9, provider.GetVersion("2026.10-pilot")!.ResourceTypes.Length);
         Assert.Equal(9, provider.GetVersion("2026.10-pilot.1")!.ResourceTypes.Length);
         Assert.Equal(9, provider.GetVersion("2026.10-pilot.2")!.ResourceTypes.Length);
+        Assert.Equal(9, provider.GetVersion("2026.10-pilot.3")!.ResourceTypes.Length);
+    }
+
+    [Fact]
+    public void ContainerBuildProfileIsAddedAsANewPublishedPatch()
+    {
+        var provider = CatalogLoader.Load(typeof(CatalogLoader).Assembly);
+        var containerCatalog = provider.GetVersion("2026.10-pilot.3");
+
+        Assert.NotNull(containerCatalog);
+        Assert.Equal("2026.10-pilot.3", provider.LatestPublished?.Version);
+
+        var buildProfilePath = Path.Combine(CatalogRoot, "2026.10-pilot.3", "build-profiles", "Container.json");
+        Assert.True(File.Exists(buildProfilePath), "The Container profile must be published in its own catalog patch.");
+
+        using var profile = JsonDocument.Parse(File.ReadAllText(buildProfilePath));
+        Assert.Equal("Container", profile.RootElement.GetProperty("name").GetString());
+        Assert.Equal("2026.10-pilot.2", provider.GetVersion("2026.10-pilot.2")?.Version);
+
+        Assert.Empty(provider.GetVersion("2026.10-pilot.2")!.BuildProfiles);
+        Assert.Equal("ContainerApp", containerCatalog.BuildProfiles.Single().ResourceTypes.Single());
+        Assert.Collection(
+            containerCatalog.BuildProfiles.Single().Steps,
+            step => Assert.Equal("DependencyCache", step),
+            step => Assert.Equal("ImageScan", step));
+        Assert.Contains(containerCatalog.PipelineSteps, step => step.Name == "DependencyCache" && step.DefaultEnabled);
+        var imageScan = Assert.Single(containerCatalog.PipelineSteps.Where(step => step.Name == "ImageScan"));
+        Assert.True(imageScan.DefaultBlocking);
+        Assert.Equal("CRITICAL", imageScan.Parameters.Single(parameter => parameter.Name == "minimumSeverity").DefaultValue);
     }
 
     [Fact]
@@ -129,6 +163,15 @@ public sealed class CatalogSchemaTests
             foreach (var stepPath in Directory.GetFiles(Path.Combine(versionDirectory, "steps"), "*.json"))
             {
                 AssertValid("schema/step.schema.json", Path.GetRelativePath(CatalogRoot, stepPath));
+            }
+
+            var buildProfilesDirectory = Path.Combine(versionDirectory, "build-profiles");
+            if (Directory.Exists(buildProfilesDirectory))
+            {
+                foreach (var profilePath in Directory.GetFiles(buildProfilesDirectory, "*.json"))
+                {
+                    AssertValid("schema/build-profile.schema.json", Path.GetRelativePath(CatalogRoot, profilePath));
+                }
             }
         }
     }

@@ -520,7 +520,7 @@ public sealed class ProjectAuthorizationEndpointTests(ApiFactory factory) : ICla
         Assert.Equal("myproject", created.GetProperty("code").GetString());
         Assert.Equal(1, created.GetProperty("version").GetInt32());
         Assert.Equal(1, created.GetProperty("modelVersion").GetInt32());
-        Assert.Equal("2026.10-pilot.2", created.GetProperty("catalogVersion").GetString());
+        Assert.Equal("2026.10-pilot.3", created.GetProperty("catalogVersion").GetString());
         Assert.Equal("ubuntu-latest", created.GetProperty("defaultRunners")[0].GetString());
         Assert.Equal("release-approvers", created.GetProperty("defaultReviewers")[0].GetString());
 
