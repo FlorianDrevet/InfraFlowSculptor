@@ -14,4 +14,6 @@ public sealed record LinkSnapshot(
     Guid? IdentityResourceId,
     IReadOnlyList<string> Roles,
     LinkAccessScope AccessScope,
-    DataAccessLevel? DataAccessLevel);
+    DataAccessLevel? DataAccessLevel,
+    int? Version = null,
+    LinkOriginSource? OriginSource = null);

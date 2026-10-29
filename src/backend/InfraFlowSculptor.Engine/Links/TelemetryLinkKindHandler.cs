@@ -7,6 +7,8 @@ namespace InfraFlowSculptor.Engine.Links;
 
 public sealed class TelemetryLinkKindHandler() : LinkKindHandler(
     LinkKind.Telemetry,
+    labelFr: "Télémétrie",
+    labelEn: "Telemetry",
     isImplicitOnly: false,
     createsDeploymentDependency: true,
     LinkIdentityRequirement.Optional,

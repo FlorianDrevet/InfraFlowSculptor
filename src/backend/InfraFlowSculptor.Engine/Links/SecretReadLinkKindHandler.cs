@@ -6,6 +6,8 @@ namespace InfraFlowSculptor.Engine.Links;
 
 public sealed class SecretReadLinkKindHandler() : LinkKindHandler(
     LinkKind.SecretRead,
+    labelFr: "Lecture de secret",
+    labelEn: "Secret read",
     isImplicitOnly: true,
     createsDeploymentDependency: true,
     LinkIdentityRequirement.Required,
@@ -56,7 +58,11 @@ public sealed class SecretReadLinkKindHandler() : LinkKindHandler(
                     setting.IdentityResourceId ?? application.Resource.DefaultIdentityResourceId,
                     [],
                     LinkAccessScope.Resource,
-                    null);
+                    null,
+                    OriginSource: new LinkOriginSource(
+                        LinkOriginSourceKind.ApplicationSetting,
+                        setting.Id,
+                        setting.Name));
             })
             .ToArray();
     }

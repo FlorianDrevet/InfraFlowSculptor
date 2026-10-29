@@ -1,0 +1,3 @@
+namespace InfraFlowSculptor.Application.Components.Queries.GetResourceLinkOptions;
+
+public sealed record ResourceLinkOptionsSummary(IReadOnlyList<ResourceLinkKindOptionSummary> Kinds);

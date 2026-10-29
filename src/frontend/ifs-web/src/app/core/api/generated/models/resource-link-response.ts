@@ -6,6 +6,7 @@ import { LinkAccessScope } from '../models/link-access-scope';
 import { LinkIdentityKind } from '../models/link-identity-kind';
 import { LinkKind } from '../models/link-kind';
 import { LinkOrigin } from '../models/link-origin';
+import { LinkOriginSourceResponse } from '../models/link-origin-source-response';
 import { ResourceLinkIssueResponse } from '../models/resource-link-issue-response';
 export interface ResourceLinkResponse {
   accessScope: LinkAccessScope;
@@ -17,7 +18,10 @@ export interface ResourceLinkResponse {
   identityResourceId: (string | null);
   isExternal: boolean;
   kind: LinkKind;
+  kindLabelEn: string;
+  kindLabelFr: string;
   origin: LinkOrigin;
+  originSource: (null | LinkOriginSourceResponse);
   roles: Array<string>;
   sourceComponentCode: string;
   sourceComponentId: string;
@@ -27,4 +31,5 @@ export interface ResourceLinkResponse {
   targetComponentId: string;
   targetResourceId: string;
   targetResourceName: string;
+  version: (number | string | null);
 }

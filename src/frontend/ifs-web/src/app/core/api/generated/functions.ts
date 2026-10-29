@@ -119,10 +119,14 @@ export type { PreviewResourceName$Params as PreviewResourceName$Params } from '.
 export { previewResourceName as previewResourceName } from './fn/resources/preview-resource-name';
 export type { GetResourceDeletionImpact$Params as GetResourceDeletionImpact$Params } from './fn/resources/get-resource-deletion-impact';
 export { getResourceDeletionImpact as getResourceDeletionImpact } from './fn/resources/get-resource-deletion-impact';
+export type { GetResourceLinkOptions$Params as GetResourceLinkOptions$Params } from './fn/resources/get-resource-link-options';
+export { getResourceLinkOptions as getResourceLinkOptions } from './fn/resources/get-resource-link-options';
 export type { GetResourceLinks$Params as GetResourceLinks$Params } from './fn/resources/get-resource-links';
 export { getResourceLinks as getResourceLinks } from './fn/resources/get-resource-links';
 export type { AddLink$Params as AddLink$Params } from './fn/resources/add-link';
 export { addLink as addLink } from './fn/resources/add-link';
+export type { PreviewLink$Params as PreviewLink$Params } from './fn/resources/preview-link';
+export { previewLink as previewLink } from './fn/resources/preview-link';
 export type { GetLinkRemovalImpact$Params as GetLinkRemovalImpact$Params } from './fn/resources/get-link-removal-impact';
 export { getLinkRemovalImpact as getLinkRemovalImpact } from './fn/resources/get-link-removal-impact';
 export type { UpdateLink$Params as UpdateLink$Params } from './fn/resources/update-link';

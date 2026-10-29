@@ -61,6 +61,10 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         RunSerialAsync(ResourceLinksCanBeCreatedListedAndPreviewedBeforeRemovalCore);
 
     [Fact]
+    public Task LinkPreviewIsServerCalculatedPerEnvironmentWithoutChangingTheModel() =>
+        RunSerialAsync(LinkPreviewIsServerCalculatedPerEnvironmentWithoutChangingTheModelCore);
+
+    [Fact]
     public Task ResourceLinkUpdateTrimsRolesBeforeCalculatingImpact() =>
         RunSerialAsync(ResourceLinkUpdateTrimsRolesBeforeCalculatingImpactCore);
 
@@ -550,6 +554,7 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
             using var response = await client.SendAsync(request);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
             using var created = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            var explicitSettingId = created.RootElement.GetProperty("id").GetGuid();
             Assert.Equal("MAIN_PAYMENTS_API_KEY", created.RootElement.GetProperty("pipelineVariableName").GetString());
             Assert.Equal(vaultId, created.RootElement.GetProperty("keyVaultResourceId").GetGuid());
             Assert.Equal(readerIdentityId, created.RootElement.GetProperty("identityResourceId").GetGuid());
@@ -575,6 +580,8 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
             defaultIdentitySettingRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
             using var defaultIdentitySettingResponse = await client.SendAsync(defaultIdentitySettingRequest);
             Assert.Equal(HttpStatusCode.Created, defaultIdentitySettingResponse.StatusCode);
+            using var defaultIdentitySetting = await JsonDocument.ParseAsync(await defaultIdentitySettingResponse.Content.ReadAsStreamAsync());
+            var defaultSettingId = defaultIdentitySetting.RootElement.GetProperty("id").GetGuid();
 
             using var linksRequest = CreateRequest(
                 HttpMethod.Get,
@@ -590,10 +597,14 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
             var defaultIdentityRead = Assert.Single(secretReads,
                 link => link.GetProperty("identityResourceId").GetGuid() == identityId);
             Assert.Equal("Implicit", explicitIdentityRead.GetProperty("origin").GetString());
+            Assert.Equal("ApplicationSetting", explicitIdentityRead.GetProperty("originSource").GetProperty("kind").GetString());
+            Assert.Equal(explicitSettingId, explicitIdentityRead.GetProperty("originSource").GetProperty("id").GetGuid());
+            Assert.Equal("Payments__ApiKey", explicitIdentityRead.GetProperty("originSource").GetProperty("name").GetString());
             Assert.Equal(vaultId, explicitIdentityRead.GetProperty("targetResourceId").GetGuid());
             Assert.Contains("Key Vault Secrets User", explicitIdentityRead.GetProperty("roles").EnumerateArray()
                 .Select(role => role.GetString()), StringComparer.Ordinal);
             Assert.Equal(vaultId, defaultIdentityRead.GetProperty("targetResourceId").GetGuid());
+            Assert.Equal(defaultSettingId, defaultIdentityRead.GetProperty("originSource").GetProperty("id").GetGuid());
 
             using var settingsRequest = CreateRequest(
                 HttpMethod.Get,
@@ -1443,6 +1454,16 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
             var linkId = created.RootElement.GetProperty("linkId").GetGuid();
             Assert.True(await GetComponentVersionFromApiAsync(componentId) > expectedComponentVersion);
 
+            using var linkOptionsRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links/options");
+            using var linkOptionsResponse = await client.SendAsync(linkOptionsRequest);
+            Assert.Equal(HttpStatusCode.OK, linkOptionsResponse.StatusCode);
+            using var linkOptions = await JsonDocument.ParseAsync(await linkOptionsResponse.Content.ReadAsStreamAsync());
+            Assert.DoesNotContain(
+                linkOptions.RootElement.GetProperty("kinds").EnumerateArray(),
+                option => option.GetProperty("kind").GetString() == "Hosting");
+
             using var unsupportedRolesRequest = CreateRequest(
                 HttpMethod.Post,
                 $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{otherSourceResourceId:D}/links",
@@ -1516,7 +1537,10 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
             Assert.Equal(2, outgoingLinks.Length);
             var outgoing = Assert.Single(outgoingLinks, link => link.GetProperty("id").GetGuid() == linkId);
             Assert.Equal("Hosting", outgoing.GetProperty("kind").GetString());
+            Assert.Equal("Hébergement", outgoing.GetProperty("kindLabelFr").GetString());
+            Assert.Equal("Hosting", outgoing.GetProperty("kindLabelEn").GetString());
             Assert.Equal("Explicit", outgoing.GetProperty("origin").GetString());
+            Assert.Equal(1, outgoing.GetProperty("version").GetInt32());
             Assert.Equal(targetResourceId, outgoing.GetProperty("targetResourceId").GetGuid());
             Assert.True(outgoing.GetProperty("createsDeploymentDependency").GetBoolean());
             Assert.Empty(outgoing.GetProperty("findings").EnumerateArray());
@@ -1583,6 +1607,100 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
             Assert.Contains(
                 impact.RootElement.GetProperty("items").EnumerateArray(),
                 item => item.GetProperty("code").GetString() == "IMPACT-LIA-OBLIGATOIRE-ROMPU");
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task LinkPreviewIsServerCalculatedPerEnvironmentWithoutChangingTheModelCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            using var identity = JsonDocument.Parse(await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "UserAssignedIdentity",
+                "api-identity",
+                new Dictionary<string, object?>()));
+            using var source = JsonDocument.Parse(await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>()));
+            using var target = JsonDocument.Parse(await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "KeyVault",
+                "main-vault",
+                new Dictionary<string, object?>()));
+            var identityId = identity.RootElement.GetProperty("id").GetGuid();
+            var sourceId = source.RootElement.GetProperty("id").GetGuid();
+            var targetId = target.RootElement.GetProperty("id").GetGuid();
+            var versionBeforePreview = await GetComponentVersionFromApiAsync(componentId);
+
+            using var optionsRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links/options");
+            using var optionsResponse = await client.SendAsync(optionsRequest);
+            Assert.True(optionsResponse.StatusCode == HttpStatusCode.OK,
+                await optionsResponse.Content.ReadAsStringAsync());
+            using var options = await JsonDocument.ParseAsync(await optionsResponse.Content.ReadAsStreamAsync());
+            var kinds = options.RootElement.GetProperty("kinds").EnumerateArray().ToArray();
+            var labels = kinds.Select(kind => kind.GetProperty("labelFr").GetString()!).ToArray();
+            Assert.Equal(labels.Order(StringComparer.OrdinalIgnoreCase), labels);
+            var access = Assert.Single(kinds,
+                kind => kind.GetProperty("kind").GetString() == "Access");
+            Assert.Equal("Accès", access.GetProperty("labelFr").GetString());
+            Assert.Equal("Access", access.GetProperty("labelEn").GetString());
+            var targetOption = Assert.Single(access.GetProperty("targets").EnumerateArray(),
+                option => option.GetProperty("resourceId").GetGuid() == targetId);
+            Assert.Contains(targetOption.GetProperty("roles").EnumerateArray(),
+                role => role.GetString() == "Key Vault Secrets User");
+            Assert.Contains(targetOption.GetProperty("identities").EnumerateArray(),
+                option => option.GetProperty("kind").GetString() == "UserAssigned"
+                    && option.GetProperty("resourceId").GetGuid() == identityId);
+
+            using var previewRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links/preview",
+                new
+                {
+                    targetComponentId = componentId,
+                    targetResourceId = targetId,
+                    kind = "Access",
+                    identityKind = "UserAssigned",
+                    identityResourceId = identityId,
+                    roles = KeyVaultSecretUserRoles,
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null
+                });
+            using var previewResponse = await client.SendAsync(previewRequest);
+            Assert.True(previewResponse.StatusCode == HttpStatusCode.OK,
+                await previewResponse.Content.ReadAsStringAsync());
+            using var preview = await JsonDocument.ParseAsync(await previewResponse.Content.ReadAsStreamAsync());
+            var role = Assert.Single(preview.RootElement.GetProperty("roleAssignments").EnumerateArray());
+            Assert.Equal(environment.Id, role.GetProperty("environmentId").GetGuid());
+            Assert.Equal(environment.Code, role.GetProperty("environmentCode").GetString());
+            Assert.Equal("Key Vault Secrets User", role.GetProperty("roleName").GetString());
+            Assert.Equal(identityId, role.GetProperty("principalResourceId").GetGuid());
+            Assert.Empty(preview.RootElement.GetProperty("findings").EnumerateArray());
+            Assert.Equal(versionBeforePreview, await GetComponentVersionFromApiAsync(componentId));
+
+            using var linksRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links");
+            using var linksResponse = await client.SendAsync(linksRequest);
+            Assert.Equal(HttpStatusCode.OK, linksResponse.StatusCode);
+            using var links = await JsonDocument.ParseAsync(await linksResponse.Content.ReadAsStreamAsync());
+            Assert.DoesNotContain(links.RootElement.GetProperty("outgoing").EnumerateArray(),
+                link => link.GetProperty("origin").GetString() == "Explicit");
         }
         finally
         {

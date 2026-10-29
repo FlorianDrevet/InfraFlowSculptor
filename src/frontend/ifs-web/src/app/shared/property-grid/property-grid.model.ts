@@ -26,6 +26,7 @@ export interface ResourcePropertyDefinition {
   labels?: { fr: string; en: string };
   default?: JsonElement;
   values?: JsonElement[];
+  itemsFormat?: string;
   minimum?: number;
   maximum?: number;
   minLength?: number;
@@ -155,6 +156,12 @@ export function parseResourceTypeProperties(descriptor: JsonElement): ResourcePr
     }
     if (Array.isArray(property['values'])) {
       definition.values = property['values'];
+    }
+
+    const items = property['items'];
+    if (typeof items === 'object' && items !== null && !Array.isArray(items)
+      && typeof items['format'] === 'string') {
+      definition.itemsFormat = items['format'];
     }
 
     const minimum = property['minimum'];

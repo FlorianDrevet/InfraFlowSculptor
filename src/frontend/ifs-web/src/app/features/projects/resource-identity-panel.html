@@ -1,0 +1,81 @@
+<section class="resource-identity" aria-labelledby="resource-identity-panel-heading">
+  <header>
+    <h3 id="resource-identity-panel-heading">{{ 'resource.identityHeading' | transloco }}</h3>
+    <p>{{ 'resource.identityHelp' | transloco }}</p>
+  </header>
+
+  <section class="resource-identity__section resource-identity__used-identities" aria-labelledby="used-identities-heading">
+    <h4 id="used-identities-heading">{{ 'resource.identitiesUsed' | transloco }}</h4>
+    @if (outgoingIdentityLinks().length) {
+      <ul>
+        @for (link of outgoingIdentityLinks(); track link.id) {
+          <li>
+            <strong>{{ identityName(link.identityResourceId) || ('resource.systemIdentity' | transloco) }}</strong>
+            <span>{{ targetLabel(link, true) }}</span>
+            <span>{{ originLabel(link) }}</span>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p>{{ 'resource.noIdentitiesUsed' | transloco }}</p>
+    }
+  </section>
+
+  <section class="resource-identity__section" aria-labelledby="system-identity-heading">
+    <h4 id="system-identity-heading">{{ 'resource.systemIdentity' | transloco }}</h4>
+    @if (loading()) {
+      <p role="status">{{ 'resource.loadingIdentity' | transloco }}</p>
+    } @else if (loadError()) {
+      <p role="alert" class="resource-identity__error">{{ 'resource.identityLoadError' | transloco }}</p>
+    } @else {
+      <p>{{ systemIdentityUsed() ? ('resource.identityActive' | transloco) : ('resource.identityNotUsed' | transloco) }}</p>
+    }
+  </section>
+
+  <section class="resource-identity__section" aria-labelledby="default-identity-heading">
+    <h4 id="default-identity-heading">{{ 'resource.defaultIdentity' | transloco }}</h4>
+    <label>
+      {{ 'resource.defaultIdentityForSettings' | transloco }}
+      <select [ngModel]="defaultIdentityId()" [disabled]="!canEdit() || saving()"
+        (ngModelChange)="defaultIdentityId.set($event)">
+        <option value="">{{ 'resource.identityNone' | transloco }}</option>
+        @for (identity of identities(); track identity.id) {
+          <option [value]="identity.id">{{ identity.logicalName }}</option>
+        }
+      </select>
+    </label>
+    @if (currentDefaultIdentity(); as identity) {
+      <p>{{ 'resource.defaultIdentityCurrent' | transloco: { name: identity.logicalName } }}</p>
+    }
+    @if (saveError()) { <p role="alert" class="resource-identity__error">{{ 'resource.identitySaveError' | transloco }}</p> }
+    @if (canEdit()) {
+      <app-ds-button variant="primary" [disabled]="saving()" (click)="saveDefaultIdentity()">
+        {{ saving() ? ('resource.saving' | transloco) : ('resource.saveIdentity' | transloco) }}
+      </app-ds-button>
+    }
+  </section>
+
+  <section class="resource-identity__section" aria-labelledby="roles-held-heading">
+    <h4 id="roles-held-heading">{{ 'resource.rolesHeld' | transloco }}</h4>
+    @if (outgoingRoleAssignments().length) {
+      <ul>
+        @for (assignment of outgoingRoleAssignments(); track assignment.link.id + assignment.role) {
+          <li><strong>{{ assignment.role }}</strong> · {{ targetLabel(assignment.link, true) }}
+            <span>{{ originLabel(assignment.link) }}</span></li>
+        }
+      </ul>
+    } @else { <p>{{ 'resource.noRolesHeld' | transloco }}</p> }
+  </section>
+
+  <section class="resource-identity__section" aria-labelledby="roles-granted-heading">
+    <h4 id="roles-granted-heading">{{ 'resource.rolesGranted' | transloco }}</h4>
+    @if (incomingRoleAssignments().length) {
+      <ul>
+        @for (assignment of incomingRoleAssignments(); track assignment.link.id + assignment.role) {
+          <li><strong>{{ assignment.role }}</strong> · {{ targetLabel(assignment.link, false) }}
+            <span>{{ originLabel(assignment.link) }}</span></li>
+        }
+      </ul>
+    } @else { <p>{{ 'resource.noRolesGranted' | transloco }}</p> }
+  </section>
+</section>

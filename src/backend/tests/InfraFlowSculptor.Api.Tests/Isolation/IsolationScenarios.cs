@@ -326,6 +326,27 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links",
                 HttpStatusCode.NotFound),
+            ["GetResourceLinkOptions"] = OrganizationScenario(
+                "GetResourceLinkOptions",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links/options",
+                HttpStatusCode.NotFound),
+            ["PreviewLink"] = OrganizationScenario(
+                "PreviewLink",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links/preview",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    targetComponentId = TestComponentId,
+                    targetResourceId = TestResourceId,
+                    kind = "Access",
+                    identityKind = "System",
+                    identityResourceId = (Guid?)null,
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null
+                }),
             ["GetAppSettings"] = OrganizationScenario(
                 "GetAppSettings",
                 HttpMethod.Get,

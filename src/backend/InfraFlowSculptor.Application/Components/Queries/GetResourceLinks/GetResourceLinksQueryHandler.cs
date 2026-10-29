@@ -11,7 +11,8 @@ namespace InfraFlowSculptor.Application.Components.Queries.GetResourceLinks;
 public sealed class GetResourceLinksQueryHandler(
     ModelSnapshotBuilder snapshotBuilder,
     ICatalogProvider catalogProvider,
-    WiringEngine wiringEngine)
+    WiringEngine wiringEngine,
+    LinkKindRegistry linkKinds)
     : IQueryHandler<GetResourceLinksQuery, ErrorOr<ResourceLinksSummary>>
 {
     public async ValueTask<ErrorOr<ResourceLinksSummary>> Handle(
@@ -74,7 +75,10 @@ public sealed class GetResourceLinksQueryHandler(
                 .ToArray();
             var summary = new ResourceLinkSummary(
                 link.Id,
+                link.Version,
                 link.Kind,
+                linkKinds.Supports(link.Kind) ? linkKinds.Get(link.Kind).LabelFr : link.Kind.ToString(),
+                linkKinds.Supports(link.Kind) ? linkKinds.Get(link.Kind).LabelEn : link.Kind.ToString(),
                 link.Origin,
                 link.SourceComponentId,
                 sourceComponentCode,
@@ -93,7 +97,8 @@ public sealed class GetResourceLinksQueryHandler(
                 wiredLink.CreatesDeploymentDependency,
                 result.Issues.Where(issue => issue.LinkId == link.Id)
                     .Select(issue => new ResourceLinkIssueSummary(issue.Code, issue.Message))
-                    .ToArray());
+                    .ToArray(),
+                link.OriginSource);
 
             if (link.SourceResourceId == query.ResourceId)
             {

@@ -174,7 +174,8 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
                 link.IdentityResourceId,
                 link.Roles.Select(role => role.Name).ToArray(),
                 link.AccessScope,
-                link.DataAccessLevel)).ToArray(),
+                link.DataAccessLevel,
+                link.Version)).ToArray(),
             AppSettings = appSettings.Select(setting => new AppSettingSnapshot(
                 setting.Id,
                 setting.ComponentId.Value,

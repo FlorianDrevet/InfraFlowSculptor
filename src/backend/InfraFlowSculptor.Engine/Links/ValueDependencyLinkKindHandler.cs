@@ -6,6 +6,8 @@ namespace InfraFlowSculptor.Engine.Links;
 
 public sealed class ValueDependencyLinkKindHandler() : LinkKindHandler(
     LinkKind.ValueDependency,
+    labelFr: "Dépendance de valeur",
+    labelEn: "Value dependency",
     isImplicitOnly: true,
     createsDeploymentDependency: true,
     LinkIdentityRequirement.None,
@@ -49,7 +51,11 @@ public sealed class ValueDependencyLinkKindHandler() : LinkKindHandler(
                     null,
                     [],
                     LinkAccessScope.Resource,
-                    null);
+                    null,
+                    OriginSource: new LinkOriginSource(
+                        LinkOriginSourceKind.ApplicationSetting,
+                        setting.Id,
+                        setting.Name));
             })
             .ToArray();
     }

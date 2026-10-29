@@ -69,6 +69,8 @@ public static class EndpointNames
     public const string GetEffectiveValues = "GetEffectiveValues";
     public const string GetResourceDeletionImpact = "GetResourceDeletionImpact";
     public const string GetResourceLinks = "GetResourceLinks";
+    public const string GetResourceLinkOptions = "GetResourceLinkOptions";
+    public const string PreviewLink = "PreviewLink";
     public const string GetAppSettings = "GetAppSettings";
     public const string CreateAppSetting = "CreateAppSetting";
     public const string UpdateAppSetting = "UpdateAppSetting";

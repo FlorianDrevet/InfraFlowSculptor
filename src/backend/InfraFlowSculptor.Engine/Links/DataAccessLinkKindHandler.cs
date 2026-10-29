@@ -5,6 +5,8 @@ namespace InfraFlowSculptor.Engine.Links;
 
 public sealed class DataAccessLinkKindHandler() : LinkKindHandler(
     LinkKind.DataAccess,
+    labelFr: "Accès aux données",
+    labelEn: "Data access",
     isImplicitOnly: false,
     createsDeploymentDependency: true,
     LinkIdentityRequirement.Required,

@@ -7,6 +7,10 @@ namespace InfraFlowSculptor.Engine.Links;
 
 public interface ILinkKindHandler : IKeyed<LinkKind>
 {
+    string LabelFr { get; }
+
+    string LabelEn { get; }
+
     bool IsImplicitOnly { get; }
 
     bool CreatesDeploymentDependency { get; }

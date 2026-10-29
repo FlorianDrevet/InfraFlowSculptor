@@ -5,6 +5,8 @@ namespace InfraFlowSculptor.Engine.Links;
 
 public sealed class HostingLinkKindHandler() : LinkKindHandler(
     LinkKind.Hosting,
+    labelFr: "Hébergement",
+    labelEn: "Hosting",
     isImplicitOnly: false,
     createsDeploymentDependency: true,
     LinkIdentityRequirement.None,

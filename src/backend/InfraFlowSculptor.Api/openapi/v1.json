@@ -4215,6 +4215,85 @@
         ]
       }
     },
+    "/v1/projects/{projectId}/components/{componentId}/resources/{resourceId}/links/options": {
+      "get": {
+        "tags": [
+          "Resources"
+        ],
+        "summary": "Lister les types, cibles et champs de liaison compatibles avec une ressource.",
+        "operationId": "GetResourceLinkOptions",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceLinkOptionsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/projects/{projectId}/components/{componentId}/resources/{resourceId}/links": {
       "get": {
         "tags": [
@@ -4381,6 +4460,105 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/components/{componentId}/resources/{resourceId}/links/preview": {
+      "post": {
+        "tags": [
+          "Resources"
+        ],
+        "summary": "Calculer les effets d'une liaison sans modifier le modèle.",
+        "operationId": "PreviewLink",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkPreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8221,8 +8399,7 @@
         "enum": [
           "Lecture",
           "LectureEcriture",
-          "Schema",
-          null
+          "Schema"
         ]
       },
       "DeleteAppSettingRequest": {
@@ -8722,6 +8899,388 @@
           "Explicit",
           "Implicit"
         ]
+      },
+      "LinkOriginSourceKind": {
+        "enum": [
+          "ComponentDefaultLogAnalytics",
+          "ApplicationSetting"
+        ]
+      },
+      "LinkOriginSourceResponse": {
+        "required": [
+          "kind",
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/LinkOriginSourceKind"
+          },
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "LinkPreviewApplicationSettingResponse": {
+        "required": [
+          "environmentId",
+          "environmentCode",
+          "applicationResourceId",
+          "applicationResourceName",
+          "name",
+          "origin",
+          "isSensitive"
+        ],
+        "type": "object",
+        "properties": {
+          "environmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "environmentCode": {
+            "type": "string"
+          },
+          "applicationResourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "applicationResourceName": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string"
+          },
+          "isSensitive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LinkPreviewDataAccessResponse": {
+        "required": [
+          "environmentId",
+          "environmentCode",
+          "sourceResourceId",
+          "sourceResourceName",
+          "targetResourceId",
+          "targetResourceName",
+          "level",
+          "databaseRoles"
+        ],
+        "type": "object",
+        "properties": {
+          "environmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "environmentCode": {
+            "type": "string"
+          },
+          "sourceResourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceResourceName": {
+            "type": "string"
+          },
+          "targetResourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetResourceName": {
+            "type": "string"
+          },
+          "level": {
+            "$ref": "#/components/schemas/DataAccessLevel"
+          },
+          "databaseRoles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "LinkPreviewDependencyResponse": {
+        "required": [
+          "environmentId",
+          "environmentCode",
+          "sourceComponentId",
+          "sourceComponentCode",
+          "targetComponentId",
+          "targetComponentCode",
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "environmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "environmentCode": {
+            "type": "string"
+          },
+          "sourceComponentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceComponentCode": {
+            "type": "string"
+          },
+          "targetComponentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetComponentCode": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LinkKind"
+          }
+        }
+      },
+      "LinkPreviewFindingResponse": {
+        "required": [
+          "code",
+          "message",
+          "resourceId"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "resourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "LinkPreviewIdentityResponse": {
+        "required": [
+          "environmentId",
+          "environmentCode",
+          "resourceId",
+          "resourceName",
+          "kind",
+          "identityResourceId",
+          "identityResourceName",
+          "isReused"
+        ],
+        "type": "object",
+        "properties": {
+          "environmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "environmentCode": {
+            "type": "string"
+          },
+          "resourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resourceName": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LinkIdentityKind"
+          },
+          "identityResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "identityResourceName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isReused": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LinkPreviewRequest": {
+        "required": [
+          "targetComponentId",
+          "targetResourceId",
+          "kind",
+          "identityKind",
+          "identityResourceId",
+          "roles",
+          "accessScope",
+          "dataAccessLevel"
+        ],
+        "type": "object",
+        "properties": {
+          "targetComponentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetResourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LinkKind"
+          },
+          "identityKind": {
+            "$ref": "#/components/schemas/LinkIdentityKind"
+          },
+          "identityResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "accessScope": {
+            "$ref": "#/components/schemas/LinkAccessScope"
+          },
+          "dataAccessLevel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataAccessLevel"
+              }
+            ]
+          }
+        }
+      },
+      "LinkPreviewResponse": {
+        "required": [
+          "roleAssignments",
+          "identities",
+          "dataAccess",
+          "dependencies",
+          "applicationSettings",
+          "findings"
+        ],
+        "type": "object",
+        "properties": {
+          "roleAssignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkPreviewRoleAssignmentResponse"
+            }
+          },
+          "identities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkPreviewIdentityResponse"
+            }
+          },
+          "dataAccess": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkPreviewDataAccessResponse"
+            }
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkPreviewDependencyResponse"
+            }
+          },
+          "applicationSettings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkPreviewApplicationSettingResponse"
+            }
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkPreviewFindingResponse"
+            }
+          }
+        }
+      },
+      "LinkPreviewRoleAssignmentResponse": {
+        "required": [
+          "environmentId",
+          "environmentCode",
+          "principalResourceId",
+          "principalResourceName",
+          "roleName",
+          "scope",
+          "scopeResourceId",
+          "scopeResourceName",
+          "targetResourceId",
+          "targetResourceName",
+          "isReused"
+        ],
+        "type": "object",
+        "properties": {
+          "environmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "environmentCode": {
+            "type": "string"
+          },
+          "principalResourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "principalResourceName": {
+            "type": "string"
+          },
+          "roleName": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/LinkAccessScope"
+          },
+          "scopeResourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "scopeResourceName": {
+            "type": "string"
+          },
+          "targetResourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetResourceName": {
+            "type": "string"
+          },
+          "isReused": {
+            "type": "boolean"
+          }
+        }
       },
       "MePreferencesResponse": {
         "required": [
@@ -10016,6 +10575,55 @@
           "Information"
         ]
       },
+      "ResourceLinkFormFieldResponse": {
+        "required": [
+          "name",
+          "kind",
+          "required"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ResourceLinkIdentityOptionResponse": {
+        "required": [
+          "kind",
+          "resourceId",
+          "resourceName",
+          "isDefault"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/LinkIdentityKind"
+          },
+          "resourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "resourceName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isDefault": {
+            "type": "boolean"
+          }
+        }
+      },
       "ResourceLinkIssueResponse": {
         "required": [
           "code",
@@ -10031,10 +10639,59 @@
           }
         }
       },
+      "ResourceLinkKindOptionResponse": {
+        "required": [
+          "kind",
+          "labelFr",
+          "labelEn",
+          "fields",
+          "targets"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/LinkKind"
+          },
+          "labelFr": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceLinkFormFieldResponse"
+            }
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceLinkTargetOptionResponse"
+            }
+          }
+        }
+      },
+      "ResourceLinkOptionsResponse": {
+        "required": [
+          "kinds"
+        ],
+        "type": "object",
+        "properties": {
+          "kinds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceLinkKindOptionResponse"
+            }
+          }
+        }
+      },
       "ResourceLinkResponse": {
         "required": [
           "id",
           "kind",
+          "kindLabelFr",
+          "kindLabelEn",
           "origin",
           "sourceComponentId",
           "sourceComponentCode",
@@ -10051,7 +10708,9 @@
           "roles",
           "isExternal",
           "createsDeploymentDependency",
-          "findings"
+          "findings",
+          "version",
+          "originSource"
         ],
         "type": "object",
         "properties": {
@@ -10061,6 +10720,12 @@
           },
           "kind": {
             "$ref": "#/components/schemas/LinkKind"
+          },
+          "kindLabelFr": {
+            "type": "string"
+          },
+          "kindLabelEn": {
+            "type": "string"
           },
           "origin": {
             "$ref": "#/components/schemas/LinkOrigin"
@@ -10132,6 +10797,79 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ResourceLinkIssueResponse"
+            }
+          },
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "originSource": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LinkOriginSourceResponse"
+              }
+            ]
+          }
+        }
+      },
+      "ResourceLinkTargetOptionResponse": {
+        "required": [
+          "componentId",
+          "componentCode",
+          "resourceId",
+          "resourceName",
+          "resourceType",
+          "isExisting",
+          "roles",
+          "dataAccessLevels",
+          "identities"
+        ],
+        "type": "object",
+        "properties": {
+          "componentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "componentCode": {
+            "type": "string"
+          },
+          "resourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resourceName": {
+            "type": "string"
+          },
+          "resourceType": {
+            "type": "string"
+          },
+          "isExisting": {
+            "type": "boolean"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dataAccessLevels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DataAccessLevel"
+            }
+          },
+          "identities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceLinkIdentityOptionResponse"
             }
           }
         }

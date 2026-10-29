@@ -36,6 +36,34 @@
           >{{ 'resource.properties' | transloco }}</a
         >
       }
+      <a
+        [attr.aria-current]="activeTab() === 'links' ? 'page' : null"
+        [routerLink]="[]"
+        [queryParams]="{ tab: 'links' }"
+        >{{ 'resource.links' | transloco }}</a
+      >
+      <a
+        [attr.aria-current]="activeTab() === 'identity' ? 'page' : null"
+        [routerLink]="[]"
+        [queryParams]="{ tab: 'identity' }"
+        >{{ 'resource.identityTab' | transloco }}</a
+      >
+      @if (applicationSettingsAvailable()) {
+        <a
+          [attr.aria-current]="activeTab() === 'settings' ? 'page' : null"
+          [routerLink]="[]"
+          [queryParams]="{ tab: 'settings' }"
+          >{{ 'resource.settingsTab' | transloco }}</a
+        >
+      }
+      @if (networkAvailable()) {
+        <a
+          [attr.aria-current]="activeTab() === 'network' ? 'page' : null"
+          [routerLink]="[]"
+          [queryParams]="{ tab: 'network' }"
+          >{{ 'resource.networkTab' | transloco }}</a
+        >
+      }
     </nav>
 
     @if (actionError() && !conflict()) {
@@ -186,7 +214,7 @@
           </section>
         </aside>
       </div>
-    } @else {
+    } @else if (activeTab() === 'properties') {
       @if (resource()!.isExisting) {
         <p class="resource-editor__note">{{ 'resource.existingPropertiesReadOnly' | transloco }}</p>
       } @else if (rows().length === 0) {
@@ -234,6 +262,34 @@
           />
         </div>
       }
+    } @else if (activeTab() === 'links') {
+      <app-resource-links-panel
+        [projectId]="projectId()"
+        [component]="component()!"
+        [resource]="resource()!"
+        [canEdit]="canEditModel()"
+      />
+    } @else if (activeTab() === 'identity') {
+      <app-resource-identity-panel
+        [projectId]="projectId()"
+        [component]="component()!"
+        [resource]="resource()!"
+        [canEdit]="canEditModel()"
+      />
+    } @else if (activeTab() === 'settings') {
+      <app-resource-app-settings-panel
+        [projectId]="projectId()"
+        [component]="component()!"
+        [resource]="resource()!"
+        [canEdit]="canEditModel()"
+      />
+    } @else if (activeTab() === 'network') {
+      <app-resource-network-panel
+        [rows]="networkRows()"
+        [disabled]="saving() || resource()!.isExisting || !canEditModel()"
+        (updateValue)="updateProperty($event)"
+        (clearOverride)="clearOverride($event.property, $event.targetId)"
+      />
     }
   }
 

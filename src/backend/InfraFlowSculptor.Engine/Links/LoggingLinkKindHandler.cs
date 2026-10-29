@@ -5,6 +5,8 @@ namespace InfraFlowSculptor.Engine.Links;
 
 public sealed class LoggingLinkKindHandler() : LinkKindHandler(
     LinkKind.Logging,
+    labelFr: "Journaux",
+    labelEn: "Logging",
     isImplicitOnly: false,
     createsDeploymentDependency: true,
     LinkIdentityRequirement.None,

@@ -1,0 +1,122 @@
+<section class="resource-app-settings" aria-labelledby="app-settings-heading">
+  <header class="resource-app-settings__header">
+    <div>
+      <h3 id="app-settings-heading">{{ 'resource.applicationSettingsHeading' | transloco }}</h3>
+      <p>{{ 'resource.applicationSettingsHelp' | transloco }}</p>
+    </div>
+    @if (canEdit()) {
+      <app-ds-button variant="primary" (click)="startCreate()">{{ 'resource.addAppSetting' | transloco }}</app-ds-button>
+    }
+  </header>
+
+  @if (loading()) {
+    <p role="status">{{ 'resource.loadingAppSettings' | transloco }}</p>
+  } @else if (loadError()) {
+    <p class="resource-app-settings__error" role="alert">{{ 'resource.appSettingsLoadError' | transloco }}</p>
+  } @else if (settings().length === 0) {
+    <p class="resource-app-settings__empty">{{ 'resource.noAppSettings' | transloco }}</p>
+  } @else {
+    <ul class="resource-app-settings__list">
+      @for (setting of settings(); track setting.id) {
+        <li>
+          <div>
+            <strong><code>{{ setting.name }}</code></strong>
+            <span>{{ sourceLabel(setting.sourceKind) }}</span>
+            @if (setting.secretFeedKind === 'PipelineSecret' && pipelineVariableLabel(setting); as variableName) {
+              <span class="resource-app-settings__pipeline">{{ 'resource.pipelineSecretVariable' | transloco: { name: variableName } }}</span>
+            }
+            @if (setting.isImplicit) { <span class="resource-app-settings__implicit">{{ 'resource.implicitSetting' | transloco }} · {{ setting.origin }}</span> }
+            @if (setting.warnings.length) {
+              @for (warning of setting.warnings; track warning) { <span class="resource-app-settings__warning">{{ warning }}</span> }
+            }
+          </div>
+          @if (!setting.isImplicit && canEdit()) {
+            <div class="resource-app-settings__actions">
+              <app-ds-button size="sm" variant="ghost" [disabled]="saving()" (click)="startEdit(setting)">{{ 'resource.editAppSetting' | transloco }}</app-ds-button>
+              <app-ds-button size="sm" variant="ghost" [disabled]="saving()" (click)="delete(setting)">{{ 'resource.deleteAppSetting' | transloco }}</app-ds-button>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+
+  @if (formOpen()) {
+    <form class="resource-app-settings__form" (ngSubmit)="save()">
+      <h4>{{ (editing() ? 'resource.editAppSetting' : 'resource.addAppSetting') | transloco }}</h4>
+      <label>
+        {{ 'resource.settingName' | transloco }}
+        <input name="settingName" required maxlength="256" [value]="name()" (input)="updateName($any($event.target).value)" />
+      </label>
+      <label>
+        {{ 'resource.settingSourceLabel' | transloco }}
+        <select name="sourceKind" [ngModel]="sourceKind()" (ngModelChange)="updateSourceKind($event)">
+          <option value="Literal">{{ sourceLabel('Literal') }}</option>
+          <option value="ResourceOutput">{{ sourceLabel('ResourceOutput') }}</option>
+          <option value="KeyVaultSecret">{{ sourceLabel('KeyVaultSecret') }}</option>
+        </select>
+      </label>
+
+      @if (sourceKind() === 'Literal') {
+        <label>
+          {{ 'resource.settingLiteralValue' | transloco }}
+          <input name="literalValue" autocomplete="off" [value]="literalValue()" (input)="literalValue.set($any($event.target).value)" />
+        </label>
+      }
+      @if (sourceKind() === 'ResourceOutput') {
+        <label>
+          {{ 'resource.settingSourceResource' | transloco }}
+          <select name="sourceResourceId" [ngModel]="sourceResourceId()" (ngModelChange)="sourceResourceId.set($event); outputName.set('')">
+            <option value="">{{ 'resource.selectResource' | transloco }}</option>
+            @for (resource of outputResources(); track resource.id) { <option [value]="resource.id">{{ resource.logicalName }}</option> }
+          </select>
+        </label>
+        <label>
+          {{ 'resource.settingOutput' | transloco }}
+          <select name="outputName" [ngModel]="outputName()" (ngModelChange)="outputName.set($event)">
+            <option value="">{{ 'resource.selectOutput' | transloco }}</option>
+            @for (output of selectedOutputs(); track output.outputName) { <option [value]="output.outputName">{{ output.outputName }} · {{ output.resourceName }}</option> }
+          </select>
+        </label>
+      }
+      @if (sourceKind() === 'KeyVaultSecret') {
+        <label>
+          {{ 'resource.settingKeyVault' | transloco }}
+          <select name="keyVaultResourceId" [ngModel]="keyVaultResourceId()" (ngModelChange)="updateKeyVault($event)">
+            @for (vault of keyVaults(); track vault.id) { <option [value]="vault.id">{{ vault.logicalName }}</option> }
+          </select>
+        </label>
+        <label>
+          {{ 'resource.settingSecretName' | transloco }}
+          <input name="secretName" required [value]="secretName()" (input)="secretName.set($any($event.target).value)" />
+        </label>
+        <label>
+          {{ 'resource.secretFeedKind' | transloco }}
+          <select name="secretFeedKind" [ngModel]="secretFeedKind()" (ngModelChange)="secretFeedKind.set($event)">
+            <option value="PipelineSecret">{{ 'resource.pipelineSecret' | transloco }}</option>
+            <option value="ManagedOutsideIfs">{{ 'resource.managedOutsideIfs' | transloco }}</option>
+          </select>
+        </label>
+        @if (secretFeedKind() === 'PipelineSecret') {
+          <label>
+            {{ 'resource.pipelineVariableName' | transloco }}
+            <input name="pipelineVariableName" required [value]="pipelineVariableName()" (input)="pipelineVariableName.set($any($event.target).value)" />
+            <span>{{ 'resource.pipelineSecretValueNeverShown' | transloco }}</span>
+          </label>
+        }
+        <label>
+          {{ 'resource.settingIdentity' | transloco }}
+          <select name="identityResourceId" [ngModel]="identityResourceId()" (ngModelChange)="identityResourceId.set($event)">
+            <option value="">{{ 'resource.defaultIdentity' | transloco }}</option>
+            @for (identity of identities(); track identity.id) { <option [value]="identity.id">{{ identity.logicalName }}</option> }
+          </select>
+        </label>
+      }
+      @if (actionError()) { <p class="resource-app-settings__error" role="alert">{{ 'resource.appSettingSaveError' | transloco }}</p> }
+      <footer>
+        <app-ds-button type="button" variant="ghost" [disabled]="saving()" (click)="cancelForm()">{{ 'resource.cancel' | transloco }}</app-ds-button>
+        <app-ds-button type="submit" variant="primary" [disabled]="!canSubmit()">{{ saving() ? ('resource.saving' | transloco) : ('resource.save' | transloco) }}</app-ds-button>
+      </footer>
+    </form>
+  }
+</section>

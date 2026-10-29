@@ -71,7 +71,7 @@ var authAuthority = isOpenApiBuild
     : builder.Configuration[AuthOptions.AuthorityConfigurationKey]
         ?? throw new InvalidOperationException($"{AuthOptions.AuthorityConfigurationKey} is required.");
 builder.Services.AddOpenApiExtensions(authAuthority);
-builder.Services.AddRateLimiting();
+builder.Services.AddRateLimiting(builder.Environment);
 builder.Services.AddApplication();
 builder.Services.AddSingleton<ICatalogProvider>(_ => CatalogLoader.Load(typeof(CatalogLoader).Assembly));
 if (isOpenApiBuild)

@@ -6,6 +6,8 @@ namespace InfraFlowSculptor.Engine.Links;
 
 public sealed class DiagnosticsLinkKindHandler() : LinkKindHandler(
     LinkKind.Diagnostics,
+    labelFr: "Diagnostics",
+    labelEn: "Diagnostics",
     isImplicitOnly: false,
     createsDeploymentDependency: true,
     LinkIdentityRequirement.None,
@@ -66,7 +68,11 @@ public sealed class DiagnosticsLinkKindHandler() : LinkKindHandler(
                     null,
                     [],
                     LinkAccessScope.Resource,
-                    null);
+                    null,
+                    OriginSource: new LinkOriginSource(
+                        LinkOriginSourceKind.ComponentDefaultLogAnalytics,
+                        component.Id,
+                        component.Code));
                 result.Add(implicitLink);
             }
         }

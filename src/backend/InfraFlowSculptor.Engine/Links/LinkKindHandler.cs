@@ -6,12 +6,18 @@ namespace InfraFlowSculptor.Engine.Links;
 
 public abstract class LinkKindHandler(
     LinkKind key,
+    string labelFr,
+    string labelEn,
     bool isImplicitOnly,
     bool createsDeploymentDependency,
     LinkIdentityRequirement identityRequirement,
     LinkFormDefinition form) : ILinkKindHandler
 {
     public LinkKind Key { get; } = key;
+
+    public string LabelFr { get; } = labelFr;
+
+    public string LabelEn { get; } = labelEn;
 
     public bool IsImplicitOnly { get; } = isImplicitOnly;
 

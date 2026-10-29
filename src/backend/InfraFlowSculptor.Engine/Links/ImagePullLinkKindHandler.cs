@@ -5,6 +5,8 @@ namespace InfraFlowSculptor.Engine.Links;
 
 public sealed class ImagePullLinkKindHandler() : LinkKindHandler(
     LinkKind.ImagePull,
+    labelFr: "Tirage d’image",
+    labelEn: "Image pull",
     isImplicitOnly: false,
     createsDeploymentDependency: true,
     LinkIdentityRequirement.UserAssigned,

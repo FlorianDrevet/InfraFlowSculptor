@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import type { JsonElement } from '../../core/api/generated/models/json-element';
 import { DsButton } from '../../ds/button/button';
@@ -10,10 +11,11 @@ import {
 } from './property-grid.model';
 import { Provenance } from '../provenance/provenance';
 import type { PropertyGridUpdate } from './property-grid-update';
+import { DsCidrField } from '../../ds/cidr-field/cidr-field';
 
 @Component({
   selector: 'app-property-grid',
-  imports: [DsButton, Provenance, TranslocoPipe],
+  imports: [DsButton, DsCidrField, FormsModule, Provenance, TranslocoPipe],
   templateUrl: './property-grid.html',
   styleUrl: './property-grid.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -71,6 +73,22 @@ export class PropertyGrid {
 
   protected isNumericDefinition(kind: string): boolean {
     return kind === 'integer' || kind === 'number';
+  }
+
+  protected isCidrList(row: PropertyGridRow): boolean {
+    return row.definition.kind === 'array' && row.definition.itemsFormat === 'ipv4Cidr';
+  }
+
+  protected stringArray(value: JsonElement | null): string[] {
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+  }
+
+  protected cidrFieldId(row: PropertyGridRow, targetId: string | null): string {
+    return `property-${row.definition.name}-${targetId ?? 'resource'}`;
+  }
+
+  protected updateCidrValue(row: PropertyGridRow, targetId: string | null, value: string[]): void {
+    this.updateValue.emit({ property: row.definition.name, targetId, value });
   }
 
   protected onValueChange(event: Event, row: PropertyGridRow, targetId: string | null): void {

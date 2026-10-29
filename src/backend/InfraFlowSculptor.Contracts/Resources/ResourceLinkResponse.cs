@@ -5,6 +5,8 @@ namespace InfraFlowSculptor.Contracts.Resources;
 public sealed record ResourceLinkResponse(
     Guid Id,
     LinkKind Kind,
+    string KindLabelFr,
+    string KindLabelEn,
     LinkOrigin Origin,
     Guid SourceComponentId,
     string SourceComponentCode,
@@ -21,4 +23,6 @@ public sealed record ResourceLinkResponse(
     IReadOnlyList<string> Roles,
     bool IsExternal,
     bool CreatesDeploymentDependency,
-    IReadOnlyList<ResourceLinkIssueResponse> Findings);
+    IReadOnlyList<ResourceLinkIssueResponse> Findings,
+    int? Version,
+    LinkOriginSourceResponse? OriginSource);

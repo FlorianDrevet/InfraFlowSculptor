@@ -51,6 +51,18 @@
                 <option [value]="formatOption(option)">{{ formatOption(option) }}</option>
               }
             </select>
+          } @else if (isCidrList(row)) {
+            <app-ds-cidr-field
+              [id]="cidrFieldId(row, null)"
+              [label]="propertyName(row)"
+              [inputLabel]="'resource.cidrInputLabel' | transloco"
+              [addLabel]="'resource.addRange' | transloco"
+              [removeLabel]="'resource.removeRange' | transloco"
+              [invalidMessage]="'resource.cidrInvalid' | transloco"
+              [disabled]="disabled()"
+              [ngModel]="stringArray(row.resource.value)"
+              (ngModelChange)="updateCidrValue(row, null, $event)"
+            />
           } @else if (row.definition.kind === 'array') {
             <textarea
               [attr.aria-label]="resourceCellLabel(row)"
@@ -113,6 +125,18 @@
                   <option [value]="formatOption(option)">{{ formatOption(option) }}</option>
                 }
               </select>
+            } @else if (isCidrList(row)) {
+              <app-ds-cidr-field
+                [id]="cidrFieldId(row, cell.targetId)"
+                [label]="targetCellLabel(row, cell.code)"
+                [inputLabel]="'resource.cidrInputLabel' | transloco"
+                [addLabel]="'resource.addRange' | transloco"
+                [removeLabel]="'resource.removeRange' | transloco"
+                [invalidMessage]="'resource.cidrInvalid' | transloco"
+                [disabled]="disabled()"
+                [ngModel]="stringArray(cell.value)"
+                (ngModelChange)="updateCidrValue(row, cell.targetId, $event)"
+              />
             } @else if (row.definition.kind === 'array') {
               <textarea
                 [attr.aria-label]="targetCellLabel(row, cell.code)"

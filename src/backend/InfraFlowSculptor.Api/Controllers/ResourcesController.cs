@@ -28,6 +28,8 @@ using InfraFlowSculptor.Application.Components.Queries.GetEffectiveValues;
 using InfraFlowSculptor.Application.Components.Queries.GetResourceDeletionImpact;
 using InfraFlowSculptor.Application.Components.Queries.GetResourceLinks;
 using InfraFlowSculptor.Application.Components.Queries.GetLinkRemovalImpact;
+using InfraFlowSculptor.Application.Components.Queries.GetResourceLinkOptions;
+using InfraFlowSculptor.Application.Components.Queries.PreviewLink;
 using InfraFlowSculptor.Application.Components.Queries.GetProjectComponent;
 using InfraFlowSculptor.Application.Components.Queries.PreviewResourceName;
 using InfraFlowSculptor.Contracts.Components;
@@ -259,6 +261,28 @@ public static class ResourcesController
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
+        resources.MapGet("/{resourceId:guid}/links/options", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(
+                    new GetResourceLinkOptionsQuery(projectId, componentId, resourceId),
+                    cancellationToken);
+                return result.Match<IResult>(
+                    options => Results.Ok(MapOptions(options)),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.GetResourceLinkOptions)
+            .WithSummary("Lister les types, cibles et champs de liaison compatibles avec une ressource.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces<ResourceLinkOptionsResponse>()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         resources.MapGet("/{resourceId:guid}/links", async (
                 Guid projectId,
                 Guid componentId,
@@ -280,6 +304,39 @@ public static class ResourcesController
             .RequireAuthorization(AuthorizationPolicies.Member)
             .RequireRateLimiting(RateLimitingPolicies.Read)
             .Produces<ResourceLinksResponse>()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        resources.MapPost("/{resourceId:guid}/links/preview", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                LinkPreviewRequest request,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new PreviewLinkQuery(
+                    projectId,
+                    componentId,
+                    resourceId,
+                    request.TargetComponentId,
+                    request.TargetResourceId,
+                    request.Kind,
+                    request.IdentityKind,
+                    request.IdentityResourceId,
+                    request.Roles,
+                    request.AccessScope,
+                    request.DataAccessLevel), cancellationToken);
+                return result.Match<IResult>(
+                    preview => Results.Ok(MapPreview(preview)),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.PreviewLink)
+            .WithSummary("Calculer les effets d'une liaison sans modifier le modèle.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces<LinkPreviewResponse>()
+            .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
@@ -863,6 +920,8 @@ public static class ResourcesController
     private static ResourceLinkResponse Map(ResourceLinkSummary link) => new(
         link.Id,
         link.Kind,
+        link.KindLabelFr,
+        link.KindLabelEn,
         link.Origin,
         link.SourceComponentId,
         link.SourceComponentCode,
@@ -879,7 +938,87 @@ public static class ResourcesController
         link.Roles,
         link.IsExternal,
         link.CreatesDeploymentDependency,
-        link.Findings.Select(finding => new ResourceLinkIssueResponse(finding.Code, finding.Message)).ToArray());
+        link.Findings.Select(finding => new ResourceLinkIssueResponse(finding.Code, finding.Message)).ToArray(),
+        link.Version,
+        link.OriginSource is null
+            ? null
+            : new LinkOriginSourceResponse(link.OriginSource.Kind, link.OriginSource.Id, link.OriginSource.Name));
+
+    private static ResourceLinkOptionsResponse MapOptions(ResourceLinkOptionsSummary options) => new(
+        options.Kinds.Select(kind => new ResourceLinkKindOptionResponse(
+            kind.Kind,
+            kind.LabelFr,
+            kind.LabelEn,
+            kind.Fields.Select(field => new ResourceLinkFormFieldResponse(
+                field.Name,
+                field.Kind,
+                field.Required)).ToArray(),
+            kind.Targets.Select(target => new ResourceLinkTargetOptionResponse(
+                target.ComponentId,
+                target.ComponentCode,
+                target.ResourceId,
+                target.ResourceName,
+                target.ResourceType,
+                target.IsExisting,
+                target.Roles,
+                target.DataAccessLevels,
+                target.Identities.Select(identity => new ResourceLinkIdentityOptionResponse(
+                    identity.Kind,
+                    identity.ResourceId,
+                    identity.ResourceName,
+                    identity.IsDefault)).ToArray())).ToArray())).ToArray());
+
+    private static LinkPreviewResponse MapPreview(LinkPreviewResult preview) => new(
+        preview.RoleAssignments.Select(effect => new LinkPreviewRoleAssignmentResponse(
+            effect.EnvironmentId,
+            effect.EnvironmentCode,
+            effect.PrincipalResourceId,
+            effect.PrincipalResourceName,
+            effect.RoleName,
+            effect.Scope,
+            effect.ScopeResourceId,
+            effect.ScopeResourceName,
+            effect.TargetResourceId,
+            effect.TargetResourceName,
+            effect.IsReused)).ToArray(),
+        preview.Identities.Select(effect => new LinkPreviewIdentityResponse(
+            effect.EnvironmentId,
+            effect.EnvironmentCode,
+            effect.ResourceId,
+            effect.ResourceName,
+            effect.Kind,
+            effect.IdentityResourceId,
+            effect.IdentityResourceName,
+            effect.IsReused)).ToArray(),
+        preview.DataAccess.Select(effect => new LinkPreviewDataAccessResponse(
+            effect.EnvironmentId,
+            effect.EnvironmentCode,
+            effect.SourceResourceId,
+            effect.SourceResourceName,
+            effect.TargetResourceId,
+            effect.TargetResourceName,
+            effect.Level,
+            effect.DatabaseRoles)).ToArray(),
+        preview.Dependencies.Select(effect => new LinkPreviewDependencyResponse(
+            effect.EnvironmentId,
+            effect.EnvironmentCode,
+            effect.SourceComponentId,
+            effect.SourceComponentCode,
+            effect.TargetComponentId,
+            effect.TargetComponentCode,
+            effect.Kind)).ToArray(),
+        preview.ApplicationSettings.Select(effect => new LinkPreviewApplicationSettingResponse(
+            effect.EnvironmentId,
+            effect.EnvironmentCode,
+            effect.ApplicationResourceId,
+            effect.ApplicationResourceName,
+            effect.Name,
+            effect.Origin,
+            effect.IsSensitive)).ToArray(),
+        preview.Findings.Select(finding => new LinkPreviewFindingResponse(
+            finding.Code,
+            finding.Message,
+            finding.ResourceId)).ToArray());
 
     private static AppSettingResponse Map(AppSettingSummary setting) => new(
         setting.Id,

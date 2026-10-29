@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.TryAddSingleton(_ => new LinkKindRegistry(PilotLinkKindHandlers.Create()));
         services.TryAddSingleton(_ => new DataAccessProviderRegistry([new AzureSqlDataAccessProvider()]));
         services.TryAddSingleton<WiringEngine>();
+        services.TryAddSingleton<LinkPreviewAnalyzer>();
         services.TryAddSingleton<ImpactAnalyzer>();
         services.TryAddScoped<NameAvailabilityService>();
         services.TryAddScoped<NameAvailabilityProcessor>();
