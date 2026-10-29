@@ -23,6 +23,32 @@ public sealed class ValueDependencyLinkKindHandler() : LinkKindHandler(
     protected override bool SupportsTypes(CatalogResourceTypeDescriptor source, CatalogResourceTypeDescriptor target) =>
         target.Definition.GetProperty("outputs").GetArrayLength() > 0;
 
+    public override bool CreatesDeploymentDependencyFor(
+        LinkSnapshot link,
+        ModelSnapshot snapshot,
+        CatalogResourceTypeDescriptor source,
+        CatalogResourceTypeDescriptor target)
+    {
+        var settingId = link.OriginSource?.Id;
+        var outputName = settingId is null
+            ? null
+            : snapshot.AppSettings.FirstOrDefault(setting => setting.Id == settingId.Value)?.OutputName;
+        if (outputName is null)
+        {
+            return true;
+        }
+
+        foreach (var output in target.Definition.GetProperty("outputs").EnumerateArray())
+        {
+            if (string.Equals(output.GetProperty("name").GetString(), outputName, StringComparison.Ordinal))
+            {
+                return !output.GetProperty("computableFromName").GetBoolean();
+            }
+        }
+
+        return true;
+    }
+
     public override IReadOnlyList<LinkSnapshot> GetImplicitLinks(ModelSnapshot snapshot, CatalogVersion catalog)
     {
         var resources = snapshot.Components.SelectMany(component => component.Resources

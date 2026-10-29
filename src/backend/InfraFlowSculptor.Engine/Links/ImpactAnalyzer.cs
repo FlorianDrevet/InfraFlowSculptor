@@ -57,18 +57,29 @@ public sealed class ImpactAnalyzer(WiringEngine wiringEngine)
             Links = snapshot.Links.Where(link => link.SourceResourceId != resourceId && link.TargetResourceId != resourceId).ToArray()
         };
         var impact = AnalyzeChange(snapshot, after, catalog, null, resourceId);
-        var identityLinks = snapshot.Links.Where(link => link.IdentityResourceId == resourceId).ToArray();
-        if (identityLinks.Length == 0)
+        var identityUses = snapshot.Links
+            .Where(link => link.IdentityResourceId == resourceId)
+            .Select(link => new IdentityUse(link.Id, link.SourceResourceId))
+            .Concat(snapshot.Components
+                .SelectMany(component => component.Resources)
+                .Where(resource => resource.DefaultIdentityResourceId == resourceId)
+                .Select(resource => new IdentityUse(null, resource.Id)))
+            .Concat(snapshot.AppSettings
+                .Where(setting => setting.IdentityResourceId == resourceId)
+                .Select(setting => new IdentityUse(null, setting.ApplicationResourceId)))
+            .Distinct()
+            .ToArray();
+        if (identityUses.Length == 0)
         {
             return impact;
         }
 
-        var identityItems = identityLinks.Select(link => new ImpactItem(
+        var identityItems = identityUses.Select(use => new ImpactItem(
             "IMPACT-LIA-IDENTITE-UTILISEE",
             ImpactSeverity.Blocker,
-            "Cette identité affectée est utilisée par une liaison et ne peut pas être supprimée.",
-            link.Id,
-            resourceId));
+            "Cette identité affectée est encore utilisée par le modèle et ne peut pas être supprimée.",
+            use.LinkId,
+            use.ResourceId));
         var items = impact.Items.Concat(identityItems)
             .OrderBy(item => item.Severity)
             .ThenBy(item => item.Code, StringComparer.Ordinal)
@@ -114,7 +125,9 @@ public sealed class ImpactAnalyzer(WiringEngine wiringEngine)
             }));
 
         foreach (var requiredIssue in after.Issues.Where(issue => issue.Code == "VAL-LIA-OBLIGATOIRE"
-            && !before.Issues.Any(previous => previous.Code == issue.Code && previous.ResourceId == issue.ResourceId)))
+            && !before.Issues.Any(previous => previous.Code == issue.Code
+                && previous.ResourceId == issue.ResourceId
+                && previous.Kind == issue.Kind)))
         {
             items.Add(new ImpactItem(
                 "IMPACT-LIA-OBLIGATOIRE-ROMPU",
@@ -178,4 +191,6 @@ public sealed class ImpactAnalyzer(WiringEngine wiringEngine)
             request.IdentityResourceId,
             roleName);
     }
+
+    private sealed record IdentityUse(Guid? LinkId, Guid ResourceId);
 }

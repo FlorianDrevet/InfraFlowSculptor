@@ -19,7 +19,7 @@ using InfraFlowSculptor.Infrastructure.Persistence;
 
 if (DemoDataSeeder.IsInvocation(args))
 {
-    await DemoDataSeeder.RunAsync();
+    await DemoDataSeeder.RunAsync(args);
     return;
 }
 

@@ -45,6 +45,7 @@ class StaticTranslationLoader implements TranslocoLoader {
         deletionInProgress: 'Suppression en cours…',
         deleteTitle: 'Supprimer {name} du modèle ?',
         impactLoadError: 'L’impact n’a pas pu être recalculé.',
+        linkImpactImplicitRemoved: 'Une liaison implicite disparaîtra au prochain déploiement.',
         loadingImpact: 'Calcul de l’impact…',
         noCalculatedImpacts: 'Aucun impact calculé.',
         pendingIncomingLinks: 'Liaisons entrantes',
@@ -118,6 +119,7 @@ async function renderComponentDetail(
     deletionImpact: ReturnType<typeof vi.fn>;
     delete: ReturnType<typeof vi.fn>;
   },
+  validation = { orderedComponents: [] as { id: string; dependsOn: string[]; usedBy: string[] }[] },
 ) {
   await TestBed.configureTestingModule({
     imports: [ComponentDetail],
@@ -137,6 +139,7 @@ async function renderComponentDetail(
         useValue: {
           environments: vi.fn().mockReturnValue(of([])),
           myPermissions: vi.fn().mockReturnValue(of({ permissions: ['model.edit'] })),
+          validation: vi.fn().mockReturnValue(of(validation)),
         },
       },
       { provide: ResourcesService, useValue: resourceService },
@@ -188,6 +191,30 @@ function confirmTestDeletion(harness: RouterTestingHarness, dialog: HTMLElement)
 }
 
 describe('ComponentDetail', () => {
+  it('renders component dependencies returned by project validation', async () => {
+    const { componentElement } = await renderComponentDetail(
+      { get: vi.fn().mockReturnValue(of(createTestComponent())) },
+      { deletionImpact: vi.fn(), delete: vi.fn() },
+      {
+        orderedComponents: [
+          {
+            id: testComponentId,
+            dependsOn: ['core', 'data', 'platform'],
+            usedBy: [],
+          },
+        ],
+      },
+    );
+
+    const dependencySection = componentElement.querySelector(
+      '.component-detail__dependencies section:first-child',
+    );
+    expect(dependencySection?.querySelector('h4')?.textContent).toContain('Dépend de');
+    expect(dependencySection?.querySelector('p')?.textContent?.replace(/\s+/g, ' ').trim()).toContain(
+      'core, data, platform',
+    );
+  });
+
   it('renders link impacts as messages instead of resource names', async () => {
     const message = 'Une liaison implicite disparaîtra au prochain déploiement.';
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
@@ -297,6 +324,7 @@ describe('ComponentDetail', () => {
     const projectService = {
       environments: vi.fn().mockReturnValue(of([])),
       myPermissions: vi.fn().mockReturnValue(of({ permissions: ['model.edit'] })),
+      validation: vi.fn().mockReturnValue(of({ orderedComponents: [] })),
     };
     const resourceService = {
       deletionImpact: vi
@@ -446,6 +474,7 @@ describe('ComponentDetail', () => {
     const projectService = {
       environments: vi.fn().mockReturnValue(of([])),
       myPermissions: vi.fn().mockReturnValue(of({ permissions: ['model.edit'] })),
+      validation: vi.fn().mockReturnValue(of({ orderedComponents: [] })),
     };
     const resourceService = {
       deletionImpact: vi.fn().mockReturnValue(of(impact)),
@@ -587,6 +616,7 @@ describe('ComponentDetail', () => {
     const projectService = {
       environments: vi.fn().mockReturnValue(of([])),
       myPermissions: vi.fn().mockReturnValue(of({ permissions: ['model.edit'] })),
+      validation: vi.fn().mockReturnValue(of({ orderedComponents: [] })),
     };
     const resourceService = {
       deletionImpact: vi.fn().mockReturnValue(of(impact)),
@@ -823,6 +853,7 @@ describe('ComponentDetail', () => {
     const projectService = {
       environments: vi.fn().mockReturnValue(of([])),
       myPermissions: vi.fn().mockReturnValue(of({ permissions: ['model.edit'] })),
+      validation: vi.fn().mockReturnValue(of({ orderedComponents: [] })),
     };
     const resourceService = {
       deletionImpact: vi.fn().mockReturnValue(of(impact)),

@@ -30,7 +30,7 @@
             @for (item of preview.items; track $index) {
               <li>
                 @if (item.kind === 'Impact') {
-                  {{ item.message }}
+                  {{ impactMessage(item.code, item.message) }}
                 } @else {
                   <code>{{ item.name }}</code> · {{ item.type }}
                 }

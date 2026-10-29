@@ -16,4 +16,7 @@ public sealed record AppSettingSnapshot(
     string? SecretName,
     AppSettingSecretFeedKind? SecretFeedKind,
     string? PipelineVariableName,
-    Guid? IdentityResourceId);
+    Guid? IdentityResourceId)
+{
+    public int Version { get; init; } = 1;
+}

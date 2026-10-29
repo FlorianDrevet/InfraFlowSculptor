@@ -9,9 +9,9 @@ import type {
 import { loginAsAlice } from './support/login';
 
 const CONTOSO_ID = '33333333-3333-4333-8333-333333333333';
-const RECIPE_PROJECT_NAME = 'Boutique en ligne recette J0-15';
+const RECIPE_PROJECT_CODE = 'shop';
 
-test('Alice voit le profil Application en lecture seule pour un ancien catalogue épinglé', async ({
+test('Alice voit le profil Application en lecture seule quand le profil est indisponible', async ({
   page,
 }) => {
   test.skip(!process.env['IFS_E2E_PASSWORD'], 'Set IFS_E2E_PASSWORD for the local demo accounts.');
@@ -20,7 +20,9 @@ test('Alice voit le profil Application en lecture seule pour un ancien catalogue
 
   await loginAsAlice(page);
   await page.goto(`/o/${CONTOSO_ID}/projects`);
-  const projectCard = page.locator('.projects-page__card').filter({ hasText: RECIPE_PROJECT_NAME });
+  const projectCard = page.locator('.projects-page__card').filter({
+    has: page.locator('.projects-page__code').getByText(RECIPE_PROJECT_CODE, { exact: true }),
+  });
   await expect(projectCard).toBeVisible();
   const projectNavigation = page.waitForURL(/\/projects\/[0-9a-f-]+$/i);
   await projectCard.locator('.projects-page__project-name').click();
@@ -32,6 +34,24 @@ test('Alice voit le profil Application en lecture seule pour un ancien catalogue
   const resourceNavigation = page.waitForURL(/\/resources\/[0-9a-f-]+$/i);
   await page.getByRole('link', { name: 'api ContainerApp', exact: true }).click();
   await resourceNavigation;
+
+  // The demo seed pins the current catalog; mock the legacy response to isolate this UI state.
+  await page.route('**/resources/*/application', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        json: {
+          available: false,
+          catalogVersion: '2026.10-pilot',
+          buildProfile: 'Container',
+          unavailableReason: 'Profil de build indisponible pour ce catalogue.',
+          application: null,
+        },
+      });
+      return;
+    }
+
+    await route.continue();
+  });
 
   await page.getByRole('link', { name: 'Application', exact: true }).click();
   const panel = page.locator('.resource-application');
@@ -68,7 +88,9 @@ test('Alice consulte et enregistre les réglages du profil Container', async ({ 
 
   await loginAsAlice(page);
   await page.goto(`/o/${CONTOSO_ID}/projects`);
-  const projectCard = page.locator('.projects-page__card').filter({ hasText: RECIPE_PROJECT_NAME });
+  const projectCard = page.locator('.projects-page__card').filter({
+    has: page.locator('.projects-page__code').getByText(RECIPE_PROJECT_CODE, { exact: true }),
+  });
   await expect(projectCard).toBeVisible();
   const projectNavigation = page.waitForURL(/\/projects\/[0-9a-f-]+$/i);
   await projectCard.locator('.projects-page__project-name').click();

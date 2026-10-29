@@ -53,6 +53,52 @@ public sealed class ApplicationAggregateTests
     }
 
     [Fact]
+    public void RelativeApplicationPathRejectsControlCharacters()
+    {
+        var result = Create(Definition() with { CodeSourcePath = "src/\napi" });
+
+        Assert.True(result.IsError);
+        Assert.Equal("APPLICATION_PATH_INVALID", Assert.Single(result.Errors).Code);
+    }
+
+    [Fact]
+    public void HealthCheckPathRejectsControlCharacters()
+    {
+        var result = Create(Definition() with { HealthCheckPath = "/health\nready" });
+
+        Assert.True(result.IsError);
+        Assert.Equal("APPLICATION_HEALTH_CHECK_PATH_INVALID", Assert.Single(result.Errors).Code);
+    }
+
+    [Fact]
+    public void StepNameRejectsTrailingLineFeed()
+    {
+        var result = Create(Definition() with
+        {
+            Steps = [new ApplicationStepDefinition(
+                "ImageScan\n", true, true, ApplicationStepPosition.AfterBuild,
+                [new ApplicationStepParameter("minimumSeverity", "CRITICAL")])]
+        });
+
+        Assert.True(result.IsError);
+        Assert.Equal("APPLICATION_STEP_INVALID", Assert.Single(result.Errors).Code);
+    }
+
+    [Fact]
+    public void StepParameterNameRejectsTrailingLineFeed()
+    {
+        var result = Create(Definition() with
+        {
+            Steps = [new ApplicationStepDefinition(
+                "ImageScan", true, true, ApplicationStepPosition.AfterBuild,
+                [new ApplicationStepParameter("minimumSeverity\n", "CRITICAL")])]
+        });
+
+        Assert.True(result.IsError);
+        Assert.Equal("APPLICATION_STEP_PARAMETER_INVALID", Assert.Single(result.Errors).Code);
+    }
+
+    [Fact]
     public void UpdatingApplicationAdvancesItsOptimisticConcurrencyVersion()
     {
         var application = Create(Definition()).Value;

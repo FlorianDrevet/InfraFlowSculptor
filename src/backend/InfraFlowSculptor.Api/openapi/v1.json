@@ -1604,6 +1604,251 @@
         ]
       }
     },
+    "/v1/projects/{id}/validation": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Consulter les constats de validation et l’ordre de déploiement des composants.",
+        "operationId": "GetProjectValidation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectValidationResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{id}/validation/findings/{code}/acknowledgment": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Acquitter un avertissement avec un commentaire obligatoire.",
+        "operationId": "AcknowledgeFinding",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcknowledgeFindingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{id}/validation/findings/{code}/fix": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Appliquer une correction déterministe à un constat courant.",
+        "operationId": "ApplyFindingFix",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyFindingFixRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/projects/{id}/favorite": {
       "put": {
         "tags": [
@@ -7370,6 +7615,49 @@
   },
   "components": {
     "schemas": {
+      "AcknowledgeFindingRequest": {
+        "required": [
+          "subjectType",
+          "subjectId",
+          "environmentId",
+          "expectedObjectVersion",
+          "comment"
+        ],
+        "type": "object",
+        "properties": {
+          "subjectType": {
+            "$ref": "#/components/schemas/ObjectType"
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "environmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "expectedObjectVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "detailKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AddLinkRequest": {
         "required": [
           "targetComponentId",
@@ -8224,6 +8512,46 @@
           }
         }
       },
+      "ApplyFindingFixRequest": {
+        "required": [
+          "subjectType",
+          "subjectId",
+          "environmentId",
+          "expectedObjectVersion",
+          "detailKey"
+        ],
+        "type": "object",
+        "properties": {
+          "subjectType": {
+            "$ref": "#/components/schemas/ObjectType"
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "environmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "expectedObjectVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detailKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AssignProjectRoleRequest": {
         "required": [
           "role",
@@ -9053,6 +9381,31 @@
           }
         }
       },
+      "FindingAcknowledgmentResponse": {
+        "required": [
+          "comment",
+          "acknowledgedBy",
+          "acknowledgedByDisplayName",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "acknowledgedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "acknowledgedByDisplayName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "HttpValidationProblemDetails": {
         "type": "object",
         "properties": {
@@ -9294,11 +9647,20 @@
       },
       "LinkImpactResponse": {
         "required": [
+          "modelVersion",
           "severity",
           "items"
         ],
         "type": "object",
         "properties": {
+          "modelVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
           "severity": {
             "$ref": "#/components/schemas/ResourceImpactSeverity"
           },
@@ -10051,7 +10413,8 @@
           "OrganizationMember",
           "ProjectRoleAssignment",
           "AuditEvent",
-          "ResourceGroup"
+          "ResourceGroup",
+          "FindingAcknowledgment"
         ]
       },
       "OrganizationMemberResponse": {
@@ -10766,6 +11129,278 @@
           }
         }
       },
+      "ProjectValidationComponentResponse": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "position",
+          "dependsOn",
+          "usedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "position": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "dependsOn": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "usedBy": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ProjectValidationFindingResponse": {
+        "required": [
+          "code",
+          "severity",
+          "lot",
+          "subjectType",
+          "subjectId",
+          "environmentId",
+          "messageFr",
+          "messageEn",
+          "objectVersion",
+          "fixCode",
+          "canApplyFix",
+          "relatedLinkIds",
+          "acknowledgment",
+          "detailKey",
+          "subjectContext",
+          "subjectComponentId",
+          "subjectResourceId",
+          "environmentCode"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "lot": {
+            "type": "string"
+          },
+          "subjectType": {
+            "type": "string"
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "environmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "messageFr": {
+            "type": "string"
+          },
+          "messageEn": {
+            "type": "string"
+          },
+          "objectVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fixCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "canApplyFix": {
+            "type": "boolean"
+          },
+          "relatedLinkIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "acknowledgment": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FindingAcknowledgmentResponse"
+              }
+            ]
+          },
+          "detailKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subjectContext": {
+            "type": "string"
+          },
+          "subjectComponentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "subjectResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "environmentCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ProjectValidationReadinessResponse": {
+        "required": [
+          "modelValid",
+          "revisionGenerable",
+          "publishable",
+          "deployable"
+        ],
+        "type": "object",
+        "properties": {
+          "modelValid": {
+            "type": "boolean"
+          },
+          "revisionGenerable": {
+            "type": "boolean"
+          },
+          "publishable": {
+            "type": "boolean"
+          },
+          "deployable": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ProjectValidationResponse": {
+        "required": [
+          "projectId",
+          "modelVersion",
+          "catalogVersion",
+          "errorCount",
+          "publicationErrorCount",
+          "warningCount",
+          "informationCount",
+          "acknowledgedCount",
+          "readiness",
+          "orderedComponents",
+          "findings"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "modelVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "catalogVersion": {
+            "type": "string"
+          },
+          "errorCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "publicationErrorCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "warningCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "informationCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "acknowledgedCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/ProjectValidationReadinessResponse"
+          },
+          "orderedComponents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectValidationComponentResponse"
+            }
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectValidationFindingResponse"
+            }
+          }
+        }
+      },
       "ProjectWizardDraftResponse": {
         "required": [
           "content",
@@ -10823,11 +11458,20 @@
       },
       "RemoveLinkRequest": {
         "required": [
-          "expectedLinkVersion"
+          "expectedLinkVersion",
+          "expectedModelVersion"
         ],
         "type": "object",
         "properties": {
           "expectedLinkVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "expectedModelVersion": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",

@@ -17,5 +17,7 @@ public sealed record ResourceSnapshot(
     IReadOnlyDictionary<string, string> Tags,
     IReadOnlyList<ResourceChildSnapshot> Children)
 {
+    public int Version { get; init; } = 1;
+
     public Guid? DefaultIdentityResourceId { get; init; }
 }

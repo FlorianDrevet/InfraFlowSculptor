@@ -37,15 +37,23 @@ export class ProjectOverview implements OnInit {
     this.loading.set(true);
     this.loadError.set(false);
     try {
-      const [project, environments, components, permissions] = await Promise.all([
+      const [project, environments, components, permissions, validation] = await Promise.all([
         firstValueFrom(this.service.get(this.projectId())),
         firstValueFrom(this.service.environments(this.projectId())),
         firstValueFrom(this.componentsService.list(this.projectId())),
         firstValueFrom(this.service.myPermissions(this.projectId())),
+        firstValueFrom(this.service.validation(this.projectId())),
       ]);
       this.project.set(project);
       this.environments.set(environments);
-      this.components.set(components);
+      const positions = new Map(validation.orderedComponents.map((item) => [item.id, item.position]));
+      this.components.set(
+        [...components].sort(
+          (left, right) =>
+            Number(positions.get(left.id) ?? Number.MAX_SAFE_INTEGER) -
+            Number(positions.get(right.id) ?? Number.MAX_SAFE_INTEGER),
+        ),
+      );
       this.permissions.set(permissions.permissions);
     } catch {
       this.loadError.set(true);

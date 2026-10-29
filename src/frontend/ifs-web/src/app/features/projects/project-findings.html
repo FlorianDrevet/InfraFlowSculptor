@@ -1,0 +1,215 @@
+@if (loading()) {
+  <p role="status">{{ 'project.loading' | transloco }}</p>
+} @else if (loadError() || !validation()) {
+  <div class="project-findings__error-state">
+    <p class="project-findings__error" role="alert">{{ 'project.validationLoadError' | transloco }}</p>
+    <app-ds-button variant="ghost" (click)="retry()">{{ 'project.retry' | transloco }}</app-ds-button>
+  </div>
+} @else {
+  <div class="project-findings">
+    <header class="project-findings__header">
+      <div>
+        <h2>{{ 'project.validationTitle' | transloco }}</h2>
+        <p>
+          {{ 'project.validationDescription' | transloco: { version: validation()!.modelVersion } }}
+        </p>
+      </div>
+    </header>
+
+    <section
+      class="project-findings__summary"
+      [attr.aria-label]="'project.validationSummaryLabel' | transloco"
+    >
+      <div
+        class="project-findings__counts"
+        [attr.aria-label]="'project.validationCountsLabel' | transloco"
+      >
+        <app-ds-badge
+          class="project-findings__readiness"
+          [tone]="validation()!.readiness.revisionGenerable ? 'success' : 'danger'"
+          [dot]="true"
+          role="status"
+        >
+          @let errorCount = countValue(validation()!.errorCount);
+          {{
+            (countLabelKey(errorCount, 'project.validationErrorOne', 'project.validationErrors'))
+              | transloco: { count: errorCount }
+          }}
+          ·
+          {{
+            (validation()!.readiness.revisionGenerable
+              ? 'project.validationGenerable'
+              : 'project.validationBlocked') | transloco
+          }}
+        </app-ds-badge>
+
+        @if (countValue(validation()!.publicationErrorCount) > 0) {
+          <app-ds-badge tone="danger" [dot]="true">
+            {{
+              (countLabelKey(validation()!.publicationErrorCount, 'project.validationPublicationErrorOne', 'project.validationPublicationErrors'))
+                | transloco: { count: validation()!.publicationErrorCount }
+            }}
+          </app-ds-badge>
+        }
+        @if (countValue(validation()!.warningCount) > 0) {
+          <app-ds-badge tone="ember" [dot]="true">
+            {{
+              (countLabelKey(validation()!.warningCount, 'project.validationWarningOne', 'project.validationWarnings'))
+                | transloco: { count: validation()!.warningCount }
+            }}
+          </app-ds-badge>
+        }
+        @if (countValue(validation()!.informationCount) > 0) {
+          <app-ds-badge tone="signal" [dot]="true">
+            {{
+              (countLabelKey(validation()!.informationCount, 'project.validationInfoOne', 'project.validationInfos'))
+                | transloco: { count: validation()!.informationCount }
+            }}
+          </app-ds-badge>
+        }
+        @if (countValue(validation()!.acknowledgedCount) > 0) {
+          <app-ds-badge tone="neutral">
+            {{
+              (countLabelKey(validation()!.acknowledgedCount, 'project.validationAcknowledgedOne', 'project.validationAcknowledgedMany'))
+                | transloco: { count: validation()!.acknowledgedCount }
+            }}
+          </app-ds-badge>
+        }
+      </div>
+    </section>
+
+    @if (actionSaved()) {
+      <p class="project-findings__saved" role="status">
+        {{ 'project.validationActionSaved' | transloco }}
+      </p>
+    }
+    @if (actionError()) {
+      <p class="project-findings__error" role="alert">
+        {{ 'project.validationActionError' | transloco }}
+      </p>
+    }
+
+    @if (validation()!.findings.length === 0) {
+      <p class="project-findings__empty">{{ 'project.validationNoFindings' | transloco }}</p>
+    } @else {
+      <ul class="project-findings__list">
+        @for (finding of validation()!.findings; track findingKey(finding)) {
+          <li
+            class="project-findings__item"
+            [class.project-findings__item--acknowledged]="finding.acknowledgment !== null"
+          >
+            <div class="project-findings__badge">
+              @if (finding.acknowledgment) {
+                <app-ds-badge tone="neutral">{{ 'project.validationAcknowledged' | transloco }}</app-ds-badge>
+              } @else {
+                <app-ds-badge [tone]="severityTone(finding)">
+                  {{ severityLabel(finding) | transloco }}
+                </app-ds-badge>
+              }
+            </div>
+
+            <div class="project-findings__content">
+              <div class="project-findings__context">
+                <code>{{ finding.code }}</code>
+                @if (subjectRoute(finding); as route) {
+                  <a
+                    [routerLink]="route"
+                    [queryParams]="subjectQueryParams(finding)"
+                    [attr.aria-label]="'project.validationOpenSubject' | transloco: { subject: finding.subjectContext }"
+                  >
+                    {{ finding.subjectContext }}
+                  </a>
+                } @else {
+                  <span>{{ finding.subjectContext }}</span>
+                }
+                @if (finding.environmentCode) {
+                  <span class="project-findings__environment">{{ finding.environmentCode }}</span>
+                }
+              </div>
+              <p class="project-findings__message">{{ message(finding) }}</p>
+              @if (finding.acknowledgment; as acknowledgment) {
+                <p class="project-findings__acknowledgment">
+                  {{
+                    'project.validationAcknowledgedBy'
+                      | transloco: { name: acknowledgment.acknowledgedByDisplayName, comment: acknowledgment.comment }
+                  }}
+                </p>
+              }
+            </div>
+
+            <div class="project-findings__actions">
+              @if (finding.canApplyFix && canEditModel()) {
+                <app-ds-button
+                  variant="secondary"
+                  size="sm"
+                  [disabled]="saving()"
+                  (click)="applyFix(finding)"
+                >
+                  {{ 'project.validationApplyFix' | transloco }}
+                </app-ds-button>
+              }
+              @if (finding.fixCode === 'VAL-NOM-LONGUEUR' && canEditModel()) {
+                <a class="st-btn st-btn-secondary st-btn-sm" [routerLink]="['../naming']">
+                  {{ 'project.validationOpenNaming' | transloco }}
+                </a>
+              }
+              @if (canAcknowledge(finding)) {
+                <app-ds-button variant="ghost" size="sm" (click)="openAcknowledgment(finding)">
+                  {{ 'project.validationAcknowledge' | transloco }}
+                </app-ds-button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    }
+
+    @if (selectedFinding(); as selected) {
+      <div class="project-findings__overlay">
+        <section
+          class="project-findings__dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="finding-acknowledgment-title"
+        >
+          <form (ngSubmit)="saveAcknowledgment()">
+            <h3 id="finding-acknowledgment-title">
+              {{ 'project.validationAcknowledgmentTitle' | transloco }}
+            </h3>
+            <p>{{ selected.code }} · {{ selected.subjectContext }}</p>
+            <label for="finding-acknowledgment-comment">
+              {{ 'project.validationComment' | transloco }}
+            </label>
+            <textarea
+              id="finding-acknowledgment-comment"
+              name="comment"
+              rows="4"
+              required
+              [value]="comment()"
+              [attr.aria-invalid]="commentError() ? 'true' : null"
+              (input)="updateComment($any($event.target).value)"
+            ></textarea>
+            @if (commentError()) {
+              <p class="project-findings__error" role="alert">
+                {{ 'project.validationComment' | transloco }}
+              </p>
+            }
+            @if (actionError()) {
+              <p class="project-findings__error" role="alert">
+                {{ 'project.validationActionError' | transloco }}
+              </p>
+            }
+            <footer>
+              <app-ds-button type="submit" variant="primary" [disabled]="saving()">
+                {{ 'project.validationSaveAcknowledgment' | transloco }}
+              </app-ds-button>
+              <app-ds-button type="button" variant="ghost" [disabled]="saving()" (click)="closeAcknowledgment()">
+                {{ 'project.validationCancel' | transloco }}
+              </app-ds-button>
+            </footer>
+          </form>
+        </section>
+      </div>
+    }
+  </div>
+}

@@ -73,6 +73,9 @@ public static class EndpointNames
     public const string PreviewLink = "PreviewLink";
     public const string GetAppSettings = "GetAppSettings";
     public const string GetResourceApplication = "GetResourceApplication";
+    public const string GetProjectValidation = "GetProjectValidation";
+    public const string AcknowledgeFinding = "AcknowledgeFinding";
+    public const string ApplyFindingFix = "ApplyFindingFix";
     public const string SaveResourceApplication = "SaveResourceApplication";
     public const string CreateAppSetting = "CreateAppSetting";
     public const string UpdateAppSetting = "UpdateAppSetting";

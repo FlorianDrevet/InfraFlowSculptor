@@ -18,5 +18,6 @@ public enum ObjectType
     OrganizationMember,
     ProjectRoleAssignment,
     AuditEvent,
-    ResourceGroup
+    ResourceGroup,
+    FindingAcknowledgment
 }

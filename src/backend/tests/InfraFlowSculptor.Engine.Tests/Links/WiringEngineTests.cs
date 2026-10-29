@@ -1,5 +1,9 @@
 using System.Text.Json;
+using System.Collections.Immutable;
+using System.Reflection;
+using System.Text.Json.Nodes;
 using InfraFlowSculptor.Catalog;
+using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Engine.Links;
 using InfraFlowSculptor.Engine.Model;
@@ -409,7 +413,52 @@ public sealed class WiringEngineTests
     }
 
     [Fact]
-    public void LinkRemovalImpactBlocksRemovalOfRequiredLoggingLink()
+    public void ResourceDeletionImpactBlocksDeletingIdentityUsedAsDefaultIdentity()
+    {
+        var sourceComponentId = Guid.NewGuid();
+        var applicationId = Guid.NewGuid();
+        var identityId = Guid.NewGuid();
+        var application = Resource(applicationId, "ContainerApp") with { DefaultIdentityResourceId = identityId };
+        var source = Component(sourceComponentId, "orders", application, Resource(identityId, "UserAssignedIdentity"));
+
+        var impact = new ImpactAnalyzer(CreateEngine())
+            .AnalyzeResourceDeletion(Snapshot(source), identityId, Catalog);
+
+        Assert.Equal(ImpactSeverity.Blocker, impact.Severity);
+        Assert.Contains(impact.Items, item => item.Code == "IMPACT-LIA-IDENTITE-UTILISEE"
+            && item.Severity == ImpactSeverity.Blocker
+            && item.ResourceId == applicationId);
+    }
+
+    [Fact]
+    public void ResourceDeletionImpactBlocksDeletingIdentityUsedByApplicationSetting()
+    {
+        var sourceComponentId = Guid.NewGuid();
+        var targetComponentId = Guid.NewGuid();
+        var applicationId = Guid.NewGuid();
+        var identityId = Guid.NewGuid();
+        var vaultId = Guid.NewGuid();
+        var source = Component(sourceComponentId, "orders",
+            Resource(applicationId, "ContainerApp"),
+            Resource(identityId, "UserAssignedIdentity"));
+        var target = Component(targetComponentId, "core", Resource(vaultId, "KeyVault"));
+        var setting = new AppSettingSnapshot(
+            Guid.NewGuid(), sourceComponentId, applicationId, "Payments__ApiKey",
+            AppSettingSourceKind.KeyVaultSecret, null, new Dictionary<Guid, string>(),
+            null, null, vaultId, "payments-api-key", AppSettingSecretFeedKind.PipelineSecret,
+            "MAIN_PAYMENTS_API_KEY", identityId);
+
+        var impact = new ImpactAnalyzer(CreateEngine())
+            .AnalyzeResourceDeletion(Snapshot(source, target, setting), identityId, Catalog);
+
+        Assert.Equal(ImpactSeverity.Blocker, impact.Severity);
+        Assert.Contains(impact.Items, item => item.Code == "IMPACT-LIA-IDENTITE-UTILISEE"
+            && item.Severity == ImpactSeverity.Blocker
+            && item.ResourceId == applicationId);
+    }
+
+    [Fact]
+    public void LinkRemovalImpactMarksBrokenRequiredLoggingLinkAsBlocker()
     {
         var sourceComponentId = Guid.NewGuid();
         var targetComponentId = Guid.NewGuid();
@@ -425,7 +474,68 @@ public sealed class WiringEngineTests
         var impact = analyzer.AnalyzeLinkRemoval(snapshot, link.Id, Catalog);
 
         Assert.Equal(ImpactSeverity.Blocker, impact.Severity);
-        Assert.Contains(impact.Items, item => item.Code == "IMPACT-LIA-OBLIGATOIRE-ROMPU");
+        Assert.Contains(impact.Items, item => item.Code == "IMPACT-LIA-OBLIGATOIRE-ROMPU"
+            && item.Severity == ImpactSeverity.Blocker);
+    }
+
+    [Fact]
+    public void LinkRemovalImpactDetectsNewRequiredKindWhenAnotherRequiredKindIsAlreadyMissing()
+    {
+        var sourceComponentId = Guid.NewGuid();
+        var targetComponentId = Guid.NewGuid();
+        var sourceResourceId = Guid.NewGuid();
+        var hostingTargetId = Guid.NewGuid();
+        var source = Component(sourceComponentId, "app", Resource(sourceResourceId, "ContainerApp"));
+        var target = Component(targetComponentId, "core", Resource(hostingTargetId, "ContainerAppsEnvironment"));
+        var hosting = Link(sourceComponentId, sourceResourceId, targetComponentId, hostingTargetId,
+            LinkKind.Hosting, LinkIdentityKind.None, null);
+        var snapshot = Snapshot(source, target, hosting);
+        var catalog = CatalogWithAdditionalRequiredLinkKind(Catalog, "ContainerApp", LinkKind.ImagePull);
+
+        var impact = new ImpactAnalyzer(CreateEngine()).AnalyzeLinkRemoval(snapshot, hosting.Id, catalog);
+
+        Assert.Contains(impact.Items, item => item.Code == "IMPACT-LIA-OBLIGATOIRE-ROMPU"
+            && item.ResourceId == sourceResourceId);
+    }
+
+    [Fact]
+    public void ResourceDeletionImpactBlocksRemovingTargetOfRequiredLoggingLink()
+    {
+        var sourceComponentId = Guid.NewGuid();
+        var targetComponentId = Guid.NewGuid();
+        var sourceResourceId = Guid.NewGuid();
+        var targetResourceId = Guid.NewGuid();
+        var source = Component(sourceComponentId, "monitoring", Resource(sourceResourceId, "ApplicationInsights"));
+        var target = Component(targetComponentId, "core", Resource(targetResourceId, "LogAnalyticsWorkspace"));
+        var link = Link(sourceComponentId, sourceResourceId, targetComponentId, targetResourceId,
+            LinkKind.Logging, LinkIdentityKind.None, null);
+        var snapshot = Snapshot(source, target, link);
+
+        var impact = new ImpactAnalyzer(CreateEngine())
+            .AnalyzeResourceDeletion(snapshot, targetResourceId, Catalog);
+
+        Assert.Equal(ImpactSeverity.Blocker, impact.Severity);
+        Assert.Contains(impact.Items, item => item.Code == "IMPACT-LIA-OBLIGATOIRE-ROMPU"
+            && item.Severity == ImpactSeverity.Blocker);
+    }
+
+    [Fact]
+    public void ResourceDeletionImpactAllowsDeletingSourceOfRequiredLoggingLink()
+    {
+        var sourceComponentId = Guid.NewGuid();
+        var targetComponentId = Guid.NewGuid();
+        var sourceResourceId = Guid.NewGuid();
+        var targetResourceId = Guid.NewGuid();
+        var source = Component(sourceComponentId, "monitoring", Resource(sourceResourceId, "ApplicationInsights"));
+        var target = Component(targetComponentId, "core", Resource(targetResourceId, "LogAnalyticsWorkspace"));
+        var link = Link(sourceComponentId, sourceResourceId, targetComponentId, targetResourceId,
+            LinkKind.Logging, LinkIdentityKind.None, null);
+
+        var impact = new ImpactAnalyzer(CreateEngine())
+            .AnalyzeResourceDeletion(Snapshot(source, target, link), sourceResourceId, Catalog);
+
+        Assert.Equal(ImpactSeverity.Information, impact.Severity);
+        Assert.DoesNotContain(impact.Items, item => item.Code == "IMPACT-LIA-OBLIGATOIRE-ROMPU");
     }
 
     [Fact]
@@ -633,6 +743,71 @@ public sealed class WiringEngineTests
     private static WiringEngine CreateEngine() => new(
         new LinkKindRegistry(PilotLinkKindHandlers.Create()),
         new DataAccessProviderRegistry([new AzureSqlDataAccessProvider()]));
+
+    private static CatalogVersion CatalogWithAdditionalRequiredLinkKind(
+        CatalogVersion catalog,
+        string resourceType,
+        LinkKind additionalKind)
+    {
+        // Catalog descriptors stay loader-owned; reflection keeps this synthetic fixture private to the test.
+        var resourceTypes = catalog.ResourceTypes.Select(descriptor =>
+        {
+            if (!string.Equals(descriptor.Type, resourceType, StringComparison.Ordinal)) return descriptor;
+
+            var definition = JsonNode.Parse(descriptor.Definition.GetRawText())!.AsObject();
+            var requiredLinks = definition["links"]?["required"] as JsonArray
+                ?? throw new InvalidOperationException(
+                    $"Catalog resource type '{resourceType}' must define required links for this fixture.");
+            requiredLinks.Add(new JsonObject
+            {
+                ["kind"] = additionalKind.ToString(),
+                ["cardinality"] = "one"
+            });
+            using var document = JsonDocument.Parse(definition.ToJsonString());
+            var descriptorConstructor = typeof(CatalogResourceTypeDescriptor)
+                .GetConstructor(
+                    BindingFlags.Instance | BindingFlags.NonPublic,
+                    binder: null,
+                    types: [typeof(JsonElement)],
+                    modifiers: null)
+                ?? throw new InvalidOperationException("The catalog resource type descriptor constructor changed.");
+            return (CatalogResourceTypeDescriptor)descriptorConstructor.Invoke([document.RootElement]);
+        }).ToImmutableArray();
+
+        var catalogConstructor = typeof(CatalogVersion)
+            .GetConstructor(
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                types:
+                [
+                    typeof(string),
+                    typeof(string),
+                    typeof(DateOnly),
+                    typeof(DateOnly?),
+                    typeof(string),
+                    typeof(DateOnly),
+                    typeof(ImmutableArray<CatalogResourceTypeDescriptor>),
+                    typeof(ImmutableArray<CatalogBuildProfileDescriptor>),
+                    typeof(ImmutableArray<CatalogPipelineStepDescriptor>),
+                    typeof(ImmutableArray<CatalogRegion>),
+                    typeof(string)
+                ],
+                modifiers: null)
+            ?? throw new InvalidOperationException("The catalog version constructor changed.");
+        return (CatalogVersion)catalogConstructor.Invoke([
+            catalog.Version,
+            catalog.Status,
+            catalog.PublishedAt,
+            catalog.SupportEndsAt,
+            catalog.Notes,
+            catalog.VerifiedAgainstDocsOn,
+            resourceTypes,
+            catalog.BuildProfiles,
+            catalog.PipelineSteps,
+            catalog.Regions,
+            catalog.Fingerprint
+        ]);
+    }
 
     private static ModelSnapshot Snapshot(
         params object[] values)

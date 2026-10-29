@@ -3,18 +3,20 @@ import {
   Component,
   computed,
   ElementRef,
+  inject,
   input,
   output,
   ViewChild,
 } from '@angular/core';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import type {
   RemovedResourceBehavior,
   ResourceDeletionImpactResponse,
   ResourceResponse,
 } from '../../core/api/generated';
 import { DsButton } from '../../ds/button/button';
+import { resourceImpactMessage } from './resource-impact-message';
 
 @Component({
   selector: 'app-resource-delete-dialog',
@@ -25,6 +27,7 @@ import { DsButton } from '../../ds/button/button';
 })
 export class ResourceDeleteDialog {
   @ViewChild('confirmationInput') private confirmationInput?: ElementRef<HTMLInputElement>;
+  private readonly transloco = inject(TranslocoService);
 
   readonly resource = input.required<ResourceResponse>();
   readonly removedBehavior = input.required<RemovedResourceBehavior>();
@@ -49,6 +52,10 @@ export class ResourceDeleteDialog {
 
   protected dismissOnEscape(): void {
     if (!this.saving()) this.dismiss.emit();
+  }
+
+  protected impactMessage(code: string, fallback: string): string {
+    return resourceImpactMessage(this.transloco, code, fallback);
   }
 
   protected confirmDeletion(): void {

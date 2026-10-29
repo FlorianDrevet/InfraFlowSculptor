@@ -12,6 +12,10 @@ public sealed class HostingLinkKindHandler() : LinkKindHandler(
     LinkIdentityRequirement.None,
     new LinkFormDefinition([]))
 {
+    public override bool IsResourceHostingRelationship => true;
+
+    public override bool RequiresSameSubscriptionAndRegion => true;
+
     public override int? MaximumFor(CatalogResourceTypeDescriptor source) => 1;
 
     protected override bool SupportsTypes(CatalogResourceTypeDescriptor source, CatalogResourceTypeDescriptor target) =>

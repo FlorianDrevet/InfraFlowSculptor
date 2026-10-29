@@ -53,6 +53,12 @@ preuve seule.
 | Ressource existante | [ResourceExisting](preview/ResourceExisting.html) — sélection automatique depuis Azure exclue (L2) | Comparaison 1440/390 du référencement manuel par cible : identifiants visibles, sûreté rappelée, propriétés absentes. Les identifiants invalides de type sont explicitement refusés ; le formulaire permet aussi leur modification après ajout. Captures : [bureau](../../plan/revues/captures/R-05/ResourceExisting-1440.png), [mobile](../../plan/revues/captures/R-05/ResourceExisting-390.png). |
 | Suppression et conflit de version | [DeleteImpact](preview/DeleteImpact.html), [VersionConflict](preview/VersionConflict.html) | Comparaison 1440/390 : suppression protégée par confirmation du nom, dialogue tabulaire du conflit et reprise sur version courante. Le serveur annonce un impact partiel (liaisons, paramètres et effets implicites à analyser en J0-15/J0-20), jamais un aperçu complet. Captures : [impact bureau](../../plan/revues/captures/R-05/DeleteImpact-1440.png) / [mobile](../../plan/revues/captures/R-05/DeleteImpact-390.png), [conflit bureau](../../plan/revues/captures/R-05/VersionConflict-1440.png) / [mobile](../../plan/revues/captures/R-05/VersionConflict-390.png). |
 
+## Écrans J0-20
+
+| Écran / route | Maquette | Référence et preuve |
+|---|---|---|
+| Constats — `/o/:orgId/projects/:projectId/findings` | [ProjectFindings](preview/ProjectFindings.html) | E2E authentifiée ajoutée : ouvre le projet démo, vérifie `0 erreur`, `1 avertissement`, `1 info`, les deux codes attendus, et capture 1440/390 dans `e2e/__captures__/R-05/`. La liste E2E compile (32 cas); exécution CI et comparaison visuelle finale en attente, car Docker est arrêté et `IFS_E2E_PASSWORD` n'est pas configuré localement. Aucune fidélité visuelle n'est revendiquée avant inspection des captures. |
+
 ## Modèle pour une nouvelle interface sans maquette
 
 Ajouter une ligne avant ou au début du travail, puis la compléter avant la revue :

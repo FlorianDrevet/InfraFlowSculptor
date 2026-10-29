@@ -46,7 +46,8 @@
       <h4>{{ (editing() ? 'resource.editAppSetting' : 'resource.addAppSetting') | transloco }}</h4>
       <label>
         {{ 'resource.settingName' | transloco }}
-        <input name="settingName" required maxlength="256" [value]="name()" (input)="updateName($any($event.target).value)" />
+        <input name="settingName" required maxlength="256" pattern="[A-Za-z_][A-Za-z0-9_.-]{0,255}" [value]="name()" (input)="updateName($any($event.target).value)" />
+        <span>{{ 'resource.settingNameFormat' | transloco }}</span>
       </label>
       <label>
         {{ 'resource.settingSourceLabel' | transloco }}
@@ -60,8 +61,22 @@
       @if (sourceKind() === 'Literal') {
         <label>
           {{ 'resource.settingLiteralValue' | transloco }}
-          <input name="literalValue" autocomplete="off" [value]="literalValue()" (input)="literalValue.set($any($event.target).value)" />
+          <input name="literalValue" autocomplete="off" [value]="literalValue()" (input)="updateLiteralValue($any($event.target).value)" />
         </label>
+        @if (secretDeclarationRequired() || forceNonSecret()) {
+          <label class="resource-app-settings__non-secret-confirmation">
+            <input
+              type="checkbox"
+              name="forceNonSecret"
+              [checked]="forceNonSecret()"
+              (change)="forceNonSecret.set($any($event.target).checked)"
+            />
+            <span>
+              {{ 'resource.settingForceNonSecret' | transloco }}
+              <span>{{ 'resource.settingForceNonSecretHelp' | transloco }}</span>
+            </span>
+          </label>
+        }
       }
       @if (sourceKind() === 'ResourceOutput') {
         <label>
@@ -88,11 +103,12 @@
         </label>
         <label>
           {{ 'resource.settingSecretName' | transloco }}
-          <input name="secretName" required [value]="secretName()" (input)="secretName.set($any($event.target).value)" />
+          <input name="secretName" required maxlength="127" pattern="[A-Za-z0-9-]{1,127}" [value]="secretName()" (input)="updateSecretName($any($event.target).value)" />
+          <span>{{ 'resource.secretNameFormat' | transloco }}</span>
         </label>
         <label>
           {{ 'resource.secretFeedKind' | transloco }}
-          <select name="secretFeedKind" [ngModel]="secretFeedKind()" (ngModelChange)="secretFeedKind.set($event)">
+          <select name="secretFeedKind" [ngModel]="secretFeedKind()" (ngModelChange)="updateSecretFeedKind($event)">
             <option value="PipelineSecret">{{ 'resource.pipelineSecret' | transloco }}</option>
             <option value="ManagedOutsideIfs">{{ 'resource.managedOutsideIfs' | transloco }}</option>
           </select>
@@ -100,7 +116,8 @@
         @if (secretFeedKind() === 'PipelineSecret') {
           <label>
             {{ 'resource.pipelineVariableName' | transloco }}
-            <input name="pipelineVariableName" required [value]="pipelineVariableName()" (input)="pipelineVariableName.set($any($event.target).value)" />
+            <input name="pipelineVariableName" required maxlength="128" pattern="[A-Za-z_][A-Za-z0-9_]{0,127}" [value]="pipelineVariableName()" (input)="updatePipelineVariableName($any($event.target).value)" />
+            <span>{{ 'resource.pipelineVariableNameFormat' | transloco }}</span>
             <span>{{ 'resource.pipelineSecretValueNeverShown' | transloco }}</span>
           </label>
         }
@@ -112,10 +129,11 @@
           </select>
         </label>
       }
+      @if (secretSuspectError()) { <p class="resource-app-settings__error" role="alert">{{ 'resource.settingSecretSuspect' | transloco }}</p> }
       @if (actionError()) { <p class="resource-app-settings__error" role="alert">{{ 'resource.appSettingSaveError' | transloco }}</p> }
       <footer>
         <app-ds-button type="button" variant="ghost" [disabled]="saving()" (click)="cancelForm()">{{ 'resource.cancel' | transloco }}</app-ds-button>
-        <app-ds-button type="submit" variant="primary" [disabled]="!canSubmit()">{{ saving() ? ('resource.saving' | transloco) : ('resource.save' | transloco) }}</app-ds-button>
+        <app-ds-button type="submit" variant="primary" [disabled]="!canSubmit()">{{ saving() ? ((editing() ? 'resource.savingAppSetting' : 'resource.saving') | transloco) : ('resource.save' | transloco) }}</app-ds-button>
       </footer>
     </form>
   }

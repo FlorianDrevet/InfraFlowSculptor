@@ -3,4 +3,5 @@
 
 export interface RemoveLinkRequest {
   expectedLinkVersion: (number | string);
+  expectedModelVersion: (number | string);
 }

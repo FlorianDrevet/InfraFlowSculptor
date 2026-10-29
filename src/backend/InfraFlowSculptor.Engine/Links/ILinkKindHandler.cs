@@ -13,7 +13,17 @@ public interface ILinkKindHandler : IKeyed<LinkKind>
 
     bool IsImplicitOnly { get; }
 
+    bool IsResourceHostingRelationship { get; }
+
     bool CreatesDeploymentDependency { get; }
+
+    bool RequiresSameSubscriptionAndRegion { get; }
+
+    bool CreatesDeploymentDependencyFor(
+        LinkSnapshot link,
+        ModelSnapshot snapshot,
+        CatalogResourceTypeDescriptor source,
+        CatalogResourceTypeDescriptor target);
 
     LinkIdentityRequirement IdentityRequirement { get; }
 

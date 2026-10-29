@@ -29,6 +29,7 @@ describe('ProjectWorkspace', () => {
     } as ProjectSummaryResponse;
     const updatedProject = { ...initialProject, version: 3, name: 'Nouveau nom' };
     const projectUpdates = new Subject<ProjectSummaryResponse>();
+    const registerNavigation = vi.fn(() => vi.fn());
     const projects = {
       get: vi.fn().mockReturnValue(of(initialProject)),
       projectUpdates$: projectUpdates.asObservable(),
@@ -39,7 +40,7 @@ describe('ProjectWorkspace', () => {
       providers: [
         provideRouter([]),
         { provide: ProjectsService, useValue: projects },
-        { provide: NavigationRegistry, useValue: { register: vi.fn(() => vi.fn()) } },
+      { provide: NavigationRegistry, useValue: { register: registerNavigation } },
         provideTransloco({
           config: {
             availableLangs: ['fr'],
@@ -63,6 +64,12 @@ describe('ProjectWorkspace', () => {
     const workspaceSection = workspace.querySelector<HTMLElement>('.project-workspace');
     expect(workspaceSection).not.toBeNull();
     expect(workspace.querySelector('h1')?.textContent).toContain('Ancien nom');
+    expect(registerNavigation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        labelKey: 'project.findingsLink',
+        path: `/o/33333333-3333-4333-8333-333333333333/projects/${initialProject.id}/findings`,
+      }),
+    );
     projectUpdates.next(updatedProject);
     await fixture.whenStable();
     fixture.detectChanges();

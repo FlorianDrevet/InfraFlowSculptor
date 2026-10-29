@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  computed,
   ElementRef,
   inject,
   input,
@@ -17,6 +18,7 @@ import { firstValueFrom } from 'rxjs';
 import type {
   ComponentResponse,
   ProjectEnvironmentResponse,
+  ProjectValidationComponentResponse,
   ResourceDeletionImpactResponse,
   ResourceResponse,
   ResourceGroupResponse,
@@ -83,6 +85,10 @@ export class ComponentDetail implements OnInit {
   readonly componentId = input.required<string>();
   protected readonly component = signal<ComponentResponse | null>(null);
   protected readonly environments = signal<ProjectEnvironmentResponse[]>([]);
+  protected readonly orderedComponents = signal<ProjectValidationComponentResponse[]>([]);
+  protected readonly componentDependencies = computed(() =>
+    this.orderedComponents().find((item) => item.id === this.component()?.id),
+  );
   protected readonly canManageComponents = signal(false);
   protected readonly canEditModel = signal(false);
   protected readonly loading = signal(true);
@@ -369,13 +375,15 @@ export class ComponentDetail implements OnInit {
     this.loading.set(true);
     this.loadError.set(false);
     try {
-      const [component, environments, permissions] = await Promise.all([
+      const [component, environments, permissions, validation] = await Promise.all([
         firstValueFrom(this.componentService.get(this.projectId(), this.componentId())),
         firstValueFrom(this.projects.environments(this.projectId())),
         firstValueFrom(this.projects.myPermissions(this.projectId())),
+        firstValueFrom(this.projects.validation(this.projectId())),
       ]);
       this.component.set(component);
       this.environments.set(environments);
+      this.orderedComponents.set(validation.orderedComponents);
       this.canManageComponents.set(permissions.permissions.includes('components.manage'));
       this.canEditModel.set(permissions.permissions.includes('model.edit'));
     } catch {

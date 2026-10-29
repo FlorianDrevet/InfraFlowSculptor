@@ -144,6 +144,7 @@ public sealed partial class ApplicationAggregate : AggregateRoot<Guid>, IOrganiz
 
         if (definition.HealthCheckPath is { } healthCheckPath
             && (healthCheckPath.Length > 2048 || healthCheckPath[0] != '/'
+                || healthCheckPath.Any(char.IsControl)
                 || healthCheckPath.Contains('\\')
                 || healthCheckPath.Contains('?')
                 || healthCheckPath.Contains('#')))
@@ -209,6 +210,7 @@ public sealed partial class ApplicationAggregate : AggregateRoot<Guid>, IOrganiz
 
     private static bool IsRelativePath(string path) =>
         path.Length is > 0 and <= 512
+        && !path.Any(char.IsControl)
         && path[0] != '/'
         && !path.Contains(':')
         && !path.Contains('\\')
@@ -231,12 +233,12 @@ public sealed partial class ApplicationAggregate : AggregateRoot<Guid>, IOrganiz
 
     private void Touch() => Version = checked(Version + 1);
 
-    [GeneratedRegex("^[a-z][a-z0-9-]{1,39}$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^[a-z][a-z0-9-]{1,39}\\z", RegexOptions.CultureInvariant)]
     private static partial Regex ApplicationNamePattern();
 
-    [GeneratedRegex("^[A-Za-z][A-Za-z0-9]*$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^[A-Za-z][A-Za-z0-9]*\\z", RegexOptions.CultureInvariant)]
     private static partial Regex StepNamePattern();
 
-    [GeneratedRegex("^[a-z0-9]+([._/-][a-z0-9]+)*$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^[a-z0-9]+([._/-][a-z0-9]+)*\\z", RegexOptions.CultureInvariant)]
     private static partial Regex ImageRepositoryPattern();
 }

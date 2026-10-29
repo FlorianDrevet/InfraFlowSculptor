@@ -5,5 +5,6 @@ import { LinkImpactItemResponse } from '../models/link-impact-item-response';
 import { ResourceImpactSeverity } from '../models/resource-impact-severity';
 export interface LinkImpactResponse {
   items: Array<LinkImpactItemResponse>;
+  modelVersion: (number | string);
   severity: ResourceImpactSeverity;
 }

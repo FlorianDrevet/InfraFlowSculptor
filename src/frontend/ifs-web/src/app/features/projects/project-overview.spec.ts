@@ -55,6 +55,18 @@ describe('ProjectOverview', () => {
       resourceGroups: [],
       resources: [],
     } as ComponentResponse;
+    const dependentComponent = {
+      ...component,
+      id: '99999999-9999-4999-8999-999999999999',
+      name: 'Api',
+      code: 'api',
+    };
+    const validationOrder = {
+      orderedComponents: [
+        { id: dependentComponent.id, code: dependentComponent.code, name: dependentComponent.name, position: 1 },
+        { id: component.id, code: component.code, name: component.name, position: 2 },
+      ],
+    };
     const service = {
       get: vi
         .fn()
@@ -63,8 +75,9 @@ describe('ProjectOverview', () => {
         ),
       environments: vi.fn().mockReturnValue(of([])),
       myPermissions: vi.fn().mockReturnValue(of({ permissions: ['components.manage'] })),
+      validation: vi.fn().mockReturnValue(of(validationOrder)),
     };
-    const componentsService = { list: vi.fn().mockReturnValue(of([component])) };
+    const componentsService = { list: vi.fn().mockReturnValue(of([component, dependentComponent])) };
 
     await TestBed.configureTestingModule({
       imports: [ProjectOverview],
@@ -97,6 +110,7 @@ describe('ProjectOverview', () => {
     harness.fixture.detectChanges();
 
     expect(componentsService.list).toHaveBeenCalledWith(projectId);
+    expect(service.validation).toHaveBeenCalledWith(projectId);
     const componentList = harness.routeNativeElement?.querySelector<HTMLElement>(
       '.project-overview__components',
     );
@@ -116,6 +130,11 @@ describe('ProjectOverview', () => {
     expect(getComputedStyle(componentRow!).display).toBe('flex');
     expect(componentLink && getComputedStyle(componentLink).display).toBe('flex');
     expect(componentLink?.textContent).toContain('Core');
+    expect(
+      [...(componentList?.querySelectorAll<HTMLElement>('li') ?? [])].map((row) =>
+        row.querySelector('.project-overview__code')?.textContent?.trim(),
+      ),
+    ).toEqual(['api', 'core']);
     expect(harness.routeNativeElement?.textContent).toContain('Par environnement');
     expect(
       harness.routeNativeElement?.querySelector('#components-heading')?.textContent?.trim(),

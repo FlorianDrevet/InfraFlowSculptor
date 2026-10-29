@@ -1,6 +1,7 @@
 using ErrorOr;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Naming;
+using InfraFlowSculptor.Domain.Common;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
@@ -45,8 +46,11 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
         var appSettings = await dbContext.Query<AppSettingAggregate>()
             .Where(setting => setting.ProjectId == new ProjectId(projectId))
             .ToArrayAsync(cancellationToken);
+        var applications = await dbContext.Query<ApplicationAggregate>()
+            .Where(application => application.ProjectId == new ProjectId(projectId))
+            .ToArrayAsync(cancellationToken);
 
-        var snapshot = CreateSnapshot(project, components, links, appSettings);
+        var snapshot = CreateSnapshot(project, components, links, appSettings, applications);
         if (snapshot.IsError)
         {
             return snapshot.Errors;
@@ -79,6 +83,7 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
             var otherSnapshot = CreateSnapshot(
                 otherProject,
                 otherComponents.Where(component => component.ProjectId == otherProject.Id).ToArray(),
+                [],
                 [],
                 []);
             if (otherSnapshot.IsError)
@@ -118,7 +123,8 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
         ProjectAggregate project,
         IReadOnlyList<ComponentAggregate> components,
         IReadOnlyList<LinkAggregate> links,
-        IReadOnlyList<AppSettingAggregate> appSettings)
+        IReadOnlyList<AppSettingAggregate> appSettings,
+        IReadOnlyList<ApplicationAggregate> applications)
     {
         var catalog = catalogProvider.GetVersion(project.CatalogVersion);
         if (catalog is null)
@@ -139,59 +145,123 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
                 .ToDictionary(value => value.Type, value => value.Abbreviation!, StringComparer.OrdinalIgnoreCase)
         };
 
-        return new ModelSnapshot(
+        var environments = project.Environments.OrderBy(environment => environment.Position)
+            .Select(environment => new EnvironmentSnapshot(environment.Code, environment.Region)
+            {
+                Id = environment.Id,
+                Version = environment.Version,
+                Name = environment.Name,
+                Position = environment.Position,
+                SubscriptionId = environment.SubscriptionId,
+                IsProtected = environment.IsProtected,
+                Approvers = environment.Approvers,
+                Tags = environment.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase)
+            })
+            .ToArray();
+        var componentSnapshots = components.Select(MapComponent).ToArray();
+        var linkSnapshots = links.Select(link => new LinkSnapshot(
+            link.Id,
+            link.SourceComponentId,
+            link.SourceResourceId,
+            link.TargetComponentId,
+            link.TargetResourceId,
+            link.Kind,
+            link.Origin,
+            link.IdentityKind,
+            link.IdentityResourceId,
+            link.Roles.Select(role => role.Name).ToArray(),
+            link.AccessScope,
+            link.DataAccessLevel,
+            link.Version)).ToArray();
+        var appSettingSnapshots = appSettings.Select(setting => new AppSettingSnapshot(
+            setting.Id,
+            setting.ComponentId.Value,
+            setting.ApplicationResourceId,
+            setting.Name,
+            setting.SourceKind,
+            setting.LiteralSource?.Value,
+            setting.LiteralSource?.Overrides.ToDictionary(value => value.TargetId, value => value.Value) ?? new Dictionary<Guid, string>(),
+            setting.SourceResourceId,
+            setting.OutputName,
+            setting.KeyVaultResourceId,
+            setting.SecretName,
+            setting.SecretFeedKind,
+            setting.PipelineVariableName,
+            setting.IdentityResourceId) { Version = setting.Version }).ToArray();
+        var applicationSnapshots = applications.Select(application => new ApplicationSnapshot(
+            application.Id,
+            application.ComponentId.Value,
+            application.ResourceId,
+            application.Name,
+            application.CodeSourcePath,
+            application.DockerfilePath,
+            application.BuildContextPath,
+            application.ImageRepository,
+            application.HealthCheckPath,
+            application.DeploymentStrategy,
+            application.BuildRegistryEnvironmentId,
+            application.Steps.ToArray()) { Version = application.Version }).ToArray();
+        var snapshot = new ModelSnapshot(
             new ProjectSnapshot(project.Name, project.Code, project.Description)
             {
                 Id = project.Id.Value,
+                Version = project.Version,
+                ModelVersion = project.ModelVersion,
                 CatalogVersion = project.CatalogVersion,
-                SystemTagsEnabled = project.SystemTagsEnabled
+                SystemTagsEnabled = project.SystemTagsEnabled,
+                PublishingPreset = project.PublishingPreset
             },
-            project.Environments.OrderBy(environment => environment.Position)
-                .Select(environment => new EnvironmentSnapshot(environment.Code, environment.Region)
-                {
-                    Id = environment.Id,
-                    Name = environment.Name,
-                    Position = environment.Position,
-                    SubscriptionId = environment.SubscriptionId,
-                    Tags = environment.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase)
-                })
-                .ToArray(),
+            environments,
             naming,
             project.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase),
-            components.Select(MapComponent).ToArray())
+            componentSnapshots)
         {
             NamingRules = CatalogNamingSnapshotMapper.CreateRules(catalog),
             RegionCodes = CatalogNamingSnapshotMapper.CreateRegionCodes(catalog),
-            Links = links.Select(link => new LinkSnapshot(
-                link.Id,
-                link.SourceComponentId,
-                link.SourceResourceId,
-                link.TargetComponentId,
-                link.TargetResourceId,
-                link.Kind,
-                link.Origin,
-                link.IdentityKind,
-                link.IdentityResourceId,
-                link.Roles.Select(role => role.Name).ToArray(),
-                link.AccessScope,
-                link.DataAccessLevel,
-                link.Version)).ToArray(),
-            AppSettings = appSettings.Select(setting => new AppSettingSnapshot(
-                setting.Id,
-                setting.ComponentId.Value,
-                setting.ApplicationResourceId,
-                setting.Name,
-                setting.SourceKind,
-                setting.LiteralSource?.Value,
-                setting.LiteralSource?.Overrides.ToDictionary(value => value.TargetId, value => value.Value) ?? new Dictionary<Guid, string>(),
-                setting.SourceResourceId,
-                setting.OutputName,
-                setting.KeyVaultResourceId,
-                setting.SecretName,
-                setting.SecretFeedKind,
-                setting.PipelineVariableName,
-                setting.IdentityResourceId)).ToArray()
+            Links = linkSnapshots,
+            AppSettings = appSettingSnapshots,
+            Applications = applicationSnapshots
         };
+
+        var objectVersions = new Dictionary<ObjectRef, int>
+        {
+            [new ObjectRef(ObjectType.Project, project.Id.Value)] = project.Version
+        };
+        foreach (var environment in environments)
+        {
+            objectVersions[new ObjectRef(ObjectType.Environment, environment.Id)] = environment.Version;
+        }
+
+        foreach (var component in componentSnapshots)
+        {
+            objectVersions[new ObjectRef(ObjectType.Component, component.Id)] = component.Version;
+            foreach (var resourceGroup in component.ResourceGroups)
+            {
+                objectVersions[new ObjectRef(ObjectType.ResourceGroup, resourceGroup.Id)] = resourceGroup.Version;
+            }
+
+            foreach (var resource in component.Resources)
+            {
+                objectVersions[new ObjectRef(ObjectType.Resource, resource.Id)] = resource.Version;
+            }
+        }
+
+        foreach (var link in linkSnapshots)
+        {
+            objectVersions[new ObjectRef(ObjectType.Link, link.Id)] = link.Version ?? 1;
+        }
+
+        foreach (var setting in appSettingSnapshots)
+        {
+            objectVersions[new ObjectRef(ObjectType.AppSetting, setting.Id)] = setting.Version;
+        }
+
+        foreach (var application in applicationSnapshots)
+        {
+            objectVersions[new ObjectRef(ObjectType.Application, application.Id)] = application.Version;
+        }
+
+        return snapshot with { ObjectVersions = objectVersions };
     }
 
     private static ComponentSnapshot MapComponent(ComponentAggregate component) => new(
@@ -216,7 +286,7 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
             group.Name,
             group.Region,
             group.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase),
-            group.ForcedNames.ToDictionary(value => value.EnvironmentId, value => value.Name))).ToArray(),
+            group.ForcedNames.ToDictionary(value => value.EnvironmentId, value => value.Name)) { Version = group.Version }).ToArray(),
         component.Resources.Select(resource => new ResourceSnapshot(
             resource.Id,
             resource.ResourceGroupId,
@@ -234,8 +304,13 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
                 child.Id,
                 child.Type,
                 child.Name,
-                child.GetProperties())).ToArray()) { DefaultIdentityResourceId = resource.DefaultIdentityResourceId }).ToArray())
+                child.GetProperties())).ToArray())
+        {
+            DefaultIdentityResourceId = resource.DefaultIdentityResourceId,
+            Version = resource.Version
+        }).ToArray())
     {
+        Version = component.Version,
         TargetsAllEnvironments = component.TargetsAllEnvironments,
         Naming = component.DefaultNameTemplate is not null || component.NamingOverrides.Count > 0
             ? new ComponentNamingSnapshot(

@@ -75,6 +75,13 @@ export class ProjectWorkspace {
         iconName: 'folder',
       }),
       this.navigation.register({
+        id: `project-findings-${projectId}`,
+        labelKey: 'project.findingsLink',
+        path: `${base}/findings`,
+        scope: 'project',
+        iconName: 'alert',
+      }),
+      this.navigation.register({
         id: `project-settings-${projectId}`,
         labelKey: 'project.settingsLink',
         path: `${base}/settings`,

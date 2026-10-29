@@ -21,7 +21,17 @@ public abstract class LinkKindHandler(
 
     public bool IsImplicitOnly { get; } = isImplicitOnly;
 
+    public virtual bool IsResourceHostingRelationship => false;
+
     public bool CreatesDeploymentDependency { get; } = createsDeploymentDependency;
+
+    public virtual bool RequiresSameSubscriptionAndRegion => false;
+
+    public virtual bool CreatesDeploymentDependencyFor(
+        LinkSnapshot link,
+        ModelSnapshot snapshot,
+        CatalogResourceTypeDescriptor source,
+        CatalogResourceTypeDescriptor target) => CreatesDeploymentDependency;
 
     public LinkIdentityRequirement IdentityRequirement { get; } = identityRequirement;
 

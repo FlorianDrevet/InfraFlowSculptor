@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Reflection;
 using InfraFlowSculptor.Application.Common.Auditing;
+using InfraFlowSculptor.Application.Common.Errors;
 using ErrorOr;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
@@ -69,6 +70,19 @@ public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
 
             dbContext.ClearDomainEvents();
             return response;
+        }
+        catch (FindingAcknowledgmentConflictException)
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+
+            dbContext.ClearDomainEvents();
+            dbContext.ClearTrackedChanges();
+            return (dynamic)new List<Error>
+            {
+                Error.Conflict(
+                    FindingAcknowledgmentErrors.AlreadyAcknowledgedCode,
+                    FindingAcknowledgmentErrors.AlreadyAcknowledgedMessage)
+            };
         }
         catch (ConcurrencyConflictException)
         {

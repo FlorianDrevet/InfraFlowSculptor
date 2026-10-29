@@ -38,7 +38,7 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 |---|---|---|
 | SDK .NET | `10.0.203` | Oui (`10.0.203`) |
 | Node | `24.15.0` | Oui (`24.15.0`) |
-| Docker | `27.0.0` | Oui (`29.4.3`, daemon répond ; prérequis vérifiés le 2026-10-27) |
+| Docker | `27.0.0` | Oui (`29.4.3` installé) ; service/daemon arrêté le 2026-10-29, démarrage refusé par Windows faute de droits. |
 | CLI Aspire | `13.5.x` | Oui (`13.5.4`, DCP `0.22.11`; packages AppHost épinglés à `13.5.3`) |
 | Python | `3.11` | Oui (`3.14.4`) |
 | PowerShell 7 | `7.5.0` | Oui (`7.6.5`) |
@@ -103,6 +103,10 @@ Sur délégation de Florian, Claude CLI recommande de reporter RG-NOM-10 à J0-2
 Sur demande de Florian, l'avis de Claude CLI est retenu : conserver `2026.10-pilot` immuable et bloquer J0-15. La recette manuelle exige une liaison Accès vers `log main`, mais le descripteur publié de Log Analytics n'autorise que les liaisons `Logging` et `Diagnostics` comme cibles. DEC-107 impose une nouvelle version pour toute évolution du catalogue. Pour reprendre, il faut préciser la version de catalogue à publier et comment la cible de démonstration l'utilisera, ou autoriser une correction du scénario manuel vers une cible compatible. RG-LIA-24 reste reportée à J2 conformément au plan et n'est pas bloquante. Détails et vérifications dans [`J0-15-blocage-20261029.md`](docs/plan/revues/J0-15-blocage-20261029.md).
 
 **Résolution — 2026-10-29 :** Florian a confié le choix à Codex après avis Claude. Le catalogue correctif `2026.10-pilot.1` autorise `Access` vers Log Analytics; seul le projet temporaire `shop15` l'utilise, tandis que `shop` garde la version publiée originale. La recette Scalar locale est passée et le projet temporaire a été archivé de façon récupérable. Voir [`J0-15-deblocage-20261029.md`](docs/plan/revues/J0-15-deblocage-20261029.md).
+
+### J0-20 — recette locale en attente — 2026-10-29
+
+Le code et les tests sans conteneurs passent. Les tests PostgreSQL/Testcontainers et le parcours authentifié ne démarrent pas sur ce PC : Windows refuse le démarrage du service Docker, et `IFS_E2E_PASSWORD` n'est pas configuré localement. Le test PostgreSQL d'un doublon d'acquittement est ajouté; la CI dispose du secret de recette et doit fournir les captures `/findings` en 1440/390 px. Comparaison de la capture bureau à `ProjectFindings.html` à faire avant de déclarer R-05 terminé. Aucun coût ni changement Azure.
 
 ### R-04 — portée d’idempotence de création d’organisation — 2026-10-27
 

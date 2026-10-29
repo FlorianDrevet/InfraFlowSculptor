@@ -33,4 +33,5 @@ public static class AuditActions
     public const string LinkCreated = "component.link.created";
     public const string LinkUpdated = "component.link.updated";
     public const string LinkDeleted = "component.link.deleted";
+    public const string FindingAcknowledged = "project.finding.acknowledged";
 }

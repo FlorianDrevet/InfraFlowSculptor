@@ -418,6 +418,7 @@ public static class ResourcesController
                     cancellationToken);
                 return result.Match<IResult>(
                     impact => Results.Ok(new LinkImpactResponse(
+                        impact.ModelVersion,
                         MapSeverity(impact.Severity),
                         impact.Items.Select(item => new LinkImpactItemResponse(
                             item.Code,
@@ -525,7 +526,13 @@ public static class ResourcesController
                 IModelCommandExecutor executor,
                 CancellationToken cancellationToken) =>
             {
-                var command = new RemoveLinkCommand(projectId, componentId, resourceId, linkId, request.ExpectedLinkVersion);
+                var command = new RemoveLinkCommand(
+                    projectId,
+                    componentId,
+                    resourceId,
+                    linkId,
+                    request.ExpectedLinkVersion,
+                    request.ExpectedModelVersion);
                 var result = await executor.ExecuteAsync([command], ModelCommandMode.Apply, cancellationToken);
                 return result.Match<IResult>(
                     execution => Results.Ok(new LinkMutationResponse(linkId, execution.Summary, execution.Effects, execution.Findings)),

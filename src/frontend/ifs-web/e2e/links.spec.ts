@@ -5,7 +5,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { loginAsAlice } from './support/login';
 
 const CONTOSO_ID = '33333333-3333-4333-8333-333333333333';
-const RECIPE_PROJECT_NAME = 'Boutique en ligne recette J0-15';
+const RECIPE_PROJECT_CODE = 'shop';
 const VAULT_NAME = 'kvj018';
 const EXISTING_VAULT_ID =
   '/subscriptions/00000000-0000-4000-8000-000000000014/resourceGroups/rg-recipe/providers/Microsoft.KeyVault/vaults/kvj018';
@@ -22,7 +22,9 @@ test('Alice crée une liaison et un secret de pipeline, puis vérifie les implic
 
   await loginAsAlice(page);
   await page.goto(`/o/${CONTOSO_ID}/projects`);
-  const projectCard = page.locator('.projects-page__card').filter({ hasText: RECIPE_PROJECT_NAME });
+  const projectCard = page.locator('.projects-page__card').filter({
+    has: page.locator('.projects-page__code').getByText(RECIPE_PROJECT_CODE, { exact: true }),
+  });
   await expect(projectCard).toBeVisible();
   const projectNavigation = page.waitForURL(/\/projects\/[0-9a-f-]+$/i);
   await projectCard.locator('.projects-page__project-name').click();
@@ -123,17 +125,21 @@ test('Alice crée une liaison et un secret de pipeline, puis vérifie les implic
       'aria-pressed',
       'true',
     );
-    await expect(selects.nth(0).locator('option').filter({ hasText: 'core / main' })).toHaveCount(1);
+    const workspaceOption = selects.nth(0).locator('option', {
+      hasText: 'core / main · LogAnalyticsWorkspace',
+    });
+    await expect(workspaceOption).toHaveCount(1);
     const accessTargets = await selects.nth(0).locator('option').allTextContents();
-    expect(accessTargets, 'Cibles proposées pour la liaison Accès').toContain('core / main');
-    await selects.nth(0).selectOption({ label: 'core / main' });
+    expect(accessTargets, 'Cibles proposées pour la liaison Accès').toContain(
+      'core / main · LogAnalyticsWorkspace',
+    );
+    await selects.nth(0).selectOption({ label: 'core / main · LogAnalyticsWorkspace' });
     await expect(selects).toHaveCount(2);
 
     const identitySelect = selects.nth(1);
     const identityOptions = await identitySelect.locator('option').allTextContents();
-    const defaultIdentity = identityOptions.find((option) => option.includes('api'))?.trim();
-    expect(defaultIdentity).toBeTruthy();
-    await identitySelect.selectOption({ label: defaultIdentity! });
+    expect(identityOptions.map((option) => option.trim())).toContain('Identité système');
+    await identitySelect.selectOption('System:');
     for (const roleChoice of await dialog
       .locator('.resource-links__choices input[type="checkbox"]')
       .all()) {
@@ -165,7 +171,8 @@ test('Alice crée une liaison et un secret de pipeline, puis vérifie les implic
     const explicitAccess = page
       .locator('.resource-links__item')
       .filter({ hasText: 'Accès' })
-      .filter({ hasText: 'core / main' });
+      .filter({ hasText: 'core / main' })
+      .filter({ hasText: 'Identité système' });
     await expect(explicitAccess).toContainText('Log Analytics Reader');
     await expect(explicitAccess).toContainText('Origine : liaison explicite');
     await expect(implicitSecretRead).toContainText(`Paramètre applicatif : ${SETTING_NAME}`);
@@ -196,9 +203,19 @@ test('Alice crée une liaison et un secret de pipeline, puis vérifie les implic
       fullPage: false,
     });
   } finally {
-    if (accessLinkCreated) await removeAccessLink(page, resourceUrl);
-    if (settingCreated) await removeRecipeAppSetting(page, resourceUrl);
-    if (vaultCreated) await removeRecipeVault(page, componentUrl);
+    const cleanupErrors: unknown[] = [];
+    for (const cleanup of [
+      async () => { if (accessLinkCreated) await removeAccessLink(page, resourceUrl, 'Identité système'); },
+      async () => { if (settingCreated) await removeRecipeAppSetting(page, resourceUrl); },
+      async () => { if (vaultCreated) await removeRecipeVault(page, componentUrl); },
+    ]) {
+      try {
+        await cleanup();
+      } catch (error) {
+        cleanupErrors.push(error);
+      }
+    }
+    expect(cleanupErrors, 'Every test-created resource should be cleaned up').toEqual([]);
   }
 });
 
@@ -225,7 +242,11 @@ async function addRecipeKeyVault(page: Page, onCreated: () => void): Promise<voi
       ) {
         return false;
       }
-      return response.request().postData()?.includes(`"targetId":"${targetId}"`) ?? false;
+      try {
+        return hasTargetId(response.request().postDataJSON(), targetId);
+      } catch {
+        return false;
+      }
     }),
   );
   const createResponse = page.waitForResponse(
@@ -251,17 +272,28 @@ async function addRecipeKeyVault(page: Page, onCreated: () => void): Promise<voi
   ).toBeVisible();
 }
 
-async function removeAccessLink(page: Page, resourceUrl: string): Promise<void> {
+async function removeAccessLink(
+  page: Page,
+  resourceUrl: string,
+  identityLabel: string,
+): Promise<void> {
   await page.goto(`${resourceUrl}?tab=links`);
   const explicitAccess = page
     .locator('.resource-links__item')
     .filter({ hasText: 'Accès' })
-    .filter({ hasText: 'core / main' });
+    .filter({ hasText: 'core / main' })
+    .filter({ hasText: identityLabel });
   await expect(explicitAccess).toBeVisible();
   await explicitAccess.getByRole('button', { name: 'Retirer', exact: true }).click();
   const removalDialog = page.getByRole('dialog', { name: 'Retirer', exact: true });
   await expect(removalDialog).toBeVisible();
+  const removalResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'DELETE' &&
+      /\/links\/[0-9a-f-]+$/i.test(new URL(response.url()).pathname),
+  );
   await removalDialog.getByRole('button', { name: 'Retirer la liaison', exact: true }).click();
+  expect((await removalResponse).status()).toBe(200);
   await expect(explicitAccess).toHaveCount(0);
 }
 
@@ -324,4 +356,9 @@ async function assertNoHorizontalOverflow(page: Page): Promise<void> {
     scrollWidth: document.documentElement.scrollWidth,
   }));
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
+}
+
+function hasTargetId(body: unknown, targetId: string): boolean {
+  return typeof body === 'object' && body !== null && 'targetId' in body
+    && typeof body.targetId === 'string' && body.targetId === targetId;
 }

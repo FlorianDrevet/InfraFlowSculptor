@@ -430,6 +430,84 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.ToTable("organizations", (string)null);
                 });
 
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.FindingAcknowledgmentAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AcknowledgedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("acknowledged_by");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("comment");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DetailKey")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("detail_key");
+
+                    b.Property<Guid?>("EnvironmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("environment_id");
+
+                    b.Property<string>("FindingCode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("finding_code");
+
+                    b.Property<int>("ObjectVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("object_version");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<string>("SubjectType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("subject_type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_finding_acknowledgments");
+
+                    b.HasIndex("AcknowledgedBy")
+                        .HasDatabaseName("ix_finding_acknowledgments_acknowledged_by");
+
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_finding_acknowledgments_organization_id");
+
+                    b.HasIndex("ProjectId", "FindingCode", "SubjectType", "SubjectId", "EnvironmentId", "ObjectVersion", "CreatedAt")
+                        .HasDatabaseName("ix_finding_acknowledgments_active_lookup");
+
+                    b.HasIndex("ProjectId", "FindingCode", "SubjectType", "SubjectId", "EnvironmentId", "ObjectVersion", "DetailKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_finding_acknowledgments_identity");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("ProjectId", "FindingCode", "SubjectType", "SubjectId", "EnvironmentId", "ObjectVersion", "DetailKey"), false);
+
+                    b.ToTable("finding_acknowledgments", (string)null);
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.LinkAggregate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2024,6 +2102,30 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.Navigation("Members");
                 });
 
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.FindingAcknowledgmentAggregate", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.UserProfileAggregate.UserProfile", null)
+                        .WithMany()
+                        .HasForeignKey("AcknowledgedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_finding_acknowledgments_user_profiles_acknowledged_by");
+
+                    b.HasOne("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_finding_acknowledgments_organizations_organization_id");
+
+                    b.HasOne("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_finding_acknowledgments_projects_project_id");
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.LinkAggregate", b =>
                 {
                     b.HasOne("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", null)
@@ -2224,6 +2326,10 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                             b1.Property<Guid>("SubscriptionId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("subscription_id");
+
+                            b1.Property<int>("Version")
+                                .HasColumnType("integer")
+                                .HasColumnName("version");
 
                             b1.HasKey("ProjectId", "Id")
                                 .HasName("pk_project_environments");

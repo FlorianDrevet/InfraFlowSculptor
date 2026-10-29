@@ -9,6 +9,7 @@ describe('project feature routes', () => {
       'environments',
       'environments/:environmentId',
       'components',
+      'findings',
       'settings',
       'naming',
       'members',

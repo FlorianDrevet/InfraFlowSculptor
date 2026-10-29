@@ -90,6 +90,7 @@ public sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectAggre
             environments.Property(environment => environment.Id)
                 .HasColumnName("environment_id")
                 .ValueGeneratedNever();
+            environments.Property(environment => environment.Version).IsRequired();
             environments.Property(environment => environment.Name).HasMaxLength(50).IsRequired();
             environments.Property(environment => environment.Code).HasMaxLength(8).IsRequired();
             environments.Property(environment => environment.Position).IsRequired();

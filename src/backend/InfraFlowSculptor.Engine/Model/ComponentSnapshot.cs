@@ -12,6 +12,8 @@ public sealed record ComponentSnapshot(
     IReadOnlyList<ResourceGroupSnapshot> ResourceGroups,
     IReadOnlyList<ResourceSnapshot> Resources)
 {
+    public int Version { get; init; } = 1;
+
     public bool TargetsAllEnvironments { get; init; }
 
     public ComponentNamingSnapshot? Naming { get; init; }

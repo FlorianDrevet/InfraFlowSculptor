@@ -10,6 +10,7 @@ import type {
   ComponentResponse,
   ResourceResponse,
 } from '../../core/api/generated';
+import { ApiError } from '../../core/http/api-error';
 import { CatalogService } from '../../core/catalog/catalog.service';
 import { ProjectsService } from '../../core/projects/projects.service';
 import { ResourcesService } from '../../core/resources/resources.service';
@@ -20,6 +21,10 @@ interface ResourceOutputChoice {
   resourceName: string;
   outputName: string;
 }
+
+const PIPELINE_VARIABLE_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]{0,127}$/;
+const SECRET_NAME_PATTERN = /^[A-Za-z0-9-]{1,127}$/;
+const APP_SETTING_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_.-]{0,255}$/;
 
 @Component({
   selector: 'app-resource-app-settings-panel',
@@ -46,11 +51,15 @@ export class ResourceAppSettingsPanel implements OnInit {
   protected readonly loadError = signal(false);
   protected readonly saving = signal(false);
   protected readonly actionError = signal(false);
+  protected readonly secretDeclarationRequired = signal(false);
+  protected readonly secretSuspectError = signal(false);
   protected readonly formOpen = signal(false);
   protected readonly editing = signal<AppSettingResponse | null>(null);
   protected readonly name = signal('');
   protected readonly sourceKind = signal<AppSettingSourceKind>('KeyVaultSecret');
   protected readonly literalValue = signal('');
+  protected readonly overrides = signal<Record<string, string> | null>(null);
+  protected readonly forceNonSecret = signal(false);
   protected readonly sourceResourceId = signal('');
   protected readonly outputName = signal('');
   protected readonly keyVaultResourceId = signal('');
@@ -65,14 +74,18 @@ export class ResourceAppSettingsPanel implements OnInit {
     this.outputChoices().some((choice) => choice.resourceId === resource.id),
   ));
   protected readonly selectedOutputs = computed(() => this.outputChoices().filter((choice) => choice.resourceId === this.sourceResourceId()));
-  protected readonly canSubmit = computed(() => this.name().trim().length > 0 && !this.saving()
-    && (this.sourceKind() !== 'KeyVaultSecret' || (this.keyVaultResourceId().length > 0 && this.secretName().trim().length > 0))
+  protected readonly canSubmit = computed(() => APP_SETTING_NAME_PATTERN.test(this.name().trim()) && !this.saving()
+    && (this.sourceKind() !== 'KeyVaultSecret' || (this.keyVaultResourceId().length > 0
+      && SECRET_NAME_PATTERN.test(this.secretName().trim())
+      && (this.secretFeedKind() !== 'PipelineSecret' || PIPELINE_VARIABLE_NAME_PATTERN.test(this.pipelineVariableName().trim()))))
     && (this.sourceKind() !== 'ResourceOutput' || (this.sourceResourceId().length > 0 && this.outputName().length > 0)));
 
   private readonly resources = inject(ResourcesService);
   private readonly projects = inject(ProjectsService);
   private readonly catalog = inject(CatalogService);
   private readonly transloco = inject(TranslocoService);
+  private secretNameCustomized = false;
+  private pipelineVariableNameCustomized = false;
 
   ngOnInit(): void {
     const defaultVault = this.keyVaults()[0];
@@ -100,15 +113,21 @@ export class ResourceAppSettingsPanel implements OnInit {
     this.name.set(setting.name);
     this.sourceKind.set(setting.sourceKind);
     this.literalValue.set(setting.literalValue ?? '');
+    this.overrides.set(setting.overrides);
+    this.forceNonSecret.set(setting.secretValueDeclaredNonSecret);
+    this.secretDeclarationRequired.set(setting.secretValueDeclaredNonSecret);
     this.sourceResourceId.set(setting.sourceResourceId ?? '');
     this.outputName.set(setting.outputName ?? '');
     this.keyVaultResourceId.set(setting.keyVaultResourceId ?? '');
     this.secretName.set(setting.secretName ?? '');
     this.pipelineVariableName.set(setting.pipelineVariableName ?? '');
+    this.secretNameCustomized = Boolean(setting.secretName);
+    this.pipelineVariableNameCustomized = Boolean(setting.pipelineVariableName);
     this.identityResourceId.set(setting.identityResourceId ?? '');
     this.secretFeedKind.set(setting.secretFeedKind === 'ManagedOutsideIfs' ? 'ManagedOutsideIfs' : 'PipelineSecret');
     this.formOpen.set(true);
     this.actionError.set(false);
+    this.secretSuspectError.set(false);
   }
 
   protected cancelForm(): void {
@@ -116,32 +135,75 @@ export class ResourceAppSettingsPanel implements OnInit {
     this.formOpen.set(false);
     this.editing.set(null);
     this.actionError.set(false);
+    this.secretSuspectError.set(false);
   }
 
   protected updateName(value: string): void {
     this.name.set(value);
-    if (!this.editing() && this.sourceKind() === 'KeyVaultSecret') {
+    if (this.sourceKind() === 'KeyVaultSecret') {
       const vault = this.keyVaults().find((item) => item.id === this.keyVaultResourceId());
-      if (vault) this.pipelineVariableName.set(this.defaultPipelineName(vault.logicalName, value));
-      this.secretName.set(this.defaultSecretName(value));
+      if (vault && !this.pipelineVariableNameCustomized)
+        this.pipelineVariableName.set(this.defaultPipelineName(vault.logicalName, value));
+      if (!this.secretNameCustomized) this.secretName.set(this.defaultSecretName(value));
+    }
+  }
+
+  protected updateLiteralValue(value: string): void {
+    if (value !== this.literalValue()) {
+      this.forceNonSecret.set(false);
+      this.secretDeclarationRequired.set(false);
+      this.secretSuspectError.set(false);
+      this.actionError.set(false);
+    }
+    this.literalValue.set(value);
+  }
+
+  protected updateSecretName(value: string): void {
+    this.secretName.set(value);
+    this.secretNameCustomized = true;
+  }
+
+  protected updatePipelineVariableName(value: string): void {
+    this.pipelineVariableName.set(value);
+    this.pipelineVariableNameCustomized = true;
+  }
+
+  protected updateSecretFeedKind(value: 'PipelineSecret' | 'ManagedOutsideIfs'): void {
+    this.secretFeedKind.set(value);
+    if (value === 'PipelineSecret' && !this.pipelineVariableNameCustomized) {
+      const vault = this.keyVaults().find((item) => item.id === this.keyVaultResourceId()) ?? this.keyVaults()[0];
+      if (vault) {
+        if (!this.keyVaultResourceId()) this.keyVaultResourceId.set(vault.id);
+        this.pipelineVariableName.set(this.defaultPipelineName(vault.logicalName, this.name()));
+      }
     }
   }
 
   protected updateSourceKind(value: AppSettingSourceKind): void {
     this.sourceKind.set(value);
+    if (value === 'KeyVaultSecret') {
+      const vault = this.keyVaults().find((item) => item.id === this.keyVaultResourceId()) ?? this.keyVaults()[0];
+      if (vault && !this.keyVaultResourceId()) this.keyVaultResourceId.set(vault.id);
+      if (vault && !this.pipelineVariableNameCustomized)
+        this.pipelineVariableName.set(this.defaultPipelineName(vault.logicalName, this.name()));
+      if (!this.secretNameCustomized) this.secretName.set(this.defaultSecretName(this.name()));
+    }
     this.actionError.set(false);
+    this.secretSuspectError.set(false);
   }
 
   protected updateKeyVault(value: string): void {
     this.keyVaultResourceId.set(value);
     const vault = this.keyVaults().find((item) => item.id === value);
-    if (vault && !this.editing()) this.pipelineVariableName.set(this.defaultPipelineName(vault.logicalName, this.name()));
+    if (vault && !this.pipelineVariableNameCustomized)
+      this.pipelineVariableName.set(this.defaultPipelineName(vault.logicalName, this.name()));
   }
 
   protected async save(): Promise<void> {
     if (!this.canSubmit() || !this.canEdit()) return;
     this.saving.set(true);
     this.actionError.set(false);
+    this.secretSuspectError.set(false);
     const body = this.createRequest();
     try {
       const editing = this.editing();
@@ -158,8 +220,14 @@ export class ResourceAppSettingsPanel implements OnInit {
       this.formOpen.set(false);
       this.editing.set(null);
       await this.load();
-    } catch {
-      this.actionError.set(true);
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'VAL-PAR-SECRET-SUSPECT'
+        && this.sourceKind() === 'Literal') {
+        this.secretDeclarationRequired.set(true);
+        this.secretSuspectError.set(true);
+      } else {
+        this.actionError.set(true);
+      }
     } finally {
       this.saving.set(false);
     }
@@ -195,7 +263,7 @@ export class ResourceAppSettingsPanel implements OnInit {
     return {
       name: this.name().trim(),
       sourceKind,
-      forceNonSecret: false,
+      forceNonSecret: sourceKind === 'Literal' && this.forceNonSecret(),
       literalValue: sourceKind === 'Literal' ? this.literalValue() : null,
       sourceResourceId: sourceKind === 'ResourceOutput' ? this.sourceResourceId() || null : null,
       outputName: sourceKind === 'ResourceOutput' ? this.outputName() || null : null,
@@ -206,13 +274,19 @@ export class ResourceAppSettingsPanel implements OnInit {
         ? this.pipelineVariableName().trim() || null
         : null,
       identityResourceId: sourceKind === 'KeyVaultSecret' ? this.identityResourceId() || null : null,
-      overrides: null,
+      overrides: sourceKind === 'Literal' ? this.overrides() : null,
     };
   }
 
   private resetForm(): void {
+    this.secretNameCustomized = false;
+    this.pipelineVariableNameCustomized = false;
     this.name.set('');
     this.literalValue.set('');
+    this.overrides.set(null);
+    this.forceNonSecret.set(false);
+    this.secretDeclarationRequired.set(false);
+    this.secretSuspectError.set(false);
     this.sourceResourceId.set('');
     this.outputName.set('');
     this.secretName.set('');
@@ -264,7 +338,7 @@ export class ResourceAppSettingsPanel implements OnInit {
   }
 
   private defaultSecretName(name: string): string {
-    return name.trim().replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+    return name.trim().replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase().slice(0, 127);
   }
 
   private defaultPipelineName(vaultName: string, settingName: string): string {
@@ -273,6 +347,7 @@ export class ResourceAppSettingsPanel implements OnInit {
       .replace(/[^a-zA-Z0-9_]+/g, '_')
       .replace(/_+/g, '_')
       .replace(/^_|_$/g, '')
-      .toUpperCase();
+      .toUpperCase()
+      .slice(0, 128);
   }
 }

@@ -202,8 +202,9 @@ test('Alice ajoute, règle et supprime des ressources du catalogue', async ({ pa
       'padding-left',
       viewportWidth <= 760 ? '16px' : '24px',
     );
-    await expect(deletionDialog).toContainText('Liaisons entrantes');
-    await expect(deletionDialog).toContainText('Paramètres d’application');
+    await expect(deletionDialog).toContainText('Effets implicites');
+    await expect(deletionDialog).not.toContainText('Liaisons entrantes');
+    await expect(deletionDialog).not.toContainText('Paramètres d’application');
     await assertNoSeriousAccessibilityViolations(page);
     await deletionDialog.press('Escape');
     await expect(deletionDialog).toHaveCount(0);

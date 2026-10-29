@@ -22,10 +22,19 @@ public sealed class ExposureResolver(ExposureHandlerRegistry handlers)
 
         var values = EffectiveValueResolver.Resolve(resource, targetId, descriptor.Definition)
             .ToDictionary(value => value.Name, StringComparer.Ordinal);
-        var modeValue = values.TryGetValue(ExposureProperty, out var modeProperty)
-            && modeProperty.Value is { ValueKind: JsonValueKind.String } modeElement
-                ? modeElement.GetString()
-                : nameof(ExposureMode.Public);
+        string? modeValue;
+        if (!values.TryGetValue(ExposureProperty, out var modeProperty) || modeProperty.Value is null)
+        {
+            modeValue = ReadCatalogDefaultExposure(descriptor);
+        }
+        else if (modeProperty.Value is { ValueKind: JsonValueKind.String } modeElement)
+        {
+            modeValue = modeElement.GetString();
+        }
+        else
+        {
+            throw new InvalidOperationException($"Property '{ExposureProperty}' must be a string.");
+        }
 
         if (modeValue is null
             || !Enum.TryParse<ExposureMode>(modeValue, ignoreCase: false, out var mode)
@@ -44,6 +53,28 @@ public sealed class ExposureResolver(ExposureHandlerRegistry handlers)
     private static bool SupportsExposure(CatalogResourceTypeDescriptor descriptor) =>
         descriptor.Definition.GetProperty("properties").EnumerateArray().Any(property =>
             string.Equals(property.GetProperty("name").GetString(), ExposureProperty, StringComparison.Ordinal));
+
+    private static string ReadCatalogDefaultExposure(CatalogResourceTypeDescriptor descriptor)
+    {
+        foreach (var property in descriptor.Definition.GetProperty("properties").EnumerateArray())
+        {
+            if (!string.Equals(property.GetProperty("name").GetString(), ExposureProperty, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (property.TryGetProperty("default", out var defaultValue)
+                && defaultValue.ValueKind == JsonValueKind.String
+                && defaultValue.GetString() is { } mode)
+            {
+                return mode;
+            }
+
+            throw new InvalidOperationException($"Property '{ExposureProperty}' must declare a string default.");
+        }
+
+        throw new InvalidOperationException($"Property '{ExposureProperty}' is not declared by the resource type.");
+    }
 
     private static List<string> ReadRanges(Dictionary<string, EffectivePropertyValue> values)
     {

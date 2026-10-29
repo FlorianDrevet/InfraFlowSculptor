@@ -2,7 +2,9 @@ import { Injectable, inject } from '@angular/core';
 import { Subject, tap } from 'rxjs';
 import { Api } from '../api/generated/api';
 import {
+  acknowledgeFinding,
   addProjectEnvironment,
+  applyFindingFix,
   assignProjectRole,
   deleteProject as deleteProjectRequest,
   deleteProjectEnvironment,
@@ -10,6 +12,7 @@ import {
   getProject,
   getProjectMemberPermissions,
   getProjectNaming,
+  getProjectValidation,
   listProjectEnvironments,
   listProjects,
   moveProjectEnvironment,
@@ -23,6 +26,8 @@ import {
   setProjectNaming,
 } from '../api/generated';
 import type {
+  AcknowledgeFindingRequest,
+  ApplyFindingFixRequest,
   AddProjectEnvironmentRequest,
   AssignProjectRoleRequest,
   DeleteProjectEnvironmentRequest,
@@ -55,6 +60,18 @@ export class ProjectsService {
 
   environments(projectId: string) {
     return this.api.invoke(listProjectEnvironments, { id: projectId });
+  }
+
+  validation(projectId: string) {
+    return this.api.invoke(getProjectValidation, { id: projectId });
+  }
+
+  acknowledgeFinding(projectId: string, code: string, body: AcknowledgeFindingRequest) {
+    return this.api.invoke(acknowledgeFinding, { id: projectId, code, body });
+  }
+
+  applyFindingFix(projectId: string, code: string, body: ApplyFindingFixRequest) {
+    return this.api.invoke(applyFindingFix, { id: projectId, code, body });
   }
 
   namingSettings(projectId: string) {

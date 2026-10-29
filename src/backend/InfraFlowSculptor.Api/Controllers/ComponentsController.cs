@@ -172,11 +172,11 @@ public static class ComponentsController
                 IModelCommandExecutor executor,
                 CancellationToken cancellationToken) =>
             {
-                if (request.TypeOverrides is null)
+                if (request.TypeOverrides is null || request.TypeOverrides.Any(value => value is null))
                 {
                     return Results.ValidationProblem(new Dictionary<string, string[]>
                     {
-                        ["typeOverrides"] = ["La liste des gabarits par type est obligatoire."]
+                        ["typeOverrides"] = ["La liste des gabarits par type est obligatoire et ne peut pas contenir d’élément nul."]
                     });
                 }
 

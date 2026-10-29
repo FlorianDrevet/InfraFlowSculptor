@@ -16,7 +16,8 @@ public sealed record RemoveLinkCommand(
     Guid ComponentId,
     Guid ResourceId,
     Guid LinkId,
-    int ExpectedLinkVersion) : IModelCommand, IProjectScopedRequest
+    int ExpectedLinkVersion,
+    int ExpectedModelVersion) : IModelCommand, IProjectScopedRequest
 {
     public ModelWorkspaceId Workspace => ModelWorkspaceId.Main(new(ProjectId));
 }

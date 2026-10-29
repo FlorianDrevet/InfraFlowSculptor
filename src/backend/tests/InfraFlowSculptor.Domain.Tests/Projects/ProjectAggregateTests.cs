@@ -143,6 +143,32 @@ public sealed class ProjectAggregateTests
     }
 
     [Fact]
+    public void UpdatingEnvironmentAdvancesItsObjectVersion()
+    {
+        var project = CreateProject(new UserProfileId(Guid.NewGuid()));
+        var environment = project.AddEnvironment(
+            Guid.NewGuid(), "Development", "dev", Guid.NewGuid(), "francecentral", 1, false, [], [], "").Value;
+        var initialVersion = environment.Version;
+
+        var result = project.UpdateEnvironment(
+            environment.Id,
+            environment.Name,
+            environment.Code,
+            environment.SubscriptionId,
+            environment.Region,
+            environment.IsProtected,
+            environment.Approvers,
+            environment.Runners,
+            environment.Description,
+            [],
+            confirmImpact: false,
+            deploymentConnection: "changed-dev-connection");
+
+        Assert.False(result.IsError);
+        Assert.Equal(initialVersion + 1, environment.Version);
+    }
+
+    [Fact]
     public void UserCannotDeclareSystemTags()
     {
         var project = CreateProject(new UserProfileId(Guid.NewGuid()));

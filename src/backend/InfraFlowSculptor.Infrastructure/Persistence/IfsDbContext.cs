@@ -167,7 +167,12 @@ public class IfsDbContext(
         {
             throw new ConcurrencyConflictException(exception);
         }
-        catch (DbUpdateException exception) when (IsConcurrentOrganizationMembership(exception))
+        catch (DbUpdateException exception) when (IsConcurrentFindingAcknowledgment(exception))
+        {
+            throw new FindingAcknowledgmentConflictException(exception);
+        }
+        catch (DbUpdateException exception) when (
+            IsConcurrentOrganizationMembership(exception))
         {
             throw new ConcurrencyConflictException(exception);
         }
@@ -242,6 +247,11 @@ public class IfsDbContext(
         exception.InnerException is PostgresException postgresException
         && postgresException.SqlState == PostgresErrorCodes.UniqueViolation
         && postgresException.ConstraintName == "pk_organization_members";
+
+    internal static bool IsConcurrentFindingAcknowledgment(DbUpdateException exception) =>
+        exception.InnerException is PostgresException postgresException
+        && postgresException.SqlState == PostgresErrorCodes.UniqueViolation
+        && postgresException.ConstraintName == "ux_finding_acknowledgments_identity";
 
     private static Guid ReadGuid(object? value) => value switch
     {

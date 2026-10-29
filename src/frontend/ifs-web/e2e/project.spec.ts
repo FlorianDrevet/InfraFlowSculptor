@@ -37,7 +37,7 @@ test('Alice parcourt et gère les écrans du projet', async ({ page, browser }) 
   const shopCard = page.locator('.projects-page__card').filter({
     has: page.locator('.projects-page__code').getByText('shop', { exact: true }),
   });
-  await expect(shopCard.getByRole('button', { name: 'shop', exact: true })).toBeVisible();
+  await expect(shopCard.locator('.projects-page__project-name')).toHaveText('Boutique en ligne');
   await expect(shopCard.locator('.projects-page__metadata dd').first()).toHaveText(/\d+/);
   await assertNoSeriousAccessibilityViolations(page);
 

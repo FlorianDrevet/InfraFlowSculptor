@@ -206,11 +206,27 @@
       <div class="component-detail__dependencies">
         <section>
           <h4>{{ 'resourceGroup.dependsOn' | transloco }}</h4>
-          <p>{{ 'resourceGroup.noDependencies' | transloco }}</p>
+          @if (componentDependencies()?.dependsOn?.length) {
+            <p>
+              @for (dependency of componentDependencies()!.dependsOn; track dependency; let last = $last) {
+                {{ dependency }}@if (!last) {, }
+              }
+            </p>
+          } @else {
+            <p>{{ 'resourceGroup.noDependencies' | transloco }}</p>
+          }
         </section>
         <section>
           <h4>{{ 'resourceGroup.usedBy' | transloco }}</h4>
-          <p>{{ 'resourceGroup.noDependencies' | transloco }}</p>
+          @if (componentDependencies()?.usedBy?.length) {
+            <p>
+              @for (dependent of componentDependencies()!.usedBy; track dependent; let last = $last) {
+                {{ dependent }}@if (!last) {, }
+              }
+            </p>
+          } @else {
+            <p>{{ 'resourceGroup.noDependencies' | transloco }}</p>
+          }
         </section>
       </div>
     </section>

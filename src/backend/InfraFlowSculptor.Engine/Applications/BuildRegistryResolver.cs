@@ -52,9 +52,19 @@ public static class BuildRegistryResolver
             var item = targetId is null
                 ? null
                 : naming.Items.SingleOrDefault(candidate => candidate.ResourceId == registry.Id && candidate.TargetId == targetId);
-            if (item is null || selectedEnvironmentId is not null)
+            if (item is null
+                || HasNamingIssue(naming, registry.Id, targetId)
+                || selectedEnvironmentId is not null)
             {
-                return new BuildRegistryResolution(false, registryComponent.Code, registry.LogicalName, null, false, null, [], selectedEnvironmentId is null);
+                return new BuildRegistryResolution(
+                    false,
+                    registryComponent.Code,
+                    registry.LogicalName,
+                    null,
+                    false,
+                    null,
+                    [],
+                    item is not null && !HasNamingIssue(naming, registry.Id, targetId) && selectedEnvironmentId is null);
             }
 
             return new BuildRegistryResolution(
@@ -71,7 +81,7 @@ public static class BuildRegistryResolver
         var options = targetEnvironments
             .Select(environment => (Environment: environment, Item: naming.Items.SingleOrDefault(candidate =>
                 candidate.ResourceId == registry.Id && candidate.TargetId == environment.Id)))
-            .Where(value => value.Item is not null)
+            .Where(value => value.Item is not null && !HasNamingIssue(naming, registry.Id, value.Environment.Id))
             .Select(value => new BuildRegistryOption(value.Environment.Id, value.Environment.Code, value.Item!.ResourceName))
             .ToArray();
         var chosen = selectedEnvironmentId is null
@@ -95,4 +105,7 @@ public static class BuildRegistryResolver
 
     private static BuildRegistryResolution Unavailable(string? componentCode = null, string? resourceName = null) =>
         new(false, componentCode, resourceName, null, false, null, [], false);
+
+    private static bool HasNamingIssue(NamingPreviewResult naming, Guid resourceId, Guid? targetId) =>
+        targetId is null || naming.Issues.Any(issue => issue.ResourceId == resourceId && issue.TargetId == targetId);
 }

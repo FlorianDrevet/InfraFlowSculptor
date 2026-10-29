@@ -45,6 +45,37 @@ public sealed class ApplicationPipelineTests
     }
 
     [Fact]
+    public void SingleRegistryWithoutAValidNameHasNoValidSelection()
+    {
+        var targetId = Guid.NewGuid();
+        var application = CreateResource(Guid.NewGuid(), "ContainerApp", "api", targetId);
+        var registry = CreateResource(Guid.NewGuid(), "ContainerRegistry", "main", targetId) with
+        {
+            ForcedNames = new Dictionary<Guid, string> { [targetId] = "not_valid" }
+        };
+        var source = CreateSingleComponent(Guid.NewGuid(), "Orders", "orders", application, targetId);
+        var registryComponent = CreateSingleComponent(Guid.NewGuid(), "Platform", "platform", registry, targetId);
+        var snapshot = new ModelSnapshotBuilder()
+            .WithComponent(source)
+            .WithComponent(registryComponent)
+            .Build() with
+        {
+            Links =
+            [
+                new LinkSnapshot(
+                    Guid.NewGuid(), source.Id, application.Id, registryComponent.Id, registry.Id,
+                    LinkKind.ImagePull, LinkOrigin.Explicit, LinkIdentityKind.None, null, [],
+                    LinkAccessScope.Resource, null)
+            ]
+        };
+
+        var result = BuildRegistryResolver.Resolve(snapshot, application.Id, LinkKinds);
+
+        Assert.False(result.IsAvailable);
+        Assert.False(result.HasValidSelection);
+    }
+
+    [Fact]
     public void UnrelatedNamingFindingDoesNotHideTheLinkedBuildRegistry()
     {
         var targetId = Guid.NewGuid();
@@ -140,6 +171,234 @@ public sealed class ApplicationPipelineTests
 
         Assert.Equal("VAL-APP-ETAPE", finding.Code);
         Assert.Equal("command", finding.ParameterName);
+    }
+
+    [Fact]
+    public void RejectsConfiguredStepNameWithIncorrectCase()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "name": "CustomStep",
+              "labels": { "fr": "Étape personnalisée", "en": "Custom step" },
+              "description": "Étape de test.",
+              "defaults": { "enabled": true, "blocking": true, "position": "beforeBuild" },
+              "parameters": [],
+              "pipeline": { "provider": "AzurePipelines", "template": ".ifs/steps/custom.yml" }
+            }
+            """);
+        var configured = new ApplicationStepDefinition("customstep", true, true, ApplicationStepPosition.BeforeBuild, []);
+
+        var finding = Assert.Single(ApplicationStepValidator.Validate(
+            [configured],
+            [new InfraFlowSculptor.Catalog.CatalogPipelineStepDescriptor(document.RootElement)]));
+
+        Assert.Equal("VAL-APP-ETAPE", finding.Code);
+        Assert.Contains("n’est pas disponible", finding.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RejectsConfiguredParameterNameWithIncorrectCase()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "name": "CustomStep",
+              "labels": { "fr": "Étape personnalisée", "en": "Custom step" },
+              "description": "Étape de test.",
+              "defaults": { "enabled": true, "blocking": true, "position": "beforeBuild" },
+              "parameters": [{ "name": "command", "kind": "string", "default": "safe" }],
+              "pipeline": { "provider": "AzurePipelines", "template": ".ifs/steps/custom.yml" }
+            }
+            """);
+        var configured = new ApplicationStepDefinition("CustomStep", true, true, ApplicationStepPosition.BeforeBuild,
+        [new ApplicationStepParameter("Command", "untrusted")]);
+
+        var finding = Assert.Single(ApplicationStepValidator.Validate(
+            [configured],
+            [new InfraFlowSculptor.Catalog.CatalogPipelineStepDescriptor(document.RootElement)]));
+
+        Assert.Equal("VAL-APP-ETAPE", finding.Code);
+        Assert.Equal("Command", finding.ParameterName);
+    }
+
+    [Fact]
+    public void RejectsConfiguredEnumValueWithIncorrectCase()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "name": "CustomStep",
+              "labels": { "fr": "Étape personnalisée", "en": "Custom step" },
+              "description": "Étape de test.",
+              "defaults": { "enabled": true, "blocking": true, "position": "beforeBuild" },
+              "parameters": [{ "name": "command", "kind": "string", "default": "safe", "values": ["safe", "custom"] }],
+              "pipeline": { "provider": "AzurePipelines", "template": ".ifs/steps/custom.yml" }
+            }
+            """);
+        var configured = new ApplicationStepDefinition("CustomStep", true, true, ApplicationStepPosition.BeforeBuild,
+        [new ApplicationStepParameter("command", "SAFE")]);
+
+        var finding = Assert.Single(ApplicationStepValidator.Validate(
+            [configured],
+            [new InfraFlowSculptor.Catalog.CatalogPipelineStepDescriptor(document.RootElement)]));
+
+        Assert.Equal("VAL-APP-ETAPE", finding.Code);
+        Assert.Equal("command", finding.ParameterName);
+    }
+
+    [Fact]
+    public void RejectsUnknownDisabledStepInsteadOfPersistingUnmappedConfiguration()
+    {
+        var configured = new ApplicationStepDefinition("UnknownStep", false, false, ApplicationStepPosition.BeforeBuild, []);
+
+        var finding = Assert.Single(ApplicationStepValidator.Validate([configured], []));
+
+        Assert.Equal("VAL-APP-ETAPE", finding.Code);
+        Assert.Contains("n’est pas disponible", finding.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void WhitespaceStepValueUsesTheCatalogDefault()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "name": "CustomStep",
+              "labels": { "fr": "Étape personnalisée", "en": "Custom step" },
+              "description": "Étape de test.",
+              "defaults": { "enabled": true, "blocking": true, "position": "beforeBuild" },
+              "parameters": [{ "name": "command", "kind": "string", "default": "safe", "values": ["safe", "custom"] }],
+              "pipeline": { "provider": "AzurePipelines", "template": ".ifs/steps/custom.yml" }
+            }
+            """);
+        var configured = new ApplicationStepDefinition("CustomStep", true, true, ApplicationStepPosition.BeforeBuild,
+        [new ApplicationStepParameter("command", "   ")]);
+
+        var findings = ApplicationStepValidator.Validate(
+            [configured],
+            [new InfraFlowSculptor.Catalog.CatalogPipelineStepDescriptor(document.RootElement)]);
+
+        Assert.Empty(findings);
+    }
+
+    [Fact]
+    public void UndeclaredConfiguredParameterProducesApplicationStepFinding()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "name": "CustomStep",
+              "labels": { "fr": "Étape personnalisée", "en": "Custom step" },
+              "description": "Étape de test.",
+              "defaults": { "enabled": true, "blocking": true, "position": "beforeBuild" },
+              "parameters": [{ "name": "command", "kind": "string", "default": "safe" }],
+              "pipeline": { "provider": "AzurePipelines", "template": ".ifs/steps/custom.yml" }
+            }
+            """);
+        var configured = new ApplicationStepDefinition("CustomStep", true, true, ApplicationStepPosition.BeforeBuild,
+        [new ApplicationStepParameter("unexpected", "untrusted")]);
+
+        var finding = Assert.Single(ApplicationStepValidator.Validate(
+            [configured],
+            [new InfraFlowSculptor.Catalog.CatalogPipelineStepDescriptor(document.RootElement)]));
+
+        Assert.Equal("VAL-APP-ETAPE", finding.Code);
+        Assert.Equal("unexpected", finding.ParameterName);
+        Assert.Contains("n’est pas déclaré", finding.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void DuplicateConfiguredStepsProduceApplicationStepFinding()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "name": "CustomStep",
+              "labels": { "fr": "Étape personnalisée", "en": "Custom step" },
+              "description": "Étape de test.",
+              "defaults": { "enabled": true, "blocking": true, "position": "beforeBuild" },
+              "parameters": [],
+              "pipeline": { "provider": "AzurePipelines", "template": ".ifs/steps/custom.yml" }
+            }
+            """);
+        var configured = new ApplicationStepDefinition("CustomStep", true, true, ApplicationStepPosition.BeforeBuild, []);
+        var descriptor = new InfraFlowSculptor.Catalog.CatalogPipelineStepDescriptor(document.RootElement);
+
+        var finding = Assert.Single(ApplicationStepValidator.Validate([configured, configured], [descriptor]));
+
+        Assert.Equal("VAL-APP-ETAPE", finding.Code);
+        Assert.Contains("plusieurs fois", finding.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RejectsIncorrectCaseInsteadOfTreatingItAsDuplicate()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "name": "Build",
+              "labels": { "fr": "Build", "en": "Build" },
+              "description": "Étape de test.",
+              "defaults": { "enabled": true, "blocking": true, "position": "beforeBuild" },
+              "parameters": [],
+              "pipeline": { "provider": "AzurePipelines", "template": ".ifs/steps/build.yml" }
+            }
+            """);
+        var descriptor = new InfraFlowSculptor.Catalog.CatalogPipelineStepDescriptor(document.RootElement);
+        var configured = new[]
+        {
+            new ApplicationStepDefinition("Build", true, true, ApplicationStepPosition.BeforeBuild, []),
+            new ApplicationStepDefinition("build", true, true, ApplicationStepPosition.BeforeBuild, [])
+        };
+
+        var finding = Assert.Single(ApplicationStepValidator.Validate(configured, [descriptor]));
+
+        Assert.Equal("VAL-APP-ETAPE", finding.Code);
+        Assert.Contains("n’est pas disponible", finding.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void DuplicateCatalogStepDescriptorsProduceFindingInsteadOfThrowing()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "name": "CustomStep",
+              "labels": { "fr": "Étape personnalisée", "en": "Custom step" },
+              "description": "Étape de test.",
+              "defaults": { "enabled": true, "blocking": true, "position": "beforeBuild" },
+              "parameters": [],
+              "pipeline": { "provider": "AzurePipelines", "template": ".ifs/steps/custom.yml" }
+            }
+            """);
+        var configured = new ApplicationStepDefinition("CustomStep", true, true, ApplicationStepPosition.BeforeBuild, []);
+        var descriptor = new InfraFlowSculptor.Catalog.CatalogPipelineStepDescriptor(document.RootElement);
+
+        var finding = Assert.Single(ApplicationStepValidator.Validate([configured], [descriptor, descriptor]));
+
+        Assert.Equal("VAL-APP-ETAPE", finding.Code);
+        Assert.Contains("plusieurs fois", finding.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void DuplicateConfiguredStepParametersProduceFindingInsteadOfThrowing()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "name": "CustomStep",
+              "labels": { "fr": "Étape personnalisée", "en": "Custom step" },
+              "description": "Étape de test.",
+              "defaults": { "enabled": true, "blocking": true, "position": "beforeBuild" },
+              "parameters": [{ "name": "command", "kind": "string" }],
+              "pipeline": { "provider": "AzurePipelines", "template": ".ifs/steps/custom.yml" }
+            }
+            """);
+        var configured = new ApplicationStepDefinition("CustomStep", true, true, ApplicationStepPosition.BeforeBuild,
+        [
+            new ApplicationStepParameter("command", "first"),
+            new ApplicationStepParameter("command", "second")
+        ]);
+
+        var finding = Assert.Single(ApplicationStepValidator.Validate(
+            [configured],
+            [new InfraFlowSculptor.Catalog.CatalogPipelineStepDescriptor(document.RootElement)]));
+
+        Assert.Equal("VAL-APP-ETAPE", finding.Code);
+        Assert.Equal("command", finding.ParameterName);
+        Assert.Contains("plusieurs fois", finding.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

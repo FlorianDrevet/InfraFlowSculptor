@@ -276,6 +276,36 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}",
                 HttpStatusCode.NotFound),
+            ["GetProjectValidation"] = OrganizationScenario(
+                "GetProjectValidation",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/validation",
+                HttpStatusCode.NotFound),
+            ["AcknowledgeFinding"] = OrganizationScenario(
+                "AcknowledgeFinding",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/validation/findings/VAL-LIA-SQL-ADMIN/acknowledgment",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    subjectType = "Resource",
+                    subjectId = TestResourceId,
+                    environmentId = (Guid?)null,
+                    expectedObjectVersion = 1,
+                    comment = "Reviewed"
+                }),
+            ["ApplyFindingFix"] = OrganizationScenario(
+                "ApplyFindingFix",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/validation/findings/VAL-NET-IP-VIDE/fix",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    subjectType = "Resource",
+                    subjectId = TestResourceId,
+                    environmentId = Guid.NewGuid(),
+                    expectedObjectVersion = 1
+                }),
             ["ListProjectComponents"] = OrganizationScenario(
                 "ListProjectComponents",
                 HttpMethod.Get,
@@ -448,7 +478,7 @@ public static class IsolationScenarios
                 HttpMethod.Delete,
                 $"/v1/projects/{ShopProjectId}/components/{TestComponentId}/resources/{TestResourceId}/links/{TestResourceChildId}",
                 HttpStatusCode.NotFound,
-                new { expectedLinkVersion = 1 }),
+                new { expectedLinkVersion = 1, expectedModelVersion = 1 }),
             ["PreviewResourceName"] = OrganizationScenario(
                 "PreviewResourceName",
                 HttpMethod.Post,

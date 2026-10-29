@@ -148,7 +148,12 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
                         ? identity.PrincipalResourceId
                         : null
                 };
-            wiredLinks.Add(new WiredLink(evaluatedLink, external, handler.CreatesDeploymentDependency));
+            var createsDeploymentDependency = handler.CreatesDeploymentDependencyFor(
+                link,
+                snapshot,
+                sourceDescriptor,
+                targetDescriptor);
+            wiredLinks.Add(new WiredLink(evaluatedLink, external, createsDeploymentDependency));
             var origin = new WiringOrigin(link.Origin, link.Kind, link.Id, link.SourceResourceId, link.TargetResourceId);
 
             if (identity is not null)
@@ -188,7 +193,7 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
                 }
             }
 
-            if (handler.CreatesDeploymentDependency && source.Component.Id != target.Component.Id)
+            if (createsDeploymentDependency && source.Component.Id != target.Component.Id)
             {
                 dependencies.Add(new WiringDependency(
                     source.Component.Id,
@@ -237,7 +242,10 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
                     if (count < cardinality.Minimum)
                     {
                         issues.Add(new WiringIssue(LinkRequiredCode,
-                            $"The resource requires at least {cardinality.Minimum} {handler.Key} link(s).", null, resource.Id));
+                            $"The resource requires at least {cardinality.Minimum} {handler.Key} link(s).", null, resource.Id)
+                        {
+                            Kind = handler.Key
+                        });
                     }
                     else if (cardinality.Maximum is { } maximum && count > maximum)
                     {

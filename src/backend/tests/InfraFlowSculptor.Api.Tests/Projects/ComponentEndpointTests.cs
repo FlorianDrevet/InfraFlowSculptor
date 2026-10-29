@@ -12,6 +12,7 @@ using InfraFlowSculptor.Domain.ProjectAggregate;
 using ComponentRoot = InfraFlowSculptor.Domain.ComponentAggregate.ComponentAggregate;
 using InfraFlowSculptor.Infrastructure.Authentication;
 using InfraFlowSculptor.Infrastructure.Persistence;
+using InfraFlowSculptor.Infrastructure.Persistence.Admin;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -75,6 +76,10 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
     [Fact]
     public Task ConcurrentHostingLinksRespectComponentVersionAndCardinality() =>
         RunSerialAsync(ConcurrentHostingLinksRespectComponentVersionAndCardinalityCore);
+
+    [Fact]
+    public Task SqlAdministratorWarningCanBeAcknowledgedAndReadBack() =>
+        RunSerialAsync(SqlAdministratorWarningCanBeAcknowledgedAndReadBackCore);
 
     [Fact]
     public Task StaleComponentVersionWinsOverLinkCardinalityValidation() =>
@@ -147,6 +152,10 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
     [Fact]
     public Task NamingPreviewRejectsTypesOutsideThePinnedCatalog() =>
         RunSerialAsync(NamingPreviewRejectsTypesOutsideThePinnedCatalogCore);
+
+    [Fact]
+    public Task NamingEndpointsRejectNullTypeOverrideRows() =>
+        RunSerialAsync(NamingEndpointsRejectNullTypeOverrideRowsCore);
 
     [Fact]
     public Task NamingPreviewReportsGlobalNamesReservedBySiblingProjects() =>
@@ -240,12 +249,14 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
     private async Task ContainerApplicationDefaultsComeFromThePinnedBuildProfileCore()
     {
         await PrepareAsync();
-        await PinProjectCatalogVersionAsync("2026.10-pilot.3");
-        var environment = await GetEditableEnvironmentAsync();
-        var componentId = await CreateResourceTestComponentAsync(environment);
+        var originalCatalogVersion = await PinProjectCatalogVersionAsync("2026.10-pilot.3");
+        Guid? testComponentId = null;
 
         try
         {
+            var environment = await GetEditableEnvironmentAsync();
+            var componentId = await CreateResourceTestComponentAsync(environment);
+            testComponentId = componentId;
             var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
             var applicationBody = await CreateResourceAsync(
                 componentId,
@@ -281,19 +292,31 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         }
         finally
         {
-            await CleanupResourceTestComponentAsync(componentId);
+            try
+            {
+                if (testComponentId is { } componentId)
+                {
+                    await CleanupResourceTestComponentAsync(componentId);
+                }
+            }
+            finally
+            {
+                await PinProjectCatalogVersionAsync(originalCatalogVersion);
+            }
         }
     }
 
     private async Task ContainerApplicationSettingsRoundTripThroughRelationalStorageCore()
     {
         await PrepareAsync();
-        await PinProjectCatalogVersionAsync("2026.10-pilot.3");
-        var environment = await GetEditableEnvironmentAsync();
-        var componentId = await CreateResourceTestComponentAsync(environment);
+        var originalCatalogVersion = await PinProjectCatalogVersionAsync("2026.10-pilot.3");
+        Guid? testComponentId = null;
 
         try
         {
+            var environment = await GetEditableEnvironmentAsync();
+            var componentId = await CreateResourceTestComponentAsync(environment);
+            testComponentId = componentId;
             var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
             var applicationBody = await CreateResourceAsync(
                 componentId,
@@ -358,7 +381,17 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         }
         finally
         {
-            await CleanupResourceTestComponentAsync(componentId);
+            try
+            {
+                if (testComponentId is { } componentId)
+                {
+                    await CleanupResourceTestComponentAsync(componentId);
+                }
+            }
+            finally
+            {
+                await PinProjectCatalogVersionAsync(originalCatalogVersion);
+            }
         }
     }
 
@@ -922,12 +955,14 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
     private async Task ApplicationIsUnavailableWhenThePinnedCatalogHasNoContainerProfileCore()
     {
         await PrepareAsync();
-        await PinProjectCatalogVersionAsync("2026.10-pilot");
-        var environment = await GetEditableEnvironmentAsync();
-        var componentId = await CreateResourceTestComponentAsync(environment);
+        var originalCatalogVersion = await PinProjectCatalogVersionAsync("2026.10-pilot");
+        Guid? testComponentId = null;
 
         try
         {
+            var environment = await GetEditableEnvironmentAsync();
+            var componentId = await CreateResourceTestComponentAsync(environment);
+            testComponentId = componentId;
             var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
             var applicationBody = await CreateResourceAsync(
                 componentId,
@@ -951,8 +986,17 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         }
         finally
         {
-            await CleanupResourceTestComponentAsync(componentId);
-            await PinProjectCatalogVersionAsync("2026.10-pilot.3");
+            try
+            {
+                if (testComponentId is { } componentId)
+                {
+                    await CleanupResourceTestComponentAsync(componentId);
+                }
+            }
+            finally
+            {
+                await PinProjectCatalogVersionAsync(originalCatalogVersion);
+            }
         }
     }
 
@@ -1227,6 +1271,67 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         using var response = await client.SendAsync(preview);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    private async Task NamingEndpointsRejectNullTypeOverrideRowsCore()
+    {
+        await PrepareAsync();
+        using var getSettings = CreateRequest(HttpMethod.Get, $"/v1/projects/{ProjectId:D}/naming");
+        using var getResponse = await client.SendAsync(getSettings);
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        using var settings = await JsonDocument.ParseAsync(await getResponse.Content.ReadAsStreamAsync());
+        var projectVersion = settings.RootElement.GetProperty("version").GetInt32();
+
+        using var preview = CreateRequest(
+            HttpMethod.Post,
+            $"/v1/projects/{ProjectId:D}/naming/preview",
+            new
+            {
+                preset = "Compact",
+                defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                typeOverrides = new object?[] { null }
+            });
+        using var previewResponse = await client.SendAsync(preview);
+        Assert.Equal(HttpStatusCode.BadRequest, previewResponse.StatusCode);
+
+        using var updateProjectNaming = CreateRequest(
+            HttpMethod.Put,
+            $"/v1/projects/{ProjectId:D}/naming",
+            new
+            {
+                preset = "Compact",
+                defaultTemplate = "{abbr}-{project}-{name}-{env}",
+                resourceGroupTemplate = "rg-{project}-{component}-{name}-{env}",
+                typeOverrides = new object?[] { null },
+                expectedVersion = projectVersion
+            });
+        updateProjectNaming.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var updateProjectResponse = await client.SendAsync(updateProjectNaming);
+        Assert.Equal(HttpStatusCode.BadRequest, updateProjectResponse.StatusCode);
+
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var componentVersion = await GetComponentVersionFromApiAsync(componentId);
+            using var updateComponentNaming = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/naming",
+                new
+                {
+                    defaultTemplate = (string?)null,
+                    typeOverrides = new object?[] { null },
+                    expectedVersion = componentVersion
+                });
+            updateComponentNaming.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var updateComponentResponse = await client.SendAsync(updateComponentNaming);
+            Assert.Equal(HttpStatusCode.BadRequest, updateComponentResponse.StatusCode);
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
     }
 
     private async Task ProjectNamingSettingsCanBeSavedAndPreviewUsesComponentOverridesCore()
@@ -1565,6 +1670,7 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         await PrepareAsync();
         var environment = await GetEditableEnvironmentAsync();
         var componentId = await CreateResourceTestComponentAsync(environment);
+        Guid? unrelatedComponentId = null;
         try
         {
             var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
@@ -1778,12 +1884,84 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
             Assert.Equal(HttpStatusCode.OK, impactResponse.StatusCode);
             using var impact = await JsonDocument.ParseAsync(await impactResponse.Content.ReadAsStreamAsync());
             Assert.Equal("Blocker", impact.RootElement.GetProperty("severity").GetString());
+            var previewModelVersion = impact.RootElement.GetProperty("modelVersion").GetInt32();
+            Assert.Equal(previewModelVersion, await GetProjectModelVersionFromApiAsync());
+            unrelatedComponentId = await CreateResourceTestComponentAsync(environment);
+            var modelVersionAfterUnrelatedChange = await GetProjectModelVersionFromApiAsync();
+            Assert.True(modelVersionAfterUnrelatedChange > previewModelVersion);
             Assert.Contains(
                 impact.RootElement.GetProperty("items").EnumerateArray(),
                 item => item.GetProperty("code").GetString() == "IMPACT-LIA-OBLIGATOIRE-ROMPU");
+
+            using var currentLinksRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links");
+            using var currentLinksResponse = await client.SendAsync(currentLinksRequest);
+            Assert.Equal(HttpStatusCode.OK, currentLinksResponse.StatusCode);
+            using var currentLinks = await JsonDocument.ParseAsync(await currentLinksResponse.Content.ReadAsStreamAsync());
+            var currentLink = Assert.Single(
+                currentLinks.RootElement.GetProperty("outgoing").EnumerateArray(),
+                candidate => candidate.GetProperty("id").GetGuid() == linkId);
+
+            using var missingModelVersionRemove = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links/{linkId:D}",
+                new { expectedLinkVersion = currentLink.GetProperty("version").GetInt32() });
+            missingModelVersionRemove.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var missingModelVersionResponse = await client.SendAsync(missingModelVersionRemove);
+            Assert.Equal(HttpStatusCode.BadRequest, missingModelVersionResponse.StatusCode);
+
+            using var staleRemoveLink = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links/{linkId:D}",
+                new
+                {
+                    expectedLinkVersion = currentLink.GetProperty("version").GetInt32(),
+                    expectedModelVersion = previewModelVersion
+                });
+            staleRemoveLink.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var staleRemoveResponse = await client.SendAsync(staleRemoveLink);
+            Assert.Equal(HttpStatusCode.Conflict, staleRemoveResponse.StatusCode);
+            Assert.Equal("CONFLICT_VERSION", await GetProblemCodeAsync(staleRemoveResponse));
+
+            using var refreshedImpactRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links/{linkId:D}/impact");
+            using var refreshedImpactResponse = await client.SendAsync(refreshedImpactRequest);
+            Assert.Equal(HttpStatusCode.OK, refreshedImpactResponse.StatusCode);
+            using var refreshedImpact = await JsonDocument.ParseAsync(await refreshedImpactResponse.Content.ReadAsStreamAsync());
+            var refreshedModelVersion = refreshedImpact.RootElement.GetProperty("modelVersion").GetInt32();
+            Assert.Equal(modelVersionAfterUnrelatedChange, refreshedModelVersion);
+
+            using var removeRequiredLink = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceResourceId:D}/links/{linkId:D}",
+                new
+                {
+                    expectedLinkVersion = currentLink.GetProperty("version").GetInt32(),
+                    expectedModelVersion = refreshedModelVersion
+                });
+            removeRequiredLink.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var removeRequiredLinkResponse = await client.SendAsync(removeRequiredLink);
+            Assert.True(removeRequiredLinkResponse.StatusCode == HttpStatusCode.OK,
+                await removeRequiredLinkResponse.Content.ReadAsStringAsync());
+
+            using var validationRequest = CreateRequest(HttpMethod.Get, $"/v1/projects/{ProjectId:D}/validation");
+            using var validationResponse = await client.SendAsync(validationRequest);
+            Assert.Equal(HttpStatusCode.OK, validationResponse.StatusCode);
+            using var validation = await JsonDocument.ParseAsync(await validationResponse.Content.ReadAsStreamAsync());
+            Assert.Contains(
+                validation.RootElement.GetProperty("findings").EnumerateArray(),
+                finding => finding.GetProperty("code").GetString() == "VAL-LIA-OBLIGATOIRE"
+                    && finding.GetProperty("subjectId").GetGuid() == sourceResourceId);
         }
         finally
         {
+            if (unrelatedComponentId is { } id)
+            {
+                await CleanupResourceTestComponentAsync(id);
+            }
+
             await CleanupResourceTestComponentAsync(componentId);
         }
     }
@@ -2004,13 +2182,14 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
             Assert.Equal(HttpStatusCode.OK, impactResponse.StatusCode);
             using var impact = await JsonDocument.ParseAsync(await impactResponse.Content.ReadAsStreamAsync());
             Assert.Equal("Critical", impact.RootElement.GetProperty("severity").GetString());
+            var previewModelVersion = impact.RootElement.GetProperty("modelVersion").GetInt32();
             Assert.Contains(impact.RootElement.GetProperty("items").EnumerateArray(), item =>
                 item.GetProperty("code").GetString() == "IMPACT-LIA-ROLE-REVOKED");
 
             using var removeLinkRequest = CreateRequest(
                 HttpMethod.Delete,
                 $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{sourceId:D}/links/{linkId:D}",
-                new { expectedLinkVersion = 1 });
+                new { expectedLinkVersion = 1, expectedModelVersion = previewModelVersion });
             removeLinkRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
             using var removeLinkResponse = await client.SendAsync(removeLinkRequest);
             Assert.Equal(HttpStatusCode.OK, removeLinkResponse.StatusCode);
@@ -2137,7 +2316,9 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
             var successfulCount = responses.Count(response => response.StatusCode == HttpStatusCode.Created);
             Assert.Equal(1, successfulCount);
             var rejected = Assert.Single(responses, response => response.StatusCode != HttpStatusCode.Created);
-            Assert.Equal(HttpStatusCode.Conflict, rejected.StatusCode);
+            Assert.True(rejected.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.BadRequest);
+            var problemCode = await GetProblemCodeAsync(rejected);
+            Assert.True(problemCode is "CONFLICT_VERSION" or "LINK_CARDINALITY_EXCEEDED");
 
             using var linksRequest = CreateRequest(
                 HttpMethod.Get,
@@ -3140,14 +3321,16 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         return project.Version;
     }
 
-    private async Task PinProjectCatalogVersionAsync(string catalogVersion)
+    private async Task<string> PinProjectCatalogVersionAsync(string catalogVersion)
     {
         using var scope = factory.Services.CreateScope();
         scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
         var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
         var project = await dbContext.Projects.SingleAsync(candidate => candidate.Id == new ProjectId(ProjectId));
+        var originalCatalogVersion = project.CatalogVersion;
         dbContext.Entry(project).Property(candidate => candidate.CatalogVersion).CurrentValue = catalogVersion;
         await dbContext.SaveChangesAsync();
+        return originalCatalogVersion;
     }
 
     private async Task<int> CountComponentsAsync()
@@ -3166,6 +3349,147 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         using var project = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
         return project.RootElement.GetProperty("version").GetInt32();
+    }
+
+    private async Task<int> GetProjectModelVersionFromApiAsync()
+    {
+        using var request = CreateRequest(HttpMethod.Get, $"/v1/projects/{ProjectId:D}");
+        using var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var project = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        return project.RootElement.GetProperty("modelVersion").GetInt32();
+    }
+
+    private async Task SqlAdministratorWarningCanBeAcknowledgedAndReadBackCore()
+    {
+        const string comment = "J0-20 acknowledgement integration check";
+        var testProjectId = await SeedAcknowledgmentProjectAsync();
+        try
+        {
+            using var getValidation = CreateRequest(HttpMethod.Get, $"/v1/projects/{testProjectId.Value:D}/validation");
+            using var initialResponse = await client.SendAsync(getValidation);
+            Assert.Equal(HttpStatusCode.OK, initialResponse.StatusCode);
+            using var initial = await JsonDocument.ParseAsync(await initialResponse.Content.ReadAsStreamAsync());
+            var finding = Assert.Single(
+                initial.RootElement.GetProperty("findings").EnumerateArray(),
+                candidate => candidate.GetProperty("code").GetString() == "VAL-LIA-SQL-ADMIN");
+            var subjectId = finding.GetProperty("subjectId").GetGuid();
+            var objectVersion = finding.GetProperty("objectVersion").GetInt32();
+            var detailKey = finding.GetProperty("detailKey").ValueKind == JsonValueKind.Null
+                ? null
+                : finding.GetProperty("detailKey").GetString();
+            Assert.True(objectVersion > 0);
+
+            using var acknowledge = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{testProjectId.Value:D}/validation/findings/VAL-LIA-SQL-ADMIN/acknowledgment",
+                new
+                {
+                    subjectType = "Resource",
+                    subjectId,
+                    environmentId = (Guid?)null,
+                    expectedObjectVersion = objectVersion,
+                    comment,
+                    detailKey
+                });
+            acknowledge.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var acknowledgeResponse = await client.SendAsync(acknowledge);
+            Assert.Equal(HttpStatusCode.NoContent, acknowledgeResponse.StatusCode);
+
+            using var duplicateAcknowledge = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{testProjectId.Value:D}/validation/findings/VAL-LIA-SQL-ADMIN/acknowledgment",
+                new
+                {
+                    subjectType = "Resource",
+                    subjectId,
+                    environmentId = (Guid?)null,
+                    expectedObjectVersion = objectVersion,
+                    comment,
+                    detailKey
+                });
+            duplicateAcknowledge.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var duplicateResponse = await client.SendAsync(duplicateAcknowledge);
+            Assert.Equal(HttpStatusCode.Conflict, duplicateResponse.StatusCode);
+            Assert.Equal("FINDING_ALREADY_ACKNOWLEDGED", await GetProblemCodeAsync(duplicateResponse));
+
+            using var readBack = CreateRequest(HttpMethod.Get, $"/v1/projects/{testProjectId.Value:D}/validation");
+            using var readBackResponse = await client.SendAsync(readBack);
+            Assert.Equal(HttpStatusCode.OK, readBackResponse.StatusCode);
+            using var validation = await JsonDocument.ParseAsync(await readBackResponse.Content.ReadAsStreamAsync());
+            var acknowledgedFinding = Assert.Single(
+                validation.RootElement.GetProperty("findings").EnumerateArray(),
+                candidate => candidate.GetProperty("code").GetString() == "VAL-LIA-SQL-ADMIN");
+            Assert.Equal(comment, acknowledgedFinding.GetProperty("acknowledgment").GetProperty("comment").GetString());
+        }
+        finally
+        {
+            using var scope = factory.Services.CreateScope();
+            scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>()
+                .Set(new OrganizationId(OrganizationId));
+            var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+            var acknowledgments = await dbContext.Set<FindingAcknowledgmentAggregate>()
+                .Where(acknowledgment => acknowledgment.ProjectId == testProjectId
+                    && acknowledgment.Comment == comment)
+                .ToArrayAsync();
+            dbContext.Set<FindingAcknowledgmentAggregate>().RemoveRange(acknowledgments);
+            await dbContext.SaveChangesAsync();
+            var componentIds = await dbContext.Components
+                .Where(component => component.ProjectId == testProjectId)
+                .Select(component => component.Id.Value)
+                .ToArrayAsync();
+            foreach (var componentId in componentIds)
+            {
+                await CleanupResourceTestComponentAsync(componentId);
+            }
+
+            var testProject = await dbContext.Projects
+                .SingleOrDefaultAsync(project => project.Id == testProjectId);
+            if (testProject is not null)
+            {
+                dbContext.Projects.Remove(testProject);
+                await dbContext.SaveChangesAsync();
+            }
+        }
+    }
+
+    private async Task<ProjectId> SeedAcknowledgmentProjectAsync()
+    {
+        var projectId = new ProjectId(Guid.NewGuid());
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        using var scope = factory.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+        var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        await DemoDataSeeder.SeedAsync(dbContext, TimeProvider.System, includeProjects: false);
+
+        var alice = await dbContext.UserProfiles.SingleAsync(profile =>
+            profile.ObjectId == Guid.Parse("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"));
+        var bob = await dbContext.UserProfiles.SingleAsync(profile =>
+            profile.ObjectId == Guid.Parse("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"));
+        var chloe = await dbContext.UserProfiles.SingleAsync(profile =>
+            profile.ObjectId == Guid.Parse("cccccccc-cccc-4ccc-8ccc-cccccccccccc"));
+        var projectResult = ProjectAggregate.Create(
+            projectId,
+            new OrganizationId(OrganizationId),
+            $"Acknowledgment {suffix}",
+            $"a{suffix}",
+            alice.TenantId,
+            string.Empty,
+            "2026.10-pilot.3",
+            alice.Id);
+        Assert.False(projectResult.IsError);
+        dbContext.Projects.Add(projectResult.Value);
+        await dbContext.SaveChangesAsync();
+
+        await new EfDemoProjectSeeder(dbContext).SeedShopAsync(
+            projectId,
+            new OrganizationId(OrganizationId),
+            alice.Id,
+            bob.Id,
+            chloe.Id,
+            "2026.10-pilot.3",
+            seedReferenceModel: true);
+        return projectId;
     }
 
     private static HttpRequestMessage CreateRequest(HttpMethod method, string path, object? body = null)

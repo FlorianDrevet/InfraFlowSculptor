@@ -7,6 +7,7 @@ export { RequestBuilder } from './request-builder';
 export type { StrictHttpResponse } from './strict-http-response';
 export { Api } from './api';
 
+export type { AcknowledgeFindingRequest } from './models/acknowledge-finding-request';
 export type { AddLinkRequest } from './models/add-link-request';
 export type { AddProjectEnvironmentRequest } from './models/add-project-environment-request';
 export type { ApplicationBuildRegistryOptionResponse } from './models/application-build-registry-option-response';
@@ -17,6 +18,7 @@ export type { ApplicationStepParameterRequest } from './models/application-step-
 export type { ApplicationStepParameterResponse } from './models/application-step-parameter-response';
 export type { ApplicationStepRequest } from './models/application-step-request';
 export type { ApplicationStepResponse } from './models/application-step-response';
+export type { ApplyFindingFixRequest } from './models/apply-finding-fix-request';
 export type { AppSettingMutationResponse } from './models/app-setting-mutation-response';
 export type { AppSettingRequest } from './models/app-setting-request';
 export type { AppSettingResponse } from './models/app-setting-response';
@@ -50,6 +52,7 @@ export type { EffectivePropertyResponse } from './models/effective-property-resp
 export type { EffectiveValueTargetResponse } from './models/effective-value-target-response';
 export type { ExpectedVersionRequest } from './models/expected-version-request';
 export type { FeatureAvailabilityResponse } from './models/feature-availability-response';
+export type { FindingAcknowledgmentResponse } from './models/finding-acknowledgment-response';
 export type { HttpValidationProblemDetails } from './models/http-validation-problem-details';
 export type { InvitationAcceptanceResponse } from './models/invitation-acceptance-response';
 export type { InvitationPreviewResponse } from './models/invitation-preview-response';
@@ -103,6 +106,10 @@ export type { ProjectRole } from './models/project-role';
 export type { ProjectRoleAssignmentResponse } from './models/project-role-assignment-response';
 export type { ProjectRoleScope } from './models/project-role-scope';
 export type { ProjectSummaryResponse } from './models/project-summary-response';
+export type { ProjectValidationComponentResponse } from './models/project-validation-component-response';
+export type { ProjectValidationFindingResponse } from './models/project-validation-finding-response';
+export type { ProjectValidationReadinessResponse } from './models/project-validation-readiness-response';
+export type { ProjectValidationResponse } from './models/project-validation-response';
 export type { ProjectWizardDraftResponse } from './models/project-wizard-draft-response';
 export type { ProjectWizardEnvironmentRequest } from './models/project-wizard-environment-request';
 export type { RemovedResourceBehavior } from './models/removed-resource-behavior';
@@ -201,6 +208,12 @@ export type { UpdateProjectSettings$Params as UpdateProjectSettings$Params } fro
 export { updateProjectSettings as updateProjectSettings } from './fn/projects/update-project-settings';
 export type { DeleteProject$Params as DeleteProject$Params } from './fn/projects/delete-project';
 export { deleteProject as deleteProject } from './fn/projects/delete-project';
+export type { GetProjectValidation$Params as GetProjectValidation$Params } from './fn/projects/get-project-validation';
+export { getProjectValidation as getProjectValidation } from './fn/projects/get-project-validation';
+export type { AcknowledgeFinding$Params as AcknowledgeFinding$Params } from './fn/projects/acknowledge-finding';
+export { acknowledgeFinding as acknowledgeFinding } from './fn/projects/acknowledge-finding';
+export type { ApplyFindingFix$Params as ApplyFindingFix$Params } from './fn/projects/apply-finding-fix';
+export { applyFindingFix as applyFindingFix } from './fn/projects/apply-finding-fix';
 export type { SetProjectFavorite$Params as SetProjectFavorite$Params } from './fn/projects/set-project-favorite';
 export { setProjectFavorite as setProjectFavorite } from './fn/projects/set-project-favorite';
 export type { RemoveProjectFavorite$Params as RemoveProjectFavorite$Params } from './fn/projects/remove-project-favorite';

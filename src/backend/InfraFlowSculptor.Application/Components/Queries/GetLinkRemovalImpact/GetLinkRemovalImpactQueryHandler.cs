@@ -38,6 +38,6 @@ public sealed class GetLinkRemovalImpactQueryHandler(
         }
 
         var result = impactAnalyzer.AnalyzeLinkRemoval(snapshot, link.Id, catalog);
-        return new LinkImpactSummary(result.Severity, result.Items);
+        return new LinkImpactSummary(snapshot.Project.ModelVersion, result.Severity, result.Items);
     }
 }

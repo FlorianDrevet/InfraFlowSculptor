@@ -64,12 +64,46 @@ public sealed class ExposureResolverTests
         Assert.Empty(exposure.Ranges);
     }
 
+    [Fact]
+    public void UsesTheCatalogDefaultWhenExposureIsExplicitlyNull()
+    {
+        using var document = JsonDocument.Parse("null");
+        var resource = CreateResource(new Dictionary<string, JsonElement>
+        {
+            ["exposure"] = document.RootElement.Clone()
+        });
+
+        var exposure = CreateResolver().Resolve(
+            resource,
+            Guid.NewGuid(),
+            ExposureCatalog.GetResourceType("KeyVault")!);
+
+        Assert.IsType<PublicExposure>(exposure);
+    }
+
     [Theory]
     [InlineData("0")]
     [InlineData("1")]
     public void RejectsNumericExposureModeValues(string mode)
     {
         var resource = CreateResource(Values(("exposure", mode)));
+
+        Assert.Throws<InvalidOperationException>(() => CreateResolver().Resolve(
+            resource,
+            Guid.NewGuid(),
+            ExposureCatalog.GetResourceType("KeyVault")!));
+    }
+
+    [Theory]
+    [InlineData("1")]
+    [InlineData("false")]
+    public void RejectsNonStringExposureModeValues(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        var resource = CreateResource(new Dictionary<string, JsonElement>
+        {
+            ["exposure"] = document.RootElement.Clone()
+        });
 
         Assert.Throws<InvalidOperationException>(() => CreateResolver().Resolve(
             resource,

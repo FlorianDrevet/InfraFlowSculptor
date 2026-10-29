@@ -32,6 +32,14 @@ public sealed class RemoveLinkCommandHandler(
             return loaded.Errors;
         }
 
+        var modelVersion = ResourceCommandSupport.CheckModelVersion(
+            loaded.Value.Project,
+            command.ExpectedModelVersion);
+        if (modelVersion.IsError)
+        {
+            return modelVersion.Errors;
+        }
+
         var link = await dbContext.Query<LinkAggregate>()
             .SingleOrDefaultAsync(candidate => candidate.Id == command.LinkId
                 && candidate.ProjectId == new ProjectId(command.ProjectId)
@@ -62,10 +70,6 @@ public sealed class RemoveLinkCommandHandler(
         }
 
         var impact = impactAnalyzer.AnalyzeLinkRemoval(built.Value, link.Id, catalog);
-        if (impact.Severity == ImpactSeverity.Blocker)
-        {
-            return Error.Validation("LINK_REMOVE_BLOCKED", "The link cannot be removed because it is required by the source resource.");
-        }
 
         var targetComponent = link.TargetComponentId == command.ComponentId
             ? null

@@ -2,6 +2,9 @@ using InfraFlowSculptor.Api.Common;
 using InfraFlowSculptor.Api.Common.Idempotency;
 using InfraFlowSculptor.Api.Errors;
 using InfraFlowSculptor.Application.Common.ModelCommands;
+using InfraFlowSculptor.Application.Components.Commands.AcknowledgeFinding;
+using InfraFlowSculptor.Application.Components.Commands.ApplyFindingFix;
+using InfraFlowSculptor.Application.Components.Queries.GetProjectValidation;
 using InfraFlowSculptor.Application.Projects;
 using InfraFlowSculptor.Application.Projects.Commands.AddProjectEnvironment;
 using InfraFlowSculptor.Application.Projects.Commands.AssignProjectRole;
@@ -129,6 +132,80 @@ public static class ProjectsController
             .Produces<ProjectSummaryResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
+
+        projects.MapGet("/{id:guid}/validation", async (Guid id, IMediator mediator, CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new GetProjectValidationQuery(id), cancellationToken);
+                return result.Match<IResult>(value => Results.Ok(Map(value)), errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.GetProjectValidation)
+            .WithSummary("Consulter les constats de validation et l’ordre de déploiement des composants.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces<ProjectValidationResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        projects.MapPost("/{id:guid}/validation/findings/{code}/acknowledgment", async (
+                Guid id,
+                string code,
+                AcknowledgeFindingRequest request,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new AcknowledgeFindingCommand(
+                    id,
+                    code,
+                    request.SubjectType,
+                    request.SubjectId,
+                    request.EnvironmentId,
+                    request.ExpectedObjectVersion,
+                    request.Comment,
+                    request.DetailKey), cancellationToken);
+                return result.Match<IResult>(
+                    _ => Results.NoContent(),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.AcknowledgeFinding)
+            .WithSummary("Acquitter un avertissement avec un commentaire obligatoire.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        projects.MapPost("/{id:guid}/validation/findings/{code}/fix", async (
+                Guid id,
+                string code,
+                ApplyFindingFixRequest request,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new ApplyFindingFixCommand(
+                    id,
+                    code,
+                    request.SubjectType,
+                    request.SubjectId,
+                    request.EnvironmentId,
+                    request.ExpectedObjectVersion,
+                    request.DetailKey), cancellationToken);
+                return result.Match<IResult>(
+                    _ => Results.NoContent(),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.ApplyFindingFix)
+            .WithSummary("Appliquer une correction déterministe à un constat courant.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         projects.MapPut("/{id:guid}", async (
                 Guid id,
@@ -540,6 +617,53 @@ public static class ProjectsController
             permissions.Version,
             permissions.Permissions,
             permissions.Assignments.Select(Map).ToArray());
+
+    private static ProjectValidationResponse Map(ProjectValidationSummary validation) =>
+        new(
+            validation.ProjectId,
+            validation.ModelVersion,
+            validation.CatalogVersion,
+            validation.ErrorCount,
+            validation.PublicationErrorCount,
+            validation.WarningCount,
+            validation.InformationCount,
+            validation.AcknowledgedCount,
+            new ProjectValidationReadinessResponse(
+                validation.Readiness.ModelValid,
+                validation.Readiness.RevisionGenerable,
+                validation.Readiness.Publishable,
+                validation.Readiness.Deployable),
+            validation.OrderedComponents.Select(component =>
+                new ProjectValidationComponentResponse(
+                    component.Id,
+                    component.Code,
+                    component.Name,
+                    component.Position,
+                    component.DependsOn,
+                    component.UsedBy)).ToArray(),
+            validation.Findings.Select(finding => new ProjectValidationFindingResponse(
+                finding.Code,
+                finding.Severity,
+                finding.Lot,
+                finding.SubjectType,
+                finding.SubjectId,
+                finding.EnvironmentId,
+                finding.MessageFr,
+                finding.MessageEn,
+                finding.ObjectVersion,
+                finding.FixCode,
+                finding.CanApplyFix,
+                finding.RelatedLinkIds,
+                finding.Acknowledgment is null ? null : new FindingAcknowledgmentResponse(
+                    finding.Acknowledgment.Comment,
+                    finding.Acknowledgment.AcknowledgedBy,
+                    finding.Acknowledgment.AcknowledgedByDisplayName,
+                    finding.Acknowledgment.CreatedAt),
+                finding.DetailKey,
+                finding.SubjectContext,
+                finding.SubjectComponentId,
+                finding.SubjectResourceId,
+                finding.EnvironmentCode)).ToArray());
 
     private static ProjectRoleAssignmentResponse Map(ProjectRoleAssignmentSummary assignment) =>
         new(assignment.MemberId, assignment.Role, assignment.Scope, assignment.Version, assignment.Source);

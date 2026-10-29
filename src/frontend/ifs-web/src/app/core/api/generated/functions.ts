@@ -51,6 +51,12 @@ export type { UpdateProjectSettings$Params as UpdateProjectSettings$Params } fro
 export { updateProjectSettings as updateProjectSettings } from './fn/projects/update-project-settings';
 export type { DeleteProject$Params as DeleteProject$Params } from './fn/projects/delete-project';
 export { deleteProject as deleteProject } from './fn/projects/delete-project';
+export type { GetProjectValidation$Params as GetProjectValidation$Params } from './fn/projects/get-project-validation';
+export { getProjectValidation as getProjectValidation } from './fn/projects/get-project-validation';
+export type { AcknowledgeFinding$Params as AcknowledgeFinding$Params } from './fn/projects/acknowledge-finding';
+export { acknowledgeFinding as acknowledgeFinding } from './fn/projects/acknowledge-finding';
+export type { ApplyFindingFix$Params as ApplyFindingFix$Params } from './fn/projects/apply-finding-fix';
+export { applyFindingFix as applyFindingFix } from './fn/projects/apply-finding-fix';
 export type { SetProjectFavorite$Params as SetProjectFavorite$Params } from './fn/projects/set-project-favorite';
 export { setProjectFavorite as setProjectFavorite } from './fn/projects/set-project-favorite';
 export type { RemoveProjectFavorite$Params as RemoveProjectFavorite$Params } from './fn/projects/remove-project-favorite';
