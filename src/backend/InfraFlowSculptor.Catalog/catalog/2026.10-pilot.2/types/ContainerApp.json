@@ -1,0 +1,271 @@
+{
+  "type": "ContainerApp",
+  "labels": {
+    "fr": "Container App",
+    "en": "Container App"
+  },
+  "category": "compute",
+  "icon": "container-app",
+  "armType": "Microsoft.App/containerApps",
+  "availableFrom": "lot1",
+  "documentationUrl": "https://learn.microsoft.com/en-us/azure/templates/microsoft.app/containerapps",
+  "verifiedAgainstDocsOn": "2026-10-27",
+  "naming": {
+    "abbreviation": "ca",
+    "allowed": "^[a-z][a-z0-9-]{0,30}[a-z0-9]$",
+    "case": "lower",
+    "separators": [
+      "-"
+    ],
+    "forbidConsecutiveSeparators": true,
+    "minLength": 2,
+    "maxLength": 32,
+    "firstChar": "letter",
+    "lastChar": "alphanumeric",
+    "uniqueness": "resourceGroup",
+    "availabilityDomain": null
+  },
+  "properties": [
+    {
+      "name": "workloadProfileName",
+      "labels": {
+        "fr": "Profil de charge",
+        "en": "Workload profile"
+      },
+      "kind": "string",
+      "overridable": true,
+      "default": "Consumption"
+    },
+    {
+      "name": "cpu",
+      "labels": {
+        "fr": "CPU (cœurs)",
+        "en": "CPU (cores)"
+      },
+      "kind": "number",
+      "overridable": true,
+      "default": 0.5,
+      "minimum": 0.25,
+      "maximum": 4
+    },
+    {
+      "name": "memoryGi",
+      "labels": {
+        "fr": "Mémoire (Gi)",
+        "en": "Memory (Gi)"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "1Gi",
+      "values": [
+        "0.5Gi",
+        "1Gi",
+        "2Gi",
+        "4Gi",
+        "8Gi"
+      ]
+    },
+    {
+      "name": "minReplicas",
+      "labels": {
+        "fr": "Réplicas minimum",
+        "en": "Minimum replicas"
+      },
+      "kind": "integer",
+      "overridable": true,
+      "default": 0,
+      "minimum": 0
+    },
+    {
+      "name": "maxReplicas",
+      "labels": {
+        "fr": "Réplicas maximum",
+        "en": "Maximum replicas"
+      },
+      "kind": "integer",
+      "overridable": true,
+      "default": 10,
+      "minimum": 1
+    },
+    {
+      "name": "ingress",
+      "labels": {
+        "fr": "Ingress",
+        "en": "Ingress"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "External",
+      "values": [
+        "None",
+        "Internal",
+        "External"
+      ]
+    },
+    {
+      "name": "targetPort",
+      "labels": {
+        "fr": "Port cible",
+        "en": "Target port"
+      },
+      "kind": "integer",
+      "overridable": true,
+      "default": 8080,
+      "minimum": 1,
+      "maximum": 65535
+    },
+    {
+      "name": "transport",
+      "labels": {
+        "fr": "Transport",
+        "en": "Transport"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "auto",
+      "values": [
+        "auto",
+        "http",
+        "http2",
+        "tcp"
+      ]
+    },
+    {
+      "name": "httpConcurrentRequests",
+      "labels": {
+        "fr": "Requêtes HTTP simultanées",
+        "en": "HTTP concurrent requests"
+      },
+      "kind": "integer",
+      "overridable": true,
+      "default": 10,
+      "minimum": 1,
+      "maximum": 1000
+    },
+    {
+      "name": "activeRevisionsMode",
+      "labels": {
+        "fr": "Mode de révision",
+        "en": "Revision mode"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "Single",
+      "values": [
+        "Single",
+        "Multiple"
+      ]
+    }
+  ],
+  "fixedValues": [],
+  "children": [],
+  "identities": {
+    "system": true,
+    "userAssignedMax": 10
+  },
+  "links": {
+    "asSource": [
+      "Hosting",
+      "Telemetry",
+      "ImagePull",
+      "DataAccess",
+      "Access",
+      "SecretRead",
+      "ConfigurationRead"
+    ],
+    "asTarget": [],
+    "required": [
+      {
+        "kind": "Hosting",
+        "cardinality": "one"
+      }
+    ]
+  },
+  "outputs": [
+    {
+      "name": "fqdn",
+      "description": "Nom DNS complet de l’application.",
+      "sensitive": false,
+      "computableFromName": false
+    },
+    {
+      "name": "name",
+      "description": "Nom de l’application.",
+      "sensitive": false,
+      "computableFromName": true
+    },
+    {
+      "name": "id",
+      "description": "Identifiant de la ressource.",
+      "sensitive": false,
+      "computableFromName": false
+    }
+  ],
+  "lifecycle": {
+    "family": "data"
+  },
+  "roles": [
+    "Contributor",
+    "Reader"
+  ],
+  "roleEquivalences": {},
+  "dataAccess": {
+    "supported": false,
+    "levels": [],
+    "databaseEngine": null
+  },
+  "exposure": {
+    "modes": [],
+    "privateGroupIds": [],
+    "privateDnsZones": [],
+    "conditions": []
+  },
+  "diagnostics": {
+    "supported": true
+  },
+  "applicationSettings": {
+    "destination": "environmentVariables"
+  },
+  "languageSupport": {
+    "Bicep": "full",
+    "Terraform": "none",
+    "Pulumi": "none"
+  },
+  "generation": {
+    "Bicep": {
+      "module": "br/public:avm/res/app/container-app:0.23.0",
+      "versionPin": "0.23.0",
+      "map": {
+        "name": "name",
+        "location": "location",
+        "environmentResourceId": "environmentResourceId",
+        "workloadProfileName": "workloadProfileName",
+        "ingress": "ingressExternal",
+        "targetPort": "ingressTargetPort",
+        "transport": "ingressTransport",
+        "maxReplicas": "scaleSettings",
+        "activeRevisionsMode": "activeRevisionsMode",
+        "managedIdentities": "managedIdentities",
+        "containers": "containers"
+      }
+    }
+  },
+  "deprecations": [],
+  "privateDnsZones": [],
+  "requiredNetworkRules": [],
+  "recommendedAlerts": [],
+  "pricing": {
+    "source": "azure-retail-prices",
+    "meters": [
+      {
+        "serviceName": "Azure Container Apps",
+        "productName": "Consumption workload profiles",
+        "meterName": "vCPU seconds"
+      }
+    ],
+    "assumptions": [],
+    "estimated": false,
+    "unestimatedReason": "Aucun scénario tarifaire par défaut n’est estimé pour le profil du pilote."
+  },
+  "drift": []
+}

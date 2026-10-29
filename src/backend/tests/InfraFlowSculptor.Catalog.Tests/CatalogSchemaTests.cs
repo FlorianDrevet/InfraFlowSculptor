@@ -21,7 +21,7 @@ public sealed class CatalogSchemaTests
         var schema = JsonSchema.FromText(File.ReadAllText(Path.Combine(CatalogRoot, "schema", "catalog-version.schema.json")));
         using var candidate = JsonDocument.Parse("""
             {
-              "version": "2026.10-pilot.1",
+              "version": "2026.10-pilot.2",
               "status": "published",
               "publishedAt": "2026-10-29",
               "supportEndsAt": null,
@@ -40,18 +40,65 @@ public sealed class CatalogSchemaTests
     {
         var provider = CatalogLoader.Load(typeof(CatalogLoader).Assembly);
         var original = provider.GetVersion("2026.10-pilot");
-        var patch = provider.GetVersion("2026.10-pilot.1");
+        var accessPatch = provider.GetVersion("2026.10-pilot.1");
+        var latestPatch = provider.GetVersion("2026.10-pilot.2");
         Assert.NotNull(original);
-        Assert.NotNull(patch);
+        Assert.NotNull(accessPatch);
+        Assert.NotNull(latestPatch);
 
         var originalTargetLinks = original.GetResourceType("LogAnalyticsWorkspace")!.Definition
             .GetProperty("links").GetProperty("asTarget").EnumerateArray();
-        var patchTargetLinks = patch.GetResourceType("LogAnalyticsWorkspace")!.Definition
+        var patchTargetLinks = accessPatch.GetResourceType("LogAnalyticsWorkspace")!.Definition
+            .GetProperty("links").GetProperty("asTarget").EnumerateArray();
+        var latestPatchTargetLinks = latestPatch.GetResourceType("LogAnalyticsWorkspace")!.Definition
             .GetProperty("links").GetProperty("asTarget").EnumerateArray();
 
         Assert.DoesNotContain(originalTargetLinks, kind => kind.GetString() == "Access");
         Assert.Contains(patchTargetLinks, kind => kind.GetString() == "Access");
-        Assert.Equal("2026.10-pilot.1", provider.LatestPublished?.Version);
+        Assert.Contains(latestPatchTargetLinks, kind => kind.GetString() == "Access");
+        Assert.Equal("2026.10-pilot.2", provider.LatestPublished?.Version);
+    }
+
+    [Fact]
+    public void ExposurePropertiesArePublishedOnlyForTypesThatSupportThem()
+    {
+        var provider = CatalogLoader.Load(typeof(CatalogLoader).Assembly);
+        var original = provider.GetVersion("2026.10-pilot")!;
+        var accessPatch = provider.GetVersion("2026.10-pilot.1")!;
+        var exposurePatch = provider.GetVersion("2026.10-pilot.2")!;
+        var supportedTypes = new[] { "ContainerRegistry", "KeyVault", "SqlServer" };
+
+        foreach (var type in supportedTypes)
+        {
+            var descriptor = exposurePatch.GetResourceType(type)!;
+            var properties = descriptor.Definition.GetProperty("properties").EnumerateArray().ToArray();
+            var exposure = properties.Single(property => property.GetProperty("name").GetString() == "exposure");
+            var allowedRanges = properties.Single(property => property.GetProperty("name").GetString() == "allowedIpRanges");
+            var modes = descriptor.Definition.GetProperty("exposure").GetProperty("modes")
+                .EnumerateArray().Select(mode => mode.GetString()).ToArray();
+
+            Assert.Equal("enum", exposure.GetProperty("kind").GetString());
+            Assert.Equal("Public", exposure.GetProperty("default").GetString());
+            Assert.True(exposure.GetProperty("overridable").GetBoolean());
+            Assert.Equal(modes, exposure.GetProperty("values").EnumerateArray().Select(value => value.GetString()).ToArray());
+            Assert.Equal("array", allowedRanges.GetProperty("kind").GetString());
+            Assert.True(allowedRanges.GetProperty("overridable").GetBoolean());
+            Assert.Equal(100, allowedRanges.GetProperty("maxItems").GetInt32());
+            Assert.Equal("requires:exposure=Restricted", allowedRanges.GetProperty("condition").GetString());
+            Assert.Equal("string", allowedRanges.GetProperty("items").GetProperty("kind").GetString());
+            Assert.Equal("ipv4Cidr", allowedRanges.GetProperty("items").GetProperty("format").GetString());
+
+            Assert.DoesNotContain(original.GetResourceType(type)!.Definition.GetProperty("properties").EnumerateArray(),
+                property => property.GetProperty("name").GetString() == "exposure");
+            Assert.DoesNotContain(accessPatch.GetResourceType(type)!.Definition.GetProperty("properties").EnumerateArray(),
+                property => property.GetProperty("name").GetString() == "exposure");
+        }
+
+        foreach (var descriptor in exposurePatch.ResourceTypes.Where(resourceType => !supportedTypes.Contains(resourceType.Type)))
+        {
+            Assert.DoesNotContain(descriptor.Definition.GetProperty("properties").EnumerateArray(),
+                property => property.GetProperty("name").GetString() is "exposure" or "allowedIpRanges");
+        }
     }
 
     [Fact]
@@ -61,6 +108,7 @@ public sealed class CatalogSchemaTests
 
         Assert.Equal(9, provider.GetVersion("2026.10-pilot")!.ResourceTypes.Length);
         Assert.Equal(9, provider.GetVersion("2026.10-pilot.1")!.ResourceTypes.Length);
+        Assert.Equal(9, provider.GetVersion("2026.10-pilot.2")!.ResourceTypes.Length);
     }
 
     [Fact]
@@ -108,8 +156,10 @@ public sealed class CatalogSchemaTests
 
         foreach (var version in provider.GetVersions().Where(candidate => candidate.Status == "published"))
         {
-            var expected = hashes.RootElement.GetProperty(version.Version).GetString();
-            Assert.Equal(expected, version.Fingerprint);
+            Assert.True(
+                hashes.RootElement.TryGetProperty(version.Version, out var expected),
+                $"Add {version.Version} to published-hashes.json with fingerprint {version.Fingerprint}.");
+            Assert.Equal(expected.GetString(), version.Fingerprint);
         }
     }
 

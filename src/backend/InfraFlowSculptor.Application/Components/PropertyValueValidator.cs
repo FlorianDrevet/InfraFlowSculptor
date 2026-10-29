@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Globalization;
 using ErrorOr;
 using InfraFlowSculptor.Catalog;
 
@@ -229,6 +230,12 @@ public sealed class PropertyValueValidator
                 return Error.Validation("RESOURCE_PROPERTY_PATTERN", $"Property '{name}' does not match its descriptor pattern.");
             }
 
+            if (definition.TryGetProperty("format", out var formatElement)
+                && (kind != "string" || !MatchesFormat(text, formatElement.GetString()!)))
+            {
+                return Error.Validation("RESOURCE_PROPERTY_FORMAT", $"Property '{name}' does not match its descriptor format.");
+            }
+
             if (definition.TryGetProperty("deprecatedValues", out var deprecatedValues)
                 && deprecatedValues.EnumerateArray().Any(item => string.Equals(item.GetString(), text, StringComparison.Ordinal)))
             {
@@ -241,6 +248,33 @@ public sealed class PropertyValueValidator
             && !allowedValues.EnumerateArray().Any(item => JsonElement.DeepEquals(item, value)))
         {
             return Error.Validation("RESOURCE_PROPERTY_ENUM_INVALID", $"Property '{name}' must use a value declared by its descriptor.");
+        }
+
+        if (kind == "array")
+        {
+            if (definition.TryGetProperty("maxItems", out var maxItems)
+                && value.GetArrayLength() > maxItems.GetInt32())
+            {
+                return Error.Validation("RESOURCE_PROPERTY_ARRAY_LENGTH", $"Property '{name}' exceeds its descriptor item limit.");
+            }
+
+            if (definition.TryGetProperty("items", out var itemDefinition))
+            {
+                var itemKind = itemDefinition.GetProperty("kind").GetString()!;
+                foreach (var item in value.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.Null || !MatchesKind(item, itemKind))
+                    {
+                        return Error.Validation("RESOURCE_PROPERTY_ITEM_TYPE_INVALID", $"Property '{name}' contains an item that does not match its descriptor type.");
+                    }
+
+                    var itemResult = ValidateValue(name, item, itemDefinition, isPublished, currentValues: null);
+                    if (itemResult.IsError)
+                    {
+                        return itemResult.Errors;
+                    }
+                }
+            }
         }
 
         return Result.Success;
@@ -286,5 +320,52 @@ public sealed class PropertyValueValidator
         {
             return false;
         }
+    }
+
+    private static bool MatchesFormat(string value, string format) => format switch
+    {
+        "ipv4Cidr" => IsCanonicalIpv4Cidr(value),
+        _ => false
+    };
+
+    private static bool IsCanonicalIpv4Cidr(string value)
+    {
+        var slashIndex = value.IndexOf('/');
+        if (slashIndex <= 0 || slashIndex != value.LastIndexOf('/'))
+        {
+            return false;
+        }
+
+        var prefixText = value.AsSpan(slashIndex + 1);
+        if (prefixText.Length == 0
+            || prefixText.Length > 1 && prefixText[0] == '0'
+            || !int.TryParse(prefixText, NumberStyles.None, CultureInfo.InvariantCulture, out var prefix)
+            || prefix > 32)
+        {
+            return false;
+        }
+
+        var octets = value[..slashIndex].Split('.');
+        if (octets.Length != 4)
+        {
+            return false;
+        }
+
+        uint address = 0;
+        foreach (var octetText in octets)
+        {
+            if (octetText.Length == 0
+                || octetText.Length > 1 && octetText[0] == '0'
+                || !int.TryParse(octetText, NumberStyles.None, CultureInfo.InvariantCulture, out var octet)
+                || octet > 255)
+            {
+                return false;
+            }
+
+            address = (address << 8) | (uint)octet;
+        }
+
+        var networkMask = prefix == 0 ? 0u : uint.MaxValue << (32 - prefix);
+        return (address & ~networkMask) == 0;
     }
 }

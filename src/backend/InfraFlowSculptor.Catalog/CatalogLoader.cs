@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -178,6 +179,16 @@ public static class CatalogLoader
         public CatalogVersion? LatestPublished => versions
             .Where(candidate => string.Equals(candidate.Status, "published", StringComparison.Ordinal))
             .OrderByDescending(candidate => candidate.PublishedAt)
+            .ThenByDescending(candidate => GetPatchRevision(candidate.Version))
             .FirstOrDefault();
+
+        private static int GetPatchRevision(string version)
+        {
+            var separator = version.LastIndexOf('.');
+            return separator >= 0
+                && int.TryParse(version.AsSpan(separator + 1), NumberStyles.None, CultureInfo.InvariantCulture, out var patch)
+                    ? patch
+                    : 0;
+        }
     }
 }

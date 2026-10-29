@@ -165,7 +165,16 @@
         "labels": { "$ref": "#/$defs/labels" },
         "kind": {
           "enum": ["boolean", "integer", "number", "string", "enum", "reference", "array", "object"],
-          "description": "Pour array, la valeur est un tableau JSON; pour object, un objet JSON. Le descripteur fixe le type du conteneur; ses éléments et membres imbriqués peuvent être des scalaires, tableaux ou objets et sont stockés comme arbre relationnel typé."
+          "description": "Pour array, la valeur est un tableau JSON; pour object, un objet JSON. Le descripteur fixe le type du conteneur; ses éléments et membres imbriqués peuvent être des scalaires, tableaux ou objets et sont stockés comme arbre relationnel typé. `items` permet de préciser le type et le format des éléments d'un tableau homogène."
+        },
+        "items": {
+          "type": "object",
+          "required": ["kind"],
+          "properties": {
+            "kind": { "enum": ["boolean", "integer", "number", "string", "enum", "reference"] },
+            "format": { "enum": ["ipv4Cidr"] }
+          },
+          "additionalProperties": false
         },
         "values": { "type": "array", "items": {} },
         "default": {},
@@ -173,6 +182,7 @@
         "maximum": { "type": "number" },
         "minLength": { "type": "integer", "minimum": 0 },
         "maxLength": { "type": "integer", "minimum": 0 },
+        "maxItems": { "type": "integer", "minimum": 0 },
         "pattern": { "type": "string" },
         "overridable": { "type": "boolean" },
         "lockedAfterPublish": { "type": "boolean" },
