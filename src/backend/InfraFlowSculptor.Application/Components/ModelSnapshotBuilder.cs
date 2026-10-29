@@ -42,8 +42,11 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
         var links = await dbContext.Query<LinkAggregate>()
             .Where(link => link.ProjectId == new ProjectId(projectId))
             .ToArrayAsync(cancellationToken);
+        var appSettings = await dbContext.Query<AppSettingAggregate>()
+            .Where(setting => setting.ProjectId == new ProjectId(projectId))
+            .ToArrayAsync(cancellationToken);
 
-        var snapshot = CreateSnapshot(project, components, links);
+        var snapshot = CreateSnapshot(project, components, links, appSettings);
         if (snapshot.IsError)
         {
             return snapshot.Errors;
@@ -76,6 +79,7 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
             var otherSnapshot = CreateSnapshot(
                 otherProject,
                 otherComponents.Where(component => component.ProjectId == otherProject.Id).ToArray(),
+                [],
                 []);
             if (otherSnapshot.IsError)
             {
@@ -113,7 +117,8 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
     private ErrorOr<ModelSnapshot> CreateSnapshot(
         ProjectAggregate project,
         IReadOnlyList<ComponentAggregate> components,
-        IReadOnlyList<LinkAggregate> links)
+        IReadOnlyList<LinkAggregate> links,
+        IReadOnlyList<AppSettingAggregate> appSettings)
     {
         var catalog = catalogProvider.GetVersion(project.CatalogVersion);
         if (catalog is null)
@@ -169,7 +174,22 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
                 link.IdentityResourceId,
                 link.Roles.Select(role => role.Name).ToArray(),
                 link.AccessScope,
-                link.DataAccessLevel)).ToArray()
+                link.DataAccessLevel)).ToArray(),
+            AppSettings = appSettings.Select(setting => new AppSettingSnapshot(
+                setting.Id,
+                setting.ComponentId.Value,
+                setting.ApplicationResourceId,
+                setting.Name,
+                setting.SourceKind,
+                setting.LiteralSource?.Value,
+                setting.LiteralSource?.Overrides.ToDictionary(value => value.TargetId, value => value.Value) ?? new Dictionary<Guid, string>(),
+                setting.SourceResourceId,
+                setting.OutputName,
+                setting.KeyVaultResourceId,
+                setting.SecretName,
+                setting.SecretFeedKind,
+                setting.PipelineVariableName,
+                setting.IdentityResourceId)).ToArray()
         };
     }
 
@@ -213,7 +233,7 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
                 child.Id,
                 child.Type,
                 child.Name,
-                child.GetProperties())).ToArray())).ToArray())
+                child.GetProperties())).ToArray()) { DefaultIdentityResourceId = resource.DefaultIdentityResourceId }).ToArray())
     {
         TargetsAllEnvironments = component.TargetsAllEnvironments,
         Naming = component.DefaultNameTemplate is not null || component.NamingOverrides.Count > 0

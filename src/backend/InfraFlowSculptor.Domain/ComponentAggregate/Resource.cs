@@ -38,6 +38,8 @@ public sealed partial class Resource : IOrganizationOwned, IHasVersion
 
     public bool IsExisting { get; private set; }
 
+    public Guid? DefaultIdentityResourceId { get; private set; }
+
     public int Version { get; private set; } = 1;
 
     public IReadOnlyCollection<ResourceValueNode> Values => values.AsReadOnly();
@@ -87,13 +89,15 @@ public sealed partial class Resource : IOrganizationOwned, IHasVersion
         bool isExisting,
         IEnumerable<Guid> targetEnvironmentIds,
         IReadOnlyDictionary<string, JsonElement> properties,
-        IEnumerable<KeyValuePair<string, string>>? tags = null)
+        IEnumerable<KeyValuePair<string, string>>? tags = null,
+        Guid? defaultIdentityResourceId = null)
     {
         var normalizedType = type?.Trim() ?? string.Empty;
         var normalizedName = logicalName?.Trim() ?? string.Empty;
         var normalizedDescription = description?.Trim() ?? string.Empty;
         if (id == Guid.Empty || projectId.Value == Guid.Empty || organizationId.Value == Guid.Empty
-            || resourceGroupId == Guid.Empty || normalizedType.Length is < 1 or > 100)
+            || resourceGroupId == Guid.Empty || normalizedType.Length is < 1 or > 100
+            || defaultIdentityResourceId == Guid.Empty)
         {
             return Error.Validation("RESOURCE_IDENTITY_INVALID", "A resource identifier, group, and descriptor type are required.");
         }
@@ -120,7 +124,10 @@ public sealed partial class Resource : IOrganizationOwned, IHasVersion
         }
 
         var resource = new Resource(
-            id, projectId, organizationId, resourceGroupId, normalizedType, normalizedName, normalizedDescription, isExisting);
+            id, projectId, organizationId, resourceGroupId, normalizedType, normalizedName, normalizedDescription, isExisting)
+        {
+            DefaultIdentityResourceId = defaultIdentityResourceId
+        };
         foreach (var environmentId in environments)
         {
             resource.presences.Add(new ResourcePresence(environmentId, !isExisting));
@@ -446,6 +453,18 @@ public sealed partial class Resource : IOrganizationOwned, IHasVersion
         Description = normalizedDescription;
         tags.Clear();
         tags.AddRange(normalizedTags.Value.Select(tag => new ResourceTag(tag.Key, tag.Value)));
+        Touch();
+        return Result.Success;
+    }
+
+    internal ErrorOr<Success> SetDefaultIdentity(Guid? identityResourceId)
+    {
+        if (identityResourceId == Guid.Empty)
+        {
+            return Error.Validation("VAL-LIA-IDENTITE", "A default user-assigned identity must name a resource in the same component.");
+        }
+
+        DefaultIdentityResourceId = identityResourceId;
         Touch();
         return Result.Success;
     }

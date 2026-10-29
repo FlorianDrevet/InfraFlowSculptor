@@ -83,6 +83,7 @@ function createTestResource(): ResourceResponse {
     presences: {},
     existingIds: {},
     forcedNames: {},
+    defaultIdentityResourceId: null,
     children: [],
   };
 }
@@ -253,6 +254,7 @@ describe('ComponentDetail', () => {
       presences: {},
       existingIds: {},
       forcedNames: {},
+      defaultIdentityResourceId: null,
       children: [],
     } as ResourceResponse;
     const component = {
@@ -398,6 +400,7 @@ describe('ComponentDetail', () => {
       presences: {},
       existingIds: {},
       forcedNames: {},
+      defaultIdentityResourceId: null,
       children: [],
     } as ResourceResponse;
     const component = {
@@ -544,6 +547,7 @@ describe('ComponentDetail', () => {
       presences: {},
       existingIds: {},
       forcedNames: {},
+      defaultIdentityResourceId: null,
       children: [],
     } as ResourceResponse;
     const component = {
@@ -781,6 +785,7 @@ describe('ComponentDetail', () => {
       presences: {},
       existingIds: {},
       forcedNames: {},
+      defaultIdentityResourceId: null,
       children: [],
     } as ResourceResponse;
     const component = {

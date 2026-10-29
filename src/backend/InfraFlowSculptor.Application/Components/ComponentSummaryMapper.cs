@@ -62,6 +62,6 @@ internal static class ComponentSummaryMapper
                 child.Id,
                 child.Type,
                 child.Name,
-                child.GetProperties())).ToArray())).ToArray(),
+                child.GetProperties())).ToArray()) { DefaultIdentityResourceId = resource.DefaultIdentityResourceId }).ToArray(),
         component.DefaultLogAnalyticsResourceId);
 }

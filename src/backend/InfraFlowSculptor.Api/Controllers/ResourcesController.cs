@@ -4,6 +4,8 @@ using InfraFlowSculptor.Api.Errors;
 using InfraFlowSculptor.Application.Common.ModelCommands;
 using InfraFlowSculptor.Application.Components;
 using InfraFlowSculptor.Application.Components.Commands.AddChild;
+using InfraFlowSculptor.Application.Components.Commands.CreateAppSetting;
+using InfraFlowSculptor.Application.Components.Commands.DeleteAppSetting;
 using InfraFlowSculptor.Application.Components.Commands.AddLink;
 using InfraFlowSculptor.Application.Components.Commands.AddResource;
 using InfraFlowSculptor.Application.Components.Commands.ClearOverride;
@@ -16,9 +18,12 @@ using InfraFlowSculptor.Application.Components.Commands.SetForcedName;
 using InfraFlowSculptor.Application.Components.Commands.SetOverride;
 using InfraFlowSculptor.Application.Components.Commands.SetPresence;
 using InfraFlowSculptor.Application.Components.Commands.SetResourceProperties;
+using InfraFlowSculptor.Application.Components.Commands.SetResourceDefaultIdentity;
 using InfraFlowSculptor.Application.Components.Commands.UpdateResourceMetadata;
 using InfraFlowSculptor.Application.Components.Commands.UpdateLink;
 using InfraFlowSculptor.Application.Components.Commands.UpdateChild;
+using InfraFlowSculptor.Application.Components.Commands.UpdateAppSetting;
+using InfraFlowSculptor.Application.Components.Queries.GetAppSettings;
 using InfraFlowSculptor.Application.Components.Queries.GetEffectiveValues;
 using InfraFlowSculptor.Application.Components.Queries.GetResourceDeletionImpact;
 using InfraFlowSculptor.Application.Components.Queries.GetResourceLinks;
@@ -48,6 +53,133 @@ public static class ResourcesController
             .WithTags("Resources")
             .RequireFeature(Features.Organizations)
             .RequireFeature(Features.ProjectSetup);
+
+        resources.MapGet("/{resourceId:guid}/app-settings", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new GetAppSettingsQuery(projectId, componentId, resourceId), cancellationToken);
+                return result.Match<IResult>(
+                    settings => Results.Ok(settings.Select(Map).ToArray()),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.GetAppSettings)
+            .WithSummary("Lister les paramètres applicatifs d'une ressource.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces<AppSettingResponse[]>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        resources.MapPost("/{resourceId:guid}/app-settings", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                AppSettingRequest request,
+                IModelCommandExecutor executor,
+                IMediator mediator,
+                TimeProvider clock,
+                CancellationToken cancellationToken) =>
+            {
+                var settingId = Guid.CreateVersion7(clock.GetUtcNow());
+                var definition = ToDefinition(request);
+                var command = definition.ForceNonSecret
+                    ? (InfraFlowSculptor.Application.Common.ModelCommands.IModelCommand)new ForceNonSecretAppSettingCommand(
+                        projectId, componentId, resourceId, settingId, definition)
+                    : new CreateAppSettingCommand(projectId, componentId, resourceId, settingId, definition);
+                var result = await executor.ExecuteAsync([command], ModelCommandMode.Apply, cancellationToken);
+                if (result.IsError)
+                {
+                    return result.Errors.ToProblem();
+                }
+
+                var created = await mediator.Send(new GetAppSettingsQuery(projectId, componentId, resourceId), cancellationToken);
+                return created.Match<IResult>(
+                    settings => settings.SingleOrDefault(setting => setting.Id == settingId) is { } setting
+                        ? Results.Created($"/v1/projects/{projectId:D}/components/{componentId:D}/resources/{resourceId:D}/app-settings/{settingId:D}", MapMutation(setting))
+                        : Results.NotFound(),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.CreateAppSetting)
+            .WithSummary("Ajouter un paramètre applicatif sans transmettre de secret en clair.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces<AppSettingMutationResponse>(StatusCodes.Status201Created)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        resources.MapPut("/{resourceId:guid}/app-settings/{appSettingId:guid}", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                Guid appSettingId,
+                AppSettingUpdateRequest request,
+                IModelCommandExecutor executor,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var definition = ToDefinition(request);
+                var command = definition.ForceNonSecret
+                    ? (InfraFlowSculptor.Application.Common.ModelCommands.IModelCommand)new ForceNonSecretAppSettingUpdateCommand(
+                        projectId, componentId, resourceId, appSettingId, definition, request.ExpectedVersion)
+                    : new UpdateAppSettingCommand(
+                        projectId, componentId, resourceId, appSettingId, definition, request.ExpectedVersion);
+                var result = await executor.ExecuteAsync([command], ModelCommandMode.Apply, cancellationToken);
+                if (result.IsError)
+                {
+                    return result.Errors.ToProblem();
+                }
+
+                var updated = await mediator.Send(new GetAppSettingsQuery(projectId, componentId, resourceId), cancellationToken);
+                return updated.Match<IResult>(
+                    settings => settings.SingleOrDefault(setting => setting.Id == appSettingId) is { } setting
+                        ? Results.Ok(MapMutation(setting))
+                        : Results.NotFound(),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.UpdateAppSetting)
+            .WithSummary("Modifier un paramètre applicatif.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces<AppSettingMutationResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        resources.MapDelete("/{resourceId:guid}/app-settings/{appSettingId:guid}", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                Guid appSettingId,
+                [FromBody] DeleteAppSettingRequest request,
+                IModelCommandExecutor executor,
+                CancellationToken cancellationToken) =>
+            {
+                var command = new DeleteAppSettingCommand(
+                    projectId, componentId, resourceId, appSettingId, request.ExpectedVersion);
+                var result = await executor.ExecuteAsync([command], ModelCommandMode.Apply, cancellationToken);
+                return result.Match<IResult>(
+                    execution => Results.NoContent(),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.DeleteAppSetting)
+            .WithSummary("Supprimer un paramètre applicatif.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         resources.MapPost("/preview-name", async (
                 Guid projectId,
@@ -89,18 +221,22 @@ public static class ResourcesController
                 return result.Match<IResult>(
                     summary => Results.Ok(new ResourceDeletionImpactResponse(
                         summary.ResourceVersion,
-                        summary.LinkImpact.Severity == ImpactSeverity.Blocker
+                        summary.LinkImpact.Severity == ImpactSeverity.Blocker || summary.HasBlockingApplicationSettings
                             ? ResourceDeletionImpactStatus.Blocked
                             : ResourceDeletionImpactStatus.Partial,
-                        MapSeverity(summary.LinkImpact.Severity),
-                        [ResourceDeletionImpactArea.ApplicationParameters],
+                        summary.HasBlockingApplicationSettings
+                            ? ResourceImpactSeverity.Blocker
+                            : MapSeverity(summary.LinkImpact.Severity),
+                        [ResourceDeletionImpactArea.ImplicitEffects],
                         summary.Items.Select(item => new ResourceDeletionImpactItemResponse(
-                                ResourceDeletionImpactKind.Child,
+                                item.Type == "Application setting"
+                                    ? ResourceDeletionImpactKind.ApplicationSetting
+                                    : ResourceDeletionImpactKind.Child,
                                 item.Type,
                                 item.Name,
-                                "RESOURCE_CHILD_DELETED",
-                                ResourceImpactSeverity.Information,
-                                "L’objet enfant sera supprimé avec la ressource.",
+                                item.Code,
+                                item.BlocksDeletion ? ResourceImpactSeverity.Blocker : ResourceImpactSeverity.Information,
+                                item.Message,
                                 null,
                                 resourceId))
                             .Concat(summary.LinkImpact.Items.Select(item => new ResourceDeletionImpactItemResponse(
@@ -324,7 +460,10 @@ public static class ResourcesController
                     request.IsExisting,
                     request.Properties,
                     request.Tags,
-                    request.ExpectedVersion);
+                    request.ExpectedVersion)
+                {
+                    DefaultIdentityResourceId = request.DefaultIdentityResourceId
+                };
                 return await ExecuteAndReturnResourceAsync(
                     command, StatusCodes.Status201Created, projectId, componentId, resourceId, executor, mediator, cancellationToken);
             })
@@ -385,6 +524,31 @@ public static class ResourcesController
             })
             .WithName(EndpointNames.UpdateResourceMetadata)
             .WithSummary("Modifier la description et les tags d'une ressource.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces<ResourceResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        resources.MapPut("/{resourceId:guid}/default-identity", async (
+                Guid projectId,
+                Guid componentId,
+                Guid resourceId,
+                SetResourceDefaultIdentityRequest request,
+                IModelCommandExecutor executor,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var command = new SetResourceDefaultIdentityCommand(
+                    projectId, componentId, resourceId, request.IdentityResourceId, request.ExpectedVersion);
+                return await ExecuteAndReturnResourceAsync(
+                    command, StatusCodes.Status200OK, projectId, componentId, resourceId, executor, mediator, cancellationToken);
+            })
+            .WithName(EndpointNames.SetResourceDefaultIdentity)
+            .WithSummary("Définir l'identité affectée par défaut d'une application.")
             .RequireAuthorization(AuthorizationPolicies.Member)
             .RequireRateLimiting(RateLimitingPolicies.Write)
             .WithIdempotency()
@@ -693,7 +857,8 @@ public static class ResourcesController
             child.Id,
             child.Type,
             child.Name,
-            child.Properties)).ToArray());
+            child.Properties)).ToArray(),
+        resource.DefaultIdentityResourceId);
 
     private static ResourceLinkResponse Map(ResourceLinkSummary link) => new(
         link.Id,
@@ -715,6 +880,70 @@ public static class ResourcesController
         link.IsExternal,
         link.CreatesDeploymentDependency,
         link.Findings.Select(finding => new ResourceLinkIssueResponse(finding.Code, finding.Message)).ToArray());
+
+    private static AppSettingResponse Map(AppSettingSummary setting) => new(
+        setting.Id,
+        setting.Version,
+        setting.Name,
+        setting.SourceKind,
+        setting.LiteralValue,
+        setting.Overrides,
+        setting.SourceResourceId,
+        setting.OutputName,
+        setting.KeyVaultResourceId,
+        setting.SecretName,
+        setting.SecretFeedKind,
+        setting.PipelineVariableName,
+        setting.IdentityResourceId,
+        setting.SecretValueDeclaredNonSecret,
+        setting.Warnings,
+        setting.IsImplicit,
+        setting.Origin);
+
+    private static AppSettingMutationResponse MapMutation(AppSettingSummary setting) => new(
+        setting.Id,
+        setting.Version,
+        setting.Name,
+        setting.SourceKind,
+        setting.SourceResourceId,
+        setting.OutputName,
+        setting.KeyVaultResourceId,
+        setting.SecretName,
+        setting.SecretFeedKind,
+        setting.PipelineVariableName,
+        setting.IdentityResourceId,
+        setting.SecretValueDeclaredNonSecret,
+        setting.Warnings,
+        setting.IsImplicit,
+        setting.Origin);
+
+    private static InfraFlowSculptor.Domain.ComponentAggregate.AppSettingDefinition ToDefinition(AppSettingRequest request) => new(
+        request.Name,
+        request.SourceKind,
+        request.LiteralValue,
+        request.Overrides,
+        request.SourceResourceId,
+        request.OutputName,
+        request.KeyVaultResourceId,
+        request.SecretName,
+        request.SecretFeedKind,
+        request.PipelineVariableName,
+        request.IdentityResourceId,
+        request.ForceNonSecret);
+
+    private static InfraFlowSculptor.Domain.ComponentAggregate.AppSettingDefinition ToDefinition(AppSettingUpdateRequest request) => new(
+        request.Name,
+        request.SourceKind,
+        request.LiteralValue,
+        request.Overrides,
+        request.SourceResourceId,
+        request.OutputName,
+        request.KeyVaultResourceId,
+        request.SecretName,
+        request.SecretFeedKind,
+        request.PipelineVariableName,
+        request.IdentityResourceId,
+        request.ForceNonSecret);
 
     private static EffectiveValueTargetResponse Map(EffectiveValueTargetSummary target) => new(
         target.Id,

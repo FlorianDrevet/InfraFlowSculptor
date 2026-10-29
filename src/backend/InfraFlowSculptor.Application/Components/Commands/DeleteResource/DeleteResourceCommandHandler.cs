@@ -46,6 +46,38 @@ public sealed class DeleteResourceCommandHandler(
             return version.Errors;
         }
 
+        var applicationSettings = await dbContext.Query<AppSettingAggregate>()
+            .Where(setting => setting.ProjectId == new ProjectId(command.ProjectId)
+                && (setting.ApplicationResourceId == resource.Id
+                    || setting.SourceResourceId == resource.Id
+                    || setting.KeyVaultResourceId == resource.Id
+                    || setting.IdentityResourceId == resource.Id))
+            .ToArrayAsync(cancellationToken);
+        var settingsThatReferenceResource = applicationSettings
+            .Where(setting => setting.ApplicationResourceId != resource.Id)
+            .ToArray();
+        var projectComponents = await dbContext.Query<ComponentAggregate>()
+            .Where(candidate => candidate.ProjectId == new ProjectId(command.ProjectId))
+            .ToArrayAsync(cancellationToken);
+        var applicationsUsingDefaultIdentity = projectComponents
+            .SelectMany(candidate => candidate.Resources)
+            .Where(application => application.DefaultIdentityResourceId == resource.Id)
+            .ToArray();
+        if (settingsThatReferenceResource.Length > 0 || applicationsUsingDefaultIdentity.Length > 0)
+        {
+            return Error.Validation(
+                "APP_SETTING_RESOURCE_IN_USE",
+                "The resource is referenced by an application setting or default identity. Update the reference before deleting the resource.",
+                new Dictionary<string, object>
+                {
+                    ["applicationSettings"] = settingsThatReferenceResource.Select(setting => setting.Name)
+                        .Concat(applicationsUsingDefaultIdentity.Select(_ => ApplicationSettingNameRules.AzureClientId))
+                        .ToArray()
+                });
+        }
+
+        dbContext.Query<AppSettingAggregate>().RemoveRange(applicationSettings);
+
         var built = await snapshotBuilder.BuildAsync(command.ProjectId, cancellationToken);
         if (built.IsError)
         {

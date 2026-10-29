@@ -65,6 +65,25 @@ public sealed class DeleteComponentCommandHandler(IIfsDbContext dbContext)
                 });
         }
 
+        var referencedApplicationSettings = await dbContext.Query<AppSettingAggregate>()
+            .Where(setting => setting.ProjectId == projectId
+                && setting.ComponentId != new ComponentId(command.ComponentId)
+                && (setting.SourceResourceId != null && resourceIds.Contains(setting.SourceResourceId.Value)
+                    || setting.KeyVaultResourceId != null && resourceIds.Contains(setting.KeyVaultResourceId.Value)
+                    || setting.IdentityResourceId != null && resourceIds.Contains(setting.IdentityResourceId.Value)))
+            .Select(setting => new { setting.Name, setting.ApplicationResourceId })
+            .ToArrayAsync(cancellationToken);
+        if (referencedApplicationSettings.Length > 0)
+        {
+            return Error.Validation(
+                "COMPONENT_DELETE_BLOCKED",
+                "Application settings in other components reference resources in this component. Update or delete those settings first.",
+                new Dictionary<string, object>
+                {
+                    ["applicationSettings"] = referencedApplicationSettings.Select(setting => setting.Name).ToArray()
+                });
+        }
+
         foreach (var resource in resources)
         {
             var removed = component.RemoveResource(resource.Id);

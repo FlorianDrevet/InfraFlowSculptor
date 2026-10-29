@@ -5,4 +5,5 @@ namespace InfraFlowSculptor.Application.Components.Queries.GetResourceDeletionIm
 public sealed record ResourceDeletionImpactSummary(
     int ResourceVersion,
     IReadOnlyList<ResourceDeletionImpactItemSummary> Items,
-    ImpactResult LinkImpact);
+    ImpactResult LinkImpact,
+    bool HasBlockingApplicationSettings);

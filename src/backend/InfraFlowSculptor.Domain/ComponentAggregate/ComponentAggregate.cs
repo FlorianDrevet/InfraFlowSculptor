@@ -421,7 +421,8 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
         bool isExisting,
         IEnumerable<Guid> targetEnvironmentIds,
         IReadOnlyDictionary<string, JsonElement> properties,
-        IEnumerable<KeyValuePair<string, string>>? tags = null)
+        IEnumerable<KeyValuePair<string, string>>? tags = null,
+        Guid? defaultIdentityResourceId = null)
     {
         if (!resourceGroups.Any(group => group.Id == resourceGroupId))
         {
@@ -445,7 +446,8 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
             isExisting,
             targetEnvironmentIds,
             properties,
-            tags);
+            tags,
+            defaultIdentityResourceId);
         if (created.IsError)
         {
             return created.Errors;
@@ -473,6 +475,9 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
         Touch();
         return Result.Success;
     }
+
+    public ErrorOr<Success> SetResourceDefaultIdentity(Guid resourceId, Guid? identityResourceId) =>
+        UpdateResource(resourceId, resource => resource.SetDefaultIdentity(identityResourceId));
 
     public ErrorOr<Success> UpdateResourceMetadata(
         Guid resourceId,

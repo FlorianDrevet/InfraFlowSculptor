@@ -532,6 +532,104 @@ public sealed class WiringEngineTests
             && item.ResourceId == targetResourceId);
     }
 
+    [Fact]
+    public void ResourceOutputSettingCreatesImplicitValueDependency()
+    {
+        var applicationComponentId = Guid.NewGuid();
+        var sourceComponentId = Guid.NewGuid();
+        var applicationId = Guid.NewGuid();
+        var sourceId = Guid.NewGuid();
+        var setting = new AppSettingSnapshot(
+            Guid.NewGuid(), applicationComponentId, applicationId, "VAULT_URI",
+            InfraFlowSculptor.Domain.ComponentAggregate.AppSettingSourceKind.ResourceOutput,
+            null, new Dictionary<Guid, string>(), sourceId, "vaultUri", null, null, null, null, null);
+
+        var result = CreateEngine().Evaluate(Snapshot(
+            Component(applicationComponentId, "app", Resource(applicationId, "ContainerApp")),
+            Component(sourceComponentId, "core", Resource(sourceId, "KeyVault")),
+            setting), Catalog);
+
+        var link = Assert.Single(result.Links, value => value.Link.Kind == LinkKind.ValueDependency);
+        Assert.Equal(LinkOrigin.Implicit, link.Link.Origin);
+        Assert.Equal(applicationId, link.Link.SourceResourceId);
+        Assert.Equal(sourceId, link.Link.TargetResourceId);
+        Assert.Contains(result.Dependencies, dependency => dependency.LinkId == link.Link.Id
+            && dependency.SourceComponentId == applicationComponentId
+            && dependency.TargetComponentId == sourceComponentId);
+    }
+
+    [Fact]
+    public void ValueDependencyIgnoresSourceTypesWithoutApplicationSettingsCapability()
+    {
+        var applicationComponentId = Guid.NewGuid();
+        var sourceComponentId = Guid.NewGuid();
+        var applicationId = Guid.NewGuid();
+        var sourceId = Guid.NewGuid();
+        var setting = new AppSettingSnapshot(
+            Guid.NewGuid(), applicationComponentId, applicationId, "VAULT_URI",
+            InfraFlowSculptor.Domain.ComponentAggregate.AppSettingSourceKind.ResourceOutput,
+            null, new Dictionary<Guid, string>(), sourceId, "vaultUri", null, null, null, null, null);
+
+        var result = CreateEngine().Evaluate(Snapshot(
+            Component(applicationComponentId, "app", Resource(applicationId, "LogAnalyticsWorkspace")),
+            Component(sourceComponentId, "core", Resource(sourceId, "KeyVault")),
+            setting), Catalog);
+
+        Assert.Contains(result.Issues, issue => issue.Code == "VAL-LIA-TYPE"
+            && issue.ResourceId == applicationId);
+    }
+
+    [Fact]
+    public void KeyVaultSettingCreatesImplicitSecretReadRoleWithSelectedIdentity()
+    {
+        var applicationComponentId = Guid.NewGuid();
+        var vaultComponentId = Guid.NewGuid();
+        var applicationId = Guid.NewGuid();
+        var identityId = Guid.NewGuid();
+        var vaultId = Guid.NewGuid();
+        var setting = new AppSettingSnapshot(
+            Guid.NewGuid(), applicationComponentId, applicationId, "PAYMENTS__API_KEY",
+            InfraFlowSculptor.Domain.ComponentAggregate.AppSettingSourceKind.KeyVaultSecret,
+            null, new Dictionary<Guid, string>(), null, null, vaultId, "payments-api-key",
+            InfraFlowSculptor.Domain.ComponentAggregate.AppSettingSecretFeedKind.PipelineSecret,
+            "MAIN_PAYMENTS_API_KEY", identityId);
+
+        var result = CreateEngine().Evaluate(Snapshot(
+            Component(applicationComponentId, "app", Resource(applicationId, "ContainerApp"), Resource(identityId, "UserAssignedIdentity")),
+            Component(vaultComponentId, "core", Resource(vaultId, "KeyVault")),
+            setting), Catalog);
+
+        var link = Assert.Single(result.Links, value => value.Link.Kind == LinkKind.SecretRead);
+        Assert.Equal(LinkOrigin.Implicit, link.Link.Origin);
+        Assert.Equal(LinkIdentityKind.UserAssigned, link.Link.IdentityKind);
+        Assert.Equal(identityId, link.Link.IdentityResourceId);
+        var role = Assert.Single(result.RoleAssignments);
+        Assert.Equal("Key Vault Secrets User", role.RoleName);
+        Assert.Equal(vaultId, role.ScopeResourceId);
+    }
+
+    [Fact]
+    public void ExplicitSettingCannotShadowAnImplicitTelemetrySetting()
+    {
+        var componentId = Guid.NewGuid();
+        var applicationId = Guid.NewGuid();
+        var insightsId = Guid.NewGuid();
+        var setting = new AppSettingSnapshot(
+            Guid.NewGuid(), componentId, applicationId, "APPLICATIONINSIGHTS_CONNECTION_STRING",
+            InfraFlowSculptor.Domain.ComponentAggregate.AppSettingSourceKind.Literal,
+            "InstrumentationKey=example", new Dictionary<Guid, string>(), null, null, null, null, null, null, null);
+
+        var result = CreateEngine().Evaluate(Snapshot(
+            Component(componentId, "app", Resource(applicationId, "ContainerApp"), Resource(insightsId, "ApplicationInsights")),
+            Link(componentId, applicationId, componentId, insightsId, LinkKind.Telemetry, LinkIdentityKind.None, null),
+            setting), Catalog);
+
+        Assert.Contains(result.ImplicitApplicationSettings, value => value.ApplicationResourceId == applicationId
+            && value.Name == "APPLICATIONINSIGHTS_CONNECTION_STRING");
+        Assert.Contains(result.Issues, issue => issue.Code == "VAL-PAR-IMPLICITE-CONFLIT"
+            && issue.ResourceId == applicationId);
+    }
+
     private static WiringEngine CreateEngine() => new(
         new LinkKindRegistry(PilotLinkKindHandlers.Create()),
         new DataAccessProviderRegistry([new AzureSqlDataAccessProvider()]));
@@ -541,6 +639,7 @@ public sealed class WiringEngineTests
     {
         var components = values.OfType<ComponentSnapshot>().ToArray();
         var links = values.OfType<LinkSnapshot>().ToArray();
+        var appSettings = values.OfType<AppSettingSnapshot>().ToArray();
         return new ModelSnapshot(
             new ProjectSnapshot("Project", "project", string.Empty),
             [],
@@ -548,7 +647,8 @@ public sealed class WiringEngineTests
             new Dictionary<string, string>(),
             components)
         {
-            Links = links
+            Links = links,
+            AppSettings = appSettings
         };
     }
 

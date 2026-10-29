@@ -25,6 +25,11 @@ public interface ILinkKindHandler : IKeyed<LinkKind>
 
     IReadOnlyList<LinkSnapshot> GetImplicitLinks(ModelSnapshot snapshot, CatalogVersion catalog);
 
+    IReadOnlyList<ImplicitApplicationSetting> GetImplicitApplicationSettings(
+        ModelSnapshot snapshot,
+        CatalogVersion catalog,
+        IReadOnlyList<LinkSnapshot> links);
+
     LinkIdentityRequirement GetIdentityRequirement(IReadOnlyDictionary<string, System.Text.Json.JsonElement> targetProperties);
 
     IReadOnlyList<string> GetRequiredRoles(

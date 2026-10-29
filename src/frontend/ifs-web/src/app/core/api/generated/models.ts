@@ -3,6 +3,12 @@
 
 export type { AddLinkRequest } from './models/add-link-request';
 export type { AddProjectEnvironmentRequest } from './models/add-project-environment-request';
+export type { AppSettingMutationResponse } from './models/app-setting-mutation-response';
+export type { AppSettingRequest } from './models/app-setting-request';
+export type { AppSettingResponse } from './models/app-setting-response';
+export type { AppSettingSecretFeedKind } from './models/app-setting-secret-feed-kind';
+export type { AppSettingSourceKind } from './models/app-setting-source-kind';
+export type { AppSettingUpdateRequest } from './models/app-setting-update-request';
 export type { AssignProjectRoleRequest } from './models/assign-project-role-request';
 export type { AuditEventDiffResponse } from './models/audit-event-diff-response';
 export type { AuditEventPageResponse } from './models/audit-event-page-response';
@@ -22,6 +28,7 @@ export type { CreateProjectFromWizardRequest } from './models/create-project-fro
 export type { CreateProjectFromWizardResponse } from './models/create-project-from-wizard-response';
 export type { CreateProjectRequest } from './models/create-project-request';
 export type { DataAccessLevel } from './models/data-access-level';
+export type { DeleteAppSettingRequest } from './models/delete-app-setting-request';
 export type { DeleteProjectEnvironmentRequest } from './models/delete-project-environment-request';
 export type { DeleteProjectRequest } from './models/delete-project-request';
 export type { EffectiveProjectPermissionsResponse } from './models/effective-project-permissions-response';
@@ -99,6 +106,7 @@ export type { SaveWizardDraftRequest } from './models/save-wizard-draft-request'
 export type { SetComponentDefaultLogAnalyticsRequest } from './models/set-component-default-log-analytics-request';
 export type { SetExistingResourceIdRequest } from './models/set-existing-resource-id-request';
 export type { SetProjectTagsRequest } from './models/set-project-tags-request';
+export type { SetResourceDefaultIdentityRequest } from './models/set-resource-default-identity-request';
 export type { SetResourceForcedNameRequest } from './models/set-resource-forced-name-request';
 export type { SetResourceOverrideRequest } from './models/set-resource-override-request';
 export type { SetResourcePresenceRequest } from './models/set-resource-presence-request';

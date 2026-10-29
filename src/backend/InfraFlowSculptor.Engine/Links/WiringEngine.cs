@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using InfraFlowSculptor.Catalog;
+using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Engine.Model;
 
@@ -31,6 +32,8 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
             .ToDictionary(entry => entry.Resource.Id);
         var descriptorByType = catalog.ResourceTypes.ToDictionary(descriptor => descriptor.Type, StringComparer.OrdinalIgnoreCase);
         var issues = new List<WiringIssue>();
+        var implicitApplicationSettings = BuildImplicitApplicationSettings(snapshot, catalog, resourceById, descriptorByType, linkKinds);
+        ValidateApplicationSettings(snapshot, resourceById, descriptorByType, implicitApplicationSettings, issues);
         var links = snapshot.Links
             .Concat(linkKinds.Values.SelectMany(handler => handler.GetImplicitLinks(snapshot, catalog)))
             .DistinctBy(link => link.Id)
@@ -44,6 +47,7 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
         var roleCandidates = new List<RoleCandidate>();
         var dependencies = new List<WiringDependency>();
         var dataAccessRequests = new List<DataAccessRequest>();
+        AddDefaultIdentities(resourceById, descriptorByType, issues, identities);
 
         foreach (var link in links)
         {
@@ -277,7 +281,165 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
             dataAccessRequests.OrderBy(request => request.OwnerComponentId)
                 .ThenBy(request => request.SourceResourceId).ThenBy(request => request.TargetResourceId).ToArray(),
             issues.OrderBy(issue => issue.Code, StringComparer.Ordinal)
-                .ThenBy(issue => issue.LinkId).ThenBy(issue => issue.ResourceId).ToArray());
+                .ThenBy(issue => issue.LinkId).ThenBy(issue => issue.ResourceId).ToArray())
+        {
+            ImplicitApplicationSettings = implicitApplicationSettings
+        };
+    }
+
+    private static ImplicitApplicationSetting[] BuildImplicitApplicationSettings(
+        ModelSnapshot snapshot,
+        CatalogVersion catalog,
+        Dictionary<Guid, (ComponentSnapshot Component, ResourceSnapshot Resource)> resources,
+        Dictionary<string, CatalogResourceTypeDescriptor> descriptors,
+        LinkKindRegistry linkKinds)
+    {
+        var settings = new List<ImplicitApplicationSetting>();
+        var linksByKind = snapshot.Links
+            .GroupBy(link => link.Kind)
+            .ToDictionary(group => group.Key, group => (IReadOnlyList<LinkSnapshot>)group.OrderBy(link => link.Id).ToArray());
+        foreach (var handler in linkKinds.Values)
+        {
+            if (linksByKind.TryGetValue(handler.Key, out var links))
+            {
+                settings.AddRange(handler.GetImplicitApplicationSettings(snapshot, catalog, links));
+            }
+        }
+
+        foreach (var application in resources.Values
+            .Where(value => value.Resource.DefaultIdentityResourceId is not null)
+            .OrderBy(value => value.Resource.Id))
+        {
+            if (!resources.TryGetValue(application.Resource.DefaultIdentityResourceId!.Value, out var identity)
+                || !descriptors.TryGetValue(identity.Resource.Type, out var identityDescriptor)
+                || FindOutput(identityDescriptor, "clientId") is not { } clientId)
+            {
+                continue;
+            }
+
+            settings.Add(new ImplicitApplicationSetting(
+                LinkIdFactory.Create($"implicitAppSetting:ApplicationIdentity:{ApplicationSettingNameRules.AzureClientId}", application.Resource.Id, identity.Resource.Id),
+                application.Resource.Id,
+                ApplicationSettingNameRules.AzureClientId,
+                identity.Resource.Id,
+                "clientId",
+                null,
+                clientId.GetProperty("sensitive").GetBoolean(),
+                "ApplicationIdentity"));
+        }
+
+        return settings
+            .DistinctBy(setting => (setting.ApplicationResourceId, setting.Name, setting.SourceResourceId, setting.OutputName))
+            .OrderBy(setting => setting.ApplicationResourceId)
+            .ThenBy(setting => setting.Name, StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    private static void AddDefaultIdentities(
+        Dictionary<Guid, (ComponentSnapshot Component, ResourceSnapshot Resource)> resources,
+        Dictionary<string, CatalogResourceTypeDescriptor> descriptors,
+        List<WiringIssue> issues,
+        List<WiredIdentity> identities)
+    {
+        foreach (var application in resources.Values
+            .Where(value => value.Resource.DefaultIdentityResourceId is not null)
+            .OrderBy(value => value.Resource.Id))
+        {
+            var identityId = application.Resource.DefaultIdentityResourceId!.Value;
+            if (!descriptors.TryGetValue(application.Resource.Type, out var applicationDescriptor)
+                || !applicationDescriptor.Definition.TryGetProperty("identities", out var applicationIdentities)
+                || applicationIdentities.GetProperty("userAssignedMax").GetInt32() == 0)
+            {
+                issues.Add(new WiringIssue(IdentityUnsupportedCode,
+                    "The application type does not support a default user-assigned identity.", null, application.Resource.Id));
+                continue;
+            }
+
+            if (!resources.TryGetValue(identityId, out var identity)
+                || !string.Equals(identity.Resource.Type, "UserAssignedIdentity", StringComparison.Ordinal))
+            {
+                issues.Add(new WiringIssue(IdentityUnsupportedCode,
+                    "The selected default identity is unavailable or is not a user-assigned identity.", null, application.Resource.Id));
+                continue;
+            }
+
+            if (identity.Component.Id != application.Component.Id)
+            {
+                issues.Add(new WiringIssue(SharedIdentityCode,
+                    "A user-assigned identity cannot be shared across deployment components.", null, application.Resource.Id));
+                continue;
+            }
+
+            identities.Add(new WiredIdentity(
+                application.Component.Id,
+                application.Resource.Id,
+                LinkIdentityKind.UserAssigned,
+                identityId,
+                []));
+        }
+    }
+
+    private static void ValidateApplicationSettings(
+        ModelSnapshot snapshot,
+        Dictionary<Guid, (ComponentSnapshot Component, ResourceSnapshot Resource)> resources,
+        Dictionary<string, CatalogResourceTypeDescriptor> descriptors,
+        IReadOnlyList<ImplicitApplicationSetting> implicitSettings,
+        List<WiringIssue> issues)
+    {
+        var implicitNames = implicitSettings
+            .GroupBy(setting => setting.ApplicationResourceId)
+            .ToDictionary(group => group.Key,
+                group => group.Select(setting => setting.Name).ToArray());
+
+        foreach (var setting in snapshot.AppSettings)
+        {
+            if (implicitNames.TryGetValue(setting.ApplicationResourceId, out var names)
+                && names.Any(name => ApplicationSettingNameRules.ConflictsWithImplicit(setting.Name, name)))
+            {
+                issues.Add(new WiringIssue("VAL-PAR-IMPLICITE-CONFLIT",
+                    $"The explicit setting '{setting.Name}' conflicts with a setting derived from a resource link.",
+                    null,
+                    setting.ApplicationResourceId));
+            }
+
+            if (setting.SourceKind != InfraFlowSculptor.Domain.ComponentAggregate.AppSettingSourceKind.ResourceOutput
+                || setting.SourceResourceId is not { } sourceId)
+            {
+                continue;
+            }
+
+            if (!resources.TryGetValue(sourceId, out var source)
+                || !descriptors.TryGetValue(source.Resource.Type, out var sourceDescriptor)
+                || FindOutput(sourceDescriptor, setting.OutputName) is not { } output)
+            {
+                issues.Add(new WiringIssue("VAL-PAR-OUTPUT-UNKNOWN",
+                    $"The output '{setting.OutputName}' is not available on the selected resource.",
+                    null,
+                    setting.ApplicationResourceId));
+                continue;
+            }
+
+            if (output.GetProperty("sensitive").GetBoolean())
+            {
+                issues.Add(new WiringIssue("VAL-PAR-04",
+                    $"The output '{setting.OutputName}' is sensitive and cannot be assigned as an environment variable.",
+                    null,
+                    setting.ApplicationResourceId));
+            }
+        }
+    }
+
+    private static JsonElement? FindOutput(CatalogResourceTypeDescriptor descriptor, string? name)
+    {
+        foreach (var output in descriptor.Definition.GetProperty("outputs").EnumerateArray())
+        {
+            if (string.Equals(output.GetProperty("name").GetString(), name, StringComparison.Ordinal))
+            {
+                return output;
+            }
+        }
+
+        return null;
     }
 
     private static EffectiveIdentity? ResolveIdentity(

@@ -4,6 +4,7 @@
 import { ResourceChildResponse } from '../models/resource-child-response';
 export interface ResourceResponse {
   children: Array<ResourceChildResponse>;
+  defaultIdentityResourceId: (string | null);
   description: string;
   existingIds: {
 [key: string]: string;

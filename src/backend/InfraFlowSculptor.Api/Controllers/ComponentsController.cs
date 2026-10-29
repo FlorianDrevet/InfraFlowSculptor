@@ -436,5 +436,6 @@ public static class ComponentsController
             child.Id,
             child.Type,
             child.Name,
-            child.Properties)).ToArray());
+            child.Properties)).ToArray(),
+        resource.DefaultIdentityResourceId);
 }

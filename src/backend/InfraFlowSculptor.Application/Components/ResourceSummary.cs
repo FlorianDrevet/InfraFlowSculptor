@@ -16,4 +16,7 @@ public sealed record ResourceSummary(
     IReadOnlyDictionary<Guid, string> ExistingIds,
     IReadOnlyDictionary<Guid, string> ForcedNames,
     IReadOnlyDictionary<string, string> Tags,
-    IReadOnlyList<ResourceChildSummary> Children);
+    IReadOnlyList<ResourceChildSummary> Children)
+{
+    public Guid? DefaultIdentityResourceId { get; init; }
+}

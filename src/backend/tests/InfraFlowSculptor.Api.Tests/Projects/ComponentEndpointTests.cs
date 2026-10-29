@@ -5,6 +5,7 @@ using System.Text.Json;
 using InfraFlowSculptor.Api.Configuration;
 using InfraFlowSculptor.Api.Tests.Common;
 using InfraFlowSculptor.Contracts.Projects;
+using InfraFlowSculptor.Contracts.Resources;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
@@ -102,6 +103,26 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
     [Fact]
     public Task ResourceMetadataRejectsNullTagsAndValues() =>
         RunSerialAsync(ResourceMetadataRejectsNullTagsAndValuesCore);
+
+    [Fact]
+    public Task SuspiciousApplicationSettingLiteralIsRejected() =>
+        RunSerialAsync(SuspiciousApplicationSettingLiteralIsRejectedCore);
+
+    [Fact]
+    public Task ForcedSuspiciousApplicationSettingIsAuditedWithoutItsValue() =>
+        RunSerialAsync(ForcedSuspiciousApplicationSettingIsAuditedWithoutItsValueCore);
+
+    [Fact]
+    public Task PilotPipelineSecretUsesExpectedVariableAndImplicitSecretRead() =>
+        RunSerialAsync(PilotPipelineSecretUsesExpectedVariableAndImplicitSecretReadCore);
+
+    [Fact]
+    public Task ApplicationSettingLiteralCanBeUpdatedAndDeleted() =>
+        RunSerialAsync(ApplicationSettingLiteralCanBeUpdatedAndDeletedCore);
+
+    [Fact]
+    public Task PipelineSecretVaultCannotShareConsumerComponent() =>
+        RunSerialAsync(PipelineSecretVaultCannotShareConsumerComponentCore);
 
     [Fact]
     public Task ProjectNamingSettingsCanBeSavedAndPreviewUsesComponentOverrides() =>
@@ -322,6 +343,480 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         }
     }
 
+    private async Task SuspiciousApplicationSettingLiteralIsRejectedCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var applicationBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>());
+            using var application = JsonDocument.Parse(applicationBody);
+            var applicationResourceId = application.RootElement.GetProperty("id").GetGuid();
+            const string token = "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+            using var request = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationResourceId:D}/app-settings",
+                new
+                {
+                    name = "Test__Token",
+                    sourceKind = "Literal",
+                    literalValue = token,
+                    overrides = new Dictionary<Guid, string?>(),
+                    forceNonSecret = false
+                });
+            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var response = await client.SendAsync(request);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            var body = await response.Content.ReadAsStringAsync();
+            Assert.True(body.Contains("VAL-PAR-SECRET-SUSPECT", StringComparison.Ordinal), body);
+
+            using var scope = factory.Services.CreateScope();
+            scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+            var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+            Assert.False(await dbContext.AppSettings.AnyAsync(setting => setting.ApplicationResourceId == applicationResourceId));
+            Assert.False(await dbContext.AuditEvents.AnyAsync(audit => audit.Diff.Contains(token)));
+            Assert.DoesNotContain(await dbContext.OutboxMessages.ToArrayAsync(), message => message.Payload.GetRawText().Contains(token, StringComparison.Ordinal));
+            Assert.False(await dbContext.IdempotencyKeys.AnyAsync(key => key.Response != null && key.Response.Contains(token)));
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task ForcedSuspiciousApplicationSettingIsAuditedWithoutItsValueCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var applicationBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>());
+            using var application = JsonDocument.Parse(applicationBody);
+            var applicationResourceId = application.RootElement.GetProperty("id").GetGuid();
+            const string token = "ghp_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+            using var request = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationResourceId:D}/app-settings",
+                new
+                {
+                    name = "Test__Token",
+                    sourceKind = "Literal",
+                    literalValue = token,
+                    overrides = new Dictionary<Guid, string?>(),
+                    forceNonSecret = true
+                });
+            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var response = await client.SendAsync(request);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            var responseBody = await response.Content.ReadAsStringAsync();
+            Assert.DoesNotContain(token, responseBody, StringComparison.Ordinal);
+            using var responseDocument = JsonDocument.Parse(responseBody);
+            Assert.Contains(responseDocument.RootElement.GetProperty("warnings").EnumerateArray(),
+                warning => warning.GetString()!.Contains("VAL-PAR-SECRET-SUSPECT", StringComparison.Ordinal));
+
+            using var scope = factory.Services.CreateScope();
+            scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+            var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+            var setting = await dbContext.AppSettings.SingleAsync(candidate => candidate.ApplicationResourceId == applicationResourceId);
+            Assert.Equal(token, setting.LiteralSource!.Value);
+            var audits = await dbContext.AuditEvents.Where(candidate => candidate.ObjectId == setting.Id).ToArrayAsync();
+            Assert.Contains(audits, audit => audit.Action == "component.app_setting.created");
+            Assert.Single(audits, audit => audit.Action == "component.app_setting.value_forced_non_secret");
+            Assert.All(audits, audit => Assert.DoesNotContain(token, audit.Diff, StringComparison.Ordinal));
+            Assert.False(await dbContext.IdempotencyKeys.AnyAsync(key => key.Response != null && key.Response.Contains(token)));
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task PilotPipelineSecretUsesExpectedVariableAndImplicitSecretReadCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        Guid? vaultComponentId = null;
+        Guid? applicationComponentId = null;
+        try
+        {
+            vaultComponentId = await CreateResourceTestComponentAsync(environment);
+            var vaultGroupId = await CreateResourceTestGroupAsync(vaultComponentId.Value);
+            var vaultBody = await CreateResourceAsync(
+                vaultComponentId.Value,
+                vaultGroupId,
+                "KeyVault",
+                "main",
+                new Dictionary<string, object?>());
+            using var vault = JsonDocument.Parse(vaultBody);
+            var vaultId = vault.RootElement.GetProperty("id").GetGuid();
+
+            applicationComponentId = await CreateResourceTestComponentAsync(environment);
+            var applicationGroupId = await CreateResourceTestGroupAsync(applicationComponentId.Value);
+            var identityBody = await CreateResourceAsync(
+                applicationComponentId.Value,
+                applicationGroupId,
+                "UserAssignedIdentity",
+                "id-api",
+                new Dictionary<string, object?>());
+            using var identity = JsonDocument.Parse(identityBody);
+            var identityId = identity.RootElement.GetProperty("id").GetGuid();
+            var readerIdentityBody = await CreateResourceAsync(
+                applicationComponentId.Value,
+                applicationGroupId,
+                "UserAssignedIdentity",
+                "id-secret-reader",
+                new Dictionary<string, object?>());
+            using var readerIdentity = JsonDocument.Parse(readerIdentityBody);
+            var readerIdentityId = readerIdentity.RootElement.GetProperty("id").GetGuid();
+            var applicationBody = await CreateResourceAsync(
+                applicationComponentId.Value,
+                applicationGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>(),
+                defaultIdentityResourceId: identityId);
+            using var application = JsonDocument.Parse(applicationBody);
+            var applicationId = application.RootElement.GetProperty("id").GetGuid();
+            Assert.Equal(identityId, application.RootElement.GetProperty("defaultIdentityResourceId").GetGuid());
+
+            using var paddedImplicitNameRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/app-settings",
+                new
+                {
+                    name = " AZURE_CLIENT_ID ",
+                    sourceKind = "Literal",
+                    literalValue = "safe-value",
+                    overrides = new Dictionary<Guid, string?>(),
+                    forceNonSecret = false
+                });
+            paddedImplicitNameRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var paddedImplicitNameResponse = await client.SendAsync(paddedImplicitNameRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, paddedImplicitNameResponse.StatusCode);
+            Assert.Equal("VAL-PAR-IMPLICITE-CONFLIT", await GetProblemCodeAsync(paddedImplicitNameResponse));
+
+            using var missingNameRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/app-settings",
+                new
+                {
+                    name = (string?)null,
+                    sourceKind = "Literal",
+                    literalValue = "safe-value",
+                    overrides = new Dictionary<Guid, string?>(),
+                    forceNonSecret = false
+                });
+            missingNameRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var missingNameResponse = await client.SendAsync(missingNameRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, missingNameResponse.StatusCode);
+            Assert.Equal("VAL-PAR-01", await GetProblemCodeAsync(missingNameResponse));
+
+            using var request = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/app-settings",
+                new
+                {
+                    name = "Payments__ApiKey",
+                    sourceKind = "KeyVaultSecret",
+                    literalValue = (string?)null,
+                    overrides = (object?)null,
+                    sourceResourceId = (Guid?)null,
+                    outputName = (string?)null,
+                    keyVaultResourceId = (Guid?)vaultId,
+                    secretName = "payments-api-key",
+                    secretFeedKind = "PipelineSecret",
+                    pipelineVariableName = (string?)null,
+                    identityResourceId = (Guid?)readerIdentityId,
+                    forceNonSecret = false
+                });
+            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var response = await client.SendAsync(request);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            using var created = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            Assert.Equal("MAIN_PAYMENTS_API_KEY", created.RootElement.GetProperty("pipelineVariableName").GetString());
+            Assert.Equal(vaultId, created.RootElement.GetProperty("keyVaultResourceId").GetGuid());
+            Assert.Equal(readerIdentityId, created.RootElement.GetProperty("identityResourceId").GetGuid());
+
+            using var defaultIdentitySettingRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/app-settings",
+                new
+                {
+                    name = "Payments__CustomerToken",
+                    sourceKind = "KeyVaultSecret",
+                    literalValue = (string?)null,
+                    overrides = (object?)null,
+                    sourceResourceId = (Guid?)null,
+                    outputName = (string?)null,
+                    keyVaultResourceId = (Guid?)vaultId,
+                    secretName = "customer-token",
+                    secretFeedKind = "ManagedOutsideIfs",
+                    pipelineVariableName = (string?)null,
+                    identityResourceId = (Guid?)null,
+                    forceNonSecret = false
+                });
+            defaultIdentitySettingRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var defaultIdentitySettingResponse = await client.SendAsync(defaultIdentitySettingRequest);
+            Assert.Equal(HttpStatusCode.Created, defaultIdentitySettingResponse.StatusCode);
+
+            using var linksRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/links");
+            using var linksResponse = await client.SendAsync(linksRequest);
+            Assert.Equal(HttpStatusCode.OK, linksResponse.StatusCode);
+            using var links = await JsonDocument.ParseAsync(await linksResponse.Content.ReadAsStreamAsync());
+            var secretReads = links.RootElement.GetProperty("outgoing").EnumerateArray()
+                .Where(link => link.GetProperty("kind").GetString() == "SecretRead")
+                .ToArray();
+            var explicitIdentityRead = Assert.Single(secretReads,
+                link => link.GetProperty("identityResourceId").GetGuid() == readerIdentityId);
+            var defaultIdentityRead = Assert.Single(secretReads,
+                link => link.GetProperty("identityResourceId").GetGuid() == identityId);
+            Assert.Equal("Implicit", explicitIdentityRead.GetProperty("origin").GetString());
+            Assert.Equal(vaultId, explicitIdentityRead.GetProperty("targetResourceId").GetGuid());
+            Assert.Contains("Key Vault Secrets User", explicitIdentityRead.GetProperty("roles").EnumerateArray()
+                .Select(role => role.GetString()), StringComparer.Ordinal);
+            Assert.Equal(vaultId, defaultIdentityRead.GetProperty("targetResourceId").GetGuid());
+
+            using var settingsRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/app-settings");
+            using var settingsResponse = await client.SendAsync(settingsRequest);
+            Assert.Equal(HttpStatusCode.OK, settingsResponse.StatusCode);
+            using var settings = await JsonDocument.ParseAsync(await settingsResponse.Content.ReadAsStreamAsync());
+            var clientId = Assert.Single(settings.RootElement.EnumerateArray(),
+                setting => setting.GetProperty("name").GetString() == "AZURE_CLIENT_ID");
+            Assert.Equal(identityId, clientId.GetProperty("sourceResourceId").GetGuid());
+            Assert.Equal("clientId", clientId.GetProperty("outputName").GetString());
+
+            using var identityImpactRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{identityId:D}/delete-impact");
+            using var identityImpactResponse = await client.SendAsync(identityImpactRequest);
+            Assert.Equal(HttpStatusCode.OK, identityImpactResponse.StatusCode);
+            using var identityImpact = await JsonDocument.ParseAsync(await identityImpactResponse.Content.ReadAsStreamAsync());
+            Assert.Equal("Blocked", identityImpact.RootElement.GetProperty("status").GetString());
+            Assert.Contains(identityImpact.RootElement.GetProperty("items").EnumerateArray(), item =>
+                item.GetProperty("code").GetString() == "APP_SETTING_RESOURCE_IN_USE"
+                && item.GetProperty("name").GetString() == "AZURE_CLIENT_ID");
+
+            using var deleteIdentityRequest = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{identityId:D}",
+                new { expectedVersion = identity.RootElement.GetProperty("version").GetInt32() });
+            deleteIdentityRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var deleteIdentityResponse = await client.SendAsync(deleteIdentityRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, deleteIdentityResponse.StatusCode);
+            Assert.Equal("APP_SETTING_RESOURCE_IN_USE", await GetProblemCodeAsync(deleteIdentityResponse));
+
+            using var changeDefaultIdentityRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/default-identity",
+                new
+                {
+                    identityResourceId = (Guid?)readerIdentityId,
+                    expectedVersion = application.RootElement.GetProperty("version").GetInt32()
+                });
+            changeDefaultIdentityRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var changeDefaultIdentityResponse = await client.SendAsync(changeDefaultIdentityRequest);
+            Assert.Equal(HttpStatusCode.OK, changeDefaultIdentityResponse.StatusCode);
+            using var changedDefaultIdentity = await JsonDocument.ParseAsync(await changeDefaultIdentityResponse.Content.ReadAsStreamAsync());
+            Assert.Equal(readerIdentityId, changedDefaultIdentity.RootElement.GetProperty("defaultIdentityResourceId").GetGuid());
+
+            using var clearDefaultIdentityRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{applicationComponentId.Value:D}/resources/{applicationId:D}/default-identity",
+                new
+                {
+                    identityResourceId = (Guid?)null,
+                    expectedVersion = changedDefaultIdentity.RootElement.GetProperty("version").GetInt32()
+                });
+            clearDefaultIdentityRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var clearDefaultIdentityResponse = await client.SendAsync(clearDefaultIdentityRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, clearDefaultIdentityResponse.StatusCode);
+            Assert.Equal("RG-LIA-08-IDENTITY-REQUIRED", await GetProblemCodeAsync(clearDefaultIdentityResponse));
+
+            using var impactRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{vaultComponentId.Value:D}/resources/{vaultId:D}/delete-impact");
+            using var impactResponse = await client.SendAsync(impactRequest);
+            Assert.Equal(HttpStatusCode.OK, impactResponse.StatusCode);
+            using var impact = await JsonDocument.ParseAsync(await impactResponse.Content.ReadAsStreamAsync());
+            Assert.Equal("Blocked", impact.RootElement.GetProperty("status").GetString());
+            Assert.Contains(impact.RootElement.GetProperty("items").EnumerateArray(), item =>
+                item.GetProperty("code").GetString() == "APP_SETTING_RESOURCE_IN_USE"
+                && item.GetProperty("name").GetString() == "Payments__ApiKey");
+
+            using var deleteVaultRequest = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{vaultComponentId.Value:D}/resources/{vaultId:D}",
+                new { expectedVersion = vault.RootElement.GetProperty("version").GetInt32() });
+            deleteVaultRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var deleteVaultResponse = await client.SendAsync(deleteVaultRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, deleteVaultResponse.StatusCode);
+            Assert.Equal("APP_SETTING_RESOURCE_IN_USE", await GetProblemCodeAsync(deleteVaultResponse));
+        }
+        finally
+        {
+            if (applicationComponentId is { } applicationId)
+            {
+                await CleanupResourceTestComponentAsync(applicationId);
+            }
+
+            if (vaultComponentId is { } vaultId)
+            {
+                await CleanupResourceTestComponentAsync(vaultId);
+            }
+        }
+    }
+
+    private async Task ApplicationSettingLiteralCanBeUpdatedAndDeletedCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var applicationBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>());
+            using var application = JsonDocument.Parse(applicationBody);
+            var applicationId = application.RootElement.GetProperty("id").GetGuid();
+
+            using var createRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationId:D}/app-settings",
+                new
+                {
+                    name = "PORT",
+                    sourceKind = "Literal",
+                    literalValue = "8080",
+                    overrides = new Dictionary<Guid, string?>(),
+                    forceNonSecret = false
+                });
+            createRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var createResponse = await client.SendAsync(createRequest);
+            Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+            using var created = await JsonDocument.ParseAsync(await createResponse.Content.ReadAsStreamAsync());
+            var settingId = created.RootElement.GetProperty("id").GetGuid();
+
+            using var readRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationId:D}/app-settings");
+            using var readResponse = await client.SendAsync(readRequest);
+            Assert.Equal(HttpStatusCode.OK, readResponse.StatusCode);
+            using var readSettings = await JsonDocument.ParseAsync(await readResponse.Content.ReadAsStreamAsync());
+            var readSetting = Assert.Single(readSettings.RootElement.EnumerateArray());
+            Assert.Equal("8080", readSetting.GetProperty("literalValue").GetString());
+            Assert.False(readSetting.GetProperty("isImplicit").GetBoolean());
+
+            using var updateRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationId:D}/app-settings/{settingId:D}",
+                new
+                {
+                    name = "PORT",
+                    sourceKind = "Literal",
+                    literalValue = "8081",
+                    overrides = new Dictionary<Guid, string?>(),
+                    forceNonSecret = false,
+                    expectedVersion = 1
+                });
+            updateRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var updateResponse = await client.SendAsync(updateRequest);
+            Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+            using var updated = await JsonDocument.ParseAsync(await updateResponse.Content.ReadAsStreamAsync());
+            Assert.Equal(2, updated.RootElement.GetProperty("version").GetInt32());
+            Assert.False(updated.RootElement.TryGetProperty("literalValue", out _));
+
+            using var deleteRequest = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationId:D}/app-settings/{settingId:D}",
+                new { expectedVersion = 2 });
+            deleteRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var deleteResponse = await client.SendAsync(deleteRequest);
+            Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+            using var getRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationId:D}/app-settings");
+            using var getResponse = await client.SendAsync(getRequest);
+            Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+            Assert.Empty(await getResponse.Content.ReadFromJsonAsync<AppSettingResponse[]>() ?? []);
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task PipelineSecretVaultCannotShareConsumerComponentCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var vaultBody = await CreateResourceAsync(
+                componentId, resourceGroupId, "KeyVault", "main", new Dictionary<string, object?>());
+            using var vault = JsonDocument.Parse(vaultBody);
+            var vaultId = vault.RootElement.GetProperty("id").GetGuid();
+            var identityBody = await CreateResourceAsync(
+                componentId, resourceGroupId, "UserAssignedIdentity", "id-api", new Dictionary<string, object?>());
+            using var identity = JsonDocument.Parse(identityBody);
+            var identityId = identity.RootElement.GetProperty("id").GetGuid();
+            var applicationBody = await CreateResourceAsync(
+                componentId, resourceGroupId, "ContainerApp", "api", new Dictionary<string, object?>());
+            using var application = JsonDocument.Parse(applicationBody);
+            var applicationId = application.RootElement.GetProperty("id").GetGuid();
+
+            using var request = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationId:D}/app-settings",
+                new
+                {
+                    name = "Payments__ApiKey",
+                    sourceKind = "KeyVaultSecret",
+                    keyVaultResourceId = (Guid?)vaultId,
+                    secretName = "payments-api-key",
+                    secretFeedKind = "PipelineSecret",
+                    identityResourceId = (Guid?)identityId,
+                    overrides = new Dictionary<Guid, string?>(),
+                    forceNonSecret = false
+                });
+            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var response = await client.SendAsync(request);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal("VAL-SEC-ORDRE", await GetProblemCodeAsync(response));
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
     private async Task NamingPreviewReportsGlobalNamesReservedBySiblingProjectsCore()
     {
         await PrepareAsync();
@@ -506,6 +1001,13 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
             .Where(link => resourceIds.Contains(link.SourceResourceId) || resourceIds.Contains(link.TargetResourceId))
             .ToArrayAsync();
         dbContext.Set<LinkAggregate>().RemoveRange(links);
+        var appSettings = await dbContext.AppSettings
+            .Where(setting => resourceIds.Contains(setting.ApplicationResourceId)
+                || setting.SourceResourceId != null && resourceIds.Contains(setting.SourceResourceId.Value)
+                || setting.KeyVaultResourceId != null && resourceIds.Contains(setting.KeyVaultResourceId.Value)
+                || setting.IdentityResourceId != null && resourceIds.Contains(setting.IdentityResourceId.Value))
+            .ToArrayAsync();
+        dbContext.AppSettings.RemoveRange(appSettings);
 
         foreach (var resource in component.Resources.ToArray())
         {
@@ -858,10 +1360,10 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
             Assert.Equal("Partial", result.RootElement.GetProperty("status").GetString());
             Assert.Contains(
                 result.RootElement.GetProperty("pendingAreas").EnumerateArray(),
-                area => area.GetString() == "ApplicationParameters");
+                area => area.GetString() == "ImplicitEffects");
             Assert.DoesNotContain(
                 result.RootElement.GetProperty("pendingAreas").EnumerateArray(),
-                area => area.GetString() == "IncomingLinks");
+                area => area.GetString() == "ApplicationParameters");
             var child = Assert.Single(result.RootElement.GetProperty("items").EnumerateArray());
             Assert.Equal("Child", child.GetProperty("kind").GetString());
             Assert.Equal("SqlDatabase", child.GetProperty("type").GetString());
@@ -2270,7 +2772,8 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         string type,
         string logicalName,
         IReadOnlyDictionary<string, object?> properties,
-        bool isExisting = false)
+        bool isExisting = false,
+        Guid? defaultIdentityResourceId = null)
     {
         var expectedVersion = await GetComponentVersionFromApiAsync(componentId);
         using var request = CreateRequest(
@@ -2283,6 +2786,7 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
                 logicalName,
                 description = "Resource value persistence test",
                 isExisting,
+                defaultIdentityResourceId,
                 properties,
                 tags = new Dictionary<string, string>(),
                 expectedVersion

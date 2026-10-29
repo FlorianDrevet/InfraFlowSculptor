@@ -136,6 +136,8 @@ public sealed class ComponentConfiguration : IEntityTypeConfiguration<ComponentA
             resources.Property(resource => resource.LogicalName).HasMaxLength(40).IsRequired();
             resources.Property(resource => resource.Description).HasMaxLength(500).IsRequired();
             resources.Property(resource => resource.IsExisting).IsRequired();
+            resources.Property(resource => resource.DefaultIdentityResourceId)
+                .HasColumnName("default_identity_resource_id");
             resources.Property(resource => resource.Version).IsConcurrencyToken();
             resources.HasIndex("ComponentId", nameof(Resource.Type), nameof(Resource.LogicalName))
                 .IsUnique()

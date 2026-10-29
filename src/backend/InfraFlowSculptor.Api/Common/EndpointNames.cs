@@ -69,11 +69,16 @@ public static class EndpointNames
     public const string GetEffectiveValues = "GetEffectiveValues";
     public const string GetResourceDeletionImpact = "GetResourceDeletionImpact";
     public const string GetResourceLinks = "GetResourceLinks";
+    public const string GetAppSettings = "GetAppSettings";
+    public const string CreateAppSetting = "CreateAppSetting";
+    public const string UpdateAppSetting = "UpdateAppSetting";
+    public const string DeleteAppSetting = "DeleteAppSetting";
     public const string GetLinkRemovalImpact = "GetLinkRemovalImpact";
     public const string AddLink = "AddLink";
     public const string UpdateLink = "UpdateLink";
     public const string RemoveLink = "RemoveLink";
     public const string SetResourceProperties = "SetResourceProperties";
+    public const string SetResourceDefaultIdentity = "SetResourceDefaultIdentity";
     public const string SetOverride = "SetOverride";
     public const string ClearOverride = "ClearOverride";
     public const string SetPresence = "SetPresence";

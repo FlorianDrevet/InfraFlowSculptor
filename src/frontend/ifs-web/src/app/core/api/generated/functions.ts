@@ -107,6 +107,14 @@ export type { UpdateResourceGroup$Params as UpdateResourceGroup$Params } from '.
 export { updateResourceGroup as updateResourceGroup } from './fn/components/update-resource-group';
 export type { DeleteResourceGroup$Params as DeleteResourceGroup$Params } from './fn/components/delete-resource-group';
 export { deleteResourceGroup as deleteResourceGroup } from './fn/components/delete-resource-group';
+export type { GetAppSettings$Params as GetAppSettings$Params } from './fn/resources/get-app-settings';
+export { getAppSettings as getAppSettings } from './fn/resources/get-app-settings';
+export type { CreateAppSetting$Params as CreateAppSetting$Params } from './fn/resources/create-app-setting';
+export { createAppSetting as createAppSetting } from './fn/resources/create-app-setting';
+export type { UpdateAppSetting$Params as UpdateAppSetting$Params } from './fn/resources/update-app-setting';
+export { updateAppSetting as updateAppSetting } from './fn/resources/update-app-setting';
+export type { DeleteAppSetting$Params as DeleteAppSetting$Params } from './fn/resources/delete-app-setting';
+export { deleteAppSetting as deleteAppSetting } from './fn/resources/delete-app-setting';
 export type { PreviewResourceName$Params as PreviewResourceName$Params } from './fn/resources/preview-resource-name';
 export { previewResourceName as previewResourceName } from './fn/resources/preview-resource-name';
 export type { GetResourceDeletionImpact$Params as GetResourceDeletionImpact$Params } from './fn/resources/get-resource-deletion-impact';
@@ -127,6 +135,8 @@ export type { SetResourceProperties$Params as SetResourceProperties$Params } fro
 export { setResourceProperties as setResourceProperties } from './fn/resources/set-resource-properties';
 export type { UpdateResourceMetadata$Params as UpdateResourceMetadata$Params } from './fn/resources/update-resource-metadata';
 export { updateResourceMetadata as updateResourceMetadata } from './fn/resources/update-resource-metadata';
+export type { SetResourceDefaultIdentity$Params as SetResourceDefaultIdentity$Params } from './fn/resources/set-resource-default-identity';
+export { setResourceDefaultIdentity as setResourceDefaultIdentity } from './fn/resources/set-resource-default-identity';
 export type { SetOverride$Params as SetOverride$Params } from './fn/resources/set-override';
 export { setOverride as setOverride } from './fn/resources/set-override';
 export type { ClearOverride$Params as ClearOverride$Params } from './fn/resources/clear-override';

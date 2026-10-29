@@ -56,6 +56,11 @@ public abstract class LinkKindHandler(
 
     public virtual IReadOnlyList<LinkSnapshot> GetImplicitLinks(ModelSnapshot snapshot, CatalogVersion catalog) => [];
 
+    public virtual IReadOnlyList<ImplicitApplicationSetting> GetImplicitApplicationSettings(
+        ModelSnapshot snapshot,
+        CatalogVersion catalog,
+        IReadOnlyList<LinkSnapshot> links) => [];
+
     public virtual LinkIdentityRequirement GetIdentityRequirement(
         IReadOnlyDictionary<string, System.Text.Json.JsonElement> targetProperties) => IdentityRequirement;
 

@@ -18,4 +18,6 @@ public sealed record ModelSnapshot(
     public IReadOnlyList<GlobalNameReservationSnapshot> OrganizationGlobalNames { get; init; } = [];
 
     public IReadOnlyList<LinkSnapshot> Links { get; init; } = [];
+
+    public IReadOnlyList<AppSettingSnapshot> AppSettings { get; init; } = [];
 }

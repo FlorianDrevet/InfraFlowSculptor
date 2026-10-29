@@ -25,6 +25,10 @@ public static class AuditActions
     public const string ResourceCreated = "component.resource.created";
     public const string ResourceUpdated = "component.resource.updated";
     public const string ResourceDeleted = "component.resource.deleted";
+    public const string AppSettingCreated = "component.app_setting.created";
+    public const string AppSettingUpdated = "component.app_setting.updated";
+    public const string AppSettingDeleted = "component.app_setting.deleted";
+    public const string AppSettingValueForcedNonSecret = "component.app_setting.value_forced_non_secret";
     public const string LinkCreated = "component.link.created";
     public const string LinkUpdated = "component.link.updated";
     public const string LinkDeleted = "component.link.deleted";

@@ -57,6 +57,8 @@ public class IfsDbContext(
 
     public DbSet<ComponentAggregate> Components => Set<ComponentAggregate>();
 
+    public DbSet<AppSettingAggregate> AppSettings => Set<AppSettingAggregate>();
+
     public DbSet<ProjectWizardDraft> ProjectWizardDrafts => Set<ProjectWizardDraft>();
 
     public DbSet<InvitationAggregate> Invitations => Set<InvitationAggregate>();

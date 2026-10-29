@@ -7,4 +7,7 @@ public sealed record WiringResult(
     IReadOnlyList<WiringRoleEquivalence> RoleEquivalences,
     IReadOnlyList<WiringDependency> Dependencies,
     IReadOnlyList<DataAccessRequest> DataAccessRequests,
-    IReadOnlyList<WiringIssue> Issues);
+    IReadOnlyList<WiringIssue> Issues)
+{
+    public IReadOnlyList<ImplicitApplicationSetting> ImplicitApplicationSettings { get; init; } = [];
+}

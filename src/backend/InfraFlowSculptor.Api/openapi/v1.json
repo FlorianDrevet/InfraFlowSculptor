@@ -3630,6 +3630,422 @@
         ]
       }
     },
+    "/v1/projects/{projectId}/components/{componentId}/resources/{resourceId}/app-settings": {
+      "get": {
+        "tags": [
+          "Resources"
+        ],
+        "summary": "Lister les paramètres applicatifs d'une ressource.",
+        "operationId": "GetAppSettings",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AppSettingResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Resources"
+        ],
+        "summary": "Ajouter un paramètre applicatif sans transmettre de secret en clair.",
+        "operationId": "CreateAppSetting",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppSettingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppSettingMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/components/{componentId}/resources/{resourceId}/app-settings/{appSettingId}": {
+      "put": {
+        "tags": [
+          "Resources"
+        ],
+        "summary": "Modifier un paramètre applicatif.",
+        "operationId": "UpdateAppSetting",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "appSettingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppSettingUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppSettingMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Resources"
+        ],
+        "summary": "Supprimer un paramètre applicatif.",
+        "operationId": "DeleteAppSetting",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "appSettingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAppSettingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/projects/{projectId}/components/{componentId}/resources/preview-name": {
       "post": {
         "tags": [
@@ -4557,6 +4973,115 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateResourceMetadataRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/components/{componentId}/resources/{resourceId}/default-identity": {
+      "put": {
+        "tags": [
+          "Resources"
+        ],
+        "summary": "Définir l'identité affectée par défaut d'une application.",
+        "operationId": "SetResourceDefaultIdentity",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetResourceDefaultIdentityRequest"
               }
             }
           },
@@ -6622,6 +7147,444 @@
           }
         }
       },
+      "AppSettingMutationResponse": {
+        "required": [
+          "id",
+          "version",
+          "name",
+          "sourceKind",
+          "sourceResourceId",
+          "outputName",
+          "keyVaultResourceId",
+          "secretName",
+          "secretFeedKind",
+          "pipelineVariableName",
+          "identityResourceId",
+          "secretValueDeclaredNonSecret",
+          "warnings",
+          "isImplicit",
+          "origin"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/AppSettingSourceKind"
+          },
+          "sourceResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "outputName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "keyVaultResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "secretName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "secretFeedKind": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AppSettingSecretFeedKind"
+              }
+            ]
+          },
+          "pipelineVariableName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "identityResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "secretValueDeclaredNonSecret": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "isImplicit": {
+            "type": "boolean"
+          },
+          "origin": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AppSettingRequest": {
+        "required": [
+          "name",
+          "sourceKind",
+          "literalValue",
+          "overrides",
+          "sourceResourceId",
+          "outputName",
+          "keyVaultResourceId",
+          "secretName",
+          "secretFeedKind",
+          "pipelineVariableName",
+          "identityResourceId",
+          "forceNonSecret"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/AppSettingSourceKind"
+          },
+          "literalValue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "overrides": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "sourceResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "outputName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "keyVaultResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "secretName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "secretFeedKind": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AppSettingSecretFeedKind"
+              }
+            ]
+          },
+          "pipelineVariableName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "identityResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "forceNonSecret": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AppSettingResponse": {
+        "required": [
+          "id",
+          "version",
+          "name",
+          "sourceKind",
+          "literalValue",
+          "overrides",
+          "sourceResourceId",
+          "outputName",
+          "keyVaultResourceId",
+          "secretName",
+          "secretFeedKind",
+          "pipelineVariableName",
+          "identityResourceId",
+          "secretValueDeclaredNonSecret",
+          "warnings",
+          "isImplicit",
+          "origin"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/AppSettingSourceKind"
+          },
+          "literalValue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "overrides": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "sourceResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "outputName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "keyVaultResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "secretName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "secretFeedKind": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AppSettingSecretFeedKind"
+              }
+            ]
+          },
+          "pipelineVariableName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "identityResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "secretValueDeclaredNonSecret": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "isImplicit": {
+            "type": "boolean"
+          },
+          "origin": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AppSettingSecretFeedKind": {
+        "enum": [
+          "PipelineSecret",
+          "ManagedOutsideIfs",
+          null
+        ]
+      },
+      "AppSettingSourceKind": {
+        "enum": [
+          "Literal",
+          "ResourceOutput",
+          "KeyVaultSecret"
+        ]
+      },
+      "AppSettingUpdateRequest": {
+        "required": [
+          "name",
+          "sourceKind",
+          "literalValue",
+          "overrides",
+          "sourceResourceId",
+          "outputName",
+          "keyVaultResourceId",
+          "secretName",
+          "secretFeedKind",
+          "pipelineVariableName",
+          "identityResourceId",
+          "forceNonSecret",
+          "expectedVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/AppSettingSourceKind"
+          },
+          "literalValue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "overrides": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "sourceResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "outputName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "keyVaultResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "secretName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "secretFeedKind": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AppSettingSecretFeedKind"
+              }
+            ]
+          },
+          "pipelineVariableName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "identityResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "forceNonSecret": {
+            "type": "boolean"
+          },
+          "expectedVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "AssignProjectRoleRequest": {
         "required": [
           "role",
@@ -7261,6 +8224,22 @@
           "Schema",
           null
         ]
+      },
+      "DeleteAppSettingRequest": {
+        "required": [
+          "expectedVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
       },
       "DeleteProjectEnvironmentRequest": {
         "required": [
@@ -8935,7 +9914,8 @@
       "ResourceDeletionImpactKind": {
         "enum": [
           "Child",
-          "Impact"
+          "Impact",
+          "ApplicationSetting"
         ]
       },
       "ResourceDeletionImpactResponse": {
@@ -9192,7 +10172,8 @@
           "existingIds",
           "forcedNames",
           "tags",
-          "children"
+          "children",
+          "defaultIdentityResourceId"
         ],
         "type": "object",
         "properties": {
@@ -9262,6 +10243,13 @@
             "items": {
               "$ref": "#/components/schemas/ResourceChildResponse"
             }
+          },
+          "defaultIdentityResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -9485,6 +10473,13 @@
               "string"
             ],
             "format": "int32"
+          },
+          "defaultIdentityResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -9560,6 +10555,30 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "expectedVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "SetResourceDefaultIdentityRequest": {
+        "required": [
+          "identityResourceId",
+          "expectedVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "identityResourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "expectedVersion": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
