@@ -118,3 +118,4 @@
 | 2026-11-01 09:38 | Codex | `R-05` AppHost IFS relancé après arrêt entre sessions; `/alive`, Scalar et OIDC répondent, `/v1/me` reste anonyme. Mot de passe Chloé absent des accès locaux vérifiables; demande de connexion directe dans Chrome, sans transmission du secret. Aucun AppHost Vole-Papillon relancé; gate `BLOQUE` | docs/plan/revues/R-05-blocage-20261031.md |
 | 2026-11-01 09:59 | Codex | `R-05` blocage résolu | docs/plan/revues/R-05-resolution-20261101.md |
 | 2026-11-01 09:59 | Codex | `R-05` auto-validée | R-05-autovalidation.md |
+| 2026-11-01 11:33 | Codex | `J0-21` terminée | commit `9a24795` |

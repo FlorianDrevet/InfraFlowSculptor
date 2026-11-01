@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-21`](docs/plan/02-jalon-0-pilote.md#j0-21--plan-de-déploiement) — Plan de déploiement |
+| **Étape courante** | [`J0-22`](docs/plan/02-jalon-0-pilote.md#j0-22--émetteur-bicep) — Émetteur Bicep |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`R-05`](docs/plan/02-jalon-0-pilote.md#-r-05--revue-du-modèle-et-du-moteur) — Revue du modèle et du moteur (auto-validée) |
-| **Étape suivante** | `J0-22` — Émetteur Bicep |
+| **Dernière étape terminée** | [`J0-21`](docs/plan/02-jalon-0-pilote.md#j0-21--plan-de-déploiement) — Plan de déploiement (commit `9a24795`) |
+| **Étape suivante** | `J0-23` — Émetteurs Azure DevOps, kit d'installation et README |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-generation` (créée depuis `origin/impl/j0-modele`, segment empilé après R-05) |
-| **Dernière mise à jour** | 2026-11-01 — Codex (auto-validation R-05) |
+| **Dernière mise à jour** | 2026-11-01 — Codex |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
