@@ -89,7 +89,19 @@
     "diagnostics": {
       "type": "object",
       "required": ["supported"],
-      "properties": { "supported": { "type": "boolean" } },
+      "properties": {
+        "supported": { "type": "boolean" },
+        "settings": {
+          "type": "object",
+          "required": ["logCategoryGroup", "metricCategory", "destinationType"],
+          "properties": {
+            "logCategoryGroup": { "type": ["string", "null"] },
+            "metricCategory": { "type": ["string", "null"] },
+            "destinationType": { "enum": ["Dedicated", "AzureDiagnostics"] }
+          },
+          "additionalProperties": false
+        }
+      },
       "additionalProperties": false
     },
     "applicationSettings": {
@@ -119,12 +131,244 @@
             "module": { "type": "string", "pattern": "^br/public:avm/" },
             "versionPin": { "type": "string", "minLength": 1 },
             "map": { "type": "object", "additionalProperties": { "type": "string", "minLength": 1 } },
+            "requiredResourceGroups": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,39}$" }
+            },
             "parameterObjects": {
               "type": "object",
               "additionalProperties": {
                 "type": "object",
                 "minProperties": 1,
                 "additionalProperties": { "$ref": "#/$defs/generationObjectValue" }
+              }
+            },
+            "unsupportedValues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["property", "strategy", "reason"],
+                "properties": {
+                  "property": { "type": "string", "minLength": 1 },
+                  "strategy": { "enum": ["mustMatchDefault"] },
+                  "reason": { "type": "string", "minLength": 1 }
+                },
+                "additionalProperties": false
+              }
+            },
+            "requirements": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["when", "property", "reason"],
+                "properties": {
+                  "when": {
+                    "type": "object",
+                    "required": ["property", "equals"],
+                    "properties": {
+                      "property": { "type": "string", "minLength": 1 },
+                      "equals": { "type": ["string", "number", "boolean"] }
+                    },
+                    "additionalProperties": false
+                  },
+                  "property": { "type": "string", "minLength": 1 },
+                  "allowedValues": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": { "type": ["string", "number", "boolean"] }
+                  },
+                  "disallowedValues": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": { "type": ["string", "number", "boolean"] }
+                  },
+                  "minItems": { "type": "integer", "minimum": 0 },
+                  "reason": { "type": "string", "minLength": 1 }
+                },
+                "anyOf": [
+                  { "required": ["allowedValues"] },
+                  { "required": ["disallowedValues"] },
+                  { "required": ["minItems"] }
+                ],
+                "additionalProperties": false
+              }
+            },
+            "exposureSupport": {
+              "type": "object",
+              "required": ["modes", "reason"],
+              "properties": {
+                "modes": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": { "enum": ["Public", "Restricted", "Private"] }
+                },
+                "reason": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            },
+            "diagnosticDestination": {
+              "type": "object",
+              "required": ["componentCode", "resourceType", "logicalName"],
+              "properties": {
+                "componentCode": { "type": "string", "minLength": 1 },
+                "resourceType": { "type": "string", "minLength": 1 },
+                "logicalName": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            },
+            "requiredTargetShape": {
+              "type": "object",
+              "required": ["localResourceTypes", "externalResourceTypes", "reason"],
+              "properties": {
+                "localResourceTypes": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+                "externalResourceTypes": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+                "reason": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            },
+            "applicationSettingSupport": {
+              "type": "object",
+              "required": ["allowedNames", "requiredWhenPresent", "requiredSecretNames", "reason"],
+              "properties": {
+                "allowedNames": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+                "requiredWhenPresent": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+                "requiredSecretNames": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+                "reason": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            },
+            "symbol": { "type": "string", "minLength": 1 },
+            "parameterName": { "type": "string", "minLength": 1 },
+            "emissionOrder": { "type": "integer", "minimum": 0 },
+            "sectionComment": { "type": "string" },
+            "existing": {
+              "type": "object",
+              "required": ["apiVersion", "symbol", "parameterName"],
+              "properties": {
+                "apiVersion": { "type": "string", "minLength": 1 },
+                "symbol": { "type": "string", "minLength": 1 },
+                "parameterName": { "type": "string", "minLength": 1 },
+                "parentType": { "type": "string", "minLength": 1 },
+                "parentSymbol": { "type": "string", "minLength": 1 },
+                "order": { "type": "integer", "minimum": 0 },
+                "description": { "type": "string", "minLength": 1 },
+                "configType": { "type": "string", "minLength": 1 },
+                "symbolAliases": {
+                  "type": "object",
+                  "additionalProperties": { "type": "string", "minLength": 1 }
+                }
+              },
+              "additionalProperties": false
+            },
+            "embedded": {
+              "type": "object",
+              "required": ["parentType", "collection"],
+              "properties": {
+                "parentType": { "type": "string", "minLength": 1 },
+                "collection": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            },
+            "config": {
+              "type": "object",
+              "required": ["typeName", "description", "order", "fields"],
+              "properties": {
+                "typeName": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*Config$" },
+                "description": { "type": "string", "minLength": 1 },
+                "order": { "type": "integer", "minimum": 0 },
+                "fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["name", "type", "description", "source"],
+                    "properties": {
+                      "name": { "type": "string", "minLength": 1 },
+                      "type": { "type": "string", "minLength": 1 },
+                      "description": { "type": "string", "minLength": 1 },
+                      "source": {
+                        "type": "object",
+                        "required": ["kind"],
+                        "properties": {
+                          "kind": { "enum": ["resource", "property", "fixedValue", "constant", "diagnostics", "applicationSetting", "child", "childDiagnostics", "exposure"] },
+                          "field": { "type": "string", "minLength": 1 },
+                          "value": { "type": ["string", "number", "boolean", "null", "array", "object"] }
+                        },
+                        "additionalProperties": false
+                      },
+                      "transform": { "enum": ["numberToString", "externalIngress", "publicExposureEnabled", "publicNetworkAccessEnabled", "restrictedNetworkDefaultAction"] },
+                      "includeWhen": { "enum": ["hasRestrictedExposure"] },
+                      "moduleParameter": { "type": "string", "minLength": 1 }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            "embeddedChildren": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["type", "collection", "nameParameter", "skuParameter", "zoneParameter", "diagnosticParameter"],
+                "properties": {
+                  "type": { "type": "string", "minLength": 1 },
+                  "collection": { "type": "string", "minLength": 1 },
+                  "nameParameter": { "type": "string", "minLength": 1 },
+                  "skuParameter": { "type": "string", "minLength": 1 },
+                  "zoneParameter": { "type": "string", "minLength": 1 },
+                  "diagnosticParameter": { "type": "string", "minLength": 1 }
+                },
+                "additionalProperties": false
+              }
+            },
+            "mainStatements": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["order", "template"],
+                "properties": {
+                  "order": { "type": "integer" },
+                  "sectionComment": { "type": ["string", "null"] },
+                  "template": { "type": "string", "minLength": 1 },
+                  "restrictedTemplate": { "type": "string", "minLength": 1 },
+                  "requiresResourceTypes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+                  "requiresExternalTypes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+                  "anyResourceTypes": { "type": "array", "items": { "type": "string" }, "minItems": 1, "uniqueItems": true },
+                  "anyExternalTypes": { "type": "array", "items": { "type": "string" }, "minItems": 1, "uniqueItems": true }
+                },
+                "additionalProperties": false
+              }
+            },
+            "deliveryParameters": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name", "description"],
+                "properties": {
+                  "name": { "type": "string", "minLength": 1 },
+                  "description": { "type": "string", "minLength": 1 }
+                },
+                "additionalProperties": false
+              }
+            },
+            "helpers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["fileName", "header", "template"],
+                "properties": {
+                  "fileName": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9.-]*\\.bicep$" },
+                  "header": { "type": "string", "minLength": 1 },
+                  "template": { "type": "string", "minLength": 1 },
+                  "requiresResourceTypes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+                  "requiresExternalTypes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+                  "anyResourceTypes": { "type": "array", "items": { "type": "string" }, "minItems": 1, "uniqueItems": true },
+                  "anyExternalTypes": { "type": "array", "items": { "type": "string" }, "minItems": 1, "uniqueItems": true }
+                },
+                "additionalProperties": false
               }
             }
           },

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>InfraFlowSculptor.Emitters.Bicep</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\InfraFlowSculptor.Application\InfraFlowSculptor.Application.csproj" />
+    <ProjectReference Include="..\InfraFlowSculptor.Catalog\InfraFlowSculptor.Catalog.csproj" />
+    <ProjectReference Include="..\InfraFlowSculptor.Engine\InfraFlowSculptor.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+</Project>

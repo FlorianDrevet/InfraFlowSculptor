@@ -22,6 +22,16 @@ public sealed class DeploymentPlanBuilder(
 {
     private const string ReleaseSchema = "ifs-release/v1";
     private const string ContainerAppType = "ContainerApp";
+    private const string LogAnalyticsWorkspaceType = "LogAnalyticsWorkspace";
+    private const string DiagnosticSettingNamePrefix = "diag-";
+    private const string LegacyDiagnosticLogCategoryGroup = "allLogs";
+    private const string LegacyDiagnosticMetricCategory = "AllMetrics";
+    private const string LegacyDiagnosticDestinationType = "Dedicated";
+    private static readonly IReadOnlyDictionary<string, DiagnosticSettingDefaults> LegacyDiagnosticDefaultsByResourceType =
+        new Dictionary<string, DiagnosticSettingDefaults>(StringComparer.Ordinal)
+        {
+            [ContainerAppType] = new(null, LegacyDiagnosticMetricCategory, LegacyDiagnosticDestinationType)
+        };
     private const string ImageOutput = "image";
     private const string AzureSqlDnsSuffix = "database.windows.net";
 
@@ -192,10 +202,19 @@ public sealed class DeploymentPlanBuilder(
             resourcesById,
             descriptors,
             naming);
+        var diagnosticSettings = BuildDiagnosticSettings(
+            snapshot,
+            wiring,
+            component,
+            target,
+            resourcesById,
+            descriptors,
+            naming);
         var release = BuildReleaseData(
             snapshot,
             catalog,
             wiring,
+            diagnosticSettings,
             roleAssignments,
             component,
             target,
@@ -217,7 +236,107 @@ public sealed class DeploymentPlanBuilder(
             expectedSecrets,
             dataAccess,
             [],
+            diagnosticSettings,
             release);
+    }
+
+    private DiagnosticSettingPlan[] BuildDiagnosticSettings(
+        ModelSnapshot snapshot,
+        WiringResult wiring,
+        ComponentSnapshot component,
+        ResolvedTarget target,
+        IReadOnlyDictionary<Guid, (ComponentSnapshot Component, ResourceSnapshot Resource)> resourcesById,
+        IReadOnlyDictionary<string, CatalogResourceTypeDescriptor> descriptors,
+        NamingPreviewResult naming)
+    {
+        var plans = new List<DiagnosticSettingPlan>();
+        foreach (var wired in wiring.Links
+            .Where(link => link.Link.SourceComponentId == component.Id
+                && linkKinds.Get(link.Link.Kind).ProducesDiagnosticSettings)
+            .OrderBy(link => resourcesById.TryGetValue(link.Link.SourceResourceId, out var entry)
+                ? entry.Resource.LogicalName : string.Empty, StringComparer.Ordinal)
+            .ThenBy(link => resourcesById.TryGetValue(link.Link.SourceResourceId, out var entry)
+                ? entry.Resource.Type : string.Empty, StringComparer.Ordinal))
+        {
+            if (!resourcesById.TryGetValue(wired.Link.SourceResourceId, out var source)
+                || !descriptors.TryGetValue(source.Resource.Type, out var sourceDescriptor)
+                || !sourceDescriptor.Definition.GetProperty("diagnostics").GetProperty("supported").GetBoolean()
+                || !IsPresentForCode(snapshot, source.Component, source.Resource, target.Code)
+                || !resourcesById.TryGetValue(wired.Link.TargetResourceId, out var destination)
+                || !string.Equals(destination.Resource.Type, LogAnalyticsWorkspaceType, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var destinationTarget = ResolveTargetForComponent(snapshot, destination.Component, target.Code);
+            if (destinationTarget is null
+                || !IsPresentForCode(snapshot, destination.Component, destination.Resource, destinationTarget.Code))
+            {
+                continue;
+            }
+
+            var destinationName = destination.Resource.IsExisting
+                ? ExtractName(destination.Resource.ExistingIds.GetValueOrDefault(destinationTarget.Id))
+                : GetName(naming, destination.Resource.Id, destinationTarget.Id);
+            var destinationGroup = destination.Component.ResourceGroups
+                .Single(group => group.Id == destination.Resource.ResourceGroupId);
+            var destinationResourceGroupName = GetResourceGroupName(
+                naming,
+                destination.Component,
+                destinationGroup,
+                destinationTarget.Id);
+            var destinationResourceId = destination.Resource.IsExisting
+                ? destination.Resource.ExistingIds.GetValueOrDefault(destinationTarget.Id)
+                : BuildResourceIdForReference(
+                    destination.Resource.Id,
+                    destinationTarget.Code,
+                    snapshot,
+                    resourcesById,
+                    descriptors,
+                    naming);
+            var destinationPlan = new DiagnosticDestinationPlan(
+                destination.Component.Code,
+                destinationTarget.Code,
+                destination.Resource.Type,
+                destination.Resource.LogicalName,
+                destinationName,
+                destinationResourceGroupName,
+                destinationTarget.SubscriptionId,
+                destinationResourceId,
+                destination.Resource.IsExisting,
+                wired.IsExternal);
+            var diagnosticDefaults = sourceDescriptor.Definition.GetProperty("diagnostics");
+            var defaults = diagnosticDefaults.TryGetProperty("settings", out var configuredSettings)
+                && configuredSettings.ValueKind == JsonValueKind.Object
+                    ? new DiagnosticSettingDefaults(
+                        ReadNullableString(configuredSettings, "logCategoryGroup"),
+                        ReadNullableString(configuredSettings, "metricCategory"),
+                        ReadNullableString(configuredSettings, "destinationType") ?? string.Empty)
+                    : LegacyDiagnosticDefaultsByResourceType.GetValueOrDefault(
+                        source.Resource.Type,
+                        new DiagnosticSettingDefaults(
+                            LegacyDiagnosticLogCategoryGroup,
+                            LegacyDiagnosticMetricCategory,
+                            LegacyDiagnosticDestinationType));
+
+            plans.Add(new DiagnosticSettingPlan(
+                source.Resource.Type,
+                source.Resource.LogicalName,
+                GetName(naming, source.Resource.Id, target.Id),
+                $"{DiagnosticSettingNamePrefix}{GetName(naming, source.Resource.Id, target.Id)}",
+                destinationPlan,
+                defaults.LogCategoryGroup,
+                defaults.MetricCategory,
+                defaults.DestinationType,
+                []));
+        }
+
+        return plans
+            .DistinctBy(plan => (plan.SourceResourceType, plan.SourceLogicalName, plan.Name))
+            .OrderBy(plan => plan.SourceLogicalName, StringComparer.Ordinal)
+            .ThenBy(plan => plan.SourceResourceType, StringComparer.Ordinal)
+            .ThenBy(plan => plan.Name, StringComparer.Ordinal)
+            .ToArray();
     }
 
     private ResourcePlan BuildResource(
@@ -262,6 +381,14 @@ public sealed class DeploymentPlanBuilder(
         var resourceId = resource.IsExisting
             ? existingId
             : BuildResourceId(snapshot, component, target, resource, name, groupName, resourcesById, descriptors, naming);
+        var dependencies = BuildResourceDependencies(
+            snapshot,
+            wiring,
+            resource,
+            target,
+            resourcesById,
+            descriptors,
+            naming);
 
         return new ResourcePlan(
             resource.Type,
@@ -275,11 +402,79 @@ public sealed class DeploymentPlanBuilder(
             values,
             fixedValues,
             children,
+            dependencies,
             identities,
             exposure,
             resourceTags,
             resource.IsExisting,
             existingId);
+    }
+
+    private ResourceDependencyPlan[] BuildResourceDependencies(
+        ModelSnapshot snapshot,
+        WiringResult wiring,
+        ResourceSnapshot resource,
+        ResolvedTarget target,
+        IReadOnlyDictionary<Guid, (ComponentSnapshot Component, ResourceSnapshot Resource)> resourcesById,
+        IReadOnlyDictionary<string, CatalogResourceTypeDescriptor> descriptors,
+        NamingPreviewResult naming)
+    {
+        return wiring.Links
+            .Where(wired => wired.Link.SourceResourceId == resource.Id
+                && resourcesById.ContainsKey(wired.Link.TargetResourceId))
+            .Select(wired =>
+            {
+                var entry = resourcesById[wired.Link.TargetResourceId];
+                var dependencyTarget = ResolveTargetForComponent(snapshot, entry.Component, target.Code);
+                if (dependencyTarget is null)
+                {
+                    return null;
+                }
+
+                var name = entry.Resource.IsExisting
+                    ? ExtractName(entry.Resource.ExistingIds.GetValueOrDefault(dependencyTarget.Id))
+                    : GetName(naming, entry.Resource.Id, dependencyTarget.Id);
+                var group = entry.Component.ResourceGroups.Single(candidate => candidate.Id == entry.Resource.ResourceGroupId);
+                var groupName = GetResourceGroupName(naming, entry.Component, group, dependencyTarget.Id);
+                var resourceId = entry.Resource.IsExisting
+                    ? entry.Resource.ExistingIds.GetValueOrDefault(dependencyTarget.Id)
+                    : BuildResourceId(
+                        snapshot,
+                        entry.Component,
+                        dependencyTarget,
+                        entry.Resource,
+                        name,
+                        groupName,
+                        resourcesById,
+                        descriptors,
+                        naming);
+
+                return new ResourceDependencyPlan(
+                    wired.Link.Kind.ToString(),
+                    entry.Component.Code,
+                    dependencyTarget.Code,
+                    entry.Resource.Type,
+                    entry.Resource.LogicalName,
+                    name,
+                    groupName,
+                    dependencyTarget.SubscriptionId,
+                    resourceId,
+                    entry.Resource.IsExisting,
+                    wired.IsExternal,
+                    wired.CreatesDeploymentDependency
+                    && (entry.Resource.IsExisting
+                        || IsPresentForCode(snapshot, entry.Component, entry.Resource, dependencyTarget.Code)));
+            })
+            .Where(dependency => dependency is not null)
+            .Select(dependency => dependency!)
+            .DistinctBy(dependency => (dependency.Kind, dependency.ComponentCode, dependency.TargetCode,
+                dependency.ResourceType, dependency.LogicalName, dependency.ResourceId))
+            .OrderBy(dependency => dependency.Kind, StringComparer.Ordinal)
+            .ThenBy(dependency => dependency.ComponentCode, StringComparer.Ordinal)
+            .ThenBy(dependency => dependency.TargetCode, StringComparer.Ordinal)
+            .ThenBy(dependency => dependency.LogicalName, StringComparer.Ordinal)
+            .ThenBy(dependency => dependency.ResourceType, StringComparer.Ordinal)
+            .ToArray();
     }
 
     private static ResourceChildPlan BuildChild(
@@ -379,17 +574,19 @@ public sealed class DeploymentPlanBuilder(
         NamingPreviewResult naming)
     {
         var refs = new List<ExternalReference>();
-        foreach (var wired in wiring.Links.Where(wired => wired.IsExternal && wired.Link.SourceComponentId == component.Id))
+        var addedResourceIds = new HashSet<Guid>();
+
+        void AddReference(Guid targetResourceId)
         {
-            if (!resourcesById.TryGetValue(wired.Link.TargetResourceId, out var entry))
+            if (!addedResourceIds.Add(targetResourceId) || !resourcesById.TryGetValue(targetResourceId, out var entry))
             {
-                continue;
+                return;
             }
 
             var externalTarget = ResolveTargetForComponent(snapshot, entry.Component, target.Code);
             if (externalTarget is null)
             {
-                continue;
+                return;
             }
 
             var name = entry.Resource.IsExisting
@@ -397,10 +594,10 @@ public sealed class DeploymentPlanBuilder(
                 : GetName(naming, entry.Resource.Id, externalTarget.Id);
             var group = entry.Component.ResourceGroups.Single(candidate => candidate.Id == entry.Resource.ResourceGroupId);
             var groupName = GetResourceGroupName(naming, entry.Component, group, externalTarget.Id);
-            var resourceId = entry.Resource.IsExisting
+            var resolvedResourceId = entry.Resource.IsExisting
                 ? entry.Resource.ExistingIds.GetValueOrDefault(externalTarget.Id)
-                : BuildResourceId(snapshot, entry.Component, externalTarget, entry.Resource, name, groupName, resourcesById, descriptors,
-                    naming);
+                : BuildResourceId(snapshot, entry.Component, externalTarget, entry.Resource, name, groupName,
+                    resourcesById, descriptors, naming);
             refs.Add(new ExternalReference(
                 entry.Component.Code,
                 externalTarget.Code,
@@ -409,8 +606,33 @@ public sealed class DeploymentPlanBuilder(
                 name,
                 groupName,
                 externalTarget.SubscriptionId,
-                resourceId,
+                resolvedResourceId,
                 entry.Resource.IsExisting));
+
+            if (!descriptors.TryGetValue(entry.Resource.Type, out var descriptor)
+                || !descriptor.Definition.GetProperty("generation").GetProperty("Bicep")
+                    .TryGetProperty("existing", out var existing)
+                || !existing.TryGetProperty("parentType", out var parentTypeElement))
+            {
+                return;
+            }
+
+            var parentType = parentTypeElement.GetString();
+            var parentId = wiring.Links
+                .Where(link => link.Link.SourceResourceId == entry.Resource.Id
+                    && linkKinds.Get(link.Link.Kind).IsResourceHostingRelationship)
+                .Select(link => link.Link.TargetResourceId)
+                .FirstOrDefault(candidate => resourcesById.TryGetValue(candidate, out var parent)
+                    && string.Equals(parent.Resource.Type, parentType, StringComparison.Ordinal));
+            if (parentId != Guid.Empty)
+            {
+                AddReference(parentId);
+            }
+        }
+
+        foreach (var wired in wiring.Links.Where(wired => wired.IsExternal && wired.Link.SourceComponentId == component.Id))
+        {
+            AddReference(wired.Link.TargetResourceId);
         }
 
         return refs
@@ -689,6 +911,7 @@ public sealed class DeploymentPlanBuilder(
         ModelSnapshot snapshot,
         CatalogVersion catalog,
         WiringResult wiring,
+        DiagnosticSettingPlan[] diagnosticSettings,
         RoleAssignmentPlan[] roleAssignments,
         ComponentSnapshot component,
         ResolvedTarget target,
@@ -780,14 +1003,7 @@ public sealed class DeploymentPlanBuilder(
             accessObjectTypes.Add("Microsoft.Authorization/roleAssignments");
         }
 
-        var hasDiagnostics = wiring.Links
-            .Where(link => link.Link.SourceComponentId == component.Id
-                && linkKinds.Get(link.Link.Kind).ProducesDiagnosticSettings)
-            .Any(link => resourcesById.TryGetValue(link.Link.SourceResourceId, out var source)
-                && descriptors.TryGetValue(source.Resource.Type, out var descriptor)
-                && descriptor.Definition.GetProperty("diagnostics").GetProperty("supported").GetBoolean()
-                && IsPresentForCode(snapshot, source.Component, source.Resource, target.Code));
-        if (hasDiagnostics)
+        if (diagnosticSettings.Length > 0)
         {
             accessObjectTypes.Add("Microsoft.Insights/diagnosticSettings");
         }
@@ -1165,6 +1381,17 @@ public sealed class DeploymentPlanBuilder(
         string.IsNullOrWhiteSpace(resourceId) ? null : resourceId.TrimEnd('/').Split('/').LastOrDefault();
 
     private static JsonElement? Clone(JsonElement? value) => value?.Clone();
+
+    private static string? ReadNullableString(JsonElement definition, string propertyName) =>
+        definition.ValueKind == JsonValueKind.Object
+        && definition.TryGetProperty(propertyName, out var value)
+            ? value.ValueKind == JsonValueKind.Null ? null : value.GetString()
+            : null;
+
+    private sealed record DiagnosticSettingDefaults(
+        string? LogCategoryGroup,
+        string? MetricCategory,
+        string DestinationType);
 
     private static string ToCamelCase(string value) => value.Length == 0
         ? value

@@ -1,0 +1,623 @@
+{
+  "type": "ContainerApp",
+  "labels": {
+    "fr": "Container App",
+    "en": "Container App"
+  },
+  "category": "compute",
+  "icon": "container-app",
+  "armType": "Microsoft.App/containerApps",
+  "availableFrom": "lot1",
+  "documentationUrl": "https://learn.microsoft.com/en-us/azure/templates/microsoft.app/containerapps",
+  "verifiedAgainstDocsOn": "2026-10-27",
+  "naming": {
+    "abbreviation": "ca",
+    "allowed": "^[a-z][a-z0-9-]{0,30}[a-z0-9]$",
+    "case": "lower",
+    "separators": [
+      "-"
+    ],
+    "forbidConsecutiveSeparators": true,
+    "minLength": 2,
+    "maxLength": 32,
+    "firstChar": "letter",
+    "lastChar": "alphanumeric",
+    "uniqueness": "resourceGroup",
+    "availabilityDomain": null
+  },
+  "properties": [
+    {
+      "name": "workloadProfileName",
+      "labels": {
+        "fr": "Profil de charge",
+        "en": "Workload profile"
+      },
+      "kind": "string",
+      "overridable": true,
+      "default": "Consumption",
+      "allowedFrom": {
+        "linkKind": "Hosting",
+        "targetProperty": "workloadProfiles",
+        "targetMember": "name",
+        "implicitValues": [
+          "Consumption"
+        ]
+      }
+    },
+    {
+      "name": "cpu",
+      "labels": {
+        "fr": "CPU (cœurs)",
+        "en": "CPU (cores)"
+      },
+      "kind": "number",
+      "overridable": true,
+      "default": 0.5,
+      "minimum": 0.25,
+      "maximum": 4
+    },
+    {
+      "name": "memoryGi",
+      "labels": {
+        "fr": "Mémoire (Gi)",
+        "en": "Memory (Gi)"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "1Gi",
+      "values": [
+        "0.5Gi",
+        "1Gi",
+        "2Gi",
+        "4Gi",
+        "8Gi"
+      ]
+    },
+    {
+      "name": "minReplicas",
+      "labels": {
+        "fr": "Réplicas minimum",
+        "en": "Minimum replicas"
+      },
+      "kind": "integer",
+      "overridable": true,
+      "default": 0,
+      "minimum": 0,
+      "maximum": 1000
+    },
+    {
+      "name": "maxReplicas",
+      "labels": {
+        "fr": "Réplicas maximum",
+        "en": "Maximum replicas"
+      },
+      "kind": "integer",
+      "overridable": true,
+      "default": 10,
+      "minimum": 1,
+      "maximum": 1000
+    },
+    {
+      "name": "ingress",
+      "labels": {
+        "fr": "Ingress",
+        "en": "Ingress"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "External",
+      "values": [
+        "None",
+        "Internal",
+        "External"
+      ]
+    },
+    {
+      "name": "targetPort",
+      "labels": {
+        "fr": "Port cible",
+        "en": "Target port"
+      },
+      "kind": "integer",
+      "overridable": true,
+      "default": 8080,
+      "minimum": 1,
+      "maximum": 65535
+    },
+    {
+      "name": "transport",
+      "labels": {
+        "fr": "Transport",
+        "en": "Transport"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "auto",
+      "values": [
+        "auto",
+        "http",
+        "http2",
+        "tcp"
+      ]
+    },
+    {
+      "name": "httpConcurrentRequests",
+      "labels": {
+        "fr": "Requêtes HTTP simultanées",
+        "en": "HTTP concurrent requests"
+      },
+      "kind": "integer",
+      "overridable": true,
+      "default": 10,
+      "minimum": 1,
+      "maximum": 1000
+    },
+    {
+      "name": "activeRevisionsMode",
+      "labels": {
+        "fr": "Mode de révision",
+        "en": "Revision mode"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "Single",
+      "values": [
+        "Single",
+        "Multiple"
+      ]
+    }
+  ],
+  "constraints": [
+    {
+      "id": "replica-range",
+      "kind": "compare",
+      "left": "minReplicas",
+      "operator": "lessThanOrEqual",
+      "right": "maxReplicas"
+    },
+    {
+      "id": "consumption-cpu-memory",
+      "kind": "allowedTuples",
+      "properties": [
+        "cpu",
+        "memoryGi"
+      ],
+      "tuples": [
+        [
+          0.25,
+          "0.5Gi"
+        ],
+        [
+          0.5,
+          "1Gi"
+        ],
+        [
+          1,
+          "2Gi"
+        ],
+        [
+          2,
+          "4Gi"
+        ],
+        [
+          4,
+          "8Gi"
+        ]
+      ],
+      "when": {
+        "property": "workloadProfileName",
+        "equals": "Consumption"
+      }
+    }
+  ],
+  "fixedValues": [],
+  "children": [],
+  "identities": {
+    "system": true,
+    "userAssignedMax": 10
+  },
+  "links": {
+    "asSource": [
+      "Hosting",
+      "Telemetry",
+      "ImagePull",
+      "DataAccess",
+      "Access",
+      "SecretRead",
+      "ConfigurationRead"
+    ],
+    "asTarget": [],
+    "required": [
+      {
+        "kind": "Hosting",
+        "cardinality": "one"
+      }
+    ]
+  },
+  "outputs": [
+    {
+      "name": "fqdn",
+      "description": "Nom DNS complet de l’application.",
+      "sensitive": false,
+      "computableFromName": false
+    },
+    {
+      "name": "name",
+      "description": "Nom de l’application.",
+      "sensitive": false,
+      "computableFromName": true
+    },
+    {
+      "name": "id",
+      "description": "Identifiant de la ressource.",
+      "sensitive": false,
+      "computableFromName": false
+    }
+  ],
+  "lifecycle": {
+    "family": "data"
+  },
+  "roles": [
+    "Contributor",
+    "Reader"
+  ],
+  "roleEquivalences": {},
+  "dataAccess": {
+    "supported": false,
+    "levels": [],
+    "databaseEngine": null
+  },
+  "exposure": {
+    "modes": [],
+    "privateGroupIds": [],
+    "privateDnsZones": [],
+    "conditions": []
+  },
+  "diagnostics": {
+    "supported": true,
+    "settings": {
+      "logCategoryGroup": null,
+      "metricCategory": "AllMetrics",
+      "destinationType": "Dedicated"
+    }
+  },
+  "applicationSettings": {
+    "destination": "environmentVariables"
+  },
+  "languageSupport": {
+    "Bicep": "full",
+    "Terraform": "none",
+    "Pulumi": "none"
+  },
+  "generation": {
+    "Bicep": {
+      "requiredResourceGroups": ["main"],
+      "module": "br/public:avm/res/app/container-app:0.23.0",
+      "versionPin": "0.23.0",
+      "map": {
+        "name": "name",
+        "location": "location",
+        "environmentResourceId": "environmentResourceId",
+        "workloadProfileName": "workloadProfileName",
+        "targetPort": "ingressTargetPort",
+        "transport": "ingressTransport",
+        "activeRevisionsMode": "activeRevisionsMode",
+        "managedIdentities": "managedIdentities",
+        "containers": "containers"
+      },
+      "parameterName": "caApi",
+      "symbol": "ca",
+      "emissionOrder": 30,
+      "sectionComment": "Groupe de ressources principal : application API et ses paramètres applicatifs.",
+      "existing": {
+        "apiVersion": "2025-01-01",
+        "symbol": "caApi",
+        "parameterName": "caApi",
+        "order": 70,
+        "description": "Container App du composant orders.",
+        "configType": "resourceReferenceConfig"
+      },
+      "config": {
+        "typeName": "caApiConfig",
+        "description": "Paramètres de l’application Container App api.",
+        "order": 30,
+        "fields": [
+          {
+            "name": "deploy",
+            "type": "bool",
+            "description": "Indique si l’application Container App est déployée.",
+            "source": {
+              "kind": "resource",
+              "field": "present"
+            }
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "description": "Nom Azure explicite de la Container App.",
+            "source": {
+              "kind": "resource",
+              "field": "name"
+            }
+          },
+          {
+            "name": "location",
+            "type": "string",
+            "description": "Région Azure de la Container App.",
+            "source": {
+              "kind": "resource",
+              "field": "location"
+            }
+          },
+          {
+            "name": "image",
+            "type": "string",
+            "description": "Image complète à déployer, vide pour utiliser l’image de démarrage épinglée.",
+            "source": {
+              "kind": "constant",
+              "value": ""
+            }
+          },
+          {
+            "name": "cpu",
+            "type": "string",
+            "description": "Nombre de CPU de chaque réplique, représenté en décimal.",
+            "source": {
+              "kind": "property",
+              "field": "cpu"
+            },
+            "transform": "numberToString"
+          },
+          {
+            "name": "memory",
+            "type": "string",
+            "description": "Mémoire de chaque réplique au format Container Apps.",
+            "source": {
+              "kind": "property",
+              "field": "memoryGi"
+            }
+          },
+          {
+            "name": "minReplicas",
+            "type": "int",
+            "description": "Nombre minimal de répliques.",
+            "source": {
+              "kind": "property",
+              "field": "minReplicas"
+            }
+          },
+          {
+            "name": "maxReplicas",
+            "type": "int",
+            "description": "Nombre maximal de répliques.",
+            "source": {
+              "kind": "property",
+              "field": "maxReplicas"
+            }
+          },
+          {
+            "name": "ingressExternal",
+            "type": "bool",
+            "description": "Indique si l’ingress est externe.",
+            "source": {
+              "kind": "property",
+              "field": "ingress"
+            },
+            "transform": "externalIngress"
+          },
+          {
+            "name": "ingressTargetPort",
+            "type": "int",
+            "description": "Port cible de l’ingress et du conteneur API.",
+            "source": {
+              "kind": "property",
+              "field": "targetPort"
+            }
+          },
+          {
+            "name": "ingressAllowInsecure",
+            "type": "bool",
+            "description": "Indique si l’ingress accepte les connexions HTTP non chiffrées.",
+            "source": {
+              "kind": "constant",
+              "value": false
+            }
+          },
+          {
+            "name": "paymentsSecretName",
+            "type": "string",
+            "description": "Nom du secret Key Vault référencé par la variable Payments__ApiKey.",
+            "source": {
+              "kind": "applicationSetting",
+              "field": "Payments__ApiKey"
+            }
+          },
+          {
+            "name": "tags",
+            "type": "object",
+            "description": "Tags effectifs de la Container App.",
+            "source": {
+              "kind": "resource",
+              "field": "tags"
+            }
+          },
+          {
+            "name": "diagnosticSettings",
+            "type": "metricDiagnosticSettingConfig[]",
+            "description": "Paramètres de diagnostic métrique de la Container App.",
+            "source": {
+              "kind": "diagnostics",
+              "field": "metrics"
+            }
+          }
+        ]
+      },
+      "mainStatements": [
+        {
+          "order": -10,
+          "template": "var containerAppsContributorRoleId = '{{role:Container Apps Contributor}}'"
+        },
+        {
+          "order": 90,
+          "sectionComment": "Groupe de ressources principal : application API et ses paramètres applicatifs.",
+          "template": "module caApiModule '{{moduleReference}}' = if (caApi.deploy && apiIdentity.deploy && caeMain.deploy) {\n  name: 'caApi-${target.code}-${uniqueString(caApi.name)}'\n  scope: resourceGroup(target.subscriptionId, resourceGroups.main.name)\n  params: {\n    name: caApi.name\n    location: caApi.location\n    environmentResourceId: resourceId(\n      target.subscriptionId,\n      resourceGroups.main.name,\n      'Microsoft.App/managedEnvironments',\n      caeMain.name\n    )\n    containers: [\n      {\n        name: 'api'\n        image: empty(caApi.image)\n          ? '{{startupImage}}'\n          : caApi.image\n        resources: {\n          cpu: json(caApi.cpu)\n          memory: caApi.memory\n        }\n        env: [\n          {\n            name: 'Sql__Server'\n            value: '${externalResources.dataSqlDatabase.server.name}${environment().suffixes.sqlServerHostname}'\n          }\n          {\n            name: 'Sql__Database'\n            value: dataSqlDatabase.name\n          }\n          {\n            name: 'LogAnalytics__WorkspaceId'\n            value: coreWorkspace.properties.customerId\n          }\n          {\n            name: 'Payments__ApiKey'\n            secretRef: caApi.paymentsSecretName\n          }\n          {\n            name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'\n            value: coreAppInsights.properties.ConnectionString\n          }\n          {\n            name: 'AZURE_CLIENT_ID'\n            value: apiIdentityModule!.outputs.clientId\n          }\n        ]\n      }\n    ]\n    secrets: [\n      {\n        name: caApi.paymentsSecretName\n        keyVaultUrl: '${coreKeyVault.properties.vaultUri}secrets/${caApi.paymentsSecretName}'\n        identity: apiIdentityResourceId\n        value: null\n      }\n    ]\n    registries: [\n      {\n        server: platformRegistry.properties.loginServer\n        identity: apiIdentityResourceId\n      }\n    ]\n    managedIdentities: {\n      systemAssigned: true\n      userAssignedResourceIds: [\n        apiIdentityResourceId\n      ]\n    }\n    ingressExternal: caApi.ingressExternal\n    ingressTargetPort: caApi.ingressTargetPort\n    ingressAllowInsecure: caApi.ingressAllowInsecure\n    ingressTransport: 'auto'\n    activeRevisionsMode: 'Single'\n    scaleSettings: {\n      minReplicas: caApi.minReplicas\n      maxReplicas: caApi.maxReplicas\n    }\n    tags: caApi.tags\n    diagnosticSettings: [\n      for setting in caApi.diagnosticSettings: {\n        name: setting.name\n        workspaceResourceId: coreWorkspace.id\n        logAnalyticsDestinationType: setting.logAnalyticsDestinationType\n        metricCategories: [\n          {\n            category: setting.metricCategory\n            enabled: true\n          }\n        ]\n      }\n    ]\n    enableTelemetry: false\n  }\n  dependsOn: [\n    caeMainModule\n    keyVaultSecretsUser\n    logAnalyticsReader\n    acrPull\n  ]\n}"
+        },
+        {
+          "order": 85,
+          "template": "module keyVaultSecretsUser './key-vault-role-assignment.bicep' = if (caApi.deploy && apiIdentity.deploy) {\n  name: 'keyVaultSecretsUser-${target.code}-${uniqueString(externalResources.coreKeyVault.name)}'\n  scope: resourceGroup(externalResources.coreKeyVault.subscriptionId, externalResources.coreKeyVault.resourceGroupName)\n  params: {\n    keyVaultName: externalResources.coreKeyVault.name\n    assignmentName: guid(coreKeyVault.id, apiIdentityModule!.outputs.principalId, keyVaultSecretsUserRoleId)\n    principalId: apiIdentityModule!.outputs.principalId\n    roleDefinitionId: subscriptionResourceId(\n      externalResources.coreKeyVault.subscriptionId,\n      'Microsoft.Authorization/roleDefinitions',\n      keyVaultSecretsUserRoleId\n    )\n  }\n}",
+          "requiresExternalTypes": [
+            "KeyVault"
+          ],
+          "sectionComment": "Groupe de ressources principal : droits nécessaires aux dépendances externes."
+        },
+        {
+          "order": 86,
+          "template": "module logAnalyticsReader './workspace-role-assignment.bicep' = if (caApi.deploy && apiIdentity.deploy) {\n  name: 'logAnalyticsReader-${target.code}-${uniqueString(externalResources.coreWorkspace.name)}'\n  scope: resourceGroup(\n    externalResources.coreWorkspace.subscriptionId,\n    externalResources.coreWorkspace.resourceGroupName\n  )\n  params: {\n    workspaceName: externalResources.coreWorkspace.name\n    assignmentName: guid(coreWorkspace.id, apiIdentityModule!.outputs.principalId, logAnalyticsReaderRoleId)\n    principalId: apiIdentityModule!.outputs.principalId\n    roleDefinitionId: subscriptionResourceId(\n      externalResources.coreWorkspace.subscriptionId,\n      'Microsoft.Authorization/roleDefinitions',\n      logAnalyticsReaderRoleId\n    )\n  }\n}",
+          "requiresExternalTypes": [
+            "LogAnalyticsWorkspace"
+          ]
+        },
+        {
+          "order": 87,
+          "template": "module acrPull './registry-role-assignment.bicep' = if (caApi.deploy && apiIdentity.deploy) {\n  name: 'acrPull-${target.code}-${uniqueString(externalResources.platformRegistry.name)}'\n  scope: resourceGroup(\n    externalResources.platformRegistry.subscriptionId,\n    externalResources.platformRegistry.resourceGroupName\n  )\n  params: {\n    registryName: externalResources.platformRegistry.name\n    assignmentName: guid(platformRegistry.id, apiIdentityModule!.outputs.principalId, acrPullRoleId)\n    principalId: apiIdentityModule!.outputs.principalId\n    roleDefinitionId: subscriptionResourceId(\n      externalResources.platformRegistry.subscriptionId,\n      'Microsoft.Authorization/roleDefinitions',\n      acrPullRoleId\n    )\n  }\n}",
+          "requiresExternalTypes": [
+            "ContainerRegistry"
+          ]
+        },
+        {
+          "order": 100,
+          "template": "module appDeliveryContainerAppsContributor './container-app-role-assignment.bicep' = if (caApi.deploy && apiIdentity.deploy && caeMain.deploy && !empty(appDeliveryPrincipalId)) {\n  name: 'appDeliveryContainerAppsContributor-${target.code}-${uniqueString(caApi.name)}'\n  scope: resourceGroup(target.subscriptionId, resourceGroups.main.name)\n  params: {\n    containerAppName: caApi.name\n    principalId: appDeliveryPrincipalId\n    roleDefinitionId: subscriptionResourceId(\n      target.subscriptionId,\n      'Microsoft.Authorization/roleDefinitions',\n      containerAppsContributorRoleId\n    )\n  }\n  dependsOn: [\n    caApiModule\n  ]\n}",
+          "requiresResourceTypes": [
+            "ContainerApp"
+          ]
+        }
+      ],
+      "deliveryParameters": [
+        {
+          "name": "appDeliveryPrincipalId",
+          "description": "Object ID de l’identité applicative Azure DevOps autorisée à mettre à jour la Container App."
+        }
+      ],
+      "helpers": [
+        {
+          "fileName": "container-app-role-assignment.bicep",
+          "header": "Module ciblé pour attribuer un rôle à l’échelle d’une Container App.",
+          "template": "targetScope = 'resourceGroup'\n\n@description('Nom de la Container App qui reçoit le rôle.')\nparam containerAppName string\n\n@description('Object ID du principal auquel le rôle est attribué.')\nparam principalId string\n\n@description('ID de définition du rôle intégré.')\nparam roleDefinitionId string\n\nvar containerAppsContributorRoleId = '{{role:Container Apps Contributor}}'\n\nresource ordersApi '{{resource:ContainerApp}}' existing = {\n  name: containerAppName\n}\n\nresource appDeliveryContainerAppsContributor 'Microsoft.Authorization/roleAssignments@{{roleAssignmentApiVersion}}' = {\n  name: guid(ordersApi.id, principalId, containerAppsContributorRoleId)\n  scope: ordersApi\n  properties: {\n    roleDefinitionId: roleDefinitionId\n    principalId: principalId\n    principalType: 'ServicePrincipal'\n  }\n}"
+        },
+        {
+          "fileName": "key-vault-role-assignment.bicep",
+          "header": "project",
+          "template": "targetScope = 'resourceGroup'\n\n@description('Nom du Key Vault existant qui reçoit l’attribution de rôle.')\nparam keyVaultName string\n\n@description('Nom déterministe de l’attribution de rôle.')\nparam assignmentName string\n\n@description('Identifiant objet du principal auquel le rôle est attribué.')\nparam principalId string\n\n@description('Identifiant de définition du rôle intégré.')\nparam roleDefinitionId string\n\nresource keyVault '{{resource:KeyVault}}' existing = {\n  name: keyVaultName\n}\n\nresource keyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@{{roleAssignmentApiVersion}}' = {\n  name: assignmentName\n  scope: keyVault\n  properties: {\n    roleDefinitionId: roleDefinitionId\n    principalId: principalId\n    principalType: 'ServicePrincipal'\n  }\n}",
+          "requiresExternalTypes": [
+            "KeyVault"
+          ]
+        },
+        {
+          "fileName": "workspace-role-assignment.bicep",
+          "header": "project",
+          "template": "targetScope = 'resourceGroup'\n\n@description('Nom du workspace Log Analytics existant qui reçoit l’attribution de rôle.')\nparam workspaceName string\n\n@description('Nom déterministe de l’attribution de rôle.')\nparam assignmentName string\n\n@description('Identifiant objet du principal auquel le rôle est attribué.')\nparam principalId string\n\n@description('Identifiant de définition du rôle intégré.')\nparam roleDefinitionId string\n\nresource workspace '{{resource:LogAnalyticsWorkspace}}' existing = {\n  name: workspaceName\n}\n\nresource logAnalyticsReader 'Microsoft.Authorization/roleAssignments@{{roleAssignmentApiVersion}}' = {\n  name: assignmentName\n  scope: workspace\n  properties: {\n    roleDefinitionId: roleDefinitionId\n    principalId: principalId\n    principalType: 'ServicePrincipal'\n  }\n}",
+          "requiresExternalTypes": [
+            "LogAnalyticsWorkspace"
+          ]
+        },
+        {
+          "fileName": "registry-role-assignment.bicep",
+          "header": "project",
+          "template": "targetScope = 'resourceGroup'\n\n@description('Nom du registre de conteneurs existant qui reçoit l’attribution de rôle.')\nparam registryName string\n\n@description('Nom déterministe de l’attribution de rôle.')\nparam assignmentName string\n\n@description('Identifiant objet du principal auquel le rôle est attribué.')\nparam principalId string\n\n@description('Identifiant de définition du rôle intégré.')\nparam roleDefinitionId string\n\nresource registry '{{resource:ContainerRegistry}}' existing = {\n  name: registryName\n}\n\nresource acrPull 'Microsoft.Authorization/roleAssignments@{{roleAssignmentApiVersion}}' = {\n  name: assignmentName\n  scope: registry\n  properties: {\n    roleDefinitionId: roleDefinitionId\n    principalId: principalId\n    principalType: 'ServicePrincipal'\n  }\n}",
+          "requiresExternalTypes": [
+            "ContainerRegistry"
+          ]
+        }
+      ],
+      "requirements": [
+        {
+          "when": {
+            "property": "ingress",
+            "equals": "None"
+          },
+          "property": "ingress",
+          "disallowedValues": [
+            "None"
+          ],
+          "reason": "Le gabarit Bicep ne prend pas en charge la valeur ingress=None ; choisissez Internal ou External."
+        }
+      ],
+      "unsupportedValues": [
+        {
+          "property": "workloadProfileName",
+          "strategy": "mustMatchDefault",
+          "reason": "Le profil de charge n’est pas transmis au modèle de Container App."
+        },
+        {
+          "property": "transport",
+          "strategy": "mustMatchDefault",
+          "reason": "Le transport HTTP est fixé à auto dans le modèle de Container App."
+        },
+        {
+          "property": "httpConcurrentRequests",
+          "strategy": "mustMatchDefault",
+          "reason": "La règle de mise à l’échelle HTTP n’est pas configurée par le modèle de Container App."
+        },
+        {
+          "property": "activeRevisionsMode",
+          "strategy": "mustMatchDefault",
+          "reason": "Le mode de révisions est fixé à Single dans le modèle de Container App."
+        }
+      ],
+      "diagnosticDestination": {
+        "componentCode": "core",
+        "resourceType": "LogAnalyticsWorkspace",
+        "logicalName": "main"
+      },
+      "requiredTargetShape": {
+        "localResourceTypes": [
+          "ContainerAppsEnvironment",
+          "UserAssignedIdentity"
+        ],
+        "externalResourceTypes": [
+          "ApplicationInsights",
+          "ContainerRegistry",
+          "KeyVault",
+          "LogAnalyticsWorkspace",
+          "SqlDatabase",
+          "SqlServer"
+        ],
+        "reason": "Le gabarit pilote de Container App référence ces ressources locales et externes."
+      },
+      "applicationSettingSupport": {
+        "allowedNames": [
+          "APPLICATIONINSIGHTS_CONNECTION_STRING",
+          "AZURE_CLIENT_ID",
+          "Payments__ApiKey"
+        ],
+        "requiredWhenPresent": [
+          "APPLICATIONINSIGHTS_CONNECTION_STRING",
+          "AZURE_CLIENT_ID",
+          "Payments__ApiKey"
+        ],
+        "requiredSecretNames": [
+          "Payments__ApiKey"
+        ],
+        "reason": "Le gabarit pilote n’émet que la connexion Application Insights, l’identité Azure et le secret Payments__ApiKey."
+      }
+    }
+  },
+  "deprecations": [],
+  "privateDnsZones": [],
+  "requiredNetworkRules": [],
+  "recommendedAlerts": [],
+  "pricing": {
+    "source": "azure-retail-prices",
+    "meters": [
+      {
+        "serviceName": "Azure Container Apps",
+        "productName": "Consumption workload profiles",
+        "meterName": "vCPU seconds"
+      }
+    ],
+    "assumptions": [],
+    "estimated": false,
+    "unestimatedReason": "Aucun scénario tarifaire par défaut n’est estimé pour le profil du pilote."
+  },
+  "drift": []
+}

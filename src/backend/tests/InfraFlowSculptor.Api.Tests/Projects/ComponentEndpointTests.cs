@@ -1723,6 +1723,20 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         Assert.Contains(target.GetProperty("roleAssignments").EnumerateArray(), assignment =>
             assignment.GetProperty("origins").GetArrayLength() > 0);
 
+        var orderDiagnostics = target.GetProperty("diagnosticSettings").EnumerateArray().ToArray();
+        Assert.Contains(orderDiagnostics, setting =>
+            setting.GetProperty("sourceResourceType").GetString() == "ContainerApp");
+        var apiDiagnostics = Assert.Single(orderDiagnostics, setting =>
+            setting.GetProperty("sourceResourceType").GetString() == "ContainerApp");
+        Assert.Null(apiDiagnostics.GetProperty("logCategoryGroup").GetString());
+        Assert.Equal("AllMetrics", apiDiagnostics.GetProperty("metricCategory").GetString());
+        Assert.Equal("Dedicated", apiDiagnostics.GetProperty("logAnalyticsDestinationType").GetString());
+        Assert.True(apiDiagnostics.GetProperty("destination").GetProperty("isExternal").GetBoolean());
+        Assert.Equal("core", apiDiagnostics.GetProperty("destination").GetProperty("componentCode").GetString());
+        var environmentDiagnostics = orderDiagnostics.First(setting =>
+            setting.GetProperty("sourceResourceType").GetString() == "ContainerAppsEnvironment");
+        Assert.Equal("allLogs", environmentDiagnostics.GetProperty("logCategoryGroup").GetString());
+
         var expectedSecret = Assert.Single(target.GetProperty("expectedSecrets").EnumerateArray());
         Assert.Equal("MAIN_PAYMENTS_API_KEY", expectedSecret.GetProperty("variable").GetString());
         Assert.Equal("core", expectedSecret.GetProperty("writer").GetString());
@@ -1739,6 +1753,19 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         using var fullPlanResponse = await client.SendAsync(fullPlanRequest);
         Assert.Equal(HttpStatusCode.OK, fullPlanResponse.StatusCode);
         using var fullPlan = JsonDocument.Parse(await fullPlanResponse.Content.ReadAsStringAsync());
+        var corePlan = Assert.Single(fullPlan.RootElement.GetProperty("components").EnumerateArray(), componentPlan =>
+            componentPlan.GetProperty("componentCode").GetString() == "core");
+        foreach (var coreTarget in corePlan.GetProperty("targets").EnumerateArray())
+        {
+            var coreDiagnostics = coreTarget.GetProperty("diagnosticSettings").EnumerateArray().ToArray();
+            Assert.Contains(coreDiagnostics, setting =>
+                setting.GetProperty("sourceResourceType").GetString() == "ApplicationInsights");
+            Assert.Contains(coreDiagnostics, setting =>
+                setting.GetProperty("sourceResourceType").GetString() == "KeyVault");
+            Assert.All(coreDiagnostics, setting =>
+                Assert.False(setting.GetProperty("destination").GetProperty("isExternal").GetBoolean()));
+        }
+
         foreach (var componentPlan in fullPlan.RootElement.GetProperty("components").EnumerateArray()
             .Where(componentPlan => componentPlan.GetProperty("componentCode").GetString() != "orders"))
         {

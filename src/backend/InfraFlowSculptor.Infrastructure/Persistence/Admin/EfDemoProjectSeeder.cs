@@ -68,10 +68,19 @@ public sealed class EfDemoProjectSeeder(IfsDbContext dbContext)
     {
         var existingComponents = await dbContext.Components
             .IgnoreQueryFilters()
+            .Include(component => component.Resources)
             .Where(component => component.ProjectId == project.Id)
             .ToArrayAsync(cancellationToken);
         if (existingComponents.Length > 0)
         {
+            var existingCore = existingComponents.SingleOrDefault(component => component.Code == "core");
+            var existingWorkspace = existingCore?.Resources.SingleOrDefault(
+                resource => resource.Type == "LogAnalyticsWorkspace" && resource.LogicalName == "main");
+            if (existingCore is { DefaultLogAnalyticsResourceId: null } && existingWorkspace is not null)
+            {
+                _ = existingCore.SetDefaultLogAnalyticsResource(existingWorkspace.Id).Value;
+            }
+
             return;
         }
 
@@ -130,6 +139,7 @@ public sealed class EfDemoProjectSeeder(IfsDbContext dbContext)
 
         _ = data.SetDefaultLogAnalyticsResource(workspace.Id).Value;
         _ = orders.SetDefaultLogAnalyticsResource(workspace.Id).Value;
+        _ = core.SetDefaultLogAnalyticsResource(workspace.Id).Value;
 
         dbContext.Components.AddRange(core, data, platform, orders);
         dbContext.Set<LinkAggregate>().AddRange(

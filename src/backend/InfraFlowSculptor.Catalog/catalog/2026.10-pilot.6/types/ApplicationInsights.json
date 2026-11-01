@@ -1,0 +1,315 @@
+{
+  "type": "ApplicationInsights",
+  "labels": {
+    "fr": "Application Insights",
+    "en": "Application Insights"
+  },
+  "category": "observability",
+  "icon": "application-insights",
+  "armType": "Microsoft.Insights/components",
+  "availableFrom": "lot1",
+  "documentationUrl": "https://learn.microsoft.com/en-us/azure/templates/microsoft.insights/components",
+  "verifiedAgainstDocsOn": "2026-10-27",
+  "naming": {
+    "abbreviation": "appi",
+    "allowed": "^[^%&\\?/:]{1,260}$",
+    "case": "mixed",
+    "separators": [],
+    "forbidConsecutiveSeparators": true,
+    "minLength": 1,
+    "maxLength": 260,
+    "firstChar": "alphanumeric",
+    "lastChar": "alphanumeric",
+    "uniqueness": "resourceGroup",
+    "availabilityDomain": null
+  },
+  "properties": [
+    {
+      "name": "applicationType",
+      "labels": {
+        "fr": "Type d’application",
+        "en": "Application type"
+      },
+      "kind": "enum",
+      "overridable": false,
+      "default": "web",
+      "values": [
+        "web",
+        "other"
+      ],
+      "lockedAfterPublish": true
+    },
+    {
+      "name": "samplingPercentage",
+      "labels": {
+        "fr": "Échantillonnage à l’ingestion (%)",
+        "en": "Ingestion sampling (%)"
+      },
+      "kind": "number",
+      "overridable": true,
+      "default": 100,
+      "minimum": 0.1,
+      "maximum": 100
+    },
+    {
+      "name": "disableLocalAuth",
+      "labels": {
+        "fr": "Désactiver l’authentification locale",
+        "en": "Disable local authentication"
+      },
+      "kind": "boolean",
+      "overridable": true,
+      "default": false
+    }
+  ],
+  "fixedValues": [],
+  "children": [],
+  "identities": {
+    "system": false,
+    "userAssignedMax": 0
+  },
+  "links": {
+    "asSource": [
+      "Logging"
+    ],
+    "asTarget": [
+      "Telemetry"
+    ],
+    "required": [
+      {
+        "kind": "Logging",
+        "cardinality": "one"
+      }
+    ]
+  },
+  "outputs": [
+    {
+      "name": "connectionString",
+      "description": "Chaîne de connexion Application Insights, non secrète.",
+      "sensitive": false,
+      "computableFromName": false
+    },
+    {
+      "name": "id",
+      "description": "Identifiant de la ressource.",
+      "sensitive": false,
+      "computableFromName": false
+    }
+  ],
+  "lifecycle": {
+    "family": "data"
+  },
+  "roles": [
+    "Monitoring Metrics Publisher",
+    "Application Insights Component Contributor",
+    "Monitoring Reader"
+  ],
+  "roleEquivalences": {},
+  "dataAccess": {
+    "supported": false,
+    "levels": [],
+    "databaseEngine": null
+  },
+  "exposure": {
+    "modes": [],
+    "privateGroupIds": [],
+    "privateDnsZones": [],
+    "conditions": []
+  },
+  "diagnostics": {
+    "supported": true,
+    "settings": {
+      "logCategoryGroup": "allLogs",
+      "metricCategory": "AllMetrics",
+      "destinationType": "Dedicated"
+    }
+  },
+  "applicationSettings": {
+    "destination": "none"
+  },
+  "languageSupport": {
+    "Bicep": "full",
+    "Terraform": "none",
+    "Pulumi": "none"
+  },
+  "generation": {
+    "Bicep": {
+      "requiredResourceGroups": ["main"],
+      "module": "br/public:avm/res/insights/component:0.8.0",
+      "versionPin": "0.8.0",
+      "map": {
+        "applicationType": "applicationType",
+        "disableLocalAuth": "disableLocalAuth",
+        "workspaceResourceId": "workspaceResourceId"
+      },
+      "parameterName": "appiMain",
+      "symbol": "appi",
+      "emissionOrder": 20,
+      "sectionComment": "Groupe de ressources principal : télémétrie applicative.",
+      "existing": {
+        "apiVersion": "2020-02-02",
+        "symbol": "coreAppInsights",
+        "parameterName": "coreAppInsights",
+        "order": 20,
+        "description": "Composant Application Insights du composant core.",
+        "configType": "resourceReferenceConfig"
+      },
+      "config": {
+        "typeName": "appiMainConfig",
+        "description": "Paramètres du composant Application Insights principal.",
+        "order": 20,
+        "fields": [
+          {
+            "name": "deploy",
+            "type": "bool",
+            "description": "Indique si Application Insights est déployé.",
+            "source": {
+              "kind": "resource",
+              "field": "present"
+            }
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "description": "Nom Azure explicite du composant Application Insights.",
+            "source": {
+              "kind": "resource",
+              "field": "name"
+            },
+            "moduleParameter": "name"
+          },
+          {
+            "name": "location",
+            "type": "string",
+            "description": "Région Azure du composant Application Insights.",
+            "source": {
+              "kind": "resource",
+              "field": "location"
+            },
+            "moduleParameter": "location"
+          },
+          {
+            "name": "applicationType",
+            "type": "'web' | 'other'",
+            "description": "Type d’application Application Insights.",
+            "source": {
+              "kind": "property",
+              "field": "applicationType"
+            },
+            "moduleParameter": "applicationType"
+          },
+          {
+            "name": "samplingPercentage",
+            "type": "int",
+            "description": "Pourcentage d’échantillonnage des données de télémétrie.",
+            "source": {
+              "kind": "property",
+              "field": "samplingPercentage"
+            },
+            "moduleParameter": "samplingPercentage"
+          },
+          {
+            "name": "retentionInDays",
+            "type": "30 | 60 | 90 | 120 | 180 | 270 | 365 | 550 | 730",
+            "description": "Durée de rétention des données en jours.",
+            "source": {
+              "kind": "constant",
+              "value": 365
+            },
+            "moduleParameter": "retentionInDays"
+          },
+          {
+            "name": "disableIpMasking",
+            "type": "bool",
+            "description": "Indique si le masquage des adresses IP est désactivé.",
+            "source": {
+              "kind": "constant",
+              "value": true
+            },
+            "moduleParameter": "disableIpMasking"
+          },
+          {
+            "name": "disableLocalAuth",
+            "type": "bool",
+            "description": "Indique si l’authentification locale est désactivée.",
+            "source": {
+              "kind": "property",
+              "field": "disableLocalAuth"
+            },
+            "moduleParameter": "disableLocalAuth"
+          },
+          {
+            "name": "publicNetworkAccessForIngestion",
+            "type": "'Enabled' | 'Disabled'",
+            "description": "Accès réseau explicite pour l’ingestion.",
+            "source": {
+              "kind": "constant",
+              "value": "Enabled"
+            },
+            "moduleParameter": "publicNetworkAccessForIngestion"
+          },
+          {
+            "name": "publicNetworkAccessForQuery",
+            "type": "'Enabled' | 'Disabled'",
+            "description": "Accès réseau explicite pour les requêtes.",
+            "source": {
+              "kind": "constant",
+              "value": "Enabled"
+            },
+            "moduleParameter": "publicNetworkAccessForQuery"
+          },
+          {
+            "name": "tags",
+            "type": "object",
+            "description": "Tags effectifs du composant Application Insights.",
+            "source": {
+              "kind": "resource",
+              "field": "tags"
+            },
+            "moduleParameter": "tags"
+          },
+          {
+            "name": "diagnosticSettings",
+            "type": "diagnosticSettingConfig[]",
+            "description": "Paramètres de diagnostic du composant Application Insights.",
+            "source": {
+              "kind": "diagnostics",
+              "field": "logs"
+            },
+            "moduleParameter": "diagnosticSettings"
+          }
+        ]
+      },
+      "mainStatements": [
+        {
+          "order": 70,
+          "sectionComment": "Groupe de ressources principal : télémétrie applicative.",
+          "template": "module appiMainModule '{{moduleReference}}' = if (appiMain.deploy && logMain.deploy) {\n  name: 'appiMain-${uniqueString(appiMain.name)}'\n  scope: rg_main\n  params: {\n    name: appiMain.name\n    location: appiMain.location\n    applicationType: appiMain.applicationType\n    workspaceResourceId: resourceId(\n      target.subscriptionId,\n      resourceGroups.main.name,\n      'Microsoft.OperationalInsights/workspaces',\n      logMain.name\n    )\n    samplingPercentage: appiMain.samplingPercentage\n    retentionInDays: appiMain.retentionInDays\n    disableIpMasking: appiMain.disableIpMasking\n    disableLocalAuth: appiMain.disableLocalAuth\n    publicNetworkAccessForIngestion: appiMain.publicNetworkAccessForIngestion\n    publicNetworkAccessForQuery: appiMain.publicNetworkAccessForQuery\n    tags: appiMain.tags\n    diagnosticSettings: [\n      for setting in appiMain.diagnosticSettings: {\n        name: setting.name\n        workspaceResourceId: resourceId(\n          target.subscriptionId,\n          resourceGroups.main.name,\n          'Microsoft.OperationalInsights/workspaces',\n          logMain.name\n        )\n        logAnalyticsDestinationType: setting.logAnalyticsDestinationType\n        logCategoriesAndGroups: [\n          {\n            categoryGroup: setting.logCategoryGroup\n            enabled: true\n          }\n        ]\n        metricCategories: [\n          {\n            category: setting.metricCategory\n            enabled: true\n          }\n        ]\n      }\n    ]\n    enableTelemetry: false\n  }\n  dependsOn: [\n    logMainModule\n  ]\n}"
+        }
+      ],
+      "diagnosticDestination": {
+        "componentCode": "core",
+        "resourceType": "LogAnalyticsWorkspace",
+        "logicalName": "main"
+      }
+    }
+  },
+  "deprecations": [],
+  "privateDnsZones": [],
+  "requiredNetworkRules": [],
+  "recommendedAlerts": [],
+  "pricing": {
+    "source": "azure-retail-prices",
+    "meters": [
+      {
+        "serviceName": "Azure Monitor",
+        "productName": "Application Insights",
+        "meterName": "Data processed"
+      }
+    ],
+    "assumptions": [],
+    "estimated": false,
+    "unestimatedReason": "Aucun scénario tarifaire par défaut n’est estimé pour le profil du pilote."
+  },
+  "drift": []
+}

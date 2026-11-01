@@ -28,7 +28,7 @@ param acrMain = {
   acrSku: 'Standard'
   adminUserEnabled: false
   publicNetworkAccess: 'Enabled'
-  networkRuleSetDefaultAction: 'Deny'
+  networkRuleSetDefaultAction: 'Allow'
   anonymousPullEnabled: false
   tags: {
     costCenter: 'ecommerce'

@@ -26,6 +26,31 @@ public sealed class CatalogSchemaTests
     }
 
     [Fact]
+    public void DraftPilotPatchDefinesDeclarativeBicepMetadata()
+    {
+        var catalog = CatalogLoader.Load(typeof(CatalogLoader).Assembly)
+            .GetVersion("2026.10-pilot.6");
+
+        Assert.NotNull(catalog);
+        Assert.Equal("draft", catalog!.Status);
+        var registry = catalog.GetResourceType("ContainerRegistry");
+        Assert.NotNull(registry);
+        Assert.True(registry!.Definition.GetProperty("generation").GetProperty("Bicep")
+            .TryGetProperty("symbol", out _));
+        Assert.Contains(catalog.Roles, role => role.Name == "Container Apps Contributor"
+            && role.DefinitionId == "358470bc-b998-42bd-ab17-a7e34c199c0f");
+        Assert.Equal("2026.10-pilot.5", CatalogLoader.Load(typeof(CatalogLoader).Assembly).LatestPublished?.Version);
+        var app = catalog.GetResourceType("ContainerApp")!.Definition
+            .GetProperty("generation").GetProperty("Bicep").GetProperty("config");
+        var cpu = app.GetProperty("fields").EnumerateArray()
+            .Single(field => field.GetProperty("name").GetString() == "cpu");
+        Assert.Equal("numberToString", cpu.GetProperty("transform").GetString());
+        var database = catalog.GetResourceType("SqlServer")!.Definition
+            .GetProperty("generation").GetProperty("Bicep").GetProperty("embeddedChildren");
+        Assert.Equal("databases", Assert.Single(database.EnumerateArray()).GetProperty("collection").GetString());
+    }
+
+    [Fact]
     public void CatalogVersionSchemaAcceptsPatchReleaseOfPilot()
     {
         var schema = JsonSchema.FromText(File.ReadAllText(Path.Combine(CatalogRoot, "schema", "catalog-version.schema.json")));

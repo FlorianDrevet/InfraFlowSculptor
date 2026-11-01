@@ -119,3 +119,7 @@
 | 2026-11-01 09:59 | Codex | `R-05` blocage résolu | docs/plan/revues/R-05-resolution-20261101.md |
 | 2026-11-01 09:59 | Codex | `R-05` auto-validée | R-05-autovalidation.md |
 | 2026-11-01 11:33 | Codex | `J0-21` terminée | commit `9a24795` |
+| 2026-11-01 12:00 | Codex | `J0-22` blocage confirmé | docs/plan/revues/J0-22-blocage-diagnostics-20261101.md |
+| 2026-11-01 13:57 | Codex | `J0-22` blocage résolu | docs/plan/revues/J0-21b-correctif-diagnostics-20261101.md |
+| 2026-11-01 14:09 | Codex | `J0-22` blocage confirmé | docs/plan/revues/J0-22-blocage-metadonnees-bicep-20261101.md |
+| 2026-11-01 17:39 | Codex | `J0-22` blocage résolu | docs/plan/revues/J0-22-blocage-metadonnees-bicep-20261101.md |

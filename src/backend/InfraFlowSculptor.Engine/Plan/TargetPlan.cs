@@ -10,4 +10,5 @@ public sealed record TargetPlan(
     IReadOnlyList<PipelineSecretPlan> ExpectedSecrets,
     IReadOnlyList<DataAccessPlan> DataAccess,
     IReadOnlyList<RemovedResourcePlan> Removed,
+    IReadOnlyList<DiagnosticSettingPlan> DiagnosticSettings,
     ReleaseDataPlan Release);

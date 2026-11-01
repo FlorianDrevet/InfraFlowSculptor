@@ -146,7 +146,24 @@ public sealed record TargetPlan(
     IReadOnlyList<PipelineSecretPlan> ExpectedSecrets,
     IReadOnlyList<DataAccessPlan> DataAccess,
     IReadOnlyList<RemovedResourcePlan> Removed,    // information ; la référence au déploiement est l'unité elle-même
+    IReadOnlyList<DiagnosticSettingPlan> DiagnosticSettings, // réglages résolus depuis les liaisons Diagnostics
     ReleaseDataPlan Release);                      // contenu de release.<cible>.json (DT-17)
+
+public sealed record DiagnosticSettingPlan(
+    string SourceResourceType, string SourceLogicalName, string SourceName, string Name,
+    DiagnosticDestinationPlan Destination,
+    string? LogCategoryGroup, string? MetricCategory,
+    string LogAnalyticsDestinationType, IReadOnlyList<string> ExcludedCategories);
+
+public sealed record DiagnosticDestinationPlan(
+    string ComponentCode, string TargetCode, string ResourceType, string LogicalName,
+    string? Name, string? ResourceGroupName, Guid SubscriptionId, string? ResourceId,
+    bool IsExisting, bool IsExternal);
+
+public sealed record ResourceDependencyPlan(
+    string Kind, string ComponentCode, string TargetCode, string ResourceType, string LogicalName,
+    string? Name, string? ResourceGroupName, Guid SubscriptionId, string? ResourceId,
+    bool IsExisting, bool IsExternal, bool CreatesDeploymentDependency);
 ```
 
 Règles de construction :
@@ -154,6 +171,26 @@ Règles de construction :
   ressources par (nom logique, type) ; propriétés dans l'ordre du descripteur ; attributions par (principal,
   rôle, portée). Les dictionnaires ne sont jamais énumérés sans tri.
 - Les valeurs sont exprimées dans le vocabulaire Azure du descripteur (`generation.<Langage>.map`).
+- Le builder transforme les liens Diagnostics résolus en `DiagnosticSettingPlan` ordonnés. L'émetteur ne lit jamais
+  `WiringResult`; la destination locale ou externe est portée par le plan.
+- `ResourcePlan.Dependencies` matérialise chaque liaison sortante résolue vers sa ressource cible, avec sa cible réelle
+  (y compris les composants `Single`), son nom, sa portée ARM, son caractère existant/externe et l'indication de
+  dépendance de déploiement. Les références externes nécessaires à une ressource enfant incluent aussi son parent
+  déclaré par le catalogue, afin que l'émetteur puisse former une déclaration `existing` imbriquée sans relire les liens.
+- Pour les versions de catalogue qui décrivent `diagnostics.settings`, le builder résout les réglages par ces
+  métadonnées. Les versions publiées avant `.6`, qui ne possèdent pas ce champ, conservent une compatibilité limitée aux
+  valeurs de diagnostic du pilote (`allLogs`, `AllMetrics`, `Dedicated`; Container App : métriques seulement). Cette
+  table de compatibilité ne s'applique pas aux versions qui portent les réglages dans le catalogue.
+- Pour le profil de référence, les réglages standards reprennent les valeurs publiées dans les fichiers
+  [`core/infra/main.dev.bicepparam`](../../reference/pilot/bicep-azdo/core/infra/main.dev.bicepparam),
+  [`data/infra/main.dev.bicepparam`](../../reference/pilot/bicep-azdo/data/infra/main.dev.bicepparam) et
+  [`orders/infra/main.dev.bicepparam`](../../reference/pilot/bicep-azdo/orders/infra/main.dev.bicepparam) :
+  `allLogs`, `AllMetrics` et `Dedicated`; Container App n'envoie que `AllMetrics`.
+- Le modèle de lien ne persiste pas encore `excludedCategories`. Le plan porte donc une liste vide; les exclusions
+  configurables restent hors de cette tranche et ne sont pas présentées comme prises en charge.
+- Les relations sortantes des ressources sont matérialisées dans `ResourcePlan.Dependencies` à partir du câblage résolu.
+  Chaque relation conserve sa ressource cible, sa cible réelle, sa portée ARM et ses indicateurs existant/externe et
+  dépendance de déploiement. L'émetteur n'accède pas à `WiringResult`.
 - Le plan est sérialisable en JSON canonique ; son empreinte sert au résumé des changements et au cache.
 
 ## 5. Émetteurs
@@ -170,7 +207,16 @@ Règles communes : en-tête de [RG-GEN-08](../specs/21-generation-et-revisions.m
 (`caApi`), formatage officiel. Le manifeste (`.ifs/manifest.json`) n'est **pas** produit par la génération :
 il est écrit par la publication, par destination ([RG-PUB-08](../specs/24-depots-et-publication.md)).
 
-### 5.1 Vérité de sortie
+### 5.1 Génération Bicep déclarative
+
+Les descripteurs de la version courante du catalogue portent les mappages de propriétés, les transformations de
+valeurs, les valeurs Bicep additionnelles, les expressions de sortie, les formes de ressource imbriquée et les modèles
+de déclarations `existing`. Les contrats des attributions de rôle et les identifiants de rôles proviennent aussi du
+catalogue chargé. `MainFileEmitter` développe ces déclarations et expressions génériques à partir du plan et des
+métadonnées; il ne branche pas sur des types de ressources. Une nouvelle forme doit être décrite par le schéma et le
+catalogue avant d'être émise.
+
+### 5.2 Vérité de sortie
 
 `reference/pilot/bicep-azdo/` (phase P) puis `reference/shop/bicep-azdo/` (jalon 1) contiennent l'arborescence
 **exacte** attendue. Le test `Emitters.Tests/ReferenceOutputTests` génère le projet de référence et compare

@@ -1,0 +1,8 @@
+{
+  "version": "2026.10-pilot.6",
+  "status": "draft",
+  "publishedAt": "2026-11-01",
+  "supportEndsAt": null,
+  "notes": "Métadonnées Bicep déclaratives, catalogue des rôles et relations de ressources du plan; correctif amont de J0-22.",
+  "verifiedAgainstDocsOn": "2026-11-01"
+}

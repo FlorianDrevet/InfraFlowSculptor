@@ -12,6 +12,7 @@ public sealed record ResourcePlan(
     IReadOnlyList<ResourcePropertyPlan> Properties,
     IReadOnlyList<ResourcePropertyPlan> FixedValues,
     IReadOnlyList<ResourceChildPlan> Children,
+    IReadOnlyList<ResourceDependencyPlan> Dependencies,
     IReadOnlyList<ResourceIdentityPlan> Identities,
     ExposurePlan? Exposure,
     IReadOnlyDictionary<string, string> Tags,

@@ -14,6 +14,7 @@ public sealed class CatalogVersion
         ImmutableArray<CatalogResourceTypeDescriptor> resourceTypes,
         ImmutableArray<CatalogBuildProfileDescriptor> buildProfiles,
         ImmutableArray<CatalogPipelineStepDescriptor> pipelineSteps,
+        ImmutableArray<CatalogRole> roles,
         ImmutableArray<CatalogRegion> regions,
         CatalogVersionPins pins,
         string fingerprint)
@@ -27,6 +28,7 @@ public sealed class CatalogVersion
         ResourceTypes = resourceTypes;
         BuildProfiles = buildProfiles;
         PipelineSteps = pipelineSteps;
+        Roles = roles;
         Regions = regions;
         Pins = pins;
         Fingerprint = fingerprint;
@@ -49,6 +51,8 @@ public sealed class CatalogVersion
     public ImmutableArray<CatalogBuildProfileDescriptor> BuildProfiles { get; }
 
     public ImmutableArray<CatalogPipelineStepDescriptor> PipelineSteps { get; }
+
+    public ImmutableArray<CatalogRole> Roles { get; }
 
     public ImmutableArray<CatalogRegion> Regions { get; }
 

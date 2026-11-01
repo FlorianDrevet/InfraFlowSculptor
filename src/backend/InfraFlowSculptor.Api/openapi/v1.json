@@ -9782,6 +9782,115 @@
           "Direct"
         ]
       },
+      "DiagnosticDestinationPlan": {
+        "required": [
+          "componentCode",
+          "targetCode",
+          "resourceType",
+          "logicalName",
+          "name",
+          "resourceGroupName",
+          "subscriptionId",
+          "resourceId",
+          "isExisting",
+          "isExternal"
+        ],
+        "type": "object",
+        "properties": {
+          "componentCode": {
+            "type": "string"
+          },
+          "targetCode": {
+            "type": "string"
+          },
+          "resourceType": {
+            "type": "string"
+          },
+          "logicalName": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "resourceGroupName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subscriptionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resourceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isExisting": {
+            "type": "boolean"
+          },
+          "isExternal": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DiagnosticSettingPlan": {
+        "required": [
+          "sourceResourceType",
+          "sourceLogicalName",
+          "sourceName",
+          "name",
+          "destination",
+          "logCategoryGroup",
+          "metricCategory",
+          "logAnalyticsDestinationType",
+          "excludedCategories"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceResourceType": {
+            "type": "string"
+          },
+          "sourceLogicalName": {
+            "type": "string"
+          },
+          "sourceName": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "destination": {
+            "$ref": "#/components/schemas/DiagnosticDestinationPlan"
+          },
+          "logCategoryGroup": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "metricCategory": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "logAnalyticsDestinationType": {
+            "type": "string"
+          },
+          "excludedCategories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "EffectiveProjectPermissionsResponse": {
         "required": [
           "memberId",
@@ -12614,6 +12723,71 @@
           "Blocked"
         ]
       },
+      "ResourceDependencyPlan": {
+        "required": [
+          "kind",
+          "componentCode",
+          "targetCode",
+          "resourceType",
+          "logicalName",
+          "name",
+          "resourceGroupName",
+          "subscriptionId",
+          "resourceId",
+          "isExisting",
+          "isExternal",
+          "createsDeploymentDependency"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "componentCode": {
+            "type": "string"
+          },
+          "targetCode": {
+            "type": "string"
+          },
+          "resourceType": {
+            "type": "string"
+          },
+          "logicalName": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "resourceGroupName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subscriptionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resourceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isExisting": {
+            "type": "boolean"
+          },
+          "isExternal": {
+            "type": "boolean"
+          },
+          "createsDeploymentDependency": {
+            "type": "boolean"
+          }
+        }
+      },
       "ResourceGroupPlan": {
         "required": [
           "logicalName",
@@ -13059,6 +13233,7 @@
           "properties",
           "fixedValues",
           "children",
+          "dependencies",
           "identities",
           "exposure",
           "tags",
@@ -13116,6 +13291,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ResourceChildPlan"
+            }
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceDependencyPlan"
             }
           },
           "identities": {
@@ -13940,6 +14121,7 @@
           "expectedSecrets",
           "dataAccess",
           "removed",
+          "diagnosticSettings",
           "release"
         ],
         "type": "object",
@@ -13993,6 +14175,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RemovedResourcePlan"
+            }
+          },
+          "diagnosticSettings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiagnosticSettingPlan"
             }
           },
           "release": {

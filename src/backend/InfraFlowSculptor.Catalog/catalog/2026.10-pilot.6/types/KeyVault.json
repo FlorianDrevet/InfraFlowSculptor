@@ -1,0 +1,451 @@
+{
+  "type": "KeyVault",
+  "labels": {
+    "fr": "Coffre de clés",
+    "en": "Key Vault"
+  },
+  "category": "security",
+  "icon": "key-vault",
+  "armType": "Microsoft.KeyVault/vaults",
+  "availableFrom": "lot1",
+  "documentationUrl": "https://learn.microsoft.com/en-us/azure/templates/microsoft.keyvault/vaults",
+  "verifiedAgainstDocsOn": "2026-10-27",
+  "naming": {
+    "abbreviation": "kv",
+    "allowed": "^[a-zA-Z][a-zA-Z0-9-]{1,22}[a-zA-Z0-9]$",
+    "case": "lower",
+    "separators": [
+      "-"
+    ],
+    "forbidConsecutiveSeparators": true,
+    "minLength": 3,
+    "maxLength": 24,
+    "firstChar": "letter",
+    "lastChar": "alphanumeric",
+    "uniqueness": "global",
+    "availabilityDomain": "vault.azure.net"
+  },
+  "properties": [
+    {
+      "name": "sku",
+      "labels": {
+        "fr": "SKU",
+        "en": "SKU"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "standard",
+      "values": [
+        "standard",
+        "premium"
+      ]
+    },
+    {
+      "name": "purgeProtection",
+      "labels": {
+        "fr": "Protection contre la purge",
+        "en": "Purge protection"
+      },
+      "kind": "boolean",
+      "overridable": true,
+      "default": true,
+      "irreversible": {
+        "from": false,
+        "to": true
+      }
+    },
+    {
+      "name": "softDeleteRetentionInDays",
+      "labels": {
+        "fr": "Rétention après suppression (jours)",
+        "en": "Soft-delete retention (days)"
+      },
+      "kind": "integer",
+      "overridable": false,
+      "default": 90,
+      "lockedAfterPublish": true,
+      "minimum": 7,
+      "maximum": 90
+    },
+    {
+      "name": "exposure",
+      "labels": {
+        "fr": "Exposition",
+        "en": "Exposure"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "Public",
+      "values": [
+        "Public",
+        "Restricted"
+      ]
+    },
+    {
+      "name": "allowedIpRanges",
+      "labels": {
+        "fr": "Plages IP autorisées",
+        "en": "Allowed IP ranges"
+      },
+      "kind": "array",
+      "overridable": true,
+      "default": [],
+      "condition": "requires:exposure=Restricted",
+      "items": {
+        "kind": "string",
+        "format": "ipv4Cidr"
+      },
+      "maxItems": 100
+    }
+  ],
+  "fixedValues": [
+    {
+      "name": "rbacAuthorization",
+      "value": true,
+      "labels": {
+        "fr": "Autorisation RBAC",
+        "en": "RBAC authorization"
+      }
+    },
+    {
+      "name": "softDeleteEnabled",
+      "value": true,
+      "labels": {
+        "fr": "Suppression réversible",
+        "en": "Soft delete"
+      }
+    }
+  ],
+  "children": [],
+  "identities": {
+    "system": false,
+    "userAssignedMax": 0
+  },
+  "links": {
+    "asSource": [],
+    "asTarget": [
+      "Access",
+      "SecretRead"
+    ],
+    "required": []
+  },
+  "outputs": [
+    {
+      "name": "vaultUri",
+      "description": "URI du coffre.",
+      "sensitive": false,
+      "computableFromName": false
+    },
+    {
+      "name": "name",
+      "description": "Nom du coffre.",
+      "sensitive": false,
+      "computableFromName": true
+    },
+    {
+      "name": "id",
+      "description": "Identifiant de la ressource.",
+      "sensitive": false,
+      "computableFromName": false
+    }
+  ],
+  "lifecycle": {
+    "family": "data"
+  },
+  "roles": [
+    "Key Vault Administrator",
+    "Key Vault Secrets Officer",
+    "Key Vault Secrets User",
+    "Key Vault Certificates Officer",
+    "Key Vault Certificate User",
+    "Key Vault Crypto Officer",
+    "Key Vault Crypto User",
+    "Key Vault Crypto Service Encryption User",
+    "Key Vault Reader"
+  ],
+  "roleEquivalences": {
+    "secretRead": [
+      "Key Vault Secrets User",
+      "Key Vault Secrets Officer",
+      "Key Vault Administrator"
+    ]
+  },
+  "dataAccess": {
+    "supported": false,
+    "levels": [],
+    "databaseEngine": null
+  },
+  "exposure": {
+    "modes": [
+      "Public",
+      "Restricted"
+    ],
+    "privateGroupIds": [],
+    "privateDnsZones": [],
+    "conditions": []
+  },
+  "diagnostics": {
+    "supported": true,
+    "settings": {
+      "logCategoryGroup": "allLogs",
+      "metricCategory": "AllMetrics",
+      "destinationType": "Dedicated"
+    }
+  },
+  "applicationSettings": {
+    "destination": "none"
+  },
+  "languageSupport": {
+    "Bicep": "full",
+    "Terraform": "none",
+    "Pulumi": "none"
+  },
+  "generation": {
+    "Bicep": {
+      "requiredResourceGroups": ["main"],
+      "module": "br/public:avm/res/key-vault/vault:0.14.0",
+      "versionPin": "0.14.0",
+      "map": {
+        "sku": "sku",
+        "purgeProtection": "enablePurgeProtection",
+        "softDeleteRetentionInDays": "softDeleteRetentionInDays",
+        "rbacAuthorization": "enableRbacAuthorization"
+      },
+      "parameterName": "kvMain",
+      "symbol": "kv",
+      "emissionOrder": 30,
+      "sectionComment": "Groupe de ressources principal : secrets applicatifs.",
+      "existing": {
+        "apiVersion": "2024-11-01",
+        "symbol": "coreKeyVault",
+        "parameterName": "coreKeyVault",
+        "order": 30,
+        "description": "Key Vault du composant core.",
+        "configType": "resourceReferenceConfig"
+      },
+      "config": {
+        "typeName": "kvMainConfig",
+        "description": "Paramètres du Key Vault principal.",
+        "order": 30,
+        "fields": [
+          {
+            "name": "deploy",
+            "type": "bool",
+            "description": "Indique si le Key Vault est déployé.",
+            "source": {
+              "kind": "resource",
+              "field": "present"
+            }
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "description": "Nom Azure explicite du Key Vault.",
+            "source": {
+              "kind": "resource",
+              "field": "name"
+            },
+            "moduleParameter": "name"
+          },
+          {
+            "name": "location",
+            "type": "string",
+            "description": "Région Azure du Key Vault.",
+            "source": {
+              "kind": "resource",
+              "field": "location"
+            },
+            "moduleParameter": "location"
+          },
+          {
+            "name": "enablePurgeProtection",
+            "type": "bool",
+            "description": "Indique si la protection contre la purge est activée.",
+            "source": {
+              "kind": "property",
+              "field": "purgeProtection"
+            },
+            "moduleParameter": "enablePurgeProtection"
+          },
+          {
+            "name": "enableRbacAuthorization",
+            "type": "bool",
+            "description": "Indique si l’autorisation basée sur RBAC est activée.",
+            "source": {
+              "kind": "constant",
+              "value": true
+            },
+            "moduleParameter": "enableRbacAuthorization"
+          },
+          {
+            "name": "enableSoftDelete",
+            "type": "bool",
+            "description": "Indique si la suppression réversible est activée.",
+            "source": {
+              "kind": "constant",
+              "value": true
+            },
+            "moduleParameter": "enableSoftDelete"
+          },
+          {
+            "name": "softDeleteRetentionInDays",
+            "type": "int",
+            "description": "Durée de rétention de la suppression réversible en jours.",
+            "source": {
+              "kind": "property",
+              "field": "softDeleteRetentionInDays"
+            },
+            "moduleParameter": "softDeleteRetentionInDays"
+          },
+          {
+            "name": "sku",
+            "type": "'standard' | 'premium'",
+            "description": "SKU explicite du Key Vault.",
+            "source": {
+              "kind": "property",
+              "field": "sku"
+            },
+            "moduleParameter": "sku"
+          },
+          {
+            "name": "publicNetworkAccess",
+            "type": "'Enabled' | 'Disabled'",
+            "description": "Accès réseau public explicite du Key Vault.",
+            "source": {
+              "kind": "constant",
+              "value": "Enabled"
+            },
+            "moduleParameter": "publicNetworkAccess"
+          },
+          {
+            "name": "tags",
+            "type": "object",
+            "description": "Tags effectifs du Key Vault.",
+            "source": {
+              "kind": "resource",
+              "field": "tags"
+            },
+            "moduleParameter": "tags"
+          },
+          {
+            "name": "diagnosticSettings",
+            "type": "diagnosticSettingConfig[]",
+            "description": "Paramètres de diagnostic du Key Vault.",
+            "source": {
+              "kind": "diagnostics",
+              "field": "logs"
+            },
+            "moduleParameter": "diagnosticSettings"
+          },
+          {
+            "name": "exposure",
+            "type": "'Public' | 'Restricted'",
+            "description": "Mode d’exposition réseau appliqué à la cible.",
+            "source": {
+              "kind": "exposure",
+              "field": "exposure"
+            },
+            "includeWhen": "hasRestrictedExposure"
+          },
+          {
+            "name": "allowedIpRanges",
+            "type": "string[]",
+            "description": "Plages CIDR autorisées pour une exposition restreinte.",
+            "source": {
+              "kind": "exposure",
+              "field": "allowedIpRanges"
+            },
+            "includeWhen": "hasRestrictedExposure"
+          }
+        ]
+      },
+      "mainStatements": [
+        {
+          "order": -10,
+          "template": "var keyVaultSecretsOfficerRoleId = '{{role:Key Vault Secrets Officer}}'"
+        },
+        {
+          "order": 80,
+          "sectionComment": "Groupe de ressources principal : secrets applicatifs.",
+          "template": "module kvMainModule '{{moduleReference}}' = if (kvMain.deploy && logMain.deploy) {\n  name: 'kvMain-${uniqueString(kvMain.name)}'\n  scope: rg_main\n  params: {\n    name: kvMain.name\n    location: kvMain.location\n    enablePurgeProtection: kvMain.enablePurgeProtection\n    enableRbacAuthorization: kvMain.enableRbacAuthorization\n    enableSoftDelete: kvMain.enableSoftDelete\n    softDeleteRetentionInDays: kvMain.softDeleteRetentionInDays\n    sku: kvMain.sku\n    publicNetworkAccess: kvMain.publicNetworkAccess\n    accessPolicies: []\n    secrets: []\n    keys: []\n    tags: kvMain.tags\n    diagnosticSettings: [\n      for setting in kvMain.diagnosticSettings: {\n        name: setting.name\n        workspaceResourceId: resourceId(\n          target.subscriptionId,\n          resourceGroups.main.name,\n          'Microsoft.OperationalInsights/workspaces',\n          logMain.name\n        )\n        logAnalyticsDestinationType: setting.logAnalyticsDestinationType\n        logCategoriesAndGroups: [\n          {\n            categoryGroup: setting.logCategoryGroup\n            enabled: true\n          }\n        ]\n        metricCategories: [\n          {\n            category: setting.metricCategory\n            enabled: true\n          }\n        ]\n      }\n    ]\n    enableTelemetry: false\n  }\n  dependsOn: [\n    logMainModule\n  ]\n}",
+          "restrictedTemplate": "module kvMainModule '{{moduleReference}}' = if (kvMain.deploy && logMain.deploy) {\n  name: 'kvMain-${uniqueString(kvMain.name)}'\n  scope: rg_main\n  params: {\n    name: kvMain.name\n    location: kvMain.location\n    enablePurgeProtection: kvMain.enablePurgeProtection\n    enableRbacAuthorization: kvMain.enableRbacAuthorization\n    enableSoftDelete: kvMain.enableSoftDelete\n    softDeleteRetentionInDays: kvMain.softDeleteRetentionInDays\n    sku: kvMain.sku\n    publicNetworkAccess: kvMain.publicNetworkAccess\n    networkAcls: {\n      bypass: kvMain.exposure == 'Restricted' ? 'None' : 'AzureServices'\n      defaultAction: kvMain.exposure == 'Restricted' ? 'Deny' : 'Allow'\n      ipRules: [\n        for ipRange in kvMain.allowedIpRanges: {\n          value: ipRange\n        }\n      ]\n      virtualNetworkRules: []\n    }\n    accessPolicies: []\n    secrets: []\n    keys: []\n    tags: kvMain.tags\n    diagnosticSettings: [\n      for setting in kvMain.diagnosticSettings: {\n        name: setting.name\n        workspaceResourceId: resourceId(\n          target.subscriptionId,\n          resourceGroups.main.name,\n          'Microsoft.OperationalInsights/workspaces',\n          logMain.name\n        )\n        logAnalyticsDestinationType: setting.logAnalyticsDestinationType\n        logCategoriesAndGroups: [\n          {\n            categoryGroup: setting.logCategoryGroup\n            enabled: true\n          }\n        ]\n        metricCategories: [\n          {\n            category: setting.metricCategory\n            enabled: true\n          }\n        ]\n      }\n    ]\n    enableTelemetry: false\n  }\n  dependsOn: [\n    logMainModule\n  ]\n}"
+        },
+        {
+          "order": 90,
+          "template": "module deploymentSecretsOfficer './key-vault-role-assignment.bicep' = if (kvMain.deploy && !empty(deploymentPrincipalId)) {\n  name: 'deploymentSecretsOfficer-${target.code}-${uniqueString(kvMain.name)}'\n  scope: resourceGroup(target.subscriptionId, resourceGroups.main.name)\n  params: {\n    keyVaultName: kvMain.name\n    principalId: deploymentPrincipalId\n    roleDefinitionId: subscriptionResourceId(\n      target.subscriptionId,\n      'Microsoft.Authorization/roleDefinitions',\n      keyVaultSecretsOfficerRoleId\n    )\n  }\n  dependsOn: [\n    kvMainModule\n  ]\n}"
+        }
+      ],
+      "deliveryParameters": [
+        {
+          "name": "deploymentPrincipalId",
+          "description": "Object ID de l’identité de déploiement autorisée à écrire les secrets du Key Vault core."
+        }
+      ],
+      "helpers": [
+        {
+          "fileName": "key-vault-role-assignment.bicep",
+          "header": "Module ciblé pour déployer une attribution à l’échelle d’un Key Vault.",
+          "template": "targetScope = 'resourceGroup'\n\n@description('Nom du Key Vault qui reçoit le rôle.')\nparam keyVaultName string\n\n@description('Object ID du principal auquel le rôle est attribué.')\nparam principalId string\n\n@description('ID de définition du rôle intégré.')\nparam roleDefinitionId string\n\nvar keyVaultSecretsOfficerRoleId = '{{role:Key Vault Secrets Officer}}'\n\nresource keyVault '{{resource:KeyVault}}' existing = {\n  name: keyVaultName\n}\n\nresource deploymentSecretsOfficer 'Microsoft.Authorization/roleAssignments@{{roleAssignmentApiVersion}}' = {\n  name: guid(keyVault.id, principalId, keyVaultSecretsOfficerRoleId)\n  scope: keyVault\n  properties: {\n    roleDefinitionId: roleDefinitionId\n    principalId: principalId\n    principalType: 'ServicePrincipal'\n  }\n}"
+        }
+      ],
+      "requirements": [
+        {
+          "when": {
+            "property": "exposure",
+            "equals": "Restricted"
+          },
+          "property": "exposure",
+          "allowedValues": [
+            "Public",
+            "Restricted"
+          ],
+          "reason": "L’émetteur Key Vault ne prend en charge que Public et Restricted."
+        },
+        {
+          "when": {
+            "property": "exposure",
+            "equals": "Restricted"
+          },
+          "property": "allowedIpRanges",
+          "minItems": 1,
+          "reason": "Une exposition restreinte de Key Vault exige au moins une plage CIDR autorisée."
+        }
+      ],
+      "exposureSupport": {
+        "modes": [
+          "Public",
+          "Restricted"
+        ],
+        "reason": "Les points de terminaison privés Key Vault ne sont pas générés dans cette version Bicep."
+      },
+      "diagnosticDestination": {
+        "componentCode": "core",
+        "resourceType": "LogAnalyticsWorkspace",
+        "logicalName": "main"
+      }
+    }
+  },
+  "deprecations": [],
+  "privateDnsZones": [
+    {
+      "groupId": "vault",
+      "zoneName": "privatelink.vaultcore.azure.net"
+    }
+  ],
+  "requiredNetworkRules": [],
+  "recommendedAlerts": [],
+  "pricing": {
+    "source": "azure-retail-prices",
+    "meters": [
+      {
+        "serviceName": "Key Vault",
+        "productName": "Vaults",
+        "meterName": "Standard operations"
+      }
+    ],
+    "assumptions": [],
+    "estimated": false,
+    "unestimatedReason": "Aucun scénario tarifaire par défaut n’est estimé pour le profil du pilote."
+  },
+  "drift": []
+}

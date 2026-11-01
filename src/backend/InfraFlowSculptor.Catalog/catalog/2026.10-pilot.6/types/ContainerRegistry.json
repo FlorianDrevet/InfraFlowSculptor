@@ -1,0 +1,464 @@
+{
+  "type": "ContainerRegistry",
+  "labels": {
+    "fr": "Registre de conteneurs",
+    "en": "Container registry"
+  },
+  "category": "platform",
+  "icon": "container-registry",
+  "armType": "Microsoft.ContainerRegistry/registries",
+  "availableFrom": "lot1",
+  "documentationUrl": "https://learn.microsoft.com/azure/templates/microsoft.containerregistry/registries",
+  "verifiedAgainstDocsOn": "2026-10-27",
+  "naming": {
+    "abbreviation": "cr",
+    "allowed": "^[A-Za-z0-9]{5,50}$",
+    "case": "mixed",
+    "separators": [],
+    "forbidConsecutiveSeparators": true,
+    "minLength": 5,
+    "maxLength": 50,
+    "firstChar": "alphanumeric",
+    "lastChar": "alphanumeric",
+    "uniqueness": "global",
+    "availabilityDomain": "azurecr.io"
+  },
+  "properties": [
+    {
+      "name": "sku",
+      "labels": {
+        "fr": "SKU",
+        "en": "SKU"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "Standard",
+      "values": [
+        "Basic",
+        "Standard",
+        "Premium"
+      ]
+    },
+    {
+      "name": "zoneRedundancy",
+      "labels": {
+        "fr": "Redondance de zone",
+        "en": "Zone redundancy"
+      },
+      "kind": "boolean",
+      "overridable": false,
+      "default": false,
+      "lockedAfterPublish": true,
+      "condition": "requires:sku=Premium"
+    },
+    {
+      "name": "retentionPolicyDays",
+      "labels": {
+        "fr": "Rétention des manifestes non tagués (jours)",
+        "en": "Untagged manifest retention (days)"
+      },
+      "kind": "integer",
+      "overridable": true,
+      "default": 0,
+      "minimum": 0,
+      "maximum": 365,
+      "condition": "requires:sku=Premium"
+    },
+    {
+      "name": "roleAssignmentMode",
+      "labels": {
+        "fr": "Mode de permissions",
+        "en": "Role assignment mode"
+      },
+      "kind": "enum",
+      "overridable": false,
+      "default": "Registry",
+      "values": [
+        "Registry",
+        "Repository"
+      ],
+      "lockedAfterPublish": true
+    },
+    {
+      "name": "acrAdminUserEnabled",
+      "labels": {
+        "fr": "Activer l’utilisateur administrateur",
+        "en": "Enable admin user"
+      },
+      "kind": "boolean",
+      "overridable": true,
+      "default": false,
+      "description": "Valeur déconseillée; préférer une identité managée."
+    },
+    {
+      "name": "exposure",
+      "labels": {
+        "fr": "Exposition",
+        "en": "Exposure"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "Public",
+      "values": [
+        "Public",
+        "Restricted"
+      ]
+    },
+    {
+      "name": "allowedIpRanges",
+      "labels": {
+        "fr": "Plages IP autorisées",
+        "en": "Allowed IP ranges"
+      },
+      "kind": "array",
+      "overridable": true,
+      "default": [],
+      "condition": "requires:exposure=Restricted",
+      "items": {
+        "kind": "string",
+        "format": "ipv4Cidr"
+      },
+      "maxItems": 100
+    }
+  ],
+  "fixedValues": [
+    {
+      "name": "anonymousPullEnabled",
+      "value": false,
+      "labels": {
+        "fr": "Tirage anonyme",
+        "en": "Anonymous pull"
+      }
+    }
+  ],
+  "children": [],
+  "identities": {
+    "system": false,
+    "userAssignedMax": 0
+  },
+  "links": {
+    "asSource": [],
+    "asTarget": [
+      "ImagePull",
+      "Access"
+    ],
+    "required": []
+  },
+  "outputs": [
+    {
+      "name": "loginServer",
+      "description": "Nom DNS du registre.",
+      "sensitive": false,
+      "computableFromName": false
+    },
+    {
+      "name": "name",
+      "description": "Nom du registre.",
+      "sensitive": false,
+      "computableFromName": true
+    },
+    {
+      "name": "id",
+      "description": "Identifiant de la ressource.",
+      "sensitive": false,
+      "computableFromName": false
+    }
+  ],
+  "lifecycle": {
+    "family": "data"
+  },
+  "roles": [
+    "AcrPull",
+    "AcrPush",
+    "AcrDelete",
+    "Container Registry Repository Reader",
+    "Container Registry Repository Writer",
+    "Container Registry Repository Contributor",
+    "Reader"
+  ],
+  "roleEquivalences": {},
+  "dataAccess": {
+    "supported": false,
+    "levels": [],
+    "databaseEngine": null
+  },
+  "exposure": {
+    "modes": [
+      "Public",
+      "Restricted"
+    ],
+    "privateGroupIds": [],
+    "privateDnsZones": [],
+    "conditions": []
+  },
+  "diagnostics": {
+    "supported": true,
+    "settings": {
+      "logCategoryGroup": "allLogs",
+      "metricCategory": "AllMetrics",
+      "destinationType": "Dedicated"
+    }
+  },
+  "applicationSettings": {
+    "destination": "none"
+  },
+  "languageSupport": {
+    "Bicep": "full",
+    "Terraform": "none",
+    "Pulumi": "none"
+  },
+  "generation": {
+    "Bicep": {
+      "requiredResourceGroups": ["main"],
+      "module": "br/public:avm/res/container-registry/registry:0.13.0",
+      "versionPin": "0.13.0",
+      "map": {
+        "sku": "acrSku",
+        "retentionPolicyDays": "retentionPolicyDays",
+        "acrAdminUserEnabled": "acrAdminUserEnabled"
+      },
+      "parameterName": "acrMain",
+      "symbol": "acr",
+      "emissionOrder": 10,
+      "sectionComment": "Groupe de ressources principal : registre d’images partagé.",
+      "existing": {
+        "apiVersion": "2025-04-01",
+        "symbol": "platformRegistry",
+        "parameterName": "platformRegistry",
+        "order": 50,
+        "description": "Registre de conteneurs du composant platform.",
+        "configType": "resourceReferenceConfig"
+      },
+      "config": {
+        "typeName": "acrMainConfig",
+        "description": "Paramètres du registre de conteneurs partagé.",
+        "order": 10,
+        "fields": [
+          {
+            "name": "deploy",
+            "type": "bool",
+            "description": "Indique si le registre est déployé.",
+            "source": {
+              "kind": "resource",
+              "field": "present"
+            }
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "description": "Nom Azure explicite du registre.",
+            "source": {
+              "kind": "resource",
+              "field": "name"
+            }
+          },
+          {
+            "name": "location",
+            "type": "string",
+            "description": "Région Azure du registre.",
+            "source": {
+              "kind": "resource",
+              "field": "location"
+            }
+          },
+          {
+            "name": "acrSku",
+            "type": "'Basic' | 'Standard' | 'Premium'",
+            "description": "SKU du registre de conteneurs.",
+            "source": {
+              "kind": "property",
+              "field": "sku"
+            },
+            "moduleParameter": "acrSku"
+          },
+          {
+            "name": "adminUserEnabled",
+            "type": "bool",
+            "description": "Indique si le compte administrateur du registre est activé.",
+            "source": {
+              "kind": "property",
+              "field": "acrAdminUserEnabled"
+            },
+            "moduleParameter": "acrAdminUserEnabled"
+          },
+          {
+            "name": "publicNetworkAccess",
+            "type": "'Enabled' | 'Disabled'",
+            "description": "Accès réseau public explicite du registre.",
+            "source": {
+              "kind": "constant",
+              "value": "Enabled"
+            },
+            "moduleParameter": "publicNetworkAccess"
+          },
+          {
+            "name": "networkRuleSetDefaultAction",
+            "type": "'Allow' | 'Deny'",
+            "description": "Action réseau par défaut du registre quand aucune règle ne correspond.",
+            "source": {
+              "kind": "exposure",
+              "field": "mode"
+            },
+            "transform": "restrictedNetworkDefaultAction",
+            "moduleParameter": "networkRuleSetDefaultAction"
+          },
+          {
+            "name": "anonymousPullEnabled",
+            "type": "bool",
+            "description": "Indique si les tirages anonymes d’image sont activés.",
+            "source": {
+              "kind": "fixedValue",
+              "field": "anonymousPullEnabled"
+            },
+            "moduleParameter": "anonymousPullEnabled"
+          },
+          {
+            "name": "tags",
+            "type": "object",
+            "description": "Tags effectifs du registre.",
+            "source": {
+              "kind": "resource",
+              "field": "tags"
+            },
+            "moduleParameter": "tags"
+          },
+          {
+            "name": "diagnosticSettings",
+            "type": "object[]",
+            "description": "Paramètres de diagnostic du registre, vide car la cible shared n’est liée à aucun workspace environnemental.",
+            "source": {
+              "kind": "diagnostics",
+              "field": "logs"
+            },
+            "moduleParameter": "diagnosticSettings"
+          },
+          {
+            "name": "exposure",
+            "type": "'Public' | 'Restricted'",
+            "description": "Mode d’exposition réseau appliqué à la cible.",
+            "source": {
+              "kind": "exposure",
+              "field": "exposure"
+            },
+            "includeWhen": "hasRestrictedExposure"
+          },
+          {
+            "name": "allowedIpRanges",
+            "type": "string[]",
+            "description": "Plages CIDR autorisées pour une exposition restreinte.",
+            "source": {
+              "kind": "exposure",
+              "field": "allowedIpRanges"
+            },
+            "includeWhen": "hasRestrictedExposure"
+          }
+        ]
+      },
+      "mainStatements": [
+        {
+          "order": -10,
+          "template": "var acrPushRoleId = '{{role:AcrPush}}'"
+        },
+        {
+          "order": 20,
+          "sectionComment": "Groupe de ressources principal : registre d’images partagé.",
+          "template": "module acrMainModule '{{moduleReference}}' = if (acrMain.deploy) {\n  name: 'acrMain-${target.code}-${uniqueString(acrMain.name)}'\n  scope: rg_main\n  params: {\n    name: acrMain.name\n    location: acrMain.location\n    acrSku: acrMain.acrSku\n    acrAdminUserEnabled: acrMain.adminUserEnabled\n    anonymousPullEnabled: acrMain.anonymousPullEnabled\n    publicNetworkAccess: acrMain.publicNetworkAccess\n    networkRuleSetDefaultAction: acrMain.networkRuleSetDefaultAction\n    tags: acrMain.tags\n    diagnosticSettings: []\n    enableTelemetry: false\n  }\n}",
+          "restrictedTemplate": "module acrMainModule '{{moduleReference}}' = if (acrMain.deploy) {\n  name: 'acrMain-${target.code}-${uniqueString(acrMain.name)}'\n  scope: rg_main\n  params: {\n    name: acrMain.name\n    location: acrMain.location\n    acrSku: acrMain.acrSku\n    acrAdminUserEnabled: acrMain.adminUserEnabled\n    anonymousPullEnabled: acrMain.anonymousPullEnabled\n    publicNetworkAccess: acrMain.publicNetworkAccess\n    networkRuleSetDefaultAction: acrMain.networkRuleSetDefaultAction\n    networkRuleSetIpRules: [\n      for ipRange in acrMain.allowedIpRanges: {\n        action: 'Allow'\n        value: ipRange\n      }\n    ]\n    tags: acrMain.tags\n    diagnosticSettings: []\n    enableTelemetry: false\n  }\n}"
+        },
+        {
+          "order": 30,
+          "template": "module appDeliveryAcrPush './registry-role-assignment.bicep' = if (acrMain.deploy && !empty(appDeliveryPrincipalId)) {\n  name: 'appDeliveryAcrPush-${target.code}-${uniqueString(acrMain.name)}'\n  scope: resourceGroup(target.subscriptionId, resourceGroups.main.name)\n  params: {\n    registryName: acrMain.name\n    principalId: appDeliveryPrincipalId\n    roleDefinitionId: subscriptionResourceId(\n      target.subscriptionId,\n      'Microsoft.Authorization/roleDefinitions',\n      acrPushRoleId\n    )\n  }\n  dependsOn: [\n    acrMainModule\n  ]\n}"
+        }
+      ],
+      "deliveryParameters": [
+        {
+          "name": "appDeliveryPrincipalId",
+          "description": "Object ID de l’identité applicative Azure DevOps autorisée à publier dans le registre."
+        }
+      ],
+      "helpers": [
+        {
+          "fileName": "registry-role-assignment.bicep",
+          "header": "Module ciblé pour attribuer un rôle à l’échelle d’un registre ACR.",
+          "template": "targetScope = 'resourceGroup'\n\n@description('Nom du registre existant qui reçoit le rôle.')\nparam registryName string\n\n@description('Object ID du principal auquel le rôle est attribué.')\nparam principalId string\n\n@description('ID de définition du rôle intégré.')\nparam roleDefinitionId string\n\nvar acrPushRoleId = '{{role:AcrPush}}'\n\nresource registry '{{resource:ContainerRegistry}}' existing = {\n  name: registryName\n}\n\nresource appDeliveryAcrPush 'Microsoft.Authorization/roleAssignments@{{roleAssignmentApiVersion}}' = {\n  name: guid(registry.id, principalId, acrPushRoleId)\n  scope: registry\n  properties: {\n    roleDefinitionId: roleDefinitionId\n    principalId: principalId\n    principalType: 'ServicePrincipal'\n  }\n}"
+        }
+      ],
+      "unsupportedValues": [
+        {
+          "property": "zoneRedundancy",
+          "strategy": "mustMatchDefault",
+          "reason": "La redondance de zone n’est pas transmise au modèle Bicep."
+        },
+        {
+          "property": "retentionPolicyDays",
+          "strategy": "mustMatchDefault",
+          "reason": "La rétention des manifestes non tagués n’est pas transmise au modèle Bicep."
+        },
+        {
+          "property": "roleAssignmentMode",
+          "strategy": "mustMatchDefault",
+          "reason": "Les attributions de rôles sont émises au niveau du registre uniquement."
+        }
+      ],
+      "requirements": [
+        {
+          "when": {
+            "property": "exposure",
+            "equals": "Restricted"
+          },
+          "property": "exposure",
+          "allowedValues": [
+            "Public",
+            "Restricted"
+          ],
+          "reason": "Le registre Bicep ne prend en charge que Public et Restricted."
+        },
+        {
+          "when": {
+            "property": "exposure",
+            "equals": "Restricted"
+          },
+          "property": "sku",
+          "allowedValues": [
+            "Premium"
+          ],
+          "reason": "Les règles réseau par adresse IP d’Azure Container Registry exigent le SKU Premium."
+        },
+        {
+          "when": {
+            "property": "exposure",
+            "equals": "Restricted"
+          },
+          "property": "allowedIpRanges",
+          "minItems": 1,
+          "reason": "Une exposition restreinte du registre exige au moins une plage CIDR autorisée."
+        }
+      ],
+      "exposureSupport": {
+        "modes": [
+          "Public",
+          "Restricted"
+        ],
+        "reason": "Les points de terminaison privés du registre ne sont pas générés dans cette version Bicep."
+      }
+    }
+  },
+  "deprecations": [],
+  "privateDnsZones": [],
+  "requiredNetworkRules": [],
+  "recommendedAlerts": [],
+  "pricing": {
+    "source": "azure-retail-prices",
+    "meters": [
+      {
+        "serviceName": "Container Registry",
+        "productName": "Basic Registry",
+        "meterName": "Basic Registry"
+      }
+    ],
+    "assumptions": [],
+    "estimated": false,
+    "unestimatedReason": "Aucun scénario tarifaire par défaut n’est estimé pour le profil du pilote."
+  },
+  "drift": []
+}

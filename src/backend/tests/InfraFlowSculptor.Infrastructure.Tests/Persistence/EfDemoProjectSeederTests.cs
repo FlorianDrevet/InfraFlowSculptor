@@ -1,3 +1,4 @@
+using System.Text.Json;
 using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Application.Components;
 using InfraFlowSculptor.Catalog;
@@ -40,10 +41,34 @@ public sealed class EfDemoProjectSeederTests(PostgreSqlFixture postgres) : IClas
         var seeder = new EfDemoProjectSeeder(dbContext);
         await seeder.SeedShopAsync(
             projectId, organizationId, ownerId, ownerId, ownerId, "2026.10-pilot.3", seedReferenceModel: true);
+
+        var project = await dbContext.Projects
+            .IgnoreQueryFilters()
+            .Include(candidate => candidate.Environments)
+            .SingleAsync(value => value.Id == projectId);
+        var core = await dbContext.Components
+            .IgnoreQueryFilters()
+            .Include(component => component.Resources)
+            .Include(component => component.ResourceGroups)
+            .SingleAsync(component => component.ProjectId == projectId && component.Code == "core");
+        var secondaryWorkspace = core.AddResource(
+            Guid.NewGuid(),
+            core.ResourceGroups.Single().Id,
+            "LogAnalyticsWorkspace",
+            "secondary",
+            "Workspace secondaire de test",
+            isExisting: false,
+            project.Environments.Select(environment => environment.Id),
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal));
+        Assert.False(secondaryWorkspace.IsError);
+        Assert.False(core.SetDefaultLogAnalyticsResource(null).IsError);
+        await dbContext.SaveChangesAsync();
+        dbContext.ChangeTracker.Clear();
+
         await seeder.SeedShopAsync(
             projectId, organizationId, ownerId, ownerId, ownerId, "2026.10-pilot.3", seedReferenceModel: true);
 
-        var project = await dbContext.Projects.IgnoreQueryFilters().SingleAsync(value => value.Id == projectId);
+        project = await dbContext.Projects.IgnoreQueryFilters().SingleAsync(value => value.Id == projectId);
         Assert.Equal("Boutique en ligne", project.Name);
         Assert.Equal("shop", project.Code);
         Assert.Equal("2026.10-pilot.3", project.CatalogVersion);
@@ -51,10 +76,15 @@ public sealed class EfDemoProjectSeederTests(PostgreSqlFixture postgres) : IClas
 
         var components = await dbContext.Components
             .IgnoreQueryFilters()
+            .Include(component => component.Resources)
             .Where(component => component.ProjectId == projectId)
             .ToArrayAsync();
 
         Assert.Equal(["core", "data", "orders", "platform"], components.Select(component => component.Code).Order());
+        var seededCore = components.Single(component => component.Code == "core");
+        var mainWorkspace = seededCore.Resources.Single(resource =>
+            resource.Type == "LogAnalyticsWorkspace" && resource.LogicalName == "main");
+        Assert.Equal(mainWorkspace.Id, seededCore.DefaultLogAnalyticsResourceId);
         Assert.Equal(8, await dbContext.Set<LinkAggregate>().IgnoreQueryFilters()
             .CountAsync(link => link.ProjectId == projectId));
         Assert.Equal(1, await dbContext.Applications.IgnoreQueryFilters()

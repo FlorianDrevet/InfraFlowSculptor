@@ -1,0 +1,600 @@
+{
+  "type": "SqlServer",
+  "labels": {
+    "fr": "Serveur Azure SQL",
+    "en": "Azure SQL server"
+  },
+  "category": "data",
+  "icon": "sql-server",
+  "armType": "Microsoft.Sql/servers",
+  "availableFrom": "lot1",
+  "documentationUrl": "https://learn.microsoft.com/en-us/azure/templates/microsoft.sql/servers",
+  "verifiedAgainstDocsOn": "2026-10-27",
+  "naming": {
+    "abbreviation": "sql",
+    "allowed": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+    "case": "lower",
+    "separators": [
+      "-"
+    ],
+    "forbidConsecutiveSeparators": true,
+    "minLength": 1,
+    "maxLength": 63,
+    "firstChar": "alphanumeric",
+    "lastChar": "alphanumeric",
+    "uniqueness": "global",
+    "availabilityDomain": "database.windows.net"
+  },
+  "properties": [
+    {
+      "name": "authentication",
+      "labels": {
+        "fr": "Mode d’authentification",
+        "en": "Authentication mode"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "EntraSeule",
+      "values": [
+        "EntraSeule",
+        "EntraEtSql"
+      ]
+    },
+    {
+      "name": "administratorDisplayName",
+      "labels": {
+        "fr": "Nom affiché du groupe administrateur Entra",
+        "en": "Entra administrator group display name"
+      },
+      "kind": "string",
+      "overridable": true,
+      "minLength": 1,
+      "maxLength": 128,
+      "condition": "requiredWhen:authentication"
+    },
+    {
+      "name": "administratorObjectId",
+      "labels": {
+        "fr": "Identifiant d’objet du groupe administrateur Entra",
+        "en": "Entra administrator group object ID"
+      },
+      "kind": "string",
+      "overridable": true,
+      "minLength": 36,
+      "maxLength": 36,
+      "pattern": "^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$",
+      "condition": "requiredWhen:authentication"
+    },
+    {
+      "name": "administratorLogin",
+      "labels": {
+        "fr": "Login administrateur SQL",
+        "en": "SQL administrator login"
+      },
+      "kind": "string",
+      "overridable": true,
+      "default": "sqladmin",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^(?!(?:[aA][dD][mM][iI][nN]|[aA][dD][mM][iI][nN][iI][sS][tT][rR][aA][tT][oO][rR]|[sS][aA]|[rR][oO][oO][tT]|[dD][bB][mM][aA][nN][aA][gG][eE][rR]|[lL][oO][gG][iI][nN][mM][aA][nN][aA][gG][eE][rR]|[gG][uU][eE][sS][tT]|[pP][uU][bB][lL][iI][cC])$(?![\\s\\S])).+$(?![\\s\\S])",
+      "condition": "requiredWhen:authentication=EntraEtSql"
+    },
+    {
+      "name": "exposure",
+      "labels": {
+        "fr": "Exposition",
+        "en": "Exposure"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "Public",
+      "values": [
+        "Public",
+        "Restricted"
+      ]
+    },
+    {
+      "name": "allowedIpRanges",
+      "labels": {
+        "fr": "Plages IP autorisées",
+        "en": "Allowed IP ranges"
+      },
+      "kind": "array",
+      "overridable": true,
+      "default": [],
+      "condition": "requires:exposure=Restricted",
+      "items": {
+        "kind": "string",
+        "format": "ipv4Cidr"
+      },
+      "maxItems": 100
+    }
+  ],
+  "fixedValues": [
+    {
+      "name": "minimalTlsVersion",
+      "value": "1.2",
+      "labels": {
+        "fr": "TLS minimal",
+        "en": "Minimum TLS"
+      }
+    }
+  ],
+  "children": [
+    {
+      "type": "SqlDatabase",
+      "labels": {
+        "fr": "Base Azure SQL",
+        "en": "Azure SQL database"
+      },
+      "naming": {
+        "abbreviation": "sqldb",
+        "allowed": "^[^<>*%&:\\/?]{1,128}$",
+        "case": "mixed",
+        "separators": [],
+        "forbidConsecutiveSeparators": true,
+        "minLength": 1,
+        "maxLength": 128,
+        "firstChar": "any",
+        "lastChar": "notDot",
+        "uniqueness": "parent",
+        "availabilityDomain": null
+      },
+      "properties": [
+        {
+          "name": "sku",
+          "labels": {
+            "fr": "SKU",
+            "en": "SKU"
+          },
+          "kind": "enum",
+          "overridable": true,
+          "default": "GP_S_Gen5_1",
+          "values": [
+            "Basic",
+            "S0",
+            "S1",
+            "S2",
+            "S3",
+            "GP_S_Gen5_1",
+            "GP_S_Gen5_2",
+            "GP_S_Gen5_4",
+            "GP_Gen5_2",
+            "GP_Gen5_4",
+            "GP_Gen5_8",
+            "HS_Gen5_2",
+            "HS_Gen5_4"
+          ]
+        },
+        {
+          "name": "maxSizeGb",
+          "labels": {
+            "fr": "Taille maximale (Go)",
+            "en": "Maximum size (GB)"
+          },
+          "kind": "integer",
+          "overridable": true,
+          "default": 32,
+          "minimum": 1
+        },
+        {
+          "name": "autoPauseDelay",
+          "labels": {
+            "fr": "Pause automatique (minutes)",
+            "en": "Auto-pause (minutes)"
+          },
+          "kind": "integer",
+          "overridable": true,
+          "default": 60,
+          "minimum": 15,
+          "maximum": 10080
+        },
+        {
+          "name": "minCapacity",
+          "labels": {
+            "fr": "Capacité minimale (vCore)",
+            "en": "Minimum capacity (vCore)"
+          },
+          "kind": "number",
+          "overridable": true,
+          "default": 0.5,
+          "minimum": 0.5
+        },
+        {
+          "name": "zoneRedundant",
+          "labels": {
+            "fr": "Redondance de zone",
+            "en": "Zone redundancy"
+          },
+          "kind": "boolean",
+          "overridable": true,
+          "default": false
+        },
+        {
+          "name": "backupStorageRedundancy",
+          "labels": {
+            "fr": "Redondance des sauvegardes",
+            "en": "Backup storage redundancy"
+          },
+          "kind": "enum",
+          "overridable": true,
+          "default": "Geo",
+          "values": [
+            "Local",
+            "Zone",
+            "Geo"
+          ]
+        },
+        {
+          "name": "collation",
+          "labels": {
+            "fr": "Classement",
+            "en": "Collation"
+          },
+          "kind": "string",
+          "overridable": false,
+          "default": "SQL_Latin1_General_CP1_CI_AS",
+          "lockedAfterPublish": true
+        }
+      ]
+    }
+  ],
+  "identities": {
+    "system": false,
+    "userAssignedMax": 0
+  },
+  "links": {
+    "asSource": [],
+    "asTarget": [
+      "Hosting",
+      "Access"
+    ],
+    "required": []
+  },
+  "outputs": [
+    {
+      "name": "fullyQualifiedDomainName",
+      "description": "Nom DNS complet du serveur.",
+      "sensitive": false,
+      "computableFromName": false
+    },
+    {
+      "name": "name",
+      "description": "Nom du serveur.",
+      "sensitive": false,
+      "computableFromName": true
+    },
+    {
+      "name": "id",
+      "description": "Identifiant de la ressource.",
+      "sensitive": false,
+      "computableFromName": false
+    }
+  ],
+  "lifecycle": {
+    "family": "data"
+  },
+  "roles": [
+    "SQL Server Contributor",
+    "SQL Security Manager",
+    "Reader"
+  ],
+  "roleEquivalences": {},
+  "dataAccess": {
+    "supported": false,
+    "levels": [],
+    "databaseEngine": null
+  },
+  "exposure": {
+    "modes": [
+      "Public",
+      "Restricted"
+    ],
+    "privateGroupIds": [],
+    "privateDnsZones": [],
+    "conditions": []
+  },
+  "diagnostics": {
+    "supported": true,
+    "settings": {
+      "logCategoryGroup": "allLogs",
+      "metricCategory": "AllMetrics",
+      "destinationType": "Dedicated"
+    }
+  },
+  "applicationSettings": {
+    "destination": "none"
+  },
+  "languageSupport": {
+    "Bicep": "full",
+    "Terraform": "none",
+    "Pulumi": "none"
+  },
+  "generation": {
+    "Bicep": {
+      "requiredResourceGroups": ["main"],
+      "module": "br/public:avm/res/sql/server:0.22.0",
+      "versionPin": "0.22.0",
+      "map": {
+        "name": "name",
+        "location": "location",
+        "minimalTlsVersion": "minimalTlsVersion",
+        "administratorLogin": "administratorLogin"
+      },
+      "parameterObjects": {
+        "administrators": {
+          "login": {
+            "ref": "administratorDisplayName"
+          },
+          "sid": {
+            "ref": "administratorObjectId"
+          },
+          "principalType": {
+            "const": "Group"
+          },
+          "azureADOnlyAuthentication": {
+            "enumRef": "authentication",
+            "values": {
+              "EntraSeule": true,
+              "EntraEtSql": false
+            }
+          }
+        }
+      },
+      "parameterName": "sqlOrders",
+      "symbol": "sql",
+      "emissionOrder": 10,
+      "sectionComment": "Groupe de ressources principal : serveur SQL et base orders.",
+      "config": {
+        "typeName": "sqlOrdersConfig",
+        "description": "Paramètres du serveur SQL orders et de sa base.",
+        "order": 10,
+        "fields": [
+          {
+            "name": "deploy",
+            "type": "bool",
+            "description": "Indique si le serveur et sa base sont déployés.",
+            "source": {
+              "kind": "resource",
+              "field": "present"
+            }
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "description": "Nom Azure explicite du serveur SQL.",
+            "source": {
+              "kind": "resource",
+              "field": "name"
+            },
+            "moduleParameter": "name"
+          },
+          {
+            "name": "location",
+            "type": "string",
+            "description": "Région Azure du serveur SQL.",
+            "source": {
+              "kind": "resource",
+              "field": "location"
+            },
+            "moduleParameter": "location"
+          },
+          {
+            "name": "administratorGroupName",
+            "type": "string",
+            "description": "Nom du groupe Entra administrateur du serveur SQL.",
+            "source": {
+              "kind": "property",
+              "field": "administratorDisplayName"
+            }
+          },
+          {
+            "name": "administratorGroupObjectId",
+            "type": "string",
+            "description": "Identifiant objet du groupe Entra administrateur SQL pour cette cible.",
+            "source": {
+              "kind": "property",
+              "field": "administratorObjectId"
+            }
+          },
+          {
+            "name": "publicNetworkAccess",
+            "type": "'Enabled' | 'Disabled'",
+            "description": "Accès réseau public du serveur SQL. Enabled crée la règle Azure Services 0.0.0.0 à 0.0.0.0 prévue par RG-NET-01.",
+            "source": {
+              "kind": "exposure",
+              "field": "exposure"
+            },
+            "transform": "publicNetworkAccessEnabled"
+          },
+          {
+            "name": "minimalTlsVersion",
+            "type": "'1.0' | '1.1' | '1.2' | '1.3'",
+            "description": "Version TLS minimale du serveur SQL.",
+            "source": {
+              "kind": "fixedValue",
+              "field": "minimalTlsVersion"
+            },
+            "moduleParameter": "minimalTlsVersion"
+          },
+          {
+            "name": "databaseName",
+            "type": "string",
+            "description": "Nom Azure explicite de la base SQL orders.",
+            "source": {
+              "kind": "child",
+              "field": "name"
+            }
+          },
+          {
+            "name": "databaseSkuName",
+            "type": "string",
+            "description": "Nom du SKU de la base SQL.",
+            "source": {
+              "kind": "child",
+              "field": "sku"
+            }
+          },
+          {
+            "name": "databaseAvailabilityZone",
+            "type": "-1 | 1 | 2 | 3",
+            "description": "Zone de disponibilité SQL, ou -1 si aucune zone n’est imposée.",
+            "source": {
+              "kind": "constant",
+              "value": -1
+            }
+          },
+          {
+            "name": "tags",
+            "type": "object",
+            "description": "Tags effectifs du serveur et de la base SQL.",
+            "source": {
+              "kind": "resource",
+              "field": "tags"
+            }
+          },
+          {
+            "name": "databaseDiagnosticSettings",
+            "type": "diagnosticSettingConfig[]",
+            "description": "Paramètres de diagnostic de la base SQL.",
+            "source": {
+              "kind": "childDiagnostics",
+              "field": "logs"
+            }
+          },
+          {
+            "name": "exposure",
+            "type": "'Public' | 'Restricted' | 'Private'",
+            "description": "Mode d’exposition réseau appliqué à la cible.",
+            "source": {
+              "kind": "exposure",
+              "field": "exposure"
+            },
+            "includeWhen": "hasRestrictedExposure"
+          },
+          {
+            "name": "allowedIpRanges",
+            "type": "string[]",
+            "description": "Plages CIDR autorisées pour une exposition restreinte.",
+            "source": {
+              "kind": "exposure",
+              "field": "allowedIpRanges"
+            },
+            "includeWhen": "hasRestrictedExposure"
+          }
+        ]
+      },
+      "embeddedChildren": [
+        {
+          "type": "SqlDatabase",
+          "collection": "databases",
+          "nameParameter": "databaseName",
+          "skuParameter": "databaseSkuName",
+          "zoneParameter": "databaseAvailabilityZone",
+          "diagnosticParameter": "databaseDiagnosticSettings"
+        }
+      ],
+      "existing": {
+        "apiVersion": "2025-01-01",
+        "symbol": "dataSqlServer",
+        "parameterName": "dataSqlDatabase.server",
+        "order": 40,
+        "description": "Serveur du composant data.",
+        "configType": "resourceReferenceConfig"
+      },
+      "mainStatements": [
+        {
+          "order": 30,
+          "template": "var sqlDatabaseDiagnosticSettings = [\n  for setting in sqlOrders.databaseDiagnosticSettings: {\n    name: setting.name\n    workspaceResourceId: coreLog.id\n    logAnalyticsDestinationType: setting.logAnalyticsDestinationType\n    logCategoriesAndGroups: [\n      {\n        categoryGroup: setting.logCategoryGroup\n        enabled: true\n      }\n    ]\n    metricCategories: [\n      {\n        category: setting.metricCategory\n        enabled: true\n      }\n    ]\n  }\n]\n\n// La plage 0.0.0.0-0.0.0.0 est la règle spéciale Azure SQL qui autorise les services Azure.\nvar sqlOrdersFirewallRules = sqlOrders.publicNetworkAccess == 'Enabled'\n  ? [\n      {\n        name: 'AllowAzureServices'\n        startIpAddress: '0.0.0.0'\n        endIpAddress: '0.0.0.0'\n        enableTelemetry: false\n      }\n    ]\n  : []",
+          "restrictedTemplate": "var sqlDatabaseDiagnosticSettings = [\n  for setting in sqlOrders.databaseDiagnosticSettings: {\n    name: setting.name\n    workspaceResourceId: coreLog.id\n    logAnalyticsDestinationType: setting.logAnalyticsDestinationType\n    logCategoriesAndGroups: [\n      {\n        categoryGroup: setting.logCategoryGroup\n        enabled: true\n      }\n    ]\n    metricCategories: [\n      {\n        category: setting.metricCategory\n        enabled: true\n      }\n    ]\n  }\n]\n\n// Une exposition restreinte autorise seulement les CIDR configurés ; Public conserve la règle spéciale Azure Services.\nvar sqlOrdersConfiguredFirewallRules = [\n  for ipRange in sqlOrders.allowedIpRanges: {\n    name: 'Allow-${uniqueString(ipRange)}'\n    startIpAddress: parseCidr(ipRange).network\n    endIpAddress: parseCidr(ipRange).broadcast\n    enableTelemetry: false\n  }\n]\nvar sqlOrdersAzureServicesFirewallRules = sqlOrders.exposure == 'Restricted' || sqlOrders.publicNetworkAccess == 'Disabled'\n  ? []\n  : [\n      {\n        name: 'AllowAzureServices'\n        startIpAddress: '0.0.0.0'\n        endIpAddress: '0.0.0.0'\n        enableTelemetry: false\n      }\n    ]\nvar sqlOrdersFirewallRules = concat(sqlOrdersConfiguredFirewallRules, sqlOrdersAzureServicesFirewallRules)"
+        },
+        {
+          "order": 40,
+          "sectionComment": "Groupe de ressources principal : serveur SQL et base orders.",
+          "template": "module sqlOrdersModule '{{moduleReference}}' = if (sqlOrders.deploy) {\n  name: 'sqlOrders-${target.code}-${uniqueString(sqlOrders.name)}'\n  scope: rg_main\n  params: {\n    name: sqlOrders.name\n    location: sqlOrders.location\n    administratorLogin: null\n    administratorLoginPassword: null\n    administrators: {\n      login: sqlOrders.administratorGroupName\n      sid: sqlOrders.administratorGroupObjectId\n      principalType: 'Group'\n      azureADOnlyAuthentication: true\n    }\n    minimalTlsVersion: sqlOrders.minimalTlsVersion\n    publicNetworkAccess: sqlOrders.publicNetworkAccess\n    firewallRules: sqlOrdersFirewallRules\n    restrictOutboundNetworkAccess: 'Disabled'\n    tags: sqlOrders.tags\n    databases: [\n      {\n        name: sqlOrders.databaseName\n        sku: {\n          name: sqlOrders.databaseSkuName\n        }\n        availabilityZone: sqlOrders.databaseAvailabilityZone\n        tags: sqlOrders.tags\n        diagnosticSettings: sqlDatabaseDiagnosticSettings\n        enableTelemetry: false\n      }\n    ]\n    enableTelemetry: false\n  }\n}"
+        }
+      ],
+      "unsupportedValues": [
+        {
+          "property": "authentication",
+          "strategy": "mustMatchDefault",
+          "reason": "Seule l’authentification Entra est livrée ; l’émetteur ne fournit pas de mot de passe SQL."
+        },
+        {
+          "property": "administratorLogin",
+          "strategy": "mustMatchDefault",
+          "reason": "L’émetteur transmet une connexion SQL nulle ; ce champ doit rester à sa valeur par défaut."
+        }
+      ],
+      "requirements": [
+        {
+          "when": {
+            "property": "exposure",
+            "equals": "Restricted"
+          },
+          "property": "exposure",
+          "allowedValues": [
+            "Public",
+            "Restricted"
+          ],
+          "reason": "Le serveur SQL Bicep ne prend en charge que Public et Restricted."
+        },
+        {
+          "when": {
+            "property": "exposure",
+            "equals": "Restricted"
+          },
+          "property": "allowedIpRanges",
+          "minItems": 1,
+          "reason": "Une exposition restreinte SQL exige au moins une plage CIDR autorisée."
+        },
+        {
+          "when": {
+            "property": "exposure",
+            "equals": "Restricted"
+          },
+          "property": "allowedIpRanges",
+          "disallowedValues": [
+            "0.0.0.0/32"
+          ],
+          "reason": "0.0.0.0/32 est la règle spéciale Azure Services SQL et autoriserait tous les services Azure."
+        }
+      ],
+      "exposureSupport": {
+        "modes": [
+          "Public",
+          "Restricted"
+        ],
+        "reason": "Les points de terminaison privés SQL ne sont pas générés dans cette version Bicep."
+      },
+      "diagnosticDestination": {
+        "componentCode": "core",
+        "resourceType": "LogAnalyticsWorkspace",
+        "logicalName": "main"
+      }
+    }
+  },
+  "deprecations": [],
+  "privateDnsZones": [
+    {
+      "groupId": "sqlServer",
+      "zoneName": "privatelink.database.windows.net"
+    }
+  ],
+  "requiredNetworkRules": [],
+  "recommendedAlerts": [],
+  "pricing": {
+    "source": "azure-retail-prices",
+    "meters": [
+      {
+        "serviceName": "SQL Database",
+        "productName": "SQL Server",
+        "meterName": "Serverless vCore"
+      }
+    ],
+    "assumptions": [],
+    "estimated": false,
+    "unestimatedReason": "Aucun scénario tarifaire par défaut n’est estimé pour le profil du pilote."
+  },
+  "drift": []
+}

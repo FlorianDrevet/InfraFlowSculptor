@@ -15,6 +15,7 @@ using InfraFlowSculptor.Engine.Ordering;
 using InfraFlowSculptor.Engine.Plan;
 using InfraFlowSculptor.Engine.Validation;
 using InfraFlowSculptor.Application.Components.Validation;
+using InfraFlowSculptor.Application.Generation;
 
 namespace InfraFlowSculptor.Application;
 
@@ -51,6 +52,9 @@ public static class DependencyInjection
         services.TryAddSingleton<ComponentOrdering>();
         services.TryAddSingleton<DeploymentPlanBuilder>();
         services.TryAddSingleton<EngineFacade>();
+        services.TryAddSingleton<InfrastructureEmitterRegistry>();
+        services.TryAddSingleton<OutputCheckerRegistry>();
+        services.TryAddSingleton<ModuleSourceStrategyRegistry>();
         services.TryAddSingleton<IRuleSource>(_ => new CodeRuleSource(PilotValidationRules.Create()));
         services.TryAddSingleton<ValidationEngine>();
         services.TryAddSingleton<FindingFixRegistry>(provider => new FindingFixRegistry(

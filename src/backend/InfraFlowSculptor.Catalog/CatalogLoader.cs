@@ -48,6 +48,16 @@ public static class CatalogLoader
                 .OrderBy(file => file.Path, StringComparer.Ordinal)
                 .Select(ParsePipelineStep)
                 .ToImmutableArray();
+            var rolesFile = files.Single(file => string.Equals(file.Path, $"{versionPrefix}roles.json", StringComparison.Ordinal));
+            using var rolesDocument = JsonDocument.Parse(rolesFile.Content);
+            var roles = rolesDocument.RootElement.GetProperty("roles")
+                .EnumerateArray()
+                .Select(role => new CatalogRole(
+                    role.GetProperty("name").GetString()!,
+                    role.GetProperty("definitionId").GetString()!,
+                    role.GetProperty("description").GetString()!,
+                    role.GetProperty("documentationUrl").GetString()!))
+                .ToImmutableArray();
 
             var regionFile = files.Single(file => string.Equals(file.Path, $"{versionPrefix}regions.json", StringComparison.Ordinal));
             using var regionDocument = JsonDocument.Parse(regionFile.Content);
@@ -79,6 +89,7 @@ public static class CatalogLoader
                 descriptors,
                 buildProfiles,
                 pipelineSteps,
+                roles,
                 regions,
                 pins,
                 fingerprint));

@@ -10,12 +10,12 @@
 | | |
 |---|---|
 | **Étape courante** | [`J0-22`](docs/plan/02-jalon-0-pilote.md#j0-22--émetteur-bicep) — Émetteur Bicep |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`J0-21`](docs/plan/02-jalon-0-pilote.md#j0-21--plan-de-déploiement) — Plan de déploiement (commit `9a24795`) |
 | **Étape suivante** | `J0-23` — Émetteurs Azure DevOps, kit d'installation et README |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-generation` (créée depuis `origin/impl/j0-modele`, segment empilé après R-05) |
-| **Dernière mise à jour** | 2026-11-01 — Codex |
+| **Dernière mise à jour** | 2026-11-01 — Codex (blocage résolu) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
@@ -79,6 +79,14 @@ L’omission initiale de `deploymentPrincipalId` avait détaché l’attribution
 Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md), puis retire la ligne.
 
 ## Points ouverts et historique des décisions
+
+### J0-22 — diagnostics absents du plan — résolu le 2026-11-01
+
+Florian a autorisé le correctif J0-21b et la mise à jour de `docs/technique/03 §4`. `TargetPlan` porte désormais les réglages de diagnostic résolus par le builder, avec les valeurs standards de la référence; l'absence de persistance de `excludedCategories` reste documentée. Le blocage est levé et la comparaison Bicep complète passe. Vérifications et périmètre : [`J0-21b-correctif-diagnostics-20261101.md`](docs/plan/revues/J0-21b-correctif-diagnostics-20261101.md) et la preuve J0-22 ci-dessous.
+
+### J0-22 — métadonnées et relations Bicep absentes — résolu le 2026-11-01
+
+Florian a autorisé la recommandation Claude Sonnet : correctif amont J0-21c dans le catalogue immuable `2026.10-pilot.6`, rôles chargés dans le catalogue et relations neutres portées par le plan. La comparaison de référence passe; la suite backend compte 741 tests réussis et 1 test CLI ignoré par défaut, exécuté séparément avec succès. Le build strict et les contrôles Bicep passent. Détails et preuve de déblocage : [`J0-22-blocage-metadonnees-bicep-20261101.md`](docs/plan/revues/J0-22-blocage-metadonnees-bicep-20261101.md).
 
 ### R-05 — connexion Chloé pour la recette Scalar — résolu le 2026-11-01
 
