@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, input, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -35,6 +43,11 @@ interface ComponentForm {
   removedResourceBehavior: RemovedResourceBehavior;
   deletionProtectionEnabled: boolean;
   tags: string;
+}
+
+interface DefaultLogAnalyticsOption {
+  resourceId: string;
+  label: string;
 }
 
 function parseList(value: string): string[] {
@@ -94,6 +107,33 @@ export class ComponentEditor implements OnInit {
   readonly componentId = input.required<string>();
   protected readonly project = signal<ProjectSummaryResponse | null>(null);
   protected readonly component = signal<ComponentResponse | null>(null);
+  protected readonly projectComponents = signal<ComponentResponse[]>([]);
+  protected readonly defaultLogAnalyticsResourceId = signal('');
+  protected readonly defaultLogAnalyticsError = signal<'save' | 'conflict' | 'invalid' | null>(
+    null,
+  );
+  protected readonly defaultLogAnalyticsOptions = computed<DefaultLogAnalyticsOption[]>(() => {
+    const current = this.component();
+    if (!current) {
+      return [];
+    }
+
+    return this.projectComponents().flatMap((candidate) => {
+      if (
+        current.mode === 'Single' &&
+        candidate.id !== current.id &&
+        candidate.mode === 'PerEnvironment'
+      ) {
+        return [];
+      }
+      return candidate.resources
+        .filter((resource) => resource.type === 'LogAnalyticsWorkspace')
+        .map((resource) => ({
+          resourceId: resource.id,
+          label: `${candidate.code} / log ${resource.logicalName}`,
+        }));
+    });
+  });
   protected readonly environments = signal<ProjectEnvironmentResponse[]>([]);
   protected readonly permissions = signal<string[]>([]);
   protected readonly form = signal<ComponentForm>(this.emptyForm());
@@ -102,6 +142,7 @@ export class ComponentEditor implements OnInit {
   protected readonly saveError = signal(false);
   protected readonly versionConflict = signal(false);
   protected readonly saving = signal(false);
+  protected readonly savingDefaultLogAnalytics = signal(false);
   protected readonly deleteConfirmationOpen = signal(false);
   protected readonly deleting = signal(false);
   protected readonly deleteError = signal(false);
@@ -127,6 +168,84 @@ export class ComponentEditor implements OnInit {
 
   protected updateField<K extends keyof ComponentForm>(field: K, value: ComponentForm[K]): void {
     this.form.update((current) => ({ ...current, [field]: value }));
+  }
+
+  protected updateDefaultLogAnalyticsResource(resourceId: string): void {
+    this.defaultLogAnalyticsResourceId.set(resourceId);
+    this.defaultLogAnalyticsError.set(null);
+  }
+
+  protected defaultLogAnalyticsLabel(): string | null {
+    const selectedId = this.component()?.defaultLogAnalyticsResourceId;
+    return (
+      this.defaultLogAnalyticsOptions().find((option) => option.resourceId === selectedId)?.label ??
+      null
+    );
+  }
+
+  protected defaultLogAnalyticsHasChanged(): boolean {
+    return (
+      (this.component()?.defaultLogAnalyticsResourceId ?? '') !==
+      this.defaultLogAnalyticsResourceId()
+    );
+  }
+
+  protected defaultLogAnalyticsErrorKey(): string {
+    switch (this.defaultLogAnalyticsError()) {
+      case 'conflict':
+        return 'component.defaultLogAnalyticsConflict';
+      case 'invalid':
+        return 'component.defaultLogAnalyticsInvalid';
+      case 'save':
+        return 'component.defaultLogAnalyticsSaveError';
+      default:
+        return '';
+    }
+  }
+
+  protected async saveDefaultLogAnalytics(): Promise<void> {
+    const component = this.component();
+    if (
+      !component ||
+      !this.canManage() ||
+      !this.defaultLogAnalyticsHasChanged() ||
+      this.saving() ||
+      this.savingDefaultLogAnalytics()
+    ) {
+      return;
+    }
+
+    this.savingDefaultLogAnalytics.set(true);
+    this.defaultLogAnalyticsError.set(null);
+    try {
+      const saved = await firstValueFrom(
+        this.componentsService.setDefaultLogAnalytics(this.projectId(), component.id, {
+          workspaceResourceId: this.defaultLogAnalyticsResourceId() || null,
+          expectedVersion: Number(component.version),
+        }),
+      );
+      this.component.set(saved);
+      this.projectComponents.update((components) =>
+        components.map((candidate) => (candidate.id === saved.id ? saved : candidate)),
+      );
+      this.defaultLogAnalyticsResourceId.set(saved.defaultLogAnalyticsResourceId ?? '');
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        await this.load();
+        this.defaultLogAnalyticsError.set('conflict');
+      } else if (
+        error instanceof ApiError &&
+        (error.code.startsWith('VAL-CMP-') ||
+          error.code === 'COMPONENT_DEFAULT_LOG_ANALYTICS_TYPE_INVALID' ||
+          error.code === 'COMPONENT_DEFAULT_LOG_ANALYTICS_NOT_FOUND')
+      ) {
+        this.defaultLogAnalyticsError.set('invalid');
+      } else {
+        this.defaultLogAnalyticsError.set('save');
+      }
+    } finally {
+      this.savingDefaultLogAnalytics.set(false);
+    }
   }
 
   protected setMode(mode: ComponentDeploymentMode): void {
@@ -287,10 +406,13 @@ export class ComponentEditor implements OnInit {
           runners: project.defaultRunners.join(', '),
         });
       } else {
-        const component = await firstValueFrom(
-          this.componentsService.get(this.projectId(), this.componentId()),
-        );
+        const [component, projectComponents] = await Promise.all([
+          firstValueFrom(this.componentsService.get(this.projectId(), this.componentId())),
+          firstValueFrom(this.componentsService.list(this.projectId())),
+        ]);
         this.component.set(component);
+        this.projectComponents.set(projectComponents);
+        this.defaultLogAnalyticsResourceId.set(component.defaultLogAnalyticsResourceId ?? '');
         this.form.set(fromComponent(component));
       }
     } catch {

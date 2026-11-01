@@ -1,4 +1,4 @@
-using InfraFlowSculptor.Application.Common.Extensibility;
+using InfraFlowSculptor.Domain.Common.Extensibility;
 using Xunit;
 
 namespace InfraFlowSculptor.Application.Tests.Common.Extensibility;

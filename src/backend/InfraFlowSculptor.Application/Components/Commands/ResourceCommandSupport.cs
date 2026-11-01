@@ -51,6 +51,17 @@ internal static partial class ResourceCommandSupport
         return Result.Success;
     }
 
+    public static ErrorOr<Success> CheckModelVersion(ProjectAggregate project, int expectedVersion)
+    {
+        if (project.ModelVersion != expectedVersion)
+        {
+            return Error.Conflict("CONFLICT_VERSION", "The project model changed. Reload it before saving.",
+                new Dictionary<string, object> { ["currentVersion"] = project.ModelVersion });
+        }
+
+        return Result.Success;
+    }
+
     public static ErrorOr<Success> CheckResourceVersion(Resource resource, int expectedVersion)
     {
         if (resource.Version != expectedVersion)

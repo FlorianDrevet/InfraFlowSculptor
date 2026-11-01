@@ -25,5 +25,7 @@ public sealed record AddResourceCommand(
     IReadOnlyDictionary<string, string> Tags,
     int ExpectedVersion) : IModelCommand, IProjectScopedRequest
 {
+    public Guid? DefaultIdentityResourceId { get; init; }
+
     public ModelWorkspaceId Workspace => ModelWorkspaceId.Main(new(ProjectId));
 }

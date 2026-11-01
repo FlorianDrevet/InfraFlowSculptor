@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using ErrorOr;
 using InfraFlowSculptor.Catalog;
 
@@ -173,7 +172,8 @@ public sealed class PropertyValueValidator
         bool isPublished,
         IReadOnlyDictionary<string, JsonElement>? currentValues)
     {
-        if (value.ValueKind != JsonValueKind.Null && !MatchesKind(value, definition.GetProperty("kind").GetString()!))
+        var failure = CatalogPropertyValueValidator.Validate(value, definition);
+        if (failure?.Kind == CatalogPropertyValueFailureKind.Type)
         {
             return Error.Validation("RESOURCE_PROPERTY_TYPE_INVALID", $"Property '{name}' does not match its descriptor type.");
         }
@@ -198,52 +198,28 @@ public sealed class PropertyValueValidator
             return Error.Validation("RESOURCE_PROPERTY_IRREVERSIBLE", $"Property '{name}' cannot be changed back after its irreversible transition.");
         }
 
-        if (value.ValueKind == JsonValueKind.Null)
+        if (failure is null)
         {
             return Result.Success;
         }
 
-        var kind = definition.GetProperty("kind").GetString()!;
-        if (kind is "integer" or "number")
+        return failure.Kind switch
         {
-            var number = value.GetDecimal();
-            if (ReadDecimal(definition, "minimum") is { } minimum && number < minimum
-                || ReadDecimal(definition, "maximum") is { } maximum && number > maximum)
-            {
-                return Error.Validation("RESOURCE_PROPERTY_RANGE", $"Property '{name}' is outside its descriptor range.");
-            }
-        }
-
-        if (kind is "string" or "enum" or "reference")
-        {
-            var text = value.GetString()!;
-            if (ReadInteger(definition, "minLength") is { } minLength && text.Length < minLength
-                || ReadInteger(definition, "maxLength") is { } maxLength && text.Length > maxLength)
-            {
-                return Error.Validation("RESOURCE_PROPERTY_LENGTH", $"Property '{name}' is outside its descriptor length limits.");
-            }
-
-            if (definition.TryGetProperty("pattern", out var patternElement)
-                && !MatchesPattern(text, patternElement.GetString()!))
-            {
-                return Error.Validation("RESOURCE_PROPERTY_PATTERN", $"Property '{name}' does not match its descriptor pattern.");
-            }
-
-            if (definition.TryGetProperty("deprecatedValues", out var deprecatedValues)
-                && deprecatedValues.EnumerateArray().Any(item => string.Equals(item.GetString(), text, StringComparison.Ordinal)))
-            {
-                return Error.Validation("RESOURCE_PROPERTY_DEPRECATED", $"Property '{name}' uses a deprecated value.");
-            }
-        }
-
-        if (kind == "enum"
-            && definition.TryGetProperty("values", out var allowedValues)
-            && !allowedValues.EnumerateArray().Any(item => JsonElement.DeepEquals(item, value)))
-        {
-            return Error.Validation("RESOURCE_PROPERTY_ENUM_INVALID", $"Property '{name}' must use a value declared by its descriptor.");
-        }
-
-        return Result.Success;
+            CatalogPropertyValueFailureKind.Range => Error.Validation("RESOURCE_PROPERTY_RANGE", $"Property '{name}' is outside its descriptor range."),
+            CatalogPropertyValueFailureKind.Length => Error.Validation("RESOURCE_PROPERTY_LENGTH", $"Property '{name}' is outside its descriptor length limits."),
+            CatalogPropertyValueFailureKind.Pattern => Error.Validation("RESOURCE_PROPERTY_PATTERN", $"Property '{name}' does not match its descriptor pattern."),
+            CatalogPropertyValueFailureKind.Format => Error.Validation("RESOURCE_PROPERTY_FORMAT", $"Property '{name}' does not match its descriptor format."),
+            CatalogPropertyValueFailureKind.Deprecated => Error.Validation("RESOURCE_PROPERTY_DEPRECATED", $"Property '{name}' uses a deprecated value."),
+            CatalogPropertyValueFailureKind.Forbidden => Error.Validation("RESOURCE_PROPERTY_VALUE_FORBIDDEN", $"Property '{name}' uses a value forbidden by its descriptor."),
+            CatalogPropertyValueFailureKind.EnumValue => Error.Validation("RESOURCE_PROPERTY_ENUM_INVALID", $"Property '{name}' must use a value declared by its descriptor."),
+            CatalogPropertyValueFailureKind.ArrayLength => Error.Validation("RESOURCE_PROPERTY_ARRAY_LENGTH", $"Property '{name}' exceeds its descriptor item limit."),
+            CatalogPropertyValueFailureKind.ItemType => Error.Validation("RESOURCE_PROPERTY_ITEM_TYPE_INVALID", $"Property '{name}' contains an item that does not match its descriptor type."),
+            CatalogPropertyValueFailureKind.DuplicateItemValue => Error.Validation("RESOURCE_PROPERTY_ARRAY_ITEM_DUPLICATE", $"Property '{name}' contains duplicate values for '{failure.DisplayMemberName}'."),
+            CatalogPropertyValueFailureKind.UnknownObjectMember => Error.Validation("RESOURCE_PROPERTY_OBJECT_MEMBER_UNKNOWN", $"Property '{name}' contains an object member that is not declared by its descriptor."),
+            CatalogPropertyValueFailureKind.DuplicateObjectMember => Error.Validation("RESOURCE_PROPERTY_OBJECT_MEMBER_DUPLICATE", $"Property '{name}' contains duplicate object member '{failure.DisplayMemberName}'."),
+            CatalogPropertyValueFailureKind.RequiredObjectMember => Error.Validation("RESOURCE_PROPERTY_OBJECT_MEMBER_REQUIRED", $"Property '{name}' is missing or has a null value for required member '{failure.DisplayMemberName}'."),
+            _ => throw new InvalidOperationException($"Unknown catalog property validation failure: {failure.Kind}.")
+        };
     }
 
     private static JsonElement? FindProperty(CatalogResourceTypeDescriptor descriptor, string name)
@@ -259,32 +235,4 @@ public sealed class PropertyValueValidator
         return null;
     }
 
-    private static bool MatchesKind(JsonElement value, string kind) => kind switch
-    {
-        "boolean" => value.ValueKind is JsonValueKind.True or JsonValueKind.False,
-        "integer" => value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out _),
-        "number" => value.ValueKind == JsonValueKind.Number && value.TryGetDecimal(out _),
-        "string" or "enum" or "reference" => value.ValueKind == JsonValueKind.String,
-        "array" => value.ValueKind == JsonValueKind.Array,
-        "object" => value.ValueKind == JsonValueKind.Object,
-        _ => false
-    };
-
-    private static decimal? ReadDecimal(JsonElement definition, string name) =>
-        definition.TryGetProperty(name, out var value) && value.TryGetDecimal(out var number) ? number : null;
-
-    private static int? ReadInteger(JsonElement definition, string name) =>
-        definition.TryGetProperty(name, out var value) && value.TryGetInt32(out var number) ? number : null;
-
-    private static bool MatchesPattern(string value, string pattern)
-    {
-        try
-        {
-            return Regex.IsMatch(value, pattern, RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
-        }
-        catch (RegexMatchTimeoutException)
-        {
-            return false;
-        }
-    }
 }

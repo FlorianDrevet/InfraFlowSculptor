@@ -15,4 +15,9 @@ public sealed record ResourceSnapshot(
     IReadOnlyDictionary<Guid, string> ExistingIds,
     IReadOnlyDictionary<Guid, string> ForcedNames,
     IReadOnlyDictionary<string, string> Tags,
-    IReadOnlyList<ResourceChildSnapshot> Children);
+    IReadOnlyList<ResourceChildSnapshot> Children)
+{
+    public int Version { get; init; } = 1;
+
+    public Guid? DefaultIdentityResourceId { get; init; }
+}

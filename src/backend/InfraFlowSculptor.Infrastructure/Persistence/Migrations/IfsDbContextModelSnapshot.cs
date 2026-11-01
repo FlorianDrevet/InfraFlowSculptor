@@ -22,6 +22,215 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ComponentAggregate.AppSettingAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ApplicationResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("application_resource_id");
+
+                    b.Property<Guid>("ComponentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("component_id");
+
+                    b.Property<Guid?>("IdentityResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("identity_resource_id");
+
+                    b.Property<Guid?>("KeyVaultResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("key_vault_resource_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("NameKey")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name_key");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("OutputName")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("output_name");
+
+                    b.Property<string>("PipelineVariableName")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("pipeline_variable_name");
+
+                    b.Property<string>("PipelineVariableNameKey")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("pipeline_variable_name_key");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("SecretFeedKind")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("secret_feed_kind");
+
+                    b.Property<string>("SecretName")
+                        .HasMaxLength(127)
+                        .HasColumnType("character varying(127)")
+                        .HasColumnName("secret_name");
+
+                    b.Property<string>("SecretNameKey")
+                        .HasMaxLength(127)
+                        .HasColumnType("character varying(127)")
+                        .HasColumnName("secret_name_key");
+
+                    b.Property<bool>("SecretValueDeclaredNonSecret")
+                        .HasColumnType("boolean")
+                        .HasColumnName("secret_value_declared_non_secret");
+
+                    b.Property<string>("SourceKind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("source_kind");
+
+                    b.Property<Guid?>("SourceResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_resource_id");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_app_settings");
+
+                    b.HasIndex("ComponentId")
+                        .HasDatabaseName("ix_app_settings_component_id");
+
+                    b.HasIndex("ApplicationResourceId", "NameKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_app_settings_application_name");
+
+                    b.HasIndex("KeyVaultResourceId", "SecretNameKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_app_settings_pipeline_secret_writer")
+                        .HasFilter("\"secret_feed_kind\" = 'PipelineSecret'");
+
+                    b.HasIndex("ProjectId", "PipelineVariableNameKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_app_settings_project_pipeline_variable")
+                        .HasFilter("\"pipeline_variable_name_key\" IS NOT NULL");
+
+                    b.ToTable("app_settings", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ComponentAggregate.ApplicationAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BuildContextPath")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("build_context_path");
+
+                    b.Property<Guid?>("BuildRegistryEnvironmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("build_registry_environment_id");
+
+                    b.Property<string>("CodeSourcePath")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("code_source_path");
+
+                    b.Property<Guid>("ComponentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("component_id");
+
+                    b.Property<string>("DeploymentStrategy")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("deployment_strategy");
+
+                    b.Property<string>("DockerfilePath")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("dockerfile_path");
+
+                    b.Property<string>("HealthCheckPath")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("health_check_path");
+
+                    b.Property<string>("ImageRepository")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("image_repository");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("NameKey")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("name_key");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_applications");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("ix_applications_project_id");
+
+                    b.HasIndex("ResourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_applications_resource");
+
+                    b.HasIndex("ComponentId", "NameKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_applications_component_name");
+
+                    b.ToTable("applications", (string)null);
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Domain.ComponentAggregate.ComponentAggregate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -39,6 +248,15 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("code_key");
+
+                    b.Property<Guid?>("DefaultLogAnalyticsResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("default_log_analytics_resource_id");
+
+                    b.Property<string>("DefaultNameTemplate")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("default_name_template");
 
                     b.Property<bool>("DeletionProtectionEnabled")
                         .HasColumnType("boolean")
@@ -210,6 +428,164 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasName("pk_organizations");
 
                     b.ToTable("organizations", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.FindingAcknowledgmentAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AcknowledgedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("acknowledged_by");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("comment");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DetailKey")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("detail_key");
+
+                    b.Property<Guid?>("EnvironmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("environment_id");
+
+                    b.Property<string>("FindingCode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("finding_code");
+
+                    b.Property<int>("ObjectVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("object_version");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<string>("SubjectType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("subject_type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_finding_acknowledgments");
+
+                    b.HasIndex("AcknowledgedBy")
+                        .HasDatabaseName("ix_finding_acknowledgments_acknowledged_by");
+
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_finding_acknowledgments_organization_id");
+
+                    b.HasIndex("ProjectId", "FindingCode", "SubjectType", "SubjectId", "EnvironmentId", "ObjectVersion", "CreatedAt")
+                        .HasDatabaseName("ix_finding_acknowledgments_active_lookup");
+
+                    b.HasIndex("ProjectId", "FindingCode", "SubjectType", "SubjectId", "EnvironmentId", "ObjectVersion", "DetailKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_finding_acknowledgments_identity");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("ProjectId", "FindingCode", "SubjectType", "SubjectId", "EnvironmentId", "ObjectVersion", "DetailKey"), false);
+
+                    b.ToTable("finding_acknowledgments", (string)null);
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.LinkAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AccessScope")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("access_scope");
+
+                    b.Property<string>("DataAccessLevel")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("data_access_level");
+
+                    b.Property<string>("IdentityKind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("identity_kind");
+
+                    b.Property<Guid?>("IdentityResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("identity_resource_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("Origin")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("origin");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid>("SourceComponentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_component_id");
+
+                    b.Property<Guid>("SourceResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_resource_id");
+
+                    b.Property<Guid>("TargetComponentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_component_id");
+
+                    b.Property<Guid>("TargetResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_resource_id");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_links");
+
+                    b.HasIndex("ProjectId", "SourceResourceId")
+                        .HasDatabaseName("ix_project_links_source");
+
+                    b.HasIndex("ProjectId", "TargetResourceId")
+                        .HasDatabaseName("ix_project_links_target");
+
+                    b.ToTable("project_links", (string)null);
                 });
 
             modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", b =>
@@ -786,6 +1162,223 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.ToTable("organization_feature_access", (string)null);
                 });
 
+            modelBuilder.Entity("InfraFlowSculptor.Infrastructure.Persistence.Naming.NameAvailabilityEntity", b =>
+                {
+                    b.Property<string>("AvailabilityDomain")
+                        .HasMaxLength(253)
+                        .HasColumnType("character varying(253)")
+                        .HasColumnName("availability_domain");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(253)
+                        .HasColumnType("character varying(253)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("Attempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("attempts");
+
+                    b.Property<DateTimeOffset?>("CheckedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("checked_at");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("Failure")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("failure_code");
+
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<DateTimeOffset>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.HasKey("AvailabilityDomain", "Name")
+                        .HasName("pk_name_availability");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_name_availability_expires_at");
+
+                    b.HasIndex("Status", "NextAttemptAt")
+                        .HasDatabaseName("ix_name_availability_status_next_attempt_at");
+
+                    b.ToTable("name_availability", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_name_availability_attempts", "attempts >= 0 AND attempts <= 3");
+
+                            t.HasCheckConstraint("ck_name_availability_status", "status IN ('Pending', 'Resolved', 'NotResolved', 'Unknown')");
+                        });
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ComponentAggregate.AppSettingAggregate", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.ComponentAggregate.ComponentAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("ComponentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_app_settings_components_component_id");
+
+                    b.HasOne("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_app_settings_projects_project_id");
+
+                    b.OwnsOne("InfraFlowSculptor.Domain.ComponentAggregate.AppSettingLiteralSource", "LiteralSource", b1 =>
+                        {
+                            b1.Property<Guid>("AppSettingId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("app_setting_id");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("value");
+
+                            b1.HasKey("AppSettingId")
+                                .HasName("pk_app_setting_literals");
+
+                            b1.ToTable("app_setting_literals", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("AppSettingId")
+                                .HasConstraintName("fk_app_setting_literals_app_settings_app_setting_id");
+
+                            b1.OwnsMany("InfraFlowSculptor.Domain.ComponentAggregate.AppSettingLiteralOverride", "Overrides", b2 =>
+                                {
+                                    b2.Property<Guid>("AppSettingId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("app_setting_id");
+
+                                    b2.Property<Guid>("TargetId")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("target_id");
+
+                                    b2.Property<string>("Value")
+                                        .IsRequired()
+                                        .HasColumnType("text")
+                                        .HasColumnName("value");
+
+                                    b2.HasKey("AppSettingId", "TargetId")
+                                        .HasName("pk_app_setting_literal_overrides");
+
+                                    b2.ToTable("app_setting_literal_overrides", (string)null);
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("AppSettingId")
+                                        .HasConstraintName("fk_app_setting_literal_overrides_app_setting_literals_app_sett");
+                                });
+
+                            b1.Navigation("Overrides");
+                        });
+
+                    b.Navigation("LiteralSource");
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ComponentAggregate.ApplicationAggregate", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.ComponentAggregate.ComponentAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("ComponentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_applications_components_component_id");
+
+                    b.HasOne("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_applications_projects_project_id");
+
+                    b.OwnsMany("InfraFlowSculptor.Domain.ComponentAggregate.ApplicationStepDefinition", "Steps", b1 =>
+                        {
+                            b1.Property<Guid>("ApplicationId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("application_id");
+
+                            b1.Property<string>("Name")
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("name");
+
+                            b1.Property<bool>("Blocking")
+                                .HasColumnType("boolean")
+                                .HasColumnName("blocking");
+
+                            b1.Property<bool>("Enabled")
+                                .HasColumnType("boolean")
+                                .HasColumnName("enabled");
+
+                            b1.Property<string>("Position")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("character varying(32)")
+                                .HasColumnName("position");
+
+                            b1.HasKey("ApplicationId", "Name")
+                                .HasName("pk_application_steps");
+
+                            b1.ToTable("application_steps", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ApplicationId")
+                                .HasConstraintName("fk_application_steps_applications_application_id");
+
+                            b1.OwnsMany("InfraFlowSculptor.Domain.ComponentAggregate.ApplicationStepParameter", "Parameters", b2 =>
+                                {
+                                    b2.Property<Guid>("ApplicationId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("application_id");
+
+                                    b2.Property<string>("StepName")
+                                        .HasColumnType("character varying(64)")
+                                        .HasColumnName("step_name");
+
+                                    b2.Property<string>("Name")
+                                        .HasMaxLength(64)
+                                        .HasColumnType("character varying(64)")
+                                        .HasColumnName("name");
+
+                                    b2.Property<string>("Value")
+                                        .IsRequired()
+                                        .HasMaxLength(4096)
+                                        .HasColumnType("character varying(4096)")
+                                        .HasColumnName("value");
+
+                                    b2.HasKey("ApplicationId", "StepName", "Name")
+                                        .HasName("pk_application_step_parameters");
+
+                                    b2.ToTable("application_step_parameters", (string)null);
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ApplicationId", "StepName")
+                                        .HasConstraintName("fk_application_step_parameters_application_steps_application_i");
+                                });
+
+                            b1.Navigation("Parameters");
+                        });
+
+                    b.Navigation("Steps");
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Domain.ComponentAggregate.ComponentAggregate", b =>
                 {
                     b.HasOne("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", null)
@@ -794,6 +1387,37 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_components_projects_project_id");
+
+                    b.OwnsMany("InfraFlowSculptor.Domain.ProjectAggregate.ResourceTypeNamingOverride", "NamingOverrides", b1 =>
+                        {
+                            b1.Property<Guid>("ComponentId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("component_id");
+
+                            b1.Property<string>("Type")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("type");
+
+                            b1.Property<string>("Abbreviation")
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("abbreviation");
+
+                            b1.Property<string>("Template")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("template");
+
+                            b1.HasKey("ComponentId", "Type")
+                                .HasName("pk_component_resource_type_naming_overrides");
+
+                            b1.ToTable("component_resource_type_naming_overrides", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ComponentId")
+                                .HasConstraintName("fk_component_resource_type_naming_overrides_components_compone");
+                        });
 
                     b.OwnsOne("InfraFlowSculptor.Domain.ComponentAggregate.ComponentSingleTarget", "SingleTarget", b1 =>
                         {
@@ -891,6 +1515,10 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                             b1.Property<Guid>("Id")
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
+
+                            b1.Property<Guid?>("DefaultIdentityResourceId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("default_identity_resource_id");
 
                             b1.Property<string>("Description")
                                 .IsRequired()
@@ -1188,7 +1816,6 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                                         .HasColumnName("resource_id");
 
                                     b2.Property<Guid>("TargetId")
-                                        .ValueGeneratedOnAdd()
                                         .HasColumnType("uuid")
                                         .HasColumnName("target_id");
 
@@ -1219,7 +1846,6 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                                         .HasColumnName("resource_id");
 
                                     b2.Property<Guid>("TargetId")
-                                        .ValueGeneratedOnAdd()
                                         .HasColumnType("uuid")
                                         .HasColumnName("target_id");
 
@@ -1250,7 +1876,6 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                                         .HasColumnName("resource_id");
 
                                     b2.Property<Guid>("TargetId")
-                                        .ValueGeneratedOnAdd()
                                         .HasColumnType("uuid")
                                         .HasColumnName("target_id");
 
@@ -1426,6 +2051,8 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                             b1.Navigation("Tags");
                         });
 
+                    b.Navigation("NamingOverrides");
+
                     b.Navigation("ResourceGroups");
 
                     b.Navigation("Resources");
@@ -1475,6 +2102,63 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.Navigation("Members");
                 });
 
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.FindingAcknowledgmentAggregate", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.UserProfileAggregate.UserProfile", null)
+                        .WithMany()
+                        .HasForeignKey("AcknowledgedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_finding_acknowledgments_user_profiles_acknowledged_by");
+
+                    b.HasOne("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_finding_acknowledgments_organizations_organization_id");
+
+                    b.HasOne("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_finding_acknowledgments_projects_project_id");
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.LinkAggregate", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_links_projects_project_id");
+
+                    b.OwnsMany("InfraFlowSculptor.Domain.ProjectAggregate.LinkRole", "Roles", b1 =>
+                        {
+                            b1.Property<Guid>("LinkId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("link_id");
+
+                            b1.Property<string>("Name")
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("name");
+
+                            b1.HasKey("LinkId", "Name")
+                                .HasName("pk_project_link_roles");
+
+                            b1.ToTable("project_link_roles", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("LinkId")
+                                .HasConstraintName("fk_project_link_roles_project_links_link_id");
+                        });
+
+                    b.Navigation("Roles");
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", b =>
                 {
                     b.HasOne("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", null)
@@ -1517,6 +2201,37 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("ProjectId")
                                 .HasConstraintName("fk_project_role_assignments_projects_project_id");
+                        });
+
+                    b.OwnsMany("InfraFlowSculptor.Domain.ProjectAggregate.ResourceTypeNamingOverride", "NamingOverrides", b1 =>
+                        {
+                            b1.Property<Guid>("ProjectId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("project_id");
+
+                            b1.Property<string>("Type")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("type");
+
+                            b1.Property<string>("Abbreviation")
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("abbreviation");
+
+                            b1.Property<string>("Template")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("template");
+
+                            b1.HasKey("ProjectId", "Type")
+                                .HasName("pk_project_resource_type_naming_overrides");
+
+                            b1.ToTable("project_resource_type_naming_overrides", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProjectId")
+                                .HasConstraintName("fk_project_resource_type_naming_overrides_projects_project_id");
                         });
 
                     b.OwnsMany("InfraFlowSculptor.Domain.ProjectAggregate.ProjectTag", "Tags", b1 =>
@@ -1612,6 +2327,10 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("subscription_id");
 
+                            b1.Property<int>("Version")
+                                .HasColumnType("integer")
+                                .HasColumnName("version");
+
                             b1.HasKey("ProjectId", "Id")
                                 .HasName("pk_project_environments");
 
@@ -1660,6 +2379,8 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("Environments");
+
+                    b.Navigation("NamingOverrides");
 
                     b.Navigation("RoleAssignments");
 

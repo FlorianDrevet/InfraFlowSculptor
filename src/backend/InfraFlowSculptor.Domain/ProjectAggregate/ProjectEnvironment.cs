@@ -1,14 +1,17 @@
 using ErrorOr;
+using InfraFlowSculptor.Domain.Common.Models;
 
 namespace InfraFlowSculptor.Domain.ProjectAggregate;
 
-public sealed class ProjectEnvironment
+public sealed class ProjectEnvironment : IHasVersion
 {
     private readonly List<ProjectTag> tags = [];
     private string[] approvers = [];
     private string[] runners = [];
 
     public Guid Id { get; private set; }
+
+    public int Version { get; private set; } = 1;
 
     public string Name { get; private set; } = string.Empty;
 
@@ -74,7 +77,16 @@ public sealed class ProjectEnvironment
         this.tags.AddRange(tags.Select(tag => new ProjectTag(tag.Key, tag.Value)));
     }
 
-    internal void SetPosition(int position) => Position = position;
+    internal void SetPosition(int position)
+    {
+        if (Position == position)
+        {
+            return;
+        }
+
+        Position = position;
+        Touch();
+    }
 
     internal void RecordPublication(DateTimeOffset publishedAt) => FirstPublishedAt ??= publishedAt;
 
@@ -161,6 +173,7 @@ public sealed class ProjectEnvironment
         Runners = normalizedRunners;
         Description = normalizedDescription;
         ProjectAggregate.ReplaceTags(this.tags, normalizedTags.Value);
+        Touch();
         return Result.Success;
     }
 
@@ -247,4 +260,6 @@ public sealed class ProjectEnvironment
         .Where(value => value.Length > 0)
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .ToArray();
+
+    private void Touch() => Version = checked(Version + 1);
 }

@@ -5,4 +5,7 @@ public sealed record ResourceGroupSnapshot(
     string Name,
     string? Region,
     IReadOnlyDictionary<string, string> Tags,
-    IReadOnlyDictionary<Guid, string> ForcedNames);
+    IReadOnlyDictionary<Guid, string> ForcedNames)
+{
+    public int Version { get; init; } = 1;
+}

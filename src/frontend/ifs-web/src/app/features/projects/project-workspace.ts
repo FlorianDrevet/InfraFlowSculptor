@@ -61,11 +61,25 @@ export class ProjectWorkspace {
         iconName: 'layers',
       }),
       this.navigation.register({
+        id: `project-naming-${projectId}`,
+        labelKey: 'project.namingLink',
+        path: `${base}/naming`,
+        scope: 'project',
+        iconName: 'list',
+      }),
+      this.navigation.register({
         id: `project-components-${projectId}`,
         labelKey: 'project.componentsHeading',
         path: `${base}/components`,
         scope: 'project',
         iconName: 'folder',
+      }),
+      this.navigation.register({
+        id: `project-findings-${projectId}`,
+        labelKey: 'project.findingsLink',
+        path: `${base}/findings`,
+        scope: 'project',
+        iconName: 'alert',
       }),
       this.navigation.register({
         id: `project-settings-${projectId}`,

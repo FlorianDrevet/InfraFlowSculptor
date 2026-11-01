@@ -26,7 +26,8 @@ public sealed class CatalogEndpointTests(ApiFactory factory) : IClassFixture<Api
         Assert.Equal(2, securityTypes.Length);
         Assert.Contains(securityTypes, resourceType =>
             resourceType.GetProperty("type").GetString() == "KeyVault"
-            && resourceType.GetProperty("labelFr").GetString() == "Coffre de clés");
+            && resourceType.GetProperty("labelFr").GetString() == "Coffre de clés"
+            && resourceType.GetProperty("abbreviation").GetString() == "kv");
         Assert.Contains(securityTypes, resourceType =>
             resourceType.GetProperty("type").GetString() == "UserAssignedIdentity"
             && resourceType.GetProperty("labelFr").GetString() == "Identité managée affectée par l’utilisateur");

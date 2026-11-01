@@ -21,6 +21,7 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
     private readonly List<ComponentTag> tags = [];
     private readonly List<ResourceGroup> resourceGroups = [];
     private readonly List<Resource> resources = [];
+    private readonly List<ResourceTypeNamingOverride> namingOverrides = [];
 
     public ProjectId ProjectId { get; private set; }
 
@@ -35,6 +36,8 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
     public string CodeKey { get; private set; } = string.Empty;
 
     public string Description { get; private set; } = string.Empty;
+
+    public string? DefaultNameTemplate { get; private set; }
 
     public ComponentDeploymentMode Mode { get; private set; }
 
@@ -52,7 +55,11 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
 
     public IReadOnlyCollection<ComponentTag> Tags => tags.AsReadOnly();
 
+    public IReadOnlyCollection<ResourceTypeNamingOverride> NamingOverrides => namingOverrides.AsReadOnly();
+
     public ComponentSingleTarget? SingleTarget { get; private set; }
+
+    public Guid? DefaultLogAnalyticsResourceId { get; private set; }
 
     public RemovedResourceBehavior RemovedResourceBehavior { get; private set; }
 
@@ -281,6 +288,60 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
         return Result.Success;
     }
 
+    public ErrorOr<Success> ConfigureDefaultNameTemplate(string? template)
+    {
+        var normalizedTemplate = template?.Trim();
+        if (normalizedTemplate is not null && normalizedTemplate.Length is < 1 or > 200)
+        {
+            return Error.Validation("PROJECT_NAMING_TEMPLATE_INVALID", "A naming template must contain between 1 and 200 characters.");
+        }
+
+        if (FirstPublishedAt is not null
+            && !string.Equals(DefaultNameTemplate, normalizedTemplate, StringComparison.Ordinal))
+        {
+            return Error.Conflict("PROJECT_NAMING_LOCKED_AFTER_PUBLICATION", "Naming settings cannot change after publication until the impact preview is available.");
+        }
+
+        DefaultNameTemplate = normalizedTemplate;
+        Touch();
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> ConfigureTypeNamingOverride(string type, string? template, string? abbreviation)
+    {
+        var candidate = ResourceTypeNamingOverride.Create(type, template, abbreviation);
+        if (candidate.IsError)
+        {
+            return candidate.Errors;
+        }
+
+        var existing = namingOverrides.SingleOrDefault(value =>
+            string.Equals(value.Type, candidate.Value.Type, StringComparison.OrdinalIgnoreCase));
+        if (FirstPublishedAt is not null
+            && (existing is null
+                || !string.Equals(existing.Template, candidate.Value.Template, StringComparison.Ordinal)
+                || !string.Equals(existing.Abbreviation, candidate.Value.Abbreviation, StringComparison.Ordinal)))
+        {
+            return Error.Conflict("PROJECT_NAMING_LOCKED_AFTER_PUBLICATION", "Naming settings cannot change after publication until the impact preview is available.");
+        }
+
+        if (existing is not null && candidate.Value.Template is null && candidate.Value.Abbreviation is null)
+        {
+            namingOverrides.Remove(existing);
+        }
+        else if (existing is not null)
+        {
+            existing.SetValues(candidate.Value.Template, candidate.Value.Abbreviation);
+        }
+        else if (candidate.Value.Template is not null || candidate.Value.Abbreviation is not null)
+        {
+            namingOverrides.Add(candidate.Value);
+        }
+
+        Touch();
+        return Result.Success;
+    }
+
     public ErrorOr<ResourceGroup> AddResourceGroup(
         Guid id,
         string name,
@@ -360,7 +421,8 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
         bool isExisting,
         IEnumerable<Guid> targetEnvironmentIds,
         IReadOnlyDictionary<string, JsonElement> properties,
-        IEnumerable<KeyValuePair<string, string>>? tags = null)
+        IEnumerable<KeyValuePair<string, string>>? tags = null,
+        Guid? defaultIdentityResourceId = null)
     {
         if (!resourceGroups.Any(group => group.Id == resourceGroupId))
         {
@@ -384,7 +446,8 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
             isExisting,
             targetEnvironmentIds,
             properties,
-            tags);
+            tags,
+            defaultIdentityResourceId);
         if (created.IsError)
         {
             return created.Errors;
@@ -413,6 +476,15 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
         return Result.Success;
     }
 
+    public ErrorOr<Success> SetResourceDefaultIdentity(Guid resourceId, Guid? identityResourceId) =>
+        UpdateResource(resourceId, resource => resource.SetDefaultIdentity(identityResourceId));
+
+    public ErrorOr<Success> UpdateResourceMetadata(
+        Guid resourceId,
+        string description,
+        IEnumerable<KeyValuePair<string, string>> tags) =>
+        UpdateResource(resourceId, resource => resource.SetMetadata(description, tags));
+
     public ErrorOr<Success> SetResourceOverride(Guid resourceId, Guid targetId, string propertyName, JsonElement value) =>
         UpdateResource(resourceId, resource => resource.SetOverride(targetId, propertyName, value));
 
@@ -425,8 +497,21 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
     public ErrorOr<Success> SetExistingResourceId(Guid resourceId, Guid targetId, string value) =>
         UpdateResource(resourceId, resource => resource.SetExistingResourceId(targetId, value));
 
-    public ErrorOr<Success> SetResourceForcedName(Guid resourceId, Guid targetId, string name) =>
-        UpdateResource(resourceId, resource => resource.SetForcedName(targetId, name));
+    public ErrorOr<Success> SetResourceForcedName(Guid resourceId, Guid targetId, string name)
+    {
+        var resource = FindResource(resourceId);
+        var currentName = resource?.ForcedNames.SingleOrDefault(item => item.TargetId == targetId)?.Name;
+        if (FirstPublishedAt is not null
+            && resource is not null
+            && !string.Equals(currentName, name?.Trim(), StringComparison.Ordinal))
+        {
+            return Error.Conflict(
+                "PROJECT_NAMING_LOCKED_AFTER_PUBLICATION",
+                "Naming settings cannot change after publication until the impact preview is available.");
+        }
+
+        return UpdateResource(resourceId, candidate => candidate.SetForcedName(targetId, name ?? string.Empty));
+    }
 
     public ErrorOr<ResourceChild> AddResourceChild(
         Guid resourceId,
@@ -559,6 +644,25 @@ public sealed partial class ComponentAggregate : AggregateRoot<ComponentId>, IOr
         Touch();
         return Result.Success;
     }
+
+    public ErrorOr<Success> SetDefaultLogAnalyticsResource(Guid? resourceId)
+    {
+        if (resourceId == Guid.Empty)
+        {
+            return Error.Validation("COMPONENT_DEFAULT_LOG_ANALYTICS_INVALID", "The default Log Analytics resource is invalid.");
+        }
+
+        if (DefaultLogAnalyticsResourceId == resourceId)
+        {
+            return Result.Success;
+        }
+
+        DefaultLogAnalyticsResourceId = resourceId;
+        Touch();
+        return Result.Success;
+    }
+
+    public void RecordLinkChange() => Touch();
 
     public bool TargetsEnvironment(Guid environmentId) =>
         Mode == ComponentDeploymentMode.PerEnvironment

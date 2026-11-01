@@ -1,0 +1,240 @@
+{
+  "type": "SqlDatabase",
+  "labels": {
+    "fr": "Base Azure SQL",
+    "en": "Azure SQL database"
+  },
+  "category": "data",
+  "icon": "sql-database",
+  "armType": "Microsoft.Sql/servers/databases",
+  "availableFrom": "lot1",
+  "documentationUrl": "https://learn.microsoft.com/en-us/azure/templates/microsoft.sql/servers/databases",
+  "verifiedAgainstDocsOn": "2026-10-27",
+  "naming": {
+    "abbreviation": "sqldb",
+    "allowed": "^[^<>*%&:\\/?]{1,128}$",
+    "case": "mixed",
+    "separators": [],
+    "forbidConsecutiveSeparators": true,
+    "minLength": 1,
+    "maxLength": 128,
+    "firstChar": "any",
+    "lastChar": "notDot",
+    "uniqueness": "parent",
+    "availabilityDomain": null
+  },
+  "properties": [
+    {
+      "name": "sku",
+      "labels": {
+        "fr": "SKU",
+        "en": "SKU"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "GP_S_Gen5_1",
+      "values": [
+        "Basic",
+        "S0",
+        "S1",
+        "S2",
+        "S3",
+        "GP_S_Gen5_1",
+        "GP_S_Gen5_2",
+        "GP_S_Gen5_4",
+        "GP_Gen5_2",
+        "GP_Gen5_4",
+        "GP_Gen5_8",
+        "HS_Gen5_2",
+        "HS_Gen5_4"
+      ]
+    },
+    {
+      "name": "maxSizeGb",
+      "labels": {
+        "fr": "Taille maximale (Go)",
+        "en": "Maximum size (GB)"
+      },
+      "kind": "integer",
+      "overridable": true,
+      "default": 32,
+      "minimum": 1
+    },
+    {
+      "name": "autoPauseDelay",
+      "labels": {
+        "fr": "Pause automatique (minutes)",
+        "en": "Auto-pause (minutes)"
+      },
+      "kind": "integer",
+      "overridable": true,
+      "default": 60,
+      "minimum": 15,
+      "maximum": 10080
+    },
+    {
+      "name": "minCapacity",
+      "labels": {
+        "fr": "Capacité minimale (vCore)",
+        "en": "Minimum capacity (vCore)"
+      },
+      "kind": "number",
+      "overridable": true,
+      "default": 0.5,
+      "minimum": 0.5
+    },
+    {
+      "name": "zoneRedundant",
+      "labels": {
+        "fr": "Redondance de zone",
+        "en": "Zone redundancy"
+      },
+      "kind": "boolean",
+      "overridable": true,
+      "default": false
+    },
+    {
+      "name": "backupStorageRedundancy",
+      "labels": {
+        "fr": "Redondance des sauvegardes",
+        "en": "Backup storage redundancy"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "Geo",
+      "values": [
+        "Local",
+        "Zone",
+        "Geo"
+      ]
+    },
+    {
+      "name": "collation",
+      "labels": {
+        "fr": "Classement",
+        "en": "Collation"
+      },
+      "kind": "string",
+      "overridable": false,
+      "default": "SQL_Latin1_General_CP1_CI_AS",
+      "lockedAfterPublish": true
+    }
+  ],
+  "fixedValues": [],
+  "children": [
+    {
+      "type": "SqlDatabase",
+      "labels": {
+        "fr": "Base Azure SQL",
+        "en": "Azure SQL database"
+      },
+      "naming": {
+        "abbreviation": "sqldb",
+        "allowed": "^[^<>*%&:\\/?]+[^.]$",
+        "case": "mixed",
+        "separators": [],
+        "forbidConsecutiveSeparators": true,
+        "minLength": 1,
+        "maxLength": 128,
+        "firstChar": "any",
+        "lastChar": "notDot",
+        "uniqueness": "parent",
+        "availabilityDomain": null
+      },
+      "properties": []
+    }
+  ],
+  "identities": {
+    "system": false,
+    "userAssignedMax": 0
+  },
+  "links": {
+    "asSource": [
+      "Hosting"
+    ],
+    "asTarget": [
+      "DataAccess"
+    ],
+    "required": [
+      {
+        "kind": "Hosting",
+        "cardinality": "one"
+      }
+    ]
+  },
+  "outputs": [
+    {
+      "name": "name",
+      "description": "Nom de la base.",
+      "sensitive": false,
+      "computableFromName": true
+    },
+    {
+      "name": "id",
+      "description": "Identifiant de la ressource.",
+      "sensitive": false,
+      "computableFromName": false
+    }
+  ],
+  "lifecycle": {
+    "family": "data"
+  },
+  "roles": [
+    "SQL DB Contributor",
+    "Reader"
+  ],
+  "roleEquivalences": {},
+  "dataAccess": {
+    "supported": true,
+    "levels": [
+      "Lecture",
+      "LectureÉcriture",
+      "Schéma"
+    ],
+    "databaseEngine": "azure-sql"
+  },
+  "exposure": {
+    "modes": [],
+    "privateGroupIds": [],
+    "privateDnsZones": [],
+    "conditions": []
+  },
+  "diagnostics": {
+    "supported": true
+  },
+  "applicationSettings": {
+    "destination": "none"
+  },
+  "languageSupport": {
+    "Bicep": "full",
+    "Terraform": "none",
+    "Pulumi": "none"
+  },
+  "generation": {
+    "Bicep": {
+      "module": "br/public:avm/res/sql/server:0.22.0",
+      "versionPin": "0.22.0",
+      "map": {
+        "database": "databases"
+      }
+    }
+  },
+  "deprecations": [],
+  "privateDnsZones": [],
+  "requiredNetworkRules": [],
+  "recommendedAlerts": [],
+  "pricing": {
+    "source": "azure-retail-prices",
+    "meters": [
+      {
+        "serviceName": "SQL Database",
+        "productName": "General Purpose Serverless",
+        "meterName": "vCore"
+      }
+    ],
+    "assumptions": [],
+    "estimated": false,
+    "unestimatedReason": "Aucun scénario tarifaire par défaut n’est estimé pour le profil du pilote."
+  },
+  "drift": []
+}

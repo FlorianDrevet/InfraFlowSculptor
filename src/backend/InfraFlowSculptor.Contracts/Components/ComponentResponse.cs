@@ -1,4 +1,5 @@
 using InfraFlowSculptor.Domain.ComponentAggregate;
+using InfraFlowSculptor.Contracts.Naming;
 
 namespace InfraFlowSculptor.Contracts.Components;
 
@@ -16,6 +17,9 @@ public sealed record ComponentResponse(
     RemovedResourceBehavior RemovedResourceBehavior,
     bool DeletionProtectionEnabled,
     DateTimeOffset? FirstPublishedAt,
+    string? DefaultNameTemplate,
+    IReadOnlyList<NamingOverrideResponse> NamingOverrides,
     IReadOnlyDictionary<string, string> Tags,
     IReadOnlyList<ResourceGroupResponse> ResourceGroups,
-    IReadOnlyList<ResourceResponse> Resources);
+    IReadOnlyList<ResourceResponse> Resources,
+    Guid? DefaultLogAnalyticsResourceId);

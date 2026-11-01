@@ -59,6 +59,7 @@ composant est refusée (`VAL-PUB-DESTINATION`) et la personne est notifiée.
 
 **UC-CMP-02 — Modifier un composant** (`composants.gerer`). Le code est verrouillé après la première
 publication ([RG-PRJ-01](11-projets-et-environnements.md)) ; les autres champs suivent leurs règles.
+Le réglage de l'espace Log Analytics par défaut relève aussi de `composants.gerer` ([DEC-42](03-decisions.md)).
 
 **UC-CMP-03 — Dupliquer un composant** (`composants.gerer`). Nouveau nom et code obligatoires. Sont copiés :
 groupes de ressources, ressources, surcharges, présences, enfants, liaisons internes (vers les copies),

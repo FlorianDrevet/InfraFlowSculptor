@@ -99,10 +99,10 @@ test('David ne peut pas ouvrir les réglages d’une organisation étrangère', 
   await davidPage.close();
 });
 
-test('Emma sans organisation arrive sur la page de création', async ({ page }) => {
+test('Nina sans organisation arrive sur la page de création', async ({ page }) => {
   test.skip(!process.env['IFS_E2E_PASSWORD'], 'Set IFS_E2E_PASSWORD for the local demo accounts.');
 
-  await loginAsUser(page, 'emma@outlook.example');
+  await loginAsUser(page, 'nina@contoso.example');
   await expect(page.getByRole('heading', { name: 'Créer une organisation' })).toBeVisible();
   await expect(page.getByLabel("Nom de l'organisation")).toBeVisible();
 });

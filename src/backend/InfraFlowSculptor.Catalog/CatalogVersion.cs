@@ -12,6 +12,8 @@ public sealed class CatalogVersion
         string notes,
         DateOnly verifiedAgainstDocsOn,
         ImmutableArray<CatalogResourceTypeDescriptor> resourceTypes,
+        ImmutableArray<CatalogBuildProfileDescriptor> buildProfiles,
+        ImmutableArray<CatalogPipelineStepDescriptor> pipelineSteps,
         ImmutableArray<CatalogRegion> regions,
         string fingerprint)
     {
@@ -22,6 +24,8 @@ public sealed class CatalogVersion
         Notes = notes;
         VerifiedAgainstDocsOn = verifiedAgainstDocsOn;
         ResourceTypes = resourceTypes;
+        BuildProfiles = buildProfiles;
+        PipelineSteps = pipelineSteps;
         Regions = regions;
         Fingerprint = fingerprint;
     }
@@ -39,6 +43,10 @@ public sealed class CatalogVersion
     public DateOnly VerifiedAgainstDocsOn { get; }
 
     public ImmutableArray<CatalogResourceTypeDescriptor> ResourceTypes { get; }
+
+    public ImmutableArray<CatalogBuildProfileDescriptor> BuildProfiles { get; }
+
+    public ImmutableArray<CatalogPipelineStepDescriptor> PipelineSteps { get; }
 
     public ImmutableArray<CatalogRegion> Regions { get; }
 

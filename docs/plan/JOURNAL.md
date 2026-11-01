@@ -95,3 +95,26 @@
 | 2026-10-28 17:03 | Codex | `J0-12` blocage confirmé | docs/plan/revues/J0-12-blocage-requiredwhen-20261028.md |
 | 2026-10-28 17:11 | Codex | `J0-12` blocage résolu | docs/plan/revues/J0-12-deblocage-requiredwhen-20261028.md |
 | 2026-10-28 18:45 | Codex | `J0-12` terminée | commit `9d47792` |
+| 2026-10-28 20:48 | Codex | `J0-13` terminée | commit `f7a169d` |
+| 2026-10-29 00:22 | Codex | `J0-14` terminée | commit `407e564` |
+| 2026-10-29 03:00 | Codex | `J0-15` blocage confirmé | docs/plan/revues/J0-15-blocage-20261029.md |
+| 2026-10-29 08:46 | Codex | `J0-15` blocage résolu | docs/plan/revues/J0-15-deblocage-20261029.md |
+| 2026-10-29 08:48 | Codex | `J0-15` terminée | commit `c2ae2f5` |
+| 2026-10-29 11:19 | Codex | `J0-16` terminée | commit `170aeff` |
+| 2026-10-29 11:52 | Codex | `J0-17` terminée | commit `7f77630` |
+| 2026-10-29 12:44 | Codex | `J0-18` recette autonome à exécuter |  |
+| 2026-10-29 13:27 | Codex | `J0-18` reprise après recette autonome vérifiée |  |
+| 2026-10-29 13:36 | Codex | `J0-18` terminée | commit `44060e3` |
+| 2026-10-29 14:50 | Codex | `J0-19` terminée | commit `51a06ab` |
+| 2026-10-29 18:04 | Codex | `J0-20` recette autonome à exécuter |  |
+| 2026-10-29 22:50 | Codex | `J0-20` reprise après recette autonome vérifiée |  |
+| 2026-10-29 22:50 | Codex | `J0-20` terminée | commit `af75781` |
+| 2026-10-30 03:51 | Codex | `R-05` recette autonome à exécuter |  |
+| 2026-10-31 16:45 | Codex | `R-05` reprise après recette autonome vérifiée |  |
+| 2026-10-31 16:45 | Codex | `R-05` blocage confirmé | docs/plan/revues/R-05-blocage-20261031.md |
+| 2026-10-31 18:42 | Codex | `R-05` décision DSL appliquée sur recommandation Claude Sonnet; 683 tests .NET et 199 tests frontend passent, M13 Scalar manuel reste bloqué par Work settings | docs/plan/revues/R-05-autovalidation.md |
+| 2026-10-31 19:10 | Codex | `R-05` recontrôle M13 : Computer Use/Chrome autorisés, mais l'AppHost IFS est arrêté et les ports locaux pointent vers d'autres projets; Scalar renvoie 404. Claude Sonnet confirme qu'aucun port alternatif n'est prévu; volume `ifs-postgres-17-data` présent, arrêt temporaire des autres AppHosts à arbitrer. Aucune commande de rôle ni service externe touché | docs/plan/revues/R-05-blocage-20261031.md |
+| 2026-10-31 19:22 | Codex | `R-05` reprise M13 : AppHosts Vole-Papillon arrêtés sur autorisation, sans relance; AppHost IFS démarré avec volume PostgreSQL existant; Scalar et Keycloak local répondent. La connexion OAuth mène à la fenêtre Chloé, mais le mot de passe de recette est absent des accès locaux; aucune commande de rôle n'a été envoyée. Skill `computer-use` mise à jour et validée avec exception Keycloak local; gate toujours `BLOQUE` | docs/plan/revues/R-05-blocage-20261031.md |
+| 2026-11-01 09:38 | Codex | `R-05` AppHost IFS relancé après arrêt entre sessions; `/alive`, Scalar et OIDC répondent, `/v1/me` reste anonyme. Mot de passe Chloé absent des accès locaux vérifiables; demande de connexion directe dans Chrome, sans transmission du secret. Aucun AppHost Vole-Papillon relancé; gate `BLOQUE` | docs/plan/revues/R-05-blocage-20261031.md |
+| 2026-11-01 09:59 | Codex | `R-05` blocage résolu | docs/plan/revues/R-05-resolution-20261101.md |
+| 2026-11-01 09:59 | Codex | `R-05` auto-validée | R-05-autovalidation.md |

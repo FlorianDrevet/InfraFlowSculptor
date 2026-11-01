@@ -1,4 +1,18 @@
-import { ChangeDetectionStrategy, Component, inject, input, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  input,
+  OnChanges,
+  OnInit,
+  signal,
+  SimpleChanges,
+  ViewChild,
+} from '@angular/core';
+import { ApiError } from '../../core/http/api-error';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -6,11 +20,16 @@ import { firstValueFrom } from 'rxjs';
 import type {
   ComponentResponse,
   ProjectEnvironmentResponse,
+  ProjectValidationComponentResponse,
+  ResourceDeletionImpactResponse,
+  ResourceResponse,
   ResourceGroupResponse,
 } from '../../core/api/generated';
 import { ComponentsService } from '../../core/projects/components.service';
 import { ProjectsService } from '../../core/projects/projects.service';
+import { ResourcesService } from '../../core/resources/resources.service';
 import { DsButton } from '../../ds/button/button';
+import { ResourceDeleteDialog } from './resource-delete-dialog';
 
 interface ResourceGroupForm {
   name: string;
@@ -58,16 +77,22 @@ function parseForcedNames(
 
 @Component({
   selector: 'app-component-detail',
-  imports: [DsButton, FormsModule, RouterLink, TranslocoPipe],
+  imports: [DsButton, FormsModule, ResourceDeleteDialog, RouterLink, TranslocoPipe],
   templateUrl: './component-detail.html',
   styleUrl: './component-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ComponentDetail implements OnInit {
+export class ComponentDetail implements OnChanges, OnInit {
   readonly projectId = input.required<string>();
   readonly componentId = input.required<string>();
   protected readonly component = signal<ComponentResponse | null>(null);
   protected readonly environments = signal<ProjectEnvironmentResponse[]>([]);
+  protected readonly orderedComponents = signal<ProjectValidationComponentResponse[]>([]);
+  protected readonly validationLoading = signal(true);
+  protected readonly validationUnavailable = signal(false);
+  protected readonly componentDependencies = computed(() =>
+    this.orderedComponents().find((item) => item.id === this.component()?.id),
+  );
   protected readonly canManageComponents = signal(false);
   protected readonly canEditModel = signal(false);
   protected readonly loading = signal(true);
@@ -78,11 +103,38 @@ export class ComponentDetail implements OnInit {
   protected readonly groupForm = signal<ResourceGroupForm>(this.emptyGroupForm());
   protected readonly pendingDeletionGroupId = signal<string | null>(null);
   protected readonly deletingGroup = signal(false);
+  protected readonly pendingDeleteResource = signal<ResourceResponse | null>(null);
+  protected readonly deletionImpact = signal<ResourceDeletionImpactResponse | null>(null);
+  protected readonly deletionConfirmation = signal('');
+  protected readonly deletionLoading = signal(false);
+  protected readonly deletingResource = signal(false);
+  protected readonly deletionError = signal(false);
+  protected readonly deletionConflict = signal(false);
+  protected readonly resourceDeletionNotice = signal<'removed' | 'alreadyRemoved' | null>(null);
+  @ViewChild('resourcesHeading') private resourcesHeading?: ElementRef<HTMLHeadingElement>;
+  @ViewChild('resourceDeletionStatus')
+  private resourceDeletionStatus?: ElementRef<HTMLParagraphElement>;
+  private deletionImpactRequestId = 0;
+  private loadRequestId = 0;
+  private validationRequestId = 0;
+  private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly projects = inject(ProjectsService);
   private readonly componentService = inject(ComponentsService);
+  private readonly resources = inject(ResourcesService);
 
   ngOnInit(): void {
     void this.load();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    const projectChanged = changes['projectId'] && !changes['projectId'].firstChange;
+    const componentChanged = changes['componentId'] && !changes['componentId'].firstChange;
+    if (projectChanged || componentChanged) {
+      this.cancelResourceDeletion(false);
+      this.resourceDeletionNotice.set(null);
+      this.closeGroupForm();
+      void this.load();
+    }
   }
 
   protected openCreateGroup(): void {
@@ -124,6 +176,151 @@ export class ComponentDetail implements OnInit {
 
   protected cancelGroupDeletion(): void {
     this.pendingDeletionGroupId.set(null);
+  }
+
+  protected async requestResourceDeletion(resource: ResourceResponse): Promise<void> {
+    if (this.deletingResource()) return;
+    const requestId = ++this.deletionImpactRequestId;
+    this.resourceDeletionNotice.set(null);
+    this.pendingDeleteResource.set(resource);
+    this.deletionImpact.set(null);
+    this.deletionConfirmation.set('');
+    this.deletionError.set(false);
+    this.deletionConflict.set(false);
+    this.deletionLoading.set(true);
+    try {
+      const impact = await firstValueFrom(
+        this.resources.deletionImpact(this.projectId(), this.componentId(), resource.id),
+      );
+      if (requestId !== this.deletionImpactRequestId) return;
+      this.deletionImpact.set(impact);
+    } catch (error) {
+      if (requestId !== this.deletionImpactRequestId) return;
+      if (error instanceof ApiError && error.status === 404) {
+        this.cancelResourceDeletion(false);
+        this.resourceDeletionNotice.set('alreadyRemoved');
+        await this.load();
+        this.focusDeletionResult();
+      } else {
+        this.deletionError.set(true);
+      }
+    } finally {
+      if (requestId === this.deletionImpactRequestId) this.deletionLoading.set(false);
+    }
+  }
+
+  protected updateDeletionConfirmation(value: string): void {
+    this.deletionConfirmation.set(value);
+  }
+
+  protected cancelResourceDeletion(restoreFocus = true): void {
+    this.deletionImpactRequestId++;
+    this.pendingDeleteResource.set(null);
+    this.deletionImpact.set(null);
+    this.deletionLoading.set(false);
+    this.deletionError.set(false);
+    this.deletionConflict.set(false);
+    if (restoreFocus) this.focusResourcesHeading();
+  }
+
+  protected async deleteResource(): Promise<void> {
+    const resource = this.pendingDeleteResource();
+    const impact = this.deletionImpact();
+    if (
+      !resource ||
+      !impact ||
+      this.deletionConfirmation() !== resource.logicalName ||
+      this.deletingResource()
+    )
+      return;
+
+    const deleteRequestId = this.deletionImpactRequestId;
+    this.deletingResource.set(true);
+    this.deletionError.set(false);
+    this.deletionConflict.set(false);
+    try {
+      await firstValueFrom(
+        this.resources.delete(this.projectId(), this.componentId(), resource.id, {
+          expectedVersion: impact.resourceVersion,
+        }),
+      );
+      const closedCurrentDialog = deleteRequestId === this.deletionImpactRequestId;
+      if (closedCurrentDialog) {
+        this.cancelResourceDeletion(false);
+        this.resourceDeletionNotice.set('removed');
+      }
+      await this.load();
+      if (closedCurrentDialog) this.focusDeletionResult();
+    } catch (error) {
+      this.deletingResource.set(false);
+      if (deleteRequestId !== this.deletionImpactRequestId) {
+        await this.load();
+        return;
+      }
+
+      if (error instanceof ApiError && error.status === 404) {
+        this.cancelResourceDeletion(false);
+        this.resourceDeletionNotice.set('alreadyRemoved');
+        await this.load();
+        this.focusDeletionResult();
+        return;
+      }
+
+      const conflict = error instanceof ApiError && error.status === 409;
+      this.deletionConflict.set(conflict);
+      this.deletionError.set(true);
+      if (conflict) {
+        this.deletionImpact.set(null);
+        this.deletionConfirmation.set('');
+        this.deletionLoading.set(true);
+        const requestId = ++this.deletionImpactRequestId;
+        try {
+          const refreshedComponent = await firstValueFrom(
+            this.componentService.get(this.projectId(), this.componentId()),
+          );
+          if (requestId !== this.deletionImpactRequestId) return;
+          this.component.set(refreshedComponent);
+          const currentResource = refreshedComponent.resources.find(
+            (item) => item.id === resource.id,
+          );
+          if (!currentResource) {
+            this.cancelResourceDeletion(false);
+            this.resourceDeletionNotice.set('alreadyRemoved');
+            this.focusDeletionResult();
+            return;
+          }
+
+          this.pendingDeleteResource.set(currentResource);
+          const refreshedImpact = await firstValueFrom(
+            this.resources.deletionImpact(this.projectId(), this.componentId(), currentResource.id),
+          );
+          if (requestId !== this.deletionImpactRequestId) return;
+          this.deletionImpact.set(refreshedImpact);
+        } catch (refreshError) {
+          if (requestId !== this.deletionImpactRequestId) return;
+          if (refreshError instanceof ApiError && refreshError.status === 404) {
+            this.cancelResourceDeletion(false);
+            this.resourceDeletionNotice.set('alreadyRemoved');
+            await this.load();
+            this.focusDeletionResult();
+          } else {
+            this.deletionError.set(true);
+          }
+        } finally {
+          if (requestId === this.deletionImpactRequestId) this.deletionLoading.set(false);
+        }
+      } else {
+        const requestId = this.deletionImpactRequestId;
+        this.deletionLoading.set(true);
+        try {
+          await this.load();
+        } finally {
+          if (requestId === this.deletionImpactRequestId) this.deletionLoading.set(false);
+        }
+      }
+    } finally {
+      this.deletingResource.set(false);
+    }
   }
 
   protected async saveGroup(): Promise<void> {
@@ -192,23 +389,65 @@ export class ComponentDetail implements OnInit {
   }
 
   private async load(): Promise<void> {
+    const requestId = ++this.loadRequestId;
+    const projectId = this.projectId();
+    const componentId = this.componentId();
     this.loading.set(true);
     this.loadError.set(false);
+    this.validationLoading.set(true);
+    this.validationUnavailable.set(false);
     try {
       const [component, environments, permissions] = await Promise.all([
-        firstValueFrom(this.componentService.get(this.projectId(), this.componentId())),
-        firstValueFrom(this.projects.environments(this.projectId())),
-        firstValueFrom(this.projects.myPermissions(this.projectId())),
+        firstValueFrom(this.componentService.get(projectId, componentId)),
+        firstValueFrom(this.projects.environments(projectId)),
+        firstValueFrom(this.projects.myPermissions(projectId)),
       ]);
+      if (requestId !== this.loadRequestId) return;
       this.component.set(component);
       this.environments.set(environments);
       this.canManageComponents.set(permissions.permissions.includes('components.manage'));
       this.canEditModel.set(permissions.permissions.includes('model.edit'));
+      void this.loadValidation(projectId, requestId);
     } catch {
-      this.loadError.set(true);
+      if (requestId === this.loadRequestId) {
+        this.loadError.set(true);
+        this.validationLoading.set(false);
+      }
     } finally {
-      this.loading.set(false);
+      if (requestId === this.loadRequestId) this.loading.set(false);
     }
+  }
+
+  private async loadValidation(projectId: string, loadRequestId: number): Promise<void> {
+    const requestId = ++this.validationRequestId;
+    try {
+      const validation = await firstValueFrom(this.projects.validation(projectId));
+      if (loadRequestId !== this.loadRequestId || requestId !== this.validationRequestId) return;
+      this.orderedComponents.set(validation.orderedComponents);
+      this.validationUnavailable.set(
+        !validation.orderedComponents.some((item) => item.id === this.component()?.id),
+      );
+    } catch {
+      if (loadRequestId !== this.loadRequestId || requestId !== this.validationRequestId) return;
+      this.orderedComponents.set([]);
+      this.validationUnavailable.set(true);
+    } finally {
+      if (loadRequestId === this.loadRequestId && requestId === this.validationRequestId) {
+        this.validationLoading.set(false);
+      }
+    }
+  }
+
+  private focusDeletionResult(): void {
+    this.changeDetector.detectChanges();
+    const target =
+      this.resourceDeletionStatus?.nativeElement ?? this.resourcesHeading?.nativeElement;
+    target?.focus();
+  }
+
+  private focusResourcesHeading(): void {
+    this.changeDetector.detectChanges();
+    this.resourcesHeading?.nativeElement.focus();
   }
 
   private forcedNamesByCode(values: Record<string, string>): Record<string, string> {

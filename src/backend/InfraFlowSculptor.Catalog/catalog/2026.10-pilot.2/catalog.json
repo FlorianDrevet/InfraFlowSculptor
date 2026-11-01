@@ -1,0 +1,8 @@
+{
+  "version": "2026.10-pilot.2",
+  "status": "published",
+  "publishedAt": "2026-10-29",
+  "supportEndsAt": null,
+  "notes": "Correctif 2 du catalogue pilote : exposition publique et restreinte avec plages CIDR IPv4.",
+  "verifiedAgainstDocsOn": "2026-10-29"
+}

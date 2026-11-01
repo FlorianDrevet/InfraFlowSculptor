@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { Component } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideTransloco, TranslocoLoader, Translation } from '@jsverse/transloco';
 import { Observable, of } from 'rxjs';
@@ -15,6 +17,7 @@ class StaticTranslationLoader implements TranslocoLoader {
         loading: 'Chargement…',
         environmentLoadError: 'Impossible de charger l’environnement.',
         environmentEditorTitle: 'Modifier l’environnement',
+        createEnvironmentTitle: 'Nouvel environnement',
         environmentName: 'Nom',
         environmentCodeLabel: 'Code',
         subscriptionId: 'Abonnement',
@@ -112,5 +115,118 @@ describe('EnvironmentEdit', () => {
 
     expect(native.querySelector('[role="switch"]')?.getAttribute('aria-checked')).toBe('false');
     expect(native.querySelector('button[type="submit"]')).toBeNull();
+  });
+});
+
+@Component({ template: '<p>Liste des environnements</p>' })
+class EnvironmentListRouteStub {}
+
+describe('EnvironmentEdit navigation', () => {
+  it('returns to the environment list after saving or cancelling from the real nested route', async () => {
+    const projectId = '77777777-7777-4777-8777-777777777777';
+    const project = {
+      id: projectId,
+      version: 2,
+      name: 'shop',
+      code: 'shop',
+      firstPublishedAt: null,
+    } as ProjectSummaryResponse;
+    const createdEnvironment = {
+      id: '88888888-8888-4888-8888-888888888888',
+      name: 'Development',
+      code: 'dev',
+      position: 1,
+      subscriptionId: '99999999-9999-4999-8999-999999999999',
+      region: 'francecentral',
+      deploymentConnection: '',
+      isProtected: false,
+      approvers: [],
+      runners: [],
+      description: '',
+      tags: {},
+      firstPublishedAt: null,
+    } as ProjectEnvironmentResponse;
+    const service = {
+      get: vi.fn().mockReturnValue(of(project)),
+      environments: vi.fn().mockReturnValue(of([])),
+      myPermissions: vi
+        .fn()
+        .mockReturnValue(of({ permissions: ['environments.manage'], assignments: [] })),
+      addEnvironment: vi.fn().mockReturnValue(of(createdEnvironment)),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [EnvironmentEdit, EnvironmentListRouteStub],
+      providers: [
+        provideRouter(
+          [
+            {
+              path: 'o/:orgId/projects/:projectId',
+              children: [
+                { path: 'environments', component: EnvironmentListRouteStub },
+                { path: 'environments/:environmentId', component: EnvironmentEdit },
+              ],
+            },
+          ],
+          withComponentInputBinding(),
+        ),
+        { provide: ProjectsService, useValue: service },
+        provideTransloco({
+          config: {
+            availableLangs: ['fr'],
+            defaultLang: 'fr',
+            fallbackLang: 'fr',
+            reRenderOnLangChange: false,
+            prodMode: true,
+          },
+          loader: StaticTranslationLoader,
+        }),
+      ],
+    }).compileComponents();
+
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(
+      `/o/contoso/projects/${projectId}/environments/new`,
+      EnvironmentEdit,
+    );
+    const native = harness.routeNativeElement as HTMLElement;
+    await vi.waitFor(() =>
+      expect(native.querySelector('input[name="environmentName"]')).not.toBeNull(),
+    );
+
+    for (const [name, value] of [
+      ['environmentName', 'Development'],
+      ['environmentCode', 'dev'],
+      ['subscriptionId', '99999999-9999-4999-8999-999999999999'],
+      ['region', 'francecentral'],
+    ]) {
+      const input = native.querySelector<HTMLInputElement>(`input[name="${name}"]`);
+      expect(input).not.toBeNull();
+      input!.value = value;
+      input!.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    const save = native.querySelector<HTMLButtonElement>('button[type="submit"]');
+    expect(save).not.toBeNull();
+    save!.click();
+    await vi.waitFor(() =>
+      expect(TestBed.inject(Router).url).toBe(`/o/contoso/projects/${projectId}/environments`),
+    );
+    expect(service.addEnvironment).toHaveBeenCalledWith(
+      projectId,
+      expect.objectContaining({ code: 'dev', name: 'Development' }),
+    );
+
+    await harness.navigateByUrl(
+      `/o/contoso/projects/${projectId}/environments/new`,
+      EnvironmentEdit,
+    );
+    const component = harness.routeDebugElement?.componentInstance as EnvironmentEdit;
+    (component as unknown as { cancel: () => void }).cancel();
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+    await vi.waitFor(() =>
+      expect(TestBed.inject(Router).url).toBe(`/o/contoso/projects/${projectId}/environments`),
+    );
   });
 });

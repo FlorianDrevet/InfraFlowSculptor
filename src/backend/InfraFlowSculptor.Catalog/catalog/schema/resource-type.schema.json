@@ -118,7 +118,15 @@
           "properties": {
             "module": { "type": "string", "pattern": "^br/public:avm/" },
             "versionPin": { "type": "string", "minLength": 1 },
-            "map": { "type": "object", "additionalProperties": { "type": "string", "minLength": 1 } }
+            "map": { "type": "object", "additionalProperties": { "type": "string", "minLength": 1 } },
+            "parameterObjects": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "minProperties": 1,
+                "additionalProperties": { "$ref": "#/$defs/generationObjectValue" }
+              }
+            }
           },
           "additionalProperties": false
         }
@@ -127,12 +135,45 @@
     },
     "deprecations": { "type": "array", "items": { "$ref": "#/$defs/deprecation" } },
     "privateDnsZones": { "type": "array", "items": { "$ref": "#/$defs/privateDnsZone" } },
+    "constraints": { "type": "array", "items": { "$ref": "#/$defs/constraint" } },
     "requiredNetworkRules": { "type": "array", "items": { "$ref": "#/$defs/networkRule" } },
     "recommendedAlerts": { "type": "array", "items": { "$ref": "#/$defs/alert" } },
     "pricing": { "$ref": "#/$defs/pricing" },
     "drift": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
   },
   "$defs": {
+    "generationObjectValue": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["ref"],
+          "properties": { "ref": { "type": "string", "minLength": 1 } },
+          "maxProperties": 1,
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["const"],
+          "properties": { "const": { "type": ["string", "number", "boolean"] } },
+          "maxProperties": 1,
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["enumRef", "values"],
+          "properties": {
+            "enumRef": { "type": "string", "minLength": 1 },
+            "values": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": { "type": ["string", "number", "boolean"] }
+            }
+          },
+          "maxProperties": 2,
+          "additionalProperties": false
+        }
+      ]
+    },
     "labels": {
       "type": "object",
       "required": ["fr", "en"],
@@ -165,14 +206,46 @@
         "labels": { "$ref": "#/$defs/labels" },
         "kind": {
           "enum": ["boolean", "integer", "number", "string", "enum", "reference", "array", "object"],
-          "description": "Pour array, la valeur est un tableau JSON; pour object, un objet JSON. Le descripteur fixe le type du conteneur; ses éléments et membres imbriqués peuvent être des scalaires, tableaux ou objets et sont stockés comme arbre relationnel typé."
+          "description": "Pour array, la valeur est un tableau JSON; pour object, un objet JSON. Le descripteur fixe le type du conteneur; ses éléments et membres imbriqués peuvent être des scalaires, tableaux ou objets et sont stockés comme arbre relationnel typé. `items` permet de préciser le type et le format des éléments d'un tableau homogène."
         },
+        "items": {
+          "type": "object",
+          "required": ["kind"],
+          "properties": {
+            "kind": { "enum": ["boolean", "integer", "number", "string", "enum", "reference", "object"] },
+            "format": { "enum": ["ipv4Cidr"] },
+            "members": { "type": "array", "items": { "$ref": "#/$defs/propertyMember" }, "minItems": 1 },
+            "uniqueBy": { "type": "string", "minLength": 1 },
+            "constraints": { "type": "array", "items": { "$ref": "#/$defs/constraint" } }
+          },
+          "allOf": [
+            {
+              "if": { "required": ["members"] },
+              "then": { "properties": { "kind": { "const": "object" } } }
+            },
+            {
+              "if": { "properties": { "kind": { "const": "object" } } },
+              "then": { "required": ["members"] }
+            },
+            {
+              "if": { "required": ["uniqueBy"] },
+              "then": { "properties": { "kind": { "const": "object" } } }
+            },
+            {
+              "if": { "required": ["constraints"] },
+              "then": { "properties": { "kind": { "const": "object" } } }
+            }
+          ],
+          "additionalProperties": false
+        },
+        "allowedFrom": { "$ref": "#/$defs/allowedValuesSource" },
         "values": { "type": "array", "items": {} },
         "default": {},
         "minimum": { "type": "number" },
         "maximum": { "type": "number" },
         "minLength": { "type": "integer", "minimum": 0 },
         "maxLength": { "type": "integer", "minimum": 0 },
+        "maxItems": { "type": "integer", "minimum": 0 },
         "pattern": { "type": "string" },
         "overridable": { "type": "boolean" },
         "lockedAfterPublish": { "type": "boolean" },
@@ -186,7 +259,100 @@
         "condition": { "type": "string" },
         "description": { "type": "string" }
       },
+      "allOf": [
+        {
+          "if": { "required": ["items"] },
+          "then": { "properties": { "kind": { "const": "array" } } }
+        },
+        {
+          "if": {
+            "required": ["items"],
+            "properties": {
+              "items": {
+                "required": ["format"],
+                "properties": { "format": { "const": "ipv4Cidr" } }
+              }
+            }
+          },
+          "then": { "properties": { "items": { "properties": { "kind": { "const": "string" } } } } }
+        }
+      ],
       "additionalProperties": false
+    },
+    "propertyMember": {
+      "type": "object",
+      "required": ["name", "kind", "required"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["boolean", "integer", "number", "string", "enum", "reference"] },
+        "required": { "type": "boolean" },
+        "values": { "type": "array", "items": {} },
+        "forbiddenValues": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "minimum": { "type": "number" },
+        "maximum": { "type": "number" },
+        "minLength": { "type": "integer", "minimum": 0 },
+        "maxLength": { "type": "integer", "minimum": 0 },
+        "pattern": { "type": "string" },
+        "format": { "enum": ["ipv4Cidr"] }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["format"] },
+          "then": { "properties": { "kind": { "const": "string" } } }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "allowedValuesSource": {
+      "type": "object",
+      "required": ["linkKind", "targetProperty", "targetMember", "implicitValues"],
+      "properties": {
+        "linkKind": { "$ref": "#/$defs/linkKind" },
+        "targetProperty": { "type": "string", "minLength": 1 },
+        "targetMember": { "type": "string", "minLength": 1 },
+        "implicitValues": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "constraint": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["id", "kind", "left", "operator", "right"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1, "maxLength": 47, "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,46}$(?![\\s\\S])" },
+            "kind": { "const": "compare" },
+            "left": { "type": "string", "minLength": 1 },
+            "operator": { "enum": ["lessThanOrEqual"] },
+            "right": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["id", "kind", "properties", "tuples"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1, "maxLength": 47, "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,46}$(?![\\s\\S])" },
+            "kind": { "const": "allowedTuples" },
+            "properties": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 2, "maxItems": 4, "uniqueItems": true },
+            "tuples": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "array", "minItems": 2, "maxItems": 4, "items": { "type": ["string", "number", "boolean"] } }
+            },
+            "when": {
+              "type": "object",
+              "required": ["property", "equals"],
+              "properties": {
+                "property": { "type": "string", "minLength": 1 },
+                "equals": { "type": ["string", "number", "boolean"] }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     },
     "fixedValue": {
       "type": "object",

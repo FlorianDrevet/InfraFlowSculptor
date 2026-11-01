@@ -1,0 +1,79 @@
+<div class="resource-type-picker__backdrop">
+  <section
+    class="resource-type-picker"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="resource-type-picker-title"
+    tabindex="-1"
+    cdkTrapFocus
+    [cdkTrapFocusAutoCapture]="true"
+  >
+    <header>
+      <div>
+        <h2 id="resource-type-picker-title">
+          {{ 'resource.addTitle' | transloco: { name: component()?.name ?? '' } }}
+        </h2>
+        <p>{{ 'resource.catalogDescription' | transloco }}</p>
+      </div>
+      <label class="resource-type-picker__search">
+        <span class="visually-hidden">{{ 'resource.searchType' | transloco }}</span>
+        <input
+          name="resourceTypeSearch"
+          type="search"
+          [placeholder]="'resource.searchType' | transloco"
+          [value]="search()"
+          (input)="updateSearch($any($event.target).value)"
+        />
+      </label>
+      <a
+        class="resource-type-picker__close"
+        [routerLink]="['../../']"
+        [attr.aria-label]="'resource.closeAdd' | transloco"
+      >
+        <span aria-hidden="true">×</span>
+      </a>
+    </header>
+
+    <div class="resource-type-picker__body">
+      @if (existingMode()) {
+        <p class="resource-type-picker__notice" role="status">
+          {{ 'resource.existingMode' | transloco }}
+        </p>
+      } @else {
+        <a class="resource-type-picker__existing" [routerLink]="[]" [queryParams]="{ existing: true }">
+          {{ 'resource.addExisting' | transloco }}
+        </a>
+      }
+
+      @if (loading()) {
+        <p role="status">{{ 'resource.loadingCatalog' | transloco }}</p>
+      } @else if (loadError()) {
+        <p class="resource-type-picker__error" role="alert">{{ 'resource.catalogLoadError' | transloco }}</p>
+      } @else if (filteredTypes().length === 0) {
+        <p>{{ 'resource.noMatchingTypes' | transloco }}</p>
+      } @else {
+        @for (group of groupedTypes(); track group.category) {
+          <section class="resource-type-picker__category" [attr.aria-labelledby]="'category-' + group.category">
+            <h3 [id]="'category-' + group.category">{{ categoryLabel(group.category) }}</h3>
+            <ul class="resource-type-picker__list">
+              @for (type of group.types; track type.type) {
+                <li>
+                  <a
+                    [routerLink]="[type.type]"
+                    [queryParams]="existingMode() ? { existing: true } : null"
+                  >
+                    <app-ds-resource-icon [type]="type.type" [size]="32" />
+                    <span class="resource-type-picker__type-name">
+                      <strong>{{ type.labelFr }}</strong>
+                      <code>{{ type.abbreviation }}</code>
+                    </span>
+                  </a>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      }
+    </div>
+  </section>
+</div>

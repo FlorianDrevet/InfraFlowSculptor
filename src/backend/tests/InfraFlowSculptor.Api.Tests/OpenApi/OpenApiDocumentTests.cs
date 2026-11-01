@@ -28,6 +28,12 @@ public sealed class OpenApiDocumentTests : IClassFixture<ApiFactory>
         Assert.True(JsonNode.DeepEquals(committedDocument, runtimeDocument), "Régénérez le document avec dotnet build.");
         Assert.Equal("GetVersion", runtimeDocument?["paths"]?["/v1/version"]?["get"]?["operationId"]?.GetValue<string>());
         Assert.Equal("GetMe", runtimeDocument?["paths"]?["/v1/me"]?["get"]?["operationId"]?.GetValue<string>());
+        Assert.NotNull(runtimeDocument?["paths"]?["/v1/naming/preview"]?["post"]?["responses"]?["503"]);
+        var resourceResponse = runtimeDocument?["components"]?["schemas"]?["ResourceResponse"];
+        Assert.Contains(resourceResponse?["required"]?.AsArray() ?? [],
+            property => property?.GetValue<string>() == "defaultIdentityResourceId");
+        Assert.Contains(resourceResponse?["properties"]?["defaultIdentityResourceId"]?["type"]?.AsArray() ?? [],
+            type => type?.GetValue<string>() == "null");
     }
 
     private static string FindRepositoryFile(params string[] pathSegments)

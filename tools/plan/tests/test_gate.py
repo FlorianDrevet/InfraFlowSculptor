@@ -108,6 +108,15 @@ class GateTests(unittest.TestCase):
         self.assertIn("recette", output.getvalue().lower())
         self.assertIn("Codex", output.getvalue())
 
+    def test_check_allows_recipe_before_auto_review_on_lock(self) -> None:
+        self.write_next(current="R-01", status="EN_ATTENTE_DE_RECETTE")
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            gate.cmd_check()
+
+        self.assertIn("recette", output.getvalue().lower())
+        self.assertIn("Codex", output.getvalue())
+
     def test_done_cannot_skip_pending_recipe(self) -> None:
         self.write_next(current="S-01", status="EN_ATTENTE_DE_RECETTE")
         output = io.StringIO()

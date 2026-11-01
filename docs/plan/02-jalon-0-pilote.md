@@ -480,7 +480,7 @@ pour `log main` (30/90), `kv main` (purge non/oui), `ca api` (CPU, réplicas).
 
 | | |
 |---|---|
-| **Spécifications** | [13](../specs/13-nommage.md) entier (lot 1) : RG-NOM-01 à 11, UC-NOM-01 à 05 ; [DEC-05 à 07](../specs/03-decisions.md), [DEC-60](../specs/03-decisions.md) |
+| **Spécifications** | [13](../specs/13-nommage.md) (lot 1) : RG-NOM-01 à 09 et 11, UC-NOM-01 à 05 ; RG-NOM-10 reportée à J0-28 ([dette](../../.github/test-debt.md)) ; [DEC-05 à 07](../specs/03-decisions.md), [DEC-60](../specs/03-decisions.md) |
 | **Maquette** | [ProjectNaming](../design/maquette-v1/preview/ProjectNaming.html) — **exclues** : disponibilité vérifiée par API Azure (L2) ; panneau « Pourquoi ce nom ? » de [ResourceGeneral](../design/maquette-v1/preview/ResourceGeneral.html) |
 | **Dépend de** | J0-12 |
 | **Commit** | `feat(moteur): nommage par gabarits, assainissement et unicité` |
@@ -489,11 +489,16 @@ pour `log main` (30/90), `kv main` (purge non/oui), `ca api` (CPU, réplicas).
 
 🔧 **À faire.** `NamingEngine` (choix du gabarit sur 5 niveaux, abréviation retenue, jetons, assainissement en
 4 étapes, longueur sans troncature, explication [RG-NOM-03](../specs/13-nommage.md)) ; unicité (nom logique,
-nom Azure par portée, comparaison à l'organisation pour la portée globale) ; impact d'un changement de nom
-après publication ([RG-NOM-10](../specs/13-nommage.md)) ; disponibilité DNS ([RG-NOM-09](../specs/13-nommage.md) lot 1)
-par le worker, `INameAvailabilityProbe`, cache 24 h ; commandes de gabarits et d'abréviations (projet,
+nom Azure par portée, comparaison à l'organisation pour la portée globale) ; disponibilité DNS
+([RG-NOM-09](../specs/13-nommage.md) lot 1) par le worker, `INameAvailabilityProbe`, cache 24 h ; commandes de
+gabarits et d'abréviations (projet,
 composant) ; l'endpoint `POST /v1/naming/preview` de J0-08 bascule sur ce moteur ; écran nommage avec aperçu en
 direct de toutes les ressources.
+
+> **Écart de périmètre confirmé pour J0-13.** Le traitement d'impact de [RG-NOM-10](../specs/13-nommage.md) est reporté à
+> J0-28 : les agrégats verrouillent les réglages de nommage après publication, le plan des noms publiés n'est pas
+> disponible avant la génération des révisions et la révocation des accès intervient au déploiement. Les refus sont
+> conservés jusqu'à l'aperçu d'impact. La dette est suivie dans `.github/test-debt.md`.
 
 ✅ **Vérification automatique.** Un test par règle et par exemple de [13](../specs/13-nommage.md) ; **tous** les noms de
 [reference-pilote § 2.1](reference-pilote.md#21-noms-azure) (dont `crshopmainshared`) ; un gabarit qui dépasse 24
@@ -568,9 +573,11 @@ elle.
 ✅ **Vérification automatique.** Tests par règle ; **tous** les éléments implicites de [reference-pilote § 2.3](reference-pilote.md#23-éléments-implicites-par-environnement)
 calculés à l'identique ; déduplication (deux origines, retrait de l'une → l'attribution reste).
 
-🧪 **Test manuel.** Scalar : sur le projet de démonstration complet, liaisons de `ca api` → AcrPull implicite
-(origine « tirage d'image », portée abonnement C) ; impact du retrait de la liaison Accès vers `log main` →
-« accès révoqué dans Azure au prochain déploiement, y compris en production », gravité Critique.
+🧪 **Test manuel.** Scalar : sur un projet temporaire `shopNN` créé selon [`reference-pilote.md`](reference-pilote.md)
+et épinglé sur `2026.10-pilot.1`, vérifier les liaisons de `ca api` → AcrPull implicite (origine « tirage d'image »,
+portée abonnement C), puis l'impact du retrait de la liaison Accès vers `log main` → « accès révoqué dans Azure au
+prochain déploiement, y compris en production », gravité Critique. Laisser le projet `shop` existant épinglé sur
+`2026.10-pilot` ; supprimer logiquement le projet temporaire après la recette.
 
 🧠 **Mémoire.** `12-engine.md`.
 

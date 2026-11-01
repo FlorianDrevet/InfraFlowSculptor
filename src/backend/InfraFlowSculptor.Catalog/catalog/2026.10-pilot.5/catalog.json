@@ -1,0 +1,8 @@
+{
+  "version": "2026.10-pilot.5",
+  "status": "published",
+  "publishedAt": "2026-10-31",
+  "supportEndsAt": null,
+  "notes": "Contraintes croisées déclaratives et profils Container Apps typés; descripteurs publiés sous version distincte.",
+  "verifiedAgainstDocsOn": "2026-10-30"
+}

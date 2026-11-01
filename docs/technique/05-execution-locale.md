@@ -99,8 +99,9 @@ utilisateur), `tid`, `email`, `email_verified`, `name`, `roles`, `amr`.
 `dotnet run --project src/backend/InfraFlowSculptor.Api -- seed demo` (ou le bouton « Réinitialiser les
 données de démonstration » de la galerie de développement) crée, de façon idempotente : l'organisation
 Contoso (alice, bob, chloe), l'organisation Fabrikam (david), et, à partir de J0, le projet pilote de
-référence complet ([`../plan/reference-pilote.md`](../plan/reference-pilote.md)). Les recettes partent de
-cet état.
+référence complet ([`../plan/reference-pilote.md`](../plan/reference-pilote.md)). Ajoutez l'option `--without-projects`
+à `seed demo` pour les recettes qui demandent de partir sans projet. Les recettes partent de l'état
+correspondant à leur scénario.
 
 ## 5. Gitea (émulateur git)
 

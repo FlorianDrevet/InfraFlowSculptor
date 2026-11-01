@@ -7,6 +7,7 @@ import {
   deleteResourceGroup,
   getProjectComponent,
   listProjectComponents,
+  setComponentDefaultLogAnalytics,
   updateProjectComponent,
   updateResourceGroup,
 } from '../api/generated';
@@ -14,6 +15,7 @@ import type {
   ExpectedVersionRequest,
   SaveComponentRequest,
   SaveResourceGroupRequest,
+  SetComponentDefaultLogAnalyticsRequest,
 } from '../api/generated';
 
 @Injectable({ providedIn: 'root' })
@@ -26,6 +28,14 @@ export class ComponentsService {
 
   get(projectId: string, componentId: string) {
     return this.api.invoke(getProjectComponent, { projectId, componentId });
+  }
+
+  setDefaultLogAnalytics(
+    projectId: string,
+    componentId: string,
+    body: SetComponentDefaultLogAnalyticsRequest,
+  ) {
+    return this.api.invoke(setComponentDefaultLogAnalytics, { projectId, componentId, body });
   }
 
   create(projectId: string, body: SaveComponentRequest) {

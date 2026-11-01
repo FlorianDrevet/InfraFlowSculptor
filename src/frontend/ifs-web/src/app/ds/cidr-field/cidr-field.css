@@ -1,0 +1,39 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.st-cidr-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ifs-space-3);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.st-field-label {
+  padding: 0;
+  color: var(--ifs-text-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.st-cidr-field-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ifs-space-2);
+}
+
+.st-cidr-field-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--ifs-space-2);
+  min-width: 0;
+}
+
+.st-cidr-field-entry {
+  align-items: end;
+}

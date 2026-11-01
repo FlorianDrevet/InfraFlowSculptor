@@ -10,4 +10,7 @@ public sealed record SaveResourceRequest(
     bool IsExisting,
     JsonElement Properties,
     IReadOnlyDictionary<string, string> Tags,
-    int ExpectedVersion);
+    int ExpectedVersion)
+{
+    public Guid? DefaultIdentityResourceId { get; init; }
+}

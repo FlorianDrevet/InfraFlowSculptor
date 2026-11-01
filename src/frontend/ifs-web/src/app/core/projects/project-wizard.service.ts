@@ -21,6 +21,11 @@ import type {
 } from '../api/generated';
 import type { ProjectWizardMetadata } from './project-wizard-metadata';
 
+function getPatchRevision(version: string): number {
+  const patch = version.slice(version.lastIndexOf('.') + 1);
+  return /^\d+$/.test(patch) ? Number(patch) : 0;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProjectWizardService {
   private readonly api = inject(Api);
@@ -39,7 +44,9 @@ export class ProjectWizardService {
             const latest = versions
               .filter((version) => version.status === 'published')
               .sort(
-                (first, second) => Date.parse(second.publishedAt) - Date.parse(first.publishedAt),
+                (first, second) =>
+                  Date.parse(second.publishedAt) - Date.parse(first.publishedAt) ||
+                  getPatchRevision(second.version) - getPatchRevision(first.version),
               )[0];
             if (!latest) {
               throw new Error('No published catalog version is available.');

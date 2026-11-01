@@ -1,0 +1,102 @@
+<div class="resource-delete-dialog__backdrop">
+  <section
+    class="resource-delete-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="resource-delete-title"
+    tabindex="-1"
+    cdkTrapFocus
+    [cdkTrapFocusAutoCapture]="true"
+    (keydown.escape)="dismissOnEscape()"
+  >
+    <header>
+      <h2 id="resource-delete-title">
+        {{ 'resource.deleteTitle' | transloco: { name: resource().logicalName } }}
+      </h2>
+      <p>{{ removalExplanation() | transloco }}</p>
+    </header>
+
+    @if (loading()) {
+      <p role="status">{{ 'resource.loadingImpact' | transloco }}</p>
+    } @else if (error() && !impact()) {
+      <p class="resource-delete-dialog__error" role="alert">
+        {{ 'resource.impactLoadError' | transloco }}
+      </p>
+    } @else if (impact(); as preview) {
+      @if (preview.items.length > 0) {
+        <section>
+          <h3>{{ 'resource.deletedWithResource' | transloco }}</h3>
+          <ul>
+            @for (item of preview.items; track $index) {
+              <li>
+                @if (item.kind === 'Impact') {
+                  {{ impactMessage(item.code, item.message) }}
+                } @else {
+                  <code>{{ item.name }}</code> · {{ item.type }}
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      } @else {
+        <p>{{ 'resource.noCalculatedImpacts' | transloco }}</p>
+      }
+
+      @if (preview.status === 'Partial' && preview.pendingAreas.length > 0) {
+        <section
+          class="resource-delete-dialog__pending"
+          aria-labelledby="resource-pending-areas-heading"
+        >
+          <h3 id="resource-pending-areas-heading">
+            {{ 'resource.analysisStillPending' | transloco }}
+          </h3>
+          <ul>
+            @for (area of preview.pendingAreas; track area) {
+              <li>{{ areaLabel(area) | transloco }}</li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (error()) {
+        <p class="resource-delete-dialog__error" role="alert">
+          {{
+            conflict()
+              ? ('resource.deleteConflict' | transloco)
+              : ('resource.deleteError' | transloco)
+          }}
+        </p>
+      }
+    }
+
+    @if (saving()) {
+      <p role="status">{{ 'resource.deletionInProgress' | transloco }}</p>
+    }
+
+    <label>
+      {{ 'resource.confirmDeleteByName' | transloco: { name: resource().logicalName } }}
+      <input
+        #confirmationInput
+        name="deleteResourceConfirmation"
+        [readOnly]="loading() || saving() || !impact()"
+        [value]="confirmation()"
+        (input)="confirmationChange.emit($any($event.target).value)"
+      />
+    </label>
+
+    <footer>
+      <app-ds-button [disabled]="saving()" (click)="dismiss.emit()">{{
+        'resource.cancel' | transloco
+      }}</app-ds-button>
+      @if (impact()) {
+        <app-ds-button
+          variant="danger"
+          [disabled]="saving() || loading() || !canConfirm()"
+          (click)="confirmDeletion()"
+        >
+          {{ 'resource.delete' | transloco }}
+        </app-ds-button>
+      }
+    </footer>
+  </section>
+</div>

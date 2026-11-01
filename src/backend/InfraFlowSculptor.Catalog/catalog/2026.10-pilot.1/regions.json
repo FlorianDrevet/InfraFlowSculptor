@@ -1,0 +1,100 @@
+{
+  "regions": [
+    {
+      "name": "francecentral",
+      "code": "frc"
+    },
+    {
+      "name": "uksouth",
+      "code": "uks"
+    },
+    {
+      "name": "francesouth",
+      "code": "frs"
+    },
+    {
+      "name": "eastus",
+      "code": "eus"
+    },
+    {
+      "name": "westeurope",
+      "code": "weu"
+    },
+    {
+      "name": "eastus2",
+      "code": "eus2"
+    },
+    {
+      "name": "northeurope",
+      "code": "neu"
+    },
+    {
+      "name": "centralus",
+      "code": "cus"
+    },
+    {
+      "name": "germanywestcentral",
+      "code": "gwc"
+    },
+    {
+      "name": "westus2",
+      "code": "wus2"
+    },
+    {
+      "name": "switzerlandnorth",
+      "code": "szn"
+    },
+    {
+      "name": "westus3",
+      "code": "wus3"
+    },
+    {
+      "name": "swedencentral",
+      "code": "sdc"
+    },
+    {
+      "name": "canadacentral",
+      "code": "cac"
+    },
+    {
+      "name": "norwayeast",
+      "code": "nwe"
+    },
+    {
+      "name": "brazilsouth",
+      "code": "brs"
+    },
+    {
+      "name": "polandcentral",
+      "code": "plc"
+    },
+    {
+      "name": "japaneast",
+      "code": "jpe"
+    },
+    {
+      "name": "italynorth",
+      "code": "itn"
+    },
+    {
+      "name": "southeastasia",
+      "code": "sea"
+    },
+    {
+      "name": "spaincentral",
+      "code": "spc"
+    },
+    {
+      "name": "australiaeast",
+      "code": "aue"
+    },
+    {
+      "name": "belgiumcentral",
+      "code": "bec"
+    },
+    {
+      "name": "centralindia",
+      "code": "inc"
+    }
+  ]
+}

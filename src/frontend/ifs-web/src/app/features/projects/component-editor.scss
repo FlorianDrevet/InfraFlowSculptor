@@ -144,6 +144,17 @@
   font-size: 0.8125rem;
 }
 
+.component-editor__hint,
+.component-editor__read-only-value {
+  margin: 0;
+  color: var(--ifs-text-2);
+}
+
+.component-editor__read-only-value span {
+  margin-right: var(--ifs-space-2);
+  color: var(--ifs-text-3);
+}
+
 .component-editor__textarea-label textarea,
 .component-editor__select-label select {
   width: 100%;

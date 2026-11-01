@@ -1,0 +1,14 @@
+{
+  "name": "Container",
+  "labels": {
+    "fr": "Conteneur",
+    "en": "Container"
+  },
+  "resourceTypes": [
+    "ContainerApp"
+  ],
+  "steps": [
+    "DependencyCache",
+    "ImageScan"
+  ]
+}

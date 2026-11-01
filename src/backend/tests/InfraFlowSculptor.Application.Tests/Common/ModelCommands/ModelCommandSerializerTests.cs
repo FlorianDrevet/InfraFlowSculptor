@@ -81,7 +81,10 @@ public sealed class ModelCommandSerializerTests
             return Enum.GetValues(type).GetValue(0)!;
         }
 
-        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IReadOnlyList<>))
+        if (type.IsGenericType
+            && (type.GetGenericTypeDefinition() == typeof(IReadOnlyList<>)
+                || type.GetGenericTypeDefinition() == typeof(IReadOnlyCollection<>)
+                || type.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
         {
             var itemType = type.GetGenericArguments()[0];
             var values = Array.CreateInstance(itemType, 1);

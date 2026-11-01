@@ -8,14 +8,20 @@ namespace InfraFlowSculptor.Api.Common.RateLimiting;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddRateLimiting(this IServiceCollection services)
+    private const int TestingPermitLimit = 10_000;
+
+    public static IServiceCollection AddRateLimiting(this IServiceCollection services, IHostEnvironment environment)
     {
+        var readPermitLimit = environment.IsEnvironment("Testing") ? TestingPermitLimit : 600;
+        var writePermitLimit = environment.IsEnvironment("Testing") ? TestingPermitLimit : 120;
+        var generatePermitLimit = environment.IsEnvironment("Testing") ? TestingPermitLimit : 10;
+        var publishPermitLimit = environment.IsEnvironment("Testing") ? TestingPermitLimit : 5;
         services.AddRateLimiter(options =>
         {
-            options.AddPolicy(RateLimitingPolicies.Read, context => CreatePartition(context, 600));
-            options.AddPolicy(RateLimitingPolicies.Write, context => CreatePartition(context, 120));
-            options.AddPolicy(RateLimitingPolicies.Generate, context => CreatePartition(context, 10));
-            options.AddPolicy(RateLimitingPolicies.Publish, context => CreatePartition(context, 5));
+            options.AddPolicy(RateLimitingPolicies.Read, context => CreatePartition(context, readPermitLimit));
+            options.AddPolicy(RateLimitingPolicies.Write, context => CreatePartition(context, writePermitLimit));
+            options.AddPolicy(RateLimitingPolicies.Generate, context => CreatePartition(context, generatePermitLimit));
+            options.AddPolicy(RateLimitingPolicies.Publish, context => CreatePartition(context, publishPermitLimit));
 
             options.OnRejected = async (rejection, cancellationToken) =>
             {

@@ -9,7 +9,9 @@ describe('project feature routes', () => {
       'environments',
       'environments/:environmentId',
       'components',
+      'findings',
       'settings',
+      'naming',
       'members',
     ]);
     expect(PROJECT_ROUTES.every((route) => route.loadComponent || route.loadChildren)).toBe(true);
@@ -20,6 +22,9 @@ describe('project feature routes', () => {
     expect(COMPONENT_ROUTES.map((route) => route.path)).toEqual([
       '',
       ':componentId/settings',
+      ':componentId/resources/new',
+      ':componentId/resources/new/:type',
+      ':componentId/resources/:resourceId',
       ':componentId',
     ]);
     expect(COMPONENT_ROUTES.every((route) => route.loadComponent)).toBe(true);

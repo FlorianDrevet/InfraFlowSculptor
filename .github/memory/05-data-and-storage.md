@@ -53,3 +53,6 @@
 - Règle active : aucune colonne PostgreSQL `jsonb`. Le JSON sérialisé en `text` est réservé aux protocoles opaques
   existants ; les données requêtables du modèle sont relationnelles. Test d'intégration `JsonbMigrationTests` vérifie
   conservation des valeurs et zéro colonne `jsonb` après migration.
+- J0-19 ajoute `applications`, `application_steps` et `application_step_parameters` par la migration `20261029125723_J0_19_ApplicationsBuildAndDeployment`. Les étapes et paramètres sont des lignes relationnelles; la migration, le snapshot EF et le mapping n'ajoutent aucune colonne `jsonb`.
+- J0-20 ajoute `finding_acknowledgments` par la migration `20261029143203_J0_20_ValidationFindings`; les colonnes de constat, sujet, cible, version, commentaire, auteur et date sont relationnelles. La même migration versionne `project_environments` pour invalider les acquittements lorsque le sujet change. Le snapshot EF et le modèle courant restent sans JSONB.
+- `20261029161615_J0_20_FindingAcknowledgmentDetailKey` ajoute la clé optionnelle de détail et l'index `ux_finding_acknowledgments_identity` avec `NULLS NOT DISTINCT`, afin que PostgreSQL 17 bloque aussi les doublons lorsque `detail_key` ou `environment_id` est nul. Le test de conflit concurrent réel est écrit avec Testcontainers; son exécution locale attend Docker.

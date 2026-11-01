@@ -3,6 +3,7 @@
 
 import { JsonElement } from '../models/json-element';
 export interface SaveResourceRequest {
+  defaultIdentityResourceId?: (string | null);
   description: string;
   expectedVersion: (number | string);
   isExisting: boolean;

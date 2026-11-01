@@ -13,6 +13,12 @@ public static class EffectiveValueResolver
         ResourceSnapshot resource,
         Guid targetId,
         JsonElement descriptor)
+        => ResolveDetailed(resource, targetId, descriptor).Values;
+
+    public static EffectiveValueResolution ResolveDetailed(
+        ResourceSnapshot resource,
+        Guid targetId,
+        JsonElement descriptor)
     {
         ArgumentNullException.ThrowIfNull(resource);
         if (descriptor.ValueKind != JsonValueKind.Object)
@@ -22,7 +28,7 @@ public static class EffectiveValueResolver
 
         if (resource.IsExisting)
         {
-            return [];
+            return new EffectiveValueResolution([], []);
         }
 
         if (!descriptor.TryGetProperty("properties", out var definitions)
@@ -52,10 +58,25 @@ public static class EffectiveValueResolver
             resolvedValues.Add(name, ResolveValue(name, definition, overrides, resource.Properties));
         }
 
-        return propertyDefinitions
-            .Where(property => IsApplicable(property.Name, definitionsByName, resolvedValues, []))
-            .Select(property => resolvedValues[property.Name])
-            .ToArray();
+        var values = new List<EffectivePropertyValue>(propertyDefinitions.Count);
+        var unresolvedConditions = new List<EffectiveValueConditionIssue>();
+        foreach (var property in propertyDefinitions)
+        {
+            var applicability = IsApplicable(property.Name, definitionsByName, resolvedValues, [], out var unresolvedDependency);
+            if (applicability == PropertyApplicability.Applicable)
+            {
+                values.Add(resolvedValues[property.Name]);
+            }
+            else if (applicability == PropertyApplicability.Unresolved && unresolvedDependency is not null)
+            {
+                unresolvedConditions.Add(new EffectiveValueConditionIssue(
+                    property.Name,
+                    unresolvedDependency,
+                    DiffersFromDefault(resolvedValues[property.Name].Value, property.Definition)));
+            }
+        }
+
+        return new EffectiveValueResolution(values, unresolvedConditions);
     }
 
     private static EffectivePropertyValue ResolveValue(
@@ -83,15 +104,17 @@ public static class EffectiveValueResolver
         definition.TryGetProperty("overridable", out var overridable)
         && overridable.ValueKind == JsonValueKind.True;
 
-    private static bool IsApplicable(
+    private static PropertyApplicability IsApplicable(
         string propertyName,
         IReadOnlyDictionary<string, JsonElement> definitionsByName,
         IReadOnlyDictionary<string, EffectivePropertyValue> resolvedValues,
-        HashSet<string> evaluationPath)
+        HashSet<string> evaluationPath,
+        out string? unresolvedDependency)
     {
+        unresolvedDependency = null;
         if (!definitionsByName.TryGetValue(propertyName, out var definition))
         {
-            return false;
+            return PropertyApplicability.Inapplicable;
         }
 
         if (!evaluationPath.Add(propertyName))
@@ -103,7 +126,7 @@ public static class EffectiveValueResolver
         {
             if (!definition.TryGetProperty("condition", out var conditionElement))
             {
-                return true;
+                return PropertyApplicability.Applicable;
             }
 
             if (conditionElement.ValueKind != JsonValueKind.String)
@@ -125,29 +148,79 @@ public static class EffectiveValueResolver
             var requirement = condition![conditionPrefix.Length..];
             var equalsIndex = requirement.IndexOf('=');
             var dependencyName = equalsIndex < 0 ? requirement : requirement[..equalsIndex];
-            if (string.IsNullOrWhiteSpace(dependencyName) || !definitionsByName.ContainsKey(dependencyName))
+            if (string.IsNullOrWhiteSpace(dependencyName))
             {
                 throw new ArgumentException("A resource property condition must reference a known property.", nameof(definitionsByName));
             }
 
-            if (!IsApplicable(dependencyName, definitionsByName, resolvedValues, evaluationPath)
+            if (!definitionsByName.ContainsKey(dependencyName))
+            {
+                unresolvedDependency = dependencyName;
+                return PropertyApplicability.Unresolved;
+            }
+
+            var dependencyApplicability = IsApplicable(
+                dependencyName,
+                definitionsByName,
+                resolvedValues,
+                evaluationPath,
+                out unresolvedDependency);
+            if (dependencyApplicability == PropertyApplicability.Unresolved)
+            {
+                return PropertyApplicability.Unresolved;
+            }
+
+            if (dependencyApplicability == PropertyApplicability.Inapplicable
                 || !resolvedValues.TryGetValue(dependencyName, out var dependency))
             {
-                return false;
+                return PropertyApplicability.Inapplicable;
             }
 
             if (equalsIndex < 0)
             {
-                return HasValue(dependency.Value);
+                return HasValue(dependency.Value)
+                    ? PropertyApplicability.Applicable
+                    : PropertyApplicability.Inapplicable;
             }
 
             var expectedValue = requirement[(equalsIndex + 1)..];
-            return MatchesValue(dependency.Value, expectedValue);
+            return MatchesValue(dependency.Value, expectedValue)
+                ? PropertyApplicability.Applicable
+                : PropertyApplicability.Inapplicable;
         }
         finally
         {
             evaluationPath.Remove(propertyName);
         }
+    }
+
+    private static bool DiffersFromDefault(JsonElement? effectiveValue, JsonElement definition)
+    {
+        if (!definition.TryGetProperty("default", out var defaultValue))
+        {
+            return HasValue(effectiveValue);
+        }
+
+        if (!HasValue(effectiveValue))
+        {
+            return defaultValue.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined);
+        }
+
+        var value = effectiveValue!.Value;
+        if (value.ValueKind != defaultValue.ValueKind)
+        {
+            return true;
+        }
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.String => !string.Equals(value.GetString(), defaultValue.GetString(), StringComparison.Ordinal),
+            JsonValueKind.Number => !AreNumericValuesEqual(value.GetRawText(), defaultValue.GetRawText()),
+            JsonValueKind.True => defaultValue.ValueKind != JsonValueKind.True,
+            JsonValueKind.False => defaultValue.ValueKind != JsonValueKind.False,
+            JsonValueKind.Null => false,
+            _ => !string.Equals(value.GetRawText(), defaultValue.GetRawText(), StringComparison.Ordinal)
+        };
     }
 
     private static bool MatchesValue(JsonElement? value, string expectedValue)
@@ -237,6 +310,13 @@ public static class EffectiveValueResolver
     }
 
     private readonly record struct NormalizedNumber(bool IsNegative, string SignificantDigits, long Exponent);
+
+    private enum PropertyApplicability
+    {
+        Applicable,
+        Inapplicable,
+        Unresolved
+    }
 
     private static bool TryGetScalarValue(JsonElement value, out string scalarValue)
     {

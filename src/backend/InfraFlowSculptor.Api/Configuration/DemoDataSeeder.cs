@@ -13,6 +13,7 @@ namespace InfraFlowSculptor.Api.Configuration;
 
 public static class DemoDataSeeder
 {
+    private const string DemoCatalogVersion = "2026.10-pilot.3";
     private static readonly OrganizationId ContosoId = new(Guid.Parse("33333333-3333-4333-8333-333333333333"));
     private static readonly OrganizationId FabrikamId = new(Guid.Parse("44444444-4444-4444-8444-444444444444"));
     public static readonly ProjectId ShopProjectId = new(Guid.Parse("77777777-7777-4777-8777-777777777777"));
@@ -36,7 +37,7 @@ public static class DemoDataSeeder
         string.Equals(environmentName, "Development", StringComparison.OrdinalIgnoreCase)
         || string.Equals(environmentName, "Testing", StringComparison.OrdinalIgnoreCase);
 
-    public static async Task RunAsync()
+    public static async Task RunAsync(IReadOnlyList<string> args)
     {
         var builder = WebApplication.CreateBuilder([]);
         if (!IsAllowedEnvironment(builder.Environment.EnvironmentName))
@@ -53,11 +54,18 @@ public static class DemoDataSeeder
 
         await using var dbContext = new IfsDbContext(options, new NoCurrentOrganization());
         await dbContext.Database.MigrateAsync();
-        await SeedAsync(dbContext, TimeProvider.System);
-        Console.WriteLine("Les profils de démonstration, Contoso, Fabrikam et le projet Contoso/shop sont prêts.");
+        var includeProjects = !args.Contains("--without-projects", StringComparer.OrdinalIgnoreCase);
+        await SeedAsync(dbContext, TimeProvider.System, includeProjects, seedReferenceModel: includeProjects);
+        Console.WriteLine(includeProjects
+            ? "Les profils de démonstration, Contoso, Fabrikam et le projet pilote Contoso/shop sont prêts."
+            : "Les profils de démonstration, Contoso et Fabrikam sont prêts, sans projet.");
     }
 
-    public static async Task SeedAsync(IfsDbContext dbContext, TimeProvider clock)
+    public static async Task SeedAsync(
+        IfsDbContext dbContext,
+        TimeProvider clock,
+        bool includeProjects = true,
+        bool seedReferenceModel = false)
     {
         var profiles = new Dictionary<string, UserProfile>(StringComparer.Ordinal);
         foreach (var user in Users)
@@ -108,14 +116,17 @@ public static class DemoDataSeeder
         }
 
         await dbContext.SaveChangesAsync();
-        await new EfDemoProjectSeeder(dbContext).SeedShopAsync(
-            ShopProjectId,
-            ContosoId,
-            profiles[Users[0].ObjectId].Id,
-            profiles[Users[1].ObjectId].Id,
-            profiles[Users[2].ObjectId].Id,
-            CatalogLoader.Load().LatestPublished?.Version
-                ?? throw new InvalidOperationException("The demo seeder requires a published catalog version."));
+        if (includeProjects)
+        {
+            await new EfDemoProjectSeeder(dbContext).SeedShopAsync(
+                ShopProjectId,
+                ContosoId,
+                profiles[Users[0].ObjectId].Id,
+                profiles[Users[1].ObjectId].Id,
+                profiles[Users[2].ObjectId].Id,
+                DemoCatalogVersion,
+                seedReferenceModel);
+        }
     }
 
     private static void AddMemberIfMissing(
