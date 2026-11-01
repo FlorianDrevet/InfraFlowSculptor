@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>InfraFlowSculptor.Emitters.InstallKit</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\InfraFlowSculptor.Application\InfraFlowSculptor.Application.csproj" />
+    <ProjectReference Include="..\InfraFlowSculptor.Catalog\InfraFlowSculptor.Catalog.csproj" />
+    <ProjectReference Include="..\InfraFlowSculptor.Engine\InfraFlowSculptor.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\install\azure-setup.ps1">
+      <LogicalName>InfraFlowSculptor.Emitters.InstallKit.Resources.azure-setup.ps1</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\install\SETUP.md">
+      <LogicalName>InfraFlowSculptor.Emitters.InstallKit.Resources.SETUP.md</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\install\install.pipeline.yml">
+      <LogicalName>InfraFlowSculptor.Emitters.InstallKit.Resources.install.pipeline.yml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\README.ifs.md">
+      <LogicalName>InfraFlowSculptor.Emitters.InstallKit.Resources.README.ifs.md</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

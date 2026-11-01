@@ -23,6 +23,8 @@
     <ProjectReference Include="..\..\InfraFlowSculptor.Application\InfraFlowSculptor.Application.csproj" />
     <ProjectReference Include="..\..\InfraFlowSculptor.Catalog\InfraFlowSculptor.Catalog.csproj" />
     <ProjectReference Include="..\..\InfraFlowSculptor.Engine\InfraFlowSculptor.Engine.csproj" />
+    <ProjectReference Include="..\..\InfraFlowSculptor.Emitters.AzureDevOps\InfraFlowSculptor.Emitters.AzureDevOps.csproj" />
+    <ProjectReference Include="..\..\InfraFlowSculptor.Emitters.InstallKit\InfraFlowSculptor.Emitters.InstallKit.csproj" />
     <ProjectReference Include="..\..\InfraFlowSculptor.Emitters.Bicep\InfraFlowSculptor.Emitters.Bicep.csproj" />
   </ItemGroup>
 

@@ -3,7 +3,10 @@ using InfraFlowSculptor.Application.Generation;
 using InfraFlowSculptor.Application;
 using InfraFlowSculptor.Catalog;
 using InfraFlowSculptor.Domain.ComponentAggregate;
+using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Emitters.Bicep;
+using InfraFlowSculptor.Emitters.AzureDevOps;
+using InfraFlowSculptor.Emitters.InstallKit;
 using InfraFlowSculptor.Engine.Plan;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,9 +20,35 @@ public sealed class ReferenceOutputTests
         var services = new ServiceCollection();
         services.AddApplication();
         services.AddBicepEmitter();
+        services.AddAzureDevOpsEmitters();
+        services.AddInstallKitEmitter();
         using var provider = services.BuildServiceProvider();
 
         Assert.True(provider.GetRequiredService<OutputCheckerRegistry>().Supports(IacLanguage.Bicep));
+        Assert.True(provider.GetRequiredService<PipelineEmitterRegistry>().Supports(CiPlatform.AzureDevOps));
+        Assert.True(provider.GetRequiredService<InstallKitPlatformEmitterRegistry>().Supports(CiPlatform.AzureDevOps));
+        Assert.True(provider.GetRequiredService<StepTranslatorRegistry>().Supports(CiPlatform.AzureDevOps));
+    }
+
+    [Fact]
+    public void AzureDevOpsStepTranslatorUsesCatalogDefaultsAndConfiguredValues()
+    {
+        var catalog = CatalogLoader.Load().GetVersion("2026.10-pilot.6");
+        Assert.NotNull(catalog);
+        var descriptor = Assert.Single(catalog!.PipelineSteps, candidate => candidate.Name == "ImageScan");
+        var step = new ApplicationStepPlan(
+            "ImageScan",
+            true,
+            true,
+            ApplicationStepPosition.AfterBuild,
+            [new ApplicationStepParameterPlan("minimumSeverity", "HIGH")]);
+
+        var translated = new AzureDevOpsStepTranslator().Translate(descriptor, step);
+
+        Assert.Equal(".ifs/templates/steps/ImageScan.yml", translated.Template);
+        Assert.Equal(ApplicationStepPosition.AfterBuild, translated.Position);
+        Assert.Equal(["exceptions", "minimumSeverity", "tool"], translated.Parameters.Select(parameter => parameter.Name));
+        Assert.Equal(["", "HIGH", "Trivy"], translated.Parameters.Select(parameter => parameter.Value));
     }
 
     [Fact]
@@ -63,6 +92,43 @@ public sealed class ReferenceOutputTests
         var actualFiles = emitter.Emit(plan, catalog!);
         var actual = actualFiles.ToDictionary(file => file.RelativePath, file => Normalize(file.Content, plan), StringComparer.Ordinal);
         var expected = ReadReferenceFiles();
+        var differences = new List<string>();
+
+        foreach (var path in expected.Keys.Union(actual.Keys, StringComparer.Ordinal).OrderBy(path => path, StringComparer.Ordinal))
+        {
+            if (!expected.TryGetValue(path, out var expectedContent))
+            {
+                differences.Add($"{path}: emitted file is not present in the reference.");
+                continue;
+            }
+
+            if (!actual.TryGetValue(path, out var actualContent))
+            {
+                differences.Add($"{path}: reference file was not emitted.");
+                continue;
+            }
+
+            if (!string.Equals(expectedContent, actualContent, StringComparison.Ordinal))
+            {
+                differences.Add(DescribeDifference(path, expectedContent, actualContent));
+            }
+        }
+
+        Assert.True(differences.Count == 0, string.Join(Environment.NewLine, differences));
+    }
+
+    [Fact]
+    public void PilotPlanEmitsTheCompleteReferenceTreeDeterministically()
+    {
+        var plan = LoadPilotPlan();
+        var catalog = CatalogLoader.Load().GetVersion(plan.Pins.Version);
+        Assert.NotNull(catalog);
+        var first = Emit(plan);
+        var second = Emit(plan);
+        Assert.Equal(first, second);
+
+        var actual = first.ToDictionary(file => file.RelativePath, file => Normalize(file.Content, plan), StringComparer.Ordinal);
+        var expected = ReadCompleteReferenceFiles();
         var differences = new List<string>();
 
         foreach (var path in expected.Keys.Union(actual.Keys, StringComparer.Ordinal).OrderBy(path => path, StringComparer.Ordinal))
@@ -637,11 +703,17 @@ public sealed class ReferenceOutputTests
         => PilotReferenceModel.Create(CatalogLoader.Load().GetVersion("2026.10-pilot.6")
             ?? throw new InvalidOperationException("The reference catalog version is unavailable."));
 
-    private static IReadOnlyList<GeneratedFile> Emit(DeploymentPlan plan)
+    private static GeneratedFile[] Emit(DeploymentPlan plan)
     {
         var catalog = CatalogLoader.Load().GetVersion(plan.Pins.Version)
             ?? throw new InvalidOperationException("The reference catalog version is unavailable.");
-        return CreateEmitter().Emit(plan, catalog);
+        return CreateEmitter().Emit(plan, catalog)
+            .Concat(new AzureDevOpsPipelineEmitter().Emit(plan, catalog))
+            .Concat(InstallKitEmitter.Emit(plan))
+            .Concat(new AzureDevOpsInstallKitPlatformEmitter().Emit(plan, catalog))
+            .Append(ReadmeEmitter.Emit(plan))
+            .OrderBy(file => file.RelativePath, StringComparer.Ordinal)
+            .ToArray();
     }
 
     private static DeploymentPlan WithExposure(
@@ -879,6 +951,36 @@ public sealed class ReferenceOutputTests
                 path => Path.GetRelativePath(referenceRoot, path).Replace(Path.DirectorySeparatorChar, '/'),
                 File.ReadAllText,
                 StringComparer.Ordinal);
+    }
+
+    private static Dictionary<string, string> ReadCompleteReferenceFiles()
+    {
+        var root = FindRepositoryRoot();
+        var referenceRoot = Path.Combine(root, "reference", "pilot", "bicep-azdo");
+        return Directory.GetFiles(referenceRoot, "*", SearchOption.AllDirectories)
+            .Where(path => IsBicepReference(referenceRoot, path) || IsPipelineInstallOrReadmeReference(referenceRoot, path))
+            .ToDictionary(
+                path => Path.GetRelativePath(referenceRoot, path).Replace(Path.DirectorySeparatorChar, '/'),
+                File.ReadAllText,
+                StringComparer.Ordinal);
+    }
+
+    private static bool IsPipelineInstallOrReadmeReference(string referenceRoot, string path)
+    {
+        var relative = Path.GetRelativePath(referenceRoot, path)
+            .Replace(Path.DirectorySeparatorChar, '/');
+        return relative == "README.ifs.md"
+            || relative.Contains("/pipelines/", StringComparison.Ordinal)
+                && path.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)
+            || relative is ".ifs/install/azure-setup.ps1" or ".ifs/install/install.pipeline.yml" or ".ifs/install/SETUP.md"
+            || relative is ".ifs/templates/infra-pr.yml" or ".ifs/templates/infra-ci.yml"
+                or ".ifs/templates/infra-release.yml" or ".ifs/templates/infra-target-stages.yml"
+                or ".ifs/templates/app-pr.yml" or ".ifs/templates/app-ci.yml"
+                or ".ifs/templates/app-release.yml" or ".ifs/templates/app-target-stage.yml"
+                or ".ifs/templates/scripts/IfsRelease.psm1"
+                or ".ifs/templates/scripts/Invoke-IfsInfraPreview.ps1"
+                or ".ifs/templates/scripts/Invoke-IfsInfraDeploy.ps1"
+                or ".ifs/templates/scripts/Invoke-IfsAppDeploy.ps1";
     }
 
     private static bool IsBicepReference(string referenceRoot, string path)

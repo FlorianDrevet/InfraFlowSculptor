@@ -11,4 +11,5 @@ public sealed record ApplicationPlan(
     string ImageRepository,
     string? HealthCheckPath,
     DeploymentStrategyKind Strategy,
-    IReadOnlyList<ApplicationTargetPlan> Targets);
+    IReadOnlyList<ApplicationTargetPlan> Targets,
+    IReadOnlyList<ApplicationStepPlan> Steps);

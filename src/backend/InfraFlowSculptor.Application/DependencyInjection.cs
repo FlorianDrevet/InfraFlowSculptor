@@ -53,6 +53,9 @@ public static class DependencyInjection
         services.TryAddSingleton<DeploymentPlanBuilder>();
         services.TryAddSingleton<EngineFacade>();
         services.TryAddSingleton<InfrastructureEmitterRegistry>();
+        services.TryAddSingleton<PipelineEmitterRegistry>();
+        services.TryAddSingleton<InstallKitPlatformEmitterRegistry>();
+        services.TryAddSingleton<StepTranslatorRegistry>();
         services.TryAddSingleton<OutputCheckerRegistry>();
         services.TryAddSingleton<ModuleSourceStrategyRegistry>();
         services.TryAddSingleton<IRuleSource>(_ => new CodeRuleSource(PilotValidationRules.Create()));

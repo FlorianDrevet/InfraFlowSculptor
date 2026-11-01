@@ -9,6 +9,7 @@ internal static class ExtensionKeys
     internal static IReadOnlyList<Type> Types { get; } =
     [
         typeof(LinkKind),
+        typeof(CiPlatform),
         typeof(DataEngine),
         typeof(DeploymentStrategyKind),
         typeof(IacLanguage),

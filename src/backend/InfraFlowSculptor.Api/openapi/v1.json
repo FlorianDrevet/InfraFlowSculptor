@@ -8584,7 +8584,8 @@
           "imageRepository",
           "healthCheckPath",
           "strategy",
-          "targets"
+          "targets",
+          "steps"
         ],
         "type": "object",
         "properties": {
@@ -8620,6 +8621,27 @@
             "items": {
               "$ref": "#/components/schemas/ApplicationTargetPlan"
             }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationStepPlan"
+            }
+          }
+        }
+      },
+      "ApplicationStepParameterPlan": {
+        "required": [
+          "name",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
           }
         }
       },
@@ -8670,6 +8692,43 @@
             }
           }
         }
+      },
+      "ApplicationStepPlan": {
+        "required": [
+          "name",
+          "enabled",
+          "blocking",
+          "position",
+          "parameters"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "blocking": {
+            "type": "boolean"
+          },
+          "position": {
+            "$ref": "#/components/schemas/ApplicationStepPosition"
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationStepParameterPlan"
+            }
+          }
+        }
+      },
+      "ApplicationStepPosition": {
+        "enum": [
+          "BeforeBuild",
+          "AfterBuild",
+          "AfterDeployment"
+        ]
       },
       "ApplicationStepRequest": {
         "required": [
@@ -8745,6 +8804,7 @@
           "buildRegistryComponent",
           "buildRegistryResource",
           "buildRegistryName",
+          "buildRegistryTarget",
           "promotionRequired",
           "infrastructurePrerequisites",
           "stageSteps"
@@ -8767,6 +8827,12 @@
             ]
           },
           "buildRegistryName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "buildRegistryTarget": {
             "type": [
               "null",
               "string"

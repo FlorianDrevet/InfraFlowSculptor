@@ -10,6 +10,8 @@
   <Project Path="InfraFlowSculptor.Domain/InfraFlowSculptor.Domain.csproj" />
   <Project Path="InfraFlowSculptor.Emitters.Bicep/InfraFlowSculptor.Emitters.Bicep.csproj" />
   <Project Path="InfraFlowSculptor.Engine/InfraFlowSculptor.Engine.csproj" />
+  <Project Path="InfraFlowSculptor.Emitters.AzureDevOps/InfraFlowSculptor.Emitters.AzureDevOps.csproj" />
+  <Project Path="InfraFlowSculptor.Emitters.InstallKit/InfraFlowSculptor.Emitters.InstallKit.csproj" />
   <Project Path="InfraFlowSculptor.Infrastructure/InfraFlowSculptor.Infrastructure.csproj" />
   <Project Path="InfraFlowSculptor.ServiceDefaults/InfraFlowSculptor.ServiceDefaults.csproj" />
   <Project Path="InfraFlowSculptor.Worker/InfraFlowSculptor.Worker.csproj" />

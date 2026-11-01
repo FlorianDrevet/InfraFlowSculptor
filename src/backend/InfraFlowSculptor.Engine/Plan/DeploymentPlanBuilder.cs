@@ -1164,11 +1164,19 @@ public sealed class DeploymentPlanBuilder(
                     ? null
                     : FindTargetId(snapshot, component, target.Target.Code);
             var registry = BuildRegistryResolver.Resolve(snapshot, application.ResourceId, linkKinds, selectedRegistryTargetId);
+            var registryTarget = registryComponent is null
+                ? null
+                : string.Equals(registryComponent.Mode, "Single", StringComparison.Ordinal)
+                    ? registryComponent.SingleTarget?.Code
+                    : registry.SelectedEnvironmentId is { } selectedRegistryEnvironmentId
+                        ? snapshot.Environments.Single(environment => environment.Id == selectedRegistryEnvironmentId).Code
+                        : null;
             return new ApplicationTargetPlan(
                 target.Target.Code,
                 registry.ComponentCode,
                 registry.ResourceLogicalName,
                 registry.RegistryName,
+                registryTarget,
                 registry.PromotionRequired,
                 strategy.InfrastructurePrerequisites,
                 strategy.StageSteps);
@@ -1182,7 +1190,18 @@ public sealed class DeploymentPlanBuilder(
             application.ImageRepository,
             application.HealthCheckPath,
             application.DeploymentStrategy,
-            targets);
+            targets,
+            application.Steps
+                .Select(step => new ApplicationStepPlan(
+                    step.Name,
+                    step.Enabled,
+                    step.Blocking,
+                    step.Position,
+                    step.Parameters
+                        .OrderBy(parameter => parameter.Name, StringComparer.Ordinal)
+                        .Select(parameter => new ApplicationStepParameterPlan(parameter.Name, parameter.Value))
+                        .ToArray()))
+                .ToArray());
     }
 
     private static TargetInfo ResolveTargetInfo(ModelSnapshot snapshot, ComponentSnapshot component, ResolvedTarget target)

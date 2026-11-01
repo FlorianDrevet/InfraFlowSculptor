@@ -389,6 +389,39 @@ public sealed class DeploymentPlanBuilderTests
         Assert.DoesNotContain("Microsoft.Authorization/roleAssignments", target.Release.AccessObjectTypes);
     }
 
+    [Fact]
+    public void ApplicationPlanPreservesConfiguredPipelineStepsAndParameters()
+    {
+        var componentId = Guid.NewGuid();
+        var resourceId = Guid.NewGuid();
+        var component = CreateComponent(componentId, "orders", [DevId],
+            CreateResource(resourceId, Guid.NewGuid(), "ContainerApp"));
+        var configuredStep = new ApplicationStepDefinition(
+            "ImageScan",
+            true,
+            true,
+            ApplicationStepPosition.AfterBuild,
+            [new ApplicationStepParameter("minimumSeverity", "HIGH")]);
+        var snapshot = CreateSnapshot([DevId], [component]) with
+        {
+            Applications =
+            [
+                new ApplicationSnapshot(
+                    Guid.NewGuid(), componentId, resourceId, "api", "src/api", "src/api/Dockerfile", "src/api",
+                    "shop/orders/api", null, DeploymentStrategyKind.Direct, null, [configuredStep])
+            ]
+        };
+
+        var plan = BuildPlan(snapshot);
+        var application = Assert.Single(Assert.Single(plan.Components).Applications);
+        using var serializedPlan = JsonDocument.Parse(JsonSerializer.Serialize(application));
+        var step = Assert.Single(serializedPlan.RootElement.GetProperty("Steps").EnumerateArray());
+
+        Assert.Equal("ImageScan", step.GetProperty("Name").GetString());
+        Assert.Equal((int)ApplicationStepPosition.AfterBuild, step.GetProperty("Position").GetInt32());
+        Assert.Equal("HIGH", Assert.Single(step.GetProperty("Parameters").EnumerateArray()).GetProperty("Value").GetString());
+    }
+
     private static DeploymentPlan BuildPlan(
         ModelSnapshot snapshot,
         WiringResult? wiring = null,

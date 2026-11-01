@@ -7,6 +7,7 @@ public sealed record ApplicationTargetPlan(
     string? BuildRegistryComponent,
     string? BuildRegistryResource,
     string? BuildRegistryName,
+    string? BuildRegistryTarget,
     bool PromotionRequired,
     IReadOnlyList<string> InfrastructurePrerequisites,
     IReadOnlyList<DeploymentStageStepKind> StageSteps);

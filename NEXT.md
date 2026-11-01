@@ -10,12 +10,12 @@
 | | |
 |---|---|
 | **Étape courante** | [`J0-23`](docs/plan/02-jalon-0-pilote.md#j0-23--émetteurs-azure-devops-kit-dinstallation-et-readme) — Émetteurs Azure DevOps, kit d'installation et README |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `BLOQUE` |
 | **Dernière étape terminée** | [`J0-22`](docs/plan/02-jalon-0-pilote.md#j0-22--émetteur-bicep) — Émetteur Bicep (commit `7f04129`) |
 | **Étape suivante** | `J0-24` — Révisions : génération asynchrone, contrôles de sortie, consultation |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-generation` (créée depuis `origin/impl/j0-modele`, segment empilé après R-05) |
-| **Dernière mise à jour** | 2026-11-01 — Codex |
+| **Dernière mise à jour** | 2026-11-01 — Codex (blocage confirmé) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
@@ -79,6 +79,10 @@ L’omission initiale de `deploymentPrincipalId` avait détaché l’attribution
 Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md), puis retire la ligne.
 
 ## Points ouverts et historique des décisions
+
+### J0-23 — périmètre de sortie et assets de pipeline — décision requise le 2026-11-01
+
+La comparaison complète échoue sur les paramètres P-08 propres à un ancien run dans orders/infra/pipelines/release.yml. De plus, les modèles partagés et le kit d’installation référencent plusieurs scripts et fichiers absents de la liste de sortie J0-23; les descripteurs DependencyCache et ImageScan pointent vers des modèles d’étape inexistants. Il faut choisir si J0-23 et sa référence sont élargis pour produire des fichiers exécutables, ou si ces assets et paramètres restent hors génération et sont exclus de la preuve. [Vérifications et options](docs/plan/revues/J0-23-blocage-sortie-reference-20261101.md).
 
 ### J0-22 — diagnostics absents du plan — résolu le 2026-11-01
 
