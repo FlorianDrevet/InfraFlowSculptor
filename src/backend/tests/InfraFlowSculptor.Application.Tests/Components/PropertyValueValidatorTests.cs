@@ -14,11 +14,19 @@ public sealed class PropertyValueValidatorTests
     private static readonly CatalogResourceTypeDescriptor KeyVaultDescriptor =
         CatalogLoader.Load().LatestPublished!.GetResourceType("KeyVault")!;
 
+    private static readonly CatalogResourceTypeDescriptor LogAnalyticsDescriptor =
+        CatalogLoader.Load().LatestPublished!.GetResourceType("LogAnalyticsWorkspace")!;
+
+    private static readonly CatalogResourceTypeDescriptor SqlServerDescriptor =
+        CatalogLoader.Load().LatestPublished!.GetResourceType("SqlServer")!;
+
     [Fact]
-    public void AcceptsDescriptorDrivenScalarArrayAndObjectValues()
+    public void AcceptsDescriptorDrivenScalarAndTypedArrayValues()
     {
         using var scalar = JsonDocument.Parse("false");
-        using var profiles = JsonDocument.Parse("""[{"name":"D4","minimumCount":2}]""");
+        using var profiles = JsonDocument.Parse("""
+            [{"name":"D4","workloadProfileType":"D4","minimumCount":1,"maximumCount":2}]
+            """);
         using var nested = JsonDocument.Parse("""[{"limits":{"cpu":1.5},"labels":["api","worker"]}]""");
         var properties = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
         {
@@ -31,7 +39,153 @@ public sealed class PropertyValueValidatorTests
         };
 
         Assert.False(PropertyValueValidator.Validate(Descriptor, properties).IsError);
-        Assert.False(PropertyValueValidator.Validate(Descriptor, arbitraryStructured).IsError);
+        Assert.True(PropertyValueValidator.Validate(Descriptor, arbitraryStructured).IsError);
+    }
+
+    [Fact]
+    public void AcceptsNumericEnumValuesDeclaredByLogAnalyticsDescriptor()
+    {
+        using var capacity = JsonDocument.Parse("100");
+
+        var result = PropertyValueValidator.Validate(LogAnalyticsDescriptor, new Dictionary<string, JsonElement>
+        {
+            ["capacityReservationLevel"] = capacity.RootElement.Clone()
+        });
+
+        Assert.False(result.IsError);
+    }
+
+    [Theory]
+    [InlineData("admin")]
+    [InlineData("Admin")]
+    [InlineData("administrator")]
+    [InlineData("SA")]
+    [InlineData("root")]
+    [InlineData("dbmanager")]
+    [InlineData("loginmanager")]
+    [InlineData("guest")]
+    [InlineData("PUBLIC")]
+    [InlineData("sqladmin\n")]
+    public void RejectsDocumentedReservedSqlAdministratorLoginNamesRegardlessOfCase(string login)
+    {
+        using var value = JsonDocument.Parse(JsonSerializer.Serialize(login));
+
+        var result = PropertyValueValidator.Validate(SqlServerDescriptor, new Dictionary<string, JsonElement>
+        {
+            ["administratorLogin"] = value.RootElement.Clone()
+        });
+
+        Assert.Contains(result.Errors, error => error.Code == "RESOURCE_PROPERTY_PATTERN");
+    }
+
+    [Fact]
+    public void RejectsUnknownMembersInTypedWorkloadProfileItems()
+    {
+        using var profiles = JsonDocument.Parse("""
+            [{"name":"D4","workloadProfileType":"D4","minimumCount":0,"maximumCount":4,"unexpected":true}]
+            """);
+
+        var result = PropertyValueValidator.Validate(TypedWorkloadProfilesDescriptor, new Dictionary<string, JsonElement>
+        {
+            ["workloadProfiles"] = profiles.RootElement.Clone()
+        });
+
+        Assert.Contains(result.Errors, error => error.Code == "RESOURCE_PROPERTY_OBJECT_MEMBER_UNKNOWN");
+    }
+
+    [Fact]
+    public void RejectsDuplicateMembersInTypedWorkloadProfileItems()
+    {
+        using var profiles = JsonDocument.Parse("""
+            [{"name":"D4","name":"E4","workloadProfileType":"D4","minimumCount":0,"maximumCount":4}]
+            """);
+
+        var result = PropertyValueValidator.Validate(TypedWorkloadProfilesDescriptor, new Dictionary<string, JsonElement>
+        {
+            ["workloadProfiles"] = profiles.RootElement.Clone()
+        });
+
+        Assert.Contains(result.Errors, error => error.Code == "RESOURCE_PROPERTY_OBJECT_MEMBER_DUPLICATE");
+    }
+
+    [Fact]
+    public void DoesNotEchoUntrustedUnknownMemberNamesInPropertyErrors()
+    {
+        using var profiles = JsonDocument.Parse("""
+            [{"bad\u202Ekey":true,"name":"D4","workloadProfileType":"D4","minimumCount":0,"maximumCount":4}]
+            """);
+
+        var result = PropertyValueValidator.Validate(TypedWorkloadProfilesDescriptor, new Dictionary<string, JsonElement>
+        {
+            ["workloadProfiles"] = profiles.RootElement.Clone()
+        });
+        var error = Assert.Single(result.Errors);
+
+        Assert.Equal("RESOURCE_PROPERTY_OBJECT_MEMBER_UNKNOWN", error.Code);
+        Assert.DoesNotContain('\u202E', error.Description);
+    }
+
+    [Fact]
+    public void RejectsDuplicateNamesInTypedWorkloadProfileItems()
+    {
+        using var profiles = JsonDocument.Parse("""
+            [
+            {"name":"D4","workloadProfileType":"D4","minimumCount":0,"maximumCount":4},
+            {"name":"D4","workloadProfileType":"D8","minimumCount":1,"maximumCount":8}
+            ]
+            """);
+
+        var result = PropertyValueValidator.Validate(TypedWorkloadProfilesDescriptor, new Dictionary<string, JsonElement>
+        {
+            ["workloadProfiles"] = profiles.RootElement.Clone()
+        });
+
+        Assert.Contains(result.Errors, error => error.Code == "RESOURCE_PROPERTY_ARRAY_ITEM_DUPLICATE");
+    }
+
+    [Fact]
+    public void RejectsConsumptionAsADedicatedWorkloadProfileName()
+    {
+        using var profiles = JsonDocument.Parse("""
+            [{"name":"Consumption","workloadProfileType":"D4","minimumCount":0,"maximumCount":4}]
+            """);
+
+        var result = PropertyValueValidator.Validate(TypedWorkloadProfilesDescriptor, new Dictionary<string, JsonElement>
+        {
+            ["workloadProfiles"] = profiles.RootElement.Clone()
+        });
+
+        Assert.Contains(result.Errors, error => error.Code == "RESOURCE_PROPERTY_VALUE_FORBIDDEN");
+    }
+
+    [Fact]
+    public void RejectsMissingRequiredWorkloadProfileMembers()
+    {
+        using var profiles = JsonDocument.Parse("""
+            [{"name":"D4","workloadProfileType":"D4","minimumCount":0}]
+            """);
+
+        var result = PropertyValueValidator.Validate(TypedWorkloadProfilesDescriptor, new Dictionary<string, JsonElement>
+        {
+            ["workloadProfiles"] = profiles.RootElement.Clone()
+        });
+
+        Assert.Contains(result.Errors, error => error.Code == "RESOURCE_PROPERTY_OBJECT_MEMBER_REQUIRED");
+    }
+
+    [Fact]
+    public void RejectsNullValuesForRequiredTypedWorkloadProfileMembers()
+    {
+        using var profiles = JsonDocument.Parse("""
+            [{"name":null,"workloadProfileType":"D4","minimumCount":null,"maximumCount":4}]
+            """);
+
+        var result = PropertyValueValidator.Validate(TypedWorkloadProfilesDescriptor, new Dictionary<string, JsonElement>
+        {
+            ["workloadProfiles"] = profiles.RootElement.Clone()
+        });
+
+        Assert.Contains(result.Errors, error => error.Code == "RESOURCE_PROPERTY_OBJECT_MEMBER_REQUIRED");
     }
 
     [Theory]
@@ -215,6 +369,34 @@ public sealed class PropertyValueValidatorTests
 
         Assert.Contains(result.Errors, error => error.Code == "RESOURCE_PROPERTY_PATTERN");
     }
+
+    private static readonly CatalogResourceTypeDescriptor TypedWorkloadProfilesDescriptor = CreateDescriptor("""
+        {
+          "type": "TypedWorkloadProfilesTest",
+          "category": "compute",
+          "icon": "container-apps-environment",
+          "labels": { "fr": "Profils de charge", "en": "Workload profiles" },
+          "naming": { "abbreviation": "wp" },
+          "properties": [
+            {
+              "name": "workloadProfiles",
+              "kind": "array",
+              "overridable": true,
+              "default": [],
+              "items": {
+                "kind": "object",
+                "uniqueBy": "name",
+                "members": [
+                  { "name": "name", "kind": "string", "required": true, "minLength": 1, "forbiddenValues": ["Consumption"] },
+                  { "name": "workloadProfileType", "kind": "enum", "required": true, "values": ["D4", "D8"] },
+                  { "name": "minimumCount", "kind": "integer", "required": true, "minimum": 0 },
+                  { "name": "maximumCount", "kind": "integer", "required": true, "minimum": 0 }
+                ]
+              }
+            }
+          ]
+        }
+        """);
 
     private static readonly CatalogResourceTypeDescriptor CidrDescriptor = CreateDescriptor("""
         {

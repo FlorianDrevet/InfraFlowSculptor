@@ -211,7 +211,13 @@ def cmd_check() -> None:
              f"avant de commencer {current.ident}.", 3)
     if status == "BLOQUE":
         fail(f"Statut BLOQUE : résoudre et consigner la condition, puis `unblock {current.ident} <preuve>`.", 3)
-    if current.lock and status not in {"CORRECTIONS_DEMANDEES", "A_FAIRE", "EN_COURS", "EN_ATTENTE_DE_REVUE"}:
+    if current.lock and status not in {
+        "CORRECTIONS_DEMANDEES",
+        "A_FAIRE",
+        "EN_COURS",
+        "EN_ATTENTE_DE_REVUE",
+        "EN_ATTENTE_DE_RECETTE",
+    }:
         fail(f"Statut {status} incohérent sur le verrou {current.ident}.")
     if status == "EN_ATTENTE_DE_REVUE":
         print(f"🔎 {current.ident} : auto-revue Codex à consigner, sans attente d'un réviseur externe.")

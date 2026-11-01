@@ -111,6 +111,15 @@ internal static class LinkCommandSupport
             return Error.Validation("LINK_TYPE_UNSUPPORTED", "The pinned catalog does not allow this source and target for the selected link kind.");
         }
 
+        if (!handler.SupportsComponentScope(
+                sourceDescriptor,
+                targetDescriptor,
+                sourceComponent.Id.Value,
+                targetComponent.Id.Value))
+        {
+            return Error.Validation("LINK_COMPONENT_SCOPE_UNSUPPORTED", "The pinned catalog requires this source and target to belong to the same component.");
+        }
+
         var supportsDataAccessLevel = handler.Form.Fields.Any(field => string.Equals(field.Name, DataAccessLevelFieldName, StringComparison.Ordinal));
         if (dataAccessLevel is not null && !supportsDataAccessLevel)
         {
@@ -244,6 +253,11 @@ internal static class LinkCommandSupport
         LinkIdentityKind identityKind,
         Guid? identityResourceId)
     {
+        if (identityKind != LinkIdentityKind.UserAssigned && identityResourceId is not null)
+        {
+            return Error.Validation("LINK_IDENTITY_PARAMETER_INVALID", "Only a user-assigned identity can have an identity resource id.");
+        }
+
         var sourceActsAsIdentity = identityKind == LinkIdentityKind.None && handler.SourceActsAsIdentity(sourceDescriptor);
         if (identityRequirement == LinkIdentityRequirement.None)
         {
@@ -259,7 +273,8 @@ internal static class LinkCommandSupport
         }
 
         if (identityRequirement == LinkIdentityRequirement.UserAssigned
-            && identityKind != LinkIdentityKind.UserAssigned)
+            && identityKind != LinkIdentityKind.UserAssigned
+            && !sourceActsAsIdentity)
         {
             return Error.Validation("LINK_USER_ASSIGNED_IDENTITY_REQUIRED", "This link kind requires a user-assigned identity.");
         }

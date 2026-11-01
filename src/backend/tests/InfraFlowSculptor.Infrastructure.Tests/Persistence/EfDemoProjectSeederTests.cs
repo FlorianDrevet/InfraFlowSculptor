@@ -63,10 +63,10 @@ public sealed class EfDemoProjectSeederTests(PostgreSqlFixture postgres) : IClas
         var catalogProvider = CatalogLoader.Load();
         var catalog = catalogProvider.GetVersion("2026.10-pilot.3");
         Assert.NotNull(catalog);
-        var snapshot = await new ModelSnapshotBuilder(dbContext, catalogProvider).BuildAsync(projectId.Value);
+        var linkKinds = new LinkKindRegistry(PilotLinkKindHandlers.Create());
+        var snapshot = await new ModelSnapshotBuilder(dbContext, catalogProvider, linkKinds).BuildAsync(projectId.Value);
         Assert.False(snapshot.IsError);
 
-        var linkKinds = new LinkKindRegistry(PilotLinkKindHandlers.Create());
         var engine = new ValidationEngine(
             [new CodeRuleSource(PilotValidationRules.Create())],
             new ComponentOrdering(new WiringEngine(

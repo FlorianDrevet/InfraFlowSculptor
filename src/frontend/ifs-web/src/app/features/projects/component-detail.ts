@@ -6,8 +6,10 @@ import {
   ElementRef,
   inject,
   input,
+  OnChanges,
   OnInit,
   signal,
+  SimpleChanges,
   ViewChild,
 } from '@angular/core';
 import { ApiError } from '../../core/http/api-error';
@@ -80,12 +82,14 @@ function parseForcedNames(
   styleUrl: './component-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ComponentDetail implements OnInit {
+export class ComponentDetail implements OnChanges, OnInit {
   readonly projectId = input.required<string>();
   readonly componentId = input.required<string>();
   protected readonly component = signal<ComponentResponse | null>(null);
   protected readonly environments = signal<ProjectEnvironmentResponse[]>([]);
   protected readonly orderedComponents = signal<ProjectValidationComponentResponse[]>([]);
+  protected readonly validationLoading = signal(true);
+  protected readonly validationUnavailable = signal(false);
   protected readonly componentDependencies = computed(() =>
     this.orderedComponents().find((item) => item.id === this.component()?.id),
   );
@@ -111,6 +115,8 @@ export class ComponentDetail implements OnInit {
   @ViewChild('resourceDeletionStatus')
   private resourceDeletionStatus?: ElementRef<HTMLParagraphElement>;
   private deletionImpactRequestId = 0;
+  private loadRequestId = 0;
+  private validationRequestId = 0;
   private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly projects = inject(ProjectsService);
   private readonly componentService = inject(ComponentsService);
@@ -118,6 +124,17 @@ export class ComponentDetail implements OnInit {
 
   ngOnInit(): void {
     void this.load();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    const projectChanged = changes['projectId'] && !changes['projectId'].firstChange;
+    const componentChanged = changes['componentId'] && !changes['componentId'].firstChange;
+    if (projectChanged || componentChanged) {
+      this.cancelResourceDeletion(false);
+      this.resourceDeletionNotice.set(null);
+      this.closeGroupForm();
+      void this.load();
+    }
   }
 
   protected openCreateGroup(): void {
@@ -372,24 +389,52 @@ export class ComponentDetail implements OnInit {
   }
 
   private async load(): Promise<void> {
+    const requestId = ++this.loadRequestId;
+    const projectId = this.projectId();
+    const componentId = this.componentId();
     this.loading.set(true);
     this.loadError.set(false);
+    this.validationLoading.set(true);
+    this.validationUnavailable.set(false);
     try {
-      const [component, environments, permissions, validation] = await Promise.all([
-        firstValueFrom(this.componentService.get(this.projectId(), this.componentId())),
-        firstValueFrom(this.projects.environments(this.projectId())),
-        firstValueFrom(this.projects.myPermissions(this.projectId())),
-        firstValueFrom(this.projects.validation(this.projectId())),
+      const [component, environments, permissions] = await Promise.all([
+        firstValueFrom(this.componentService.get(projectId, componentId)),
+        firstValueFrom(this.projects.environments(projectId)),
+        firstValueFrom(this.projects.myPermissions(projectId)),
       ]);
+      if (requestId !== this.loadRequestId) return;
       this.component.set(component);
       this.environments.set(environments);
-      this.orderedComponents.set(validation.orderedComponents);
       this.canManageComponents.set(permissions.permissions.includes('components.manage'));
       this.canEditModel.set(permissions.permissions.includes('model.edit'));
+      void this.loadValidation(projectId, requestId);
     } catch {
-      this.loadError.set(true);
+      if (requestId === this.loadRequestId) {
+        this.loadError.set(true);
+        this.validationLoading.set(false);
+      }
     } finally {
-      this.loading.set(false);
+      if (requestId === this.loadRequestId) this.loading.set(false);
+    }
+  }
+
+  private async loadValidation(projectId: string, loadRequestId: number): Promise<void> {
+    const requestId = ++this.validationRequestId;
+    try {
+      const validation = await firstValueFrom(this.projects.validation(projectId));
+      if (loadRequestId !== this.loadRequestId || requestId !== this.validationRequestId) return;
+      this.orderedComponents.set(validation.orderedComponents);
+      this.validationUnavailable.set(
+        !validation.orderedComponents.some((item) => item.id === this.component()?.id),
+      );
+    } catch {
+      if (loadRequestId !== this.loadRequestId || requestId !== this.validationRequestId) return;
+      this.orderedComponents.set([]);
+      this.validationUnavailable.set(true);
+    } finally {
+      if (loadRequestId === this.loadRequestId && requestId === this.validationRequestId) {
+        this.validationLoading.set(false);
+      }
     }
   }
 

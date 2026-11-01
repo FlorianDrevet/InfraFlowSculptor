@@ -79,6 +79,55 @@ public sealed class WiringEngineTests
     }
 
     [Fact]
+    public void ExistingSqlDatabaseDoesNotRequireAHostingLink()
+    {
+        var databaseId = Guid.NewGuid();
+        var component = Component(Guid.NewGuid(), "data", Resource(databaseId, "SqlDatabase", isExisting: true));
+
+        var result = CreateEngine().Evaluate(Snapshot(component), Catalog);
+
+        Assert.DoesNotContain(result.Issues, issue =>
+            issue.Code == "VAL-LIA-OBLIGATOIRE" && issue.ResourceId == databaseId);
+    }
+
+    [Fact]
+    public void SqlDatabaseHostingCannotCrossComponentBoundaries()
+    {
+        var databaseComponentId = Guid.NewGuid();
+        var serverComponentId = Guid.NewGuid();
+        var databaseId = Guid.NewGuid();
+        var serverId = Guid.NewGuid();
+        var database = Component(databaseComponentId, "data", Resource(databaseId, "SqlDatabase"));
+        var server = Component(serverComponentId, "platform", Resource(serverId, "SqlServer"));
+        var hosting = Link(databaseComponentId, databaseId, serverComponentId, serverId,
+            LinkKind.Hosting, LinkIdentityKind.None, null);
+
+        var result = CreateEngine().Evaluate(Snapshot(database, server, hosting), Catalog);
+
+        Assert.Contains(result.Issues, issue => issue.Code == "VAL-LIA-COMPOSANT" && issue.LinkId == hosting.Id);
+        Assert.DoesNotContain(result.Links, link => link.Link.Id == hosting.Id);
+        Assert.DoesNotContain(result.Dependencies, dependency => dependency.LinkId == hosting.Id);
+    }
+
+    [Fact]
+    public void ContainerAppCanUseHostingEnvironmentInAnotherComponent()
+    {
+        var applicationComponentId = Guid.NewGuid();
+        var environmentComponentId = Guid.NewGuid();
+        var applicationId = Guid.NewGuid();
+        var environmentId = Guid.NewGuid();
+        var application = Component(applicationComponentId, "orders", Resource(applicationId, "ContainerApp"));
+        var environment = Component(environmentComponentId, "platform", Resource(environmentId, "ContainerAppsEnvironment"));
+        var hosting = Link(applicationComponentId, applicationId, environmentComponentId, environmentId,
+            LinkKind.Hosting, LinkIdentityKind.None, null);
+
+        var result = CreateEngine().Evaluate(Snapshot(application, environment, hosting), Catalog);
+
+        Assert.Contains(result.Links, link => link.Link.Id == hosting.Id);
+        Assert.DoesNotContain(result.Issues, issue => issue.Code == "VAL-LIA-COMPOSANT" && issue.LinkId == hosting.Id);
+    }
+
+    [Fact]
     public void DeduplicatesRoleFromMultipleOriginsAndKeepsItWhenOneOriginIsRemoved()
     {
         var sourceComponentId = Guid.NewGuid();
@@ -272,6 +321,9 @@ public sealed class WiringEngineTests
 
         var result = CreateEngine().Evaluate(Snapshot(source, target, link), Catalog);
 
+        Assert.Empty(result.Links);
+        Assert.Empty(result.Dependencies);
+        Assert.Empty(result.Identities);
         Assert.Empty(result.RoleAssignments);
         Assert.Contains(result.Issues, issue => issue.Code == "VAL-LIA-ROLE");
     }
@@ -428,6 +480,40 @@ public sealed class WiringEngineTests
         Assert.Contains(impact.Items, item => item.Code == "IMPACT-LIA-IDENTITE-UTILISEE"
             && item.Severity == ImpactSeverity.Blocker
             && item.ResourceId == applicationId);
+    }
+
+    [Fact]
+    public void CrossComponentDefaultIdentityDoesNotCreateImplicitClientIdSetting()
+    {
+        var applicationComponentId = Guid.NewGuid();
+        var identityComponentId = Guid.NewGuid();
+        var applicationId = Guid.NewGuid();
+        var identityId = Guid.NewGuid();
+        var application = Resource(applicationId, "ContainerApp") with { DefaultIdentityResourceId = identityId };
+
+        var result = CreateEngine().Evaluate(Snapshot(
+            Component(applicationComponentId, "orders", application),
+            Component(identityComponentId, "core", Resource(identityId, "UserAssignedIdentity"))), Catalog);
+
+        Assert.Contains(result.Issues, issue => issue.Code == "VAL-LIA-IDENTITE-PARTAGEE" && issue.ResourceId == applicationId);
+        Assert.DoesNotContain(result.ImplicitApplicationSettings, setting =>
+            setting.ApplicationResourceId == applicationId && setting.Name == "AZURE_CLIENT_ID");
+    }
+
+    [Fact]
+    public void UnsupportedApplicationDefaultIdentityDoesNotCreateImplicitClientIdSetting()
+    {
+        var componentId = Guid.NewGuid();
+        var applicationId = Guid.NewGuid();
+        var identityId = Guid.NewGuid();
+        var application = Resource(applicationId, "ApplicationInsights") with { DefaultIdentityResourceId = identityId };
+
+        var result = CreateEngine().Evaluate(Snapshot(
+            Component(componentId, "core", application, Resource(identityId, "UserAssignedIdentity"))), Catalog);
+
+        Assert.Contains(result.Issues, issue => issue.Code == "VAL-LIA-IDENTITE" && issue.ResourceId == applicationId);
+        Assert.DoesNotContain(result.ImplicitApplicationSettings, setting =>
+            setting.ApplicationResourceId == applicationId && setting.Name == "AZURE_CLIENT_ID");
     }
 
     [Fact]

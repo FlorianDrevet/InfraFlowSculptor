@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using InfraFlowSculptor.Domain.ProjectAggregate;
+using InfraFlowSculptor.Engine.Links;
 using InfraFlowSculptor.Engine.Model;
 using InfraFlowSculptor.Engine.Targets;
 
@@ -13,9 +15,10 @@ public sealed partial class NamingEngine
 
     private static readonly string SupportedTokenList = string.Join(", ", SupportedTokens.Order(StringComparer.Ordinal));
 
-    public static NamingPreviewResult Preview(ModelSnapshot snapshot)
+    public static NamingPreviewResult Preview(ModelSnapshot snapshot, LinkKindRegistry linkKinds)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(linkKinds);
 
         var issues = ValidateTemplates(snapshot);
         if (issues.Count > 0)
@@ -34,6 +37,12 @@ public sealed partial class NamingEngine
                 group => group.Key,
                 group => group.Select(reservation => reservation.Name).ToHashSet(StringComparer.OrdinalIgnoreCase),
                 StringComparer.OrdinalIgnoreCase);
+        var hostingParents = snapshot.Links
+            .Where(link => linkKinds.Supports(link.Kind)
+                && linkKinds.Get(link.Kind).IsResourceHostingRelationship)
+            .OrderBy(link => link.Id)
+            .GroupBy(link => link.SourceResourceId)
+            .ToDictionary(group => group.Key, group => group.First().TargetResourceId);
 
         foreach (var component in snapshot.Components.OrderBy(component => component.Code, StringComparer.Ordinal))
         {
@@ -199,7 +208,11 @@ public sealed partial class NamingEngine
                             continue;
                         }
 
-                        var uniquenessScope = GetUniquenessScope(rule, groupTarget.Target, groupName.Value, resourceGroup.Id);
+                        var parentResourceId = hostingParents.TryGetValue(resource.Id, out var hostingParentId)
+                            ? hostingParentId
+                            : (Guid?)null;
+                        var uniquenessScope = GetUniquenessScope(
+                            rule, groupTarget.Target, groupName.Value, resourceGroup.Id, parentResourceId);
                         CheckCollision(
                             resource.Type,
                             resourceName.Value,
@@ -529,12 +542,15 @@ public sealed partial class NamingEngine
         NamingRuleSnapshot rule,
         ResolvedTarget target,
         string resourceGroupName,
-        Guid resourceGroupId) =>
+        Guid resourceGroupId,
+        Guid? parentResourceId) =>
         rule.Uniqueness.ToLowerInvariant() switch
         {
             "global" => "global",
             "resourcegroup" => $"subscription:{target.SubscriptionId:D}:resource-group:{resourceGroupName}",
-            "parent" => $"resource-group:{resourceGroupId:D}",
+            "parent" => parentResourceId is { } parentId
+                ? $"target:{target.Id:D}:parent:{parentId:D}"
+                : $"target:{target.Id:D}:resource-group:{resourceGroupId:D}",
             _ => $"target:{target.Id:D}"
         };
 

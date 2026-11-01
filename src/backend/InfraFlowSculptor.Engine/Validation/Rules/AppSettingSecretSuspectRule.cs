@@ -1,11 +1,10 @@
-using System.Text.RegularExpressions;
 using InfraFlowSculptor.Domain.Common;
 using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Engine.Model;
 
 namespace InfraFlowSculptor.Engine.Validation.Rules;
 
-public sealed partial class AppSettingSecretSuspectRule : IValidationRule
+public sealed class AppSettingSecretSuspectRule : IValidationRule
 {
     public string Code => "VAL-PAR-SECRET-SUSPECT";
 
@@ -14,7 +13,7 @@ public sealed partial class AppSettingSecretSuspectRule : IValidationRule
     public string Lot => "lot1";
 
     public IReadOnlyList<ValidationFinding> Evaluate(ValidationContext context) => context.Snapshot.AppSettings
-        .Where(setting => setting.SourceKind == AppSettingSourceKind.Literal && SecretLikeNameRegex().IsMatch(setting.Name))
+        .Where(setting => setting.SourceKind == AppSettingSourceKind.Literal && SecretValueDetector.HasSecretLikeName(setting.Name))
         .Select(setting => context.Finding(
             Code,
             Severity,
@@ -57,6 +56,4 @@ public sealed partial class AppSettingSecretSuspectRule : IValidationRule
             && vaultIndex < applicationIndex;
     }
 
-    [GeneratedRegex("(secret|password|passwd|token|api.?key|connection.?string)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    private static partial Regex SecretLikeNameRegex();
 }

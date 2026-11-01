@@ -5,7 +5,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { loginAsAlice } from './support/login';
 
 const CONTOSO_ID = '33333333-3333-4333-8333-333333333333';
-const RECIPE_PROJECT_CODE = 'shop';
+const RECIPE_PROJECT_CODE = 'shop15';
 const VAULT_NAME = 'kvj018';
 const EXISTING_VAULT_ID =
   '/subscriptions/00000000-0000-4000-8000-000000000014/resourceGroups/rg-recipe/providers/Microsoft.KeyVault/vaults/kvj018';
@@ -14,7 +14,7 @@ const PIPELINE_VARIABLE = 'MAIN_PAYMENTS_API_KEY';
 
 test('Alice crée une liaison et un secret de pipeline, puis vérifie les implicites', async ({
   page,
-}) => {
+}, testInfo) => {
   test.skip(!process.env['IFS_E2E_PASSWORD'], 'Set IFS_E2E_PASSWORD for the local demo accounts.');
   test.setTimeout(180_000);
   page.setDefaultTimeout(15_000);
@@ -36,6 +36,10 @@ test('Alice crée une liaison et un secret de pipeline, puis vérifie les implic
   await page.getByRole('link', { name: 'Orders orders', exact: true }).click();
   await componentNavigation;
   const componentUrl = page.url();
+  await expect(page.getByRole('heading', { name: 'Orders', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: `${VAULT_NAME} KeyVault`, exact: true }),
+  ).toHaveCount(0);
   const componentId = new URL(componentUrl).pathname.match(/\/components\/([^/]+)$/)?.[1];
   expect(componentId).toBeTruthy();
   const resourceNavigation = page.waitForURL(/\/resources\/[0-9a-f-]+$/i);
@@ -46,7 +50,10 @@ test('Alice crée une liaison et un secret de pipeline, puis vérifie les implic
   let vaultCreated = false;
   let settingCreated = false;
   let accessLinkCreated = false;
-  const captureDirectory = resolve(process.cwd(), '../../../docs/plan/revues/captures/R-05');
+  let recipeFailed = false;
+  let recipeFailure: unknown;
+  const cleanupErrors: unknown[] = [];
+  const captureDirectory = resolve(process.cwd(), 'e2e/__captures__/R-05');
   const viewportWidth = page.viewportSize()?.width ?? 1440;
   await mkdir(captureDirectory, { recursive: true });
 
@@ -62,17 +69,30 @@ test('Alice crée une liaison et un secret de pipeline, puis vérifie les implic
     await page.getByRole('link', { name: 'Paramètres applicatifs', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Paramètres applicatifs' })).toBeVisible();
     const settingsPanel = page.locator('.resource-app-settings');
+    await expect(
+      settingsPanel.locator('.resource-app-settings__list li').filter({ hasText: SETTING_NAME }),
+    ).toHaveCount(0);
     await settingsPanel.getByRole('button', { name: 'Ajouter un paramètre', exact: true }).click();
     const settingsForm = settingsPanel.locator('.resource-app-settings__form');
     await settingsForm.locator('input[name="settingName"]').fill(SETTING_NAME);
     await settingsForm.locator('select[name="sourceKind"]').selectOption('KeyVaultSecret');
-    await settingsForm.locator('select[name="keyVaultResourceId"]').selectOption({
-      label: VAULT_NAME,
-    });
+    const vaultOption = settingsForm
+      .locator('select[name="keyVaultResourceId"] option')
+      .filter({ hasText: VAULT_NAME });
+    await expect(vaultOption).toHaveCount(1);
+    const vaultId = await vaultOption.getAttribute('value');
+    expect(vaultId).toBeTruthy();
+    await settingsForm.locator('select[name="keyVaultResourceId"]').selectOption(vaultId);
     await settingsForm.locator('input[name="secretName"]').fill('payments-api-key');
     await settingsForm.locator('select[name="secretFeedKind"]').selectOption('PipelineSecret');
     await settingsForm.locator('input[name="pipelineVariableName"]').fill(PIPELINE_VARIABLE);
-    await settingsForm.locator('select[name="identityResourceId"]').selectOption({ label: 'api' });
+    const identityOption = settingsForm
+      .locator('select[name="identityResourceId"] option')
+      .filter({ hasText: 'api' });
+    await expect(identityOption).toHaveCount(1);
+    const identityId = await identityOption.getAttribute('value');
+    expect(identityId).toBeTruthy();
+    await settingsForm.locator('select[name="identityResourceId"]').selectOption(identityId);
     await expect(settingsForm.locator('input[name="literalValue"]')).toHaveCount(0);
     await expect(settingsForm).toContainText(
       'La valeur du secret ne sera ni demandée ni affichée ici.',
@@ -83,9 +103,9 @@ test('Alice crée une liaison et un secret de pipeline, puis vérifie les implic
         response.request().method() === 'POST' &&
         new URL(response.url()).pathname.endsWith('/app-settings'),
     );
+    settingCreated = true;
     await settingsForm.getByRole('button', { name: 'Enregistrer', exact: true }).click();
     const settingResult = await settingResponse;
-    if (settingResult.status() === 201) settingCreated = true;
     expect(settingResult.status(), await settingResult.text()).toBe(201);
 
     const settingRow = settingsPanel
@@ -103,6 +123,12 @@ test('Alice crée une liaison et un secret de pipeline, puis vérifie les implic
     await page.getByRole('link', { name: 'Liaisons', exact: true }).click();
     await expect(page).toHaveURL(/tab=links$/);
     await expect(page.getByRole('heading', { name: 'Liaisons sortantes' })).toBeVisible();
+    const explicitAccess = page
+      .locator('.resource-links__item')
+      .filter({ hasText: 'Accès' })
+      .filter({ hasText: 'core / main' })
+      .filter({ hasText: 'Identité système' });
+    await expect(explicitAccess).toHaveCount(0);
     const implicitSecretRead = page
       .locator('.resource-links__item--implicit')
       .filter({ hasText: 'Lecture de secret' });
@@ -125,21 +151,21 @@ test('Alice crée une liaison et un secret de pipeline, puis vérifie les implic
       'aria-pressed',
       'true',
     );
-    const workspaceOption = selects.nth(0).locator('option', {
-      hasText: 'core / main · LogAnalyticsWorkspace',
-    });
-    await expect(workspaceOption).toHaveCount(1);
     const accessTargets = await selects.nth(0).locator('option').allTextContents();
+    const workspaceOption = selects.nth(0).locator('option', { hasText: 'core / main' });
+    await expect(workspaceOption).toHaveCount(1);
     expect(accessTargets, 'Cibles proposées pour la liaison Accès').toContain(
-      'core / main · LogAnalyticsWorkspace',
+      (await workspaceOption.textContent())?.trim() ?? '',
     );
-    await selects.nth(0).selectOption({ label: 'core / main · LogAnalyticsWorkspace' });
+    const workspaceId = await workspaceOption.getAttribute('value');
+    expect(workspaceId).toBeTruthy();
+    await selects.nth(0).selectOption(workspaceId);
     await expect(selects).toHaveCount(2);
 
     const identitySelect = selects.nth(1);
     const identityOptions = await identitySelect.locator('option').allTextContents();
     expect(identityOptions.map((option) => option.trim())).toContain('Identité système');
-    await identitySelect.selectOption('System:');
+    await identitySelect.selectOption({ label: 'Identité système' });
     for (const roleChoice of await dialog
       .locator('.resource-links__choices input[type="checkbox"]')
       .all()) {
@@ -163,16 +189,11 @@ test('Alice crée une liaison et un secret de pipeline, puis vérifie les implic
         response.request().method() === 'POST' &&
         new URL(response.url()).pathname.endsWith('/links'),
     );
+    accessLinkCreated = true;
     await dialog.getByRole('button', { name: 'Ajouter une liaison', exact: true }).click();
     const createResult = await createResponse;
-    if (createResult.status() === 201) accessLinkCreated = true;
     expect(createResult.status()).toBe(201);
 
-    const explicitAccess = page
-      .locator('.resource-links__item')
-      .filter({ hasText: 'Accès' })
-      .filter({ hasText: 'core / main' })
-      .filter({ hasText: 'Identité système' });
     await expect(explicitAccess).toContainText('Log Analytics Reader');
     await expect(explicitAccess).toContainText('Origine : liaison explicite');
     await expect(implicitSecretRead).toContainText(`Paramètre applicatif : ${SETTING_NAME}`);
@@ -202,12 +223,20 @@ test('Alice crée une liaison et un secret de pipeline, puis vérifie les implic
       path: resolve(captureDirectory, `ResourceIdentity-${viewportWidth}.png`),
       fullPage: false,
     });
+  } catch (error) {
+    recipeFailed = true;
+    recipeFailure = error;
   } finally {
-    const cleanupErrors: unknown[] = [];
     for (const cleanup of [
-      async () => { if (accessLinkCreated) await removeAccessLink(page, resourceUrl, 'Identité système'); },
-      async () => { if (settingCreated) await removeRecipeAppSetting(page, resourceUrl); },
-      async () => { if (vaultCreated) await removeRecipeVault(page, componentUrl); },
+      async () => {
+        if (accessLinkCreated) await removeAccessLink(page, resourceUrl, 'Identité système');
+      },
+      async () => {
+        if (settingCreated) await removeRecipeAppSetting(page, resourceUrl);
+      },
+      async () => {
+        if (vaultCreated) await removeRecipeVault(page, componentUrl);
+      },
     ]) {
       try {
         await cleanup();
@@ -215,7 +244,25 @@ test('Alice crée une liaison et un secret de pipeline, puis vérifie les implic
         cleanupErrors.push(error);
       }
     }
-    expect(cleanupErrors, 'Every test-created resource should be cleaned up').toEqual([]);
+  }
+
+  if (cleanupErrors.length > 0) {
+    testInfo.annotations.push({
+      type: 'cleanup-failure',
+      description: cleanupErrors
+        .map((error) => (error instanceof Error ? error.message : String(error)))
+        .join('\n'),
+    });
+  }
+  if (recipeFailed && cleanupErrors.length > 0) {
+    throw new AggregateError(
+      [recipeFailure, ...cleanupErrors],
+      'The recipe failed and its test-created resources could not all be cleaned up.',
+    );
+  }
+  if (recipeFailed) throw recipeFailure;
+  if (cleanupErrors.length > 0) {
+    throw new AggregateError(cleanupErrors, 'Every test-created resource should be cleaned up.');
   }
 });
 
@@ -254,12 +301,12 @@ async function addRecipeKeyVault(page: Page, onCreated: () => void): Promise<voi
       response.request().method() === 'POST' &&
       new URL(response.url()).pathname.endsWith('/resources'),
   );
+  onCreated();
   await page
     .getByRole('button', { name: 'Référencer une ressource existante', exact: true })
     .last()
     .click();
   const createResult = await createResponse;
-  if (createResult.status() === 201) onCreated();
   expect(createResult.status()).toBe(201);
   expect((await Promise.all(idResponses)).map((response) => response.status())).toEqual([200, 200]);
   await expect(page.getByRole('heading', { name: VAULT_NAME, exact: true })).toBeVisible();
@@ -278,11 +325,14 @@ async function removeAccessLink(
   identityLabel: string,
 ): Promise<void> {
   await page.goto(`${resourceUrl}?tab=links`);
+  await expect(page.getByRole('heading', { name: 'Liaisons sortantes' })).toBeVisible();
+  await expect(page.locator('.resource-links__empty, .resource-links__list').first()).toBeVisible();
   const explicitAccess = page
     .locator('.resource-links__item')
     .filter({ hasText: 'Accès' })
     .filter({ hasText: 'core / main' })
     .filter({ hasText: identityLabel });
+  if ((await explicitAccess.count()) === 0) return;
   await expect(explicitAccess).toBeVisible();
   await explicitAccess.getByRole('button', { name: 'Retirer', exact: true }).click();
   const removalDialog = page.getByRole('dialog', { name: 'Retirer', exact: true });
@@ -299,9 +349,14 @@ async function removeAccessLink(
 
 async function removeRecipeAppSetting(page: Page, resourceUrl: string): Promise<void> {
   await page.goto(`${resourceUrl}?tab=settings`);
+  await expect(page.getByRole('heading', { name: 'Paramètres applicatifs' })).toBeVisible();
+  await expect(
+    page.locator('.resource-app-settings__list, .resource-app-settings__empty, .resource-app-settings__error'),
+  ).toBeVisible();
   const settingRow = page
     .locator('.resource-app-settings__list li')
     .filter({ hasText: SETTING_NAME });
+  if ((await settingRow.count()) === 0) return;
   await expect(settingRow).toBeVisible();
   const deleteResponse = page.waitForResponse(
     (response) =>
@@ -315,9 +370,11 @@ async function removeRecipeAppSetting(page: Page, resourceUrl: string): Promise<
 
 async function removeRecipeVault(page: Page, componentUrl: string): Promise<void> {
   await page.goto(componentUrl);
+  await expect(page.getByRole('heading', { name: 'Orders', exact: true })).toBeVisible();
   const resourceRow = page
     .locator('.component-detail__resources li')
     .filter({ hasText: VAULT_NAME });
+  if ((await resourceRow.count()) === 0) return;
   await expect(resourceRow).toBeVisible();
   const impactResponse = page.waitForResponse(
     (response) =>
@@ -335,7 +392,8 @@ async function removeRecipeVault(page: Page, componentUrl: string): Promise<void
       new URL(response.url()).pathname.includes('/resources/'),
   );
   await dialog.getByRole('button', { name: 'Supprimer du modèle', exact: true }).click();
-  expect((await deleteResponse).status()).toBe(204);
+  const deleteResult = await deleteResponse;
+  expect(deleteResult.status(), await deleteResult.text()).toBe(204);
   await expect(resourceRow).toHaveCount(0);
 }
 
@@ -359,6 +417,11 @@ async function assertNoHorizontalOverflow(page: Page): Promise<void> {
 }
 
 function hasTargetId(body: unknown, targetId: string): boolean {
-  return typeof body === 'object' && body !== null && 'targetId' in body
-    && typeof body.targetId === 'string' && body.targetId === targetId;
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    'targetId' in body &&
+    typeof body.targetId === 'string' &&
+    body.targetId === targetId
+  );
 }

@@ -16,8 +16,26 @@
       <p class="resource-create__error" role="alert">
         {{ 'resource.configurationLoadError' | transloco }}
       </p>
+      @if (partialCreateCleanupFailed()) {
+        <div class="resource-create__error" role="alert">
+          <p>{{ 'resource.partialCreateCleanupFailed' | transloco }}</p>
+          @if (partialCreateCleanupRetryFailed()) {
+            <p>{{ 'resource.partialCreateCleanupRetryFailed' | transloco }}</p>
+          }
+          <app-ds-button
+            type="button"
+            variant="secondary"
+            [disabled]="saving()"
+            (click)="retryPartialCreateCleanup()"
+          >
+            {{ 'resource.retryPartialCreateCleanup' | transloco }}
+          </app-ds-button>
+        </div>
+      }
       <footer class="resource-create__footer">
-        <a [routerLink]="['../']">{{ 'resource.cancel' | transloco }}</a>
+        @if (!partialCreateCleanupFailed()) {
+          <a [routerLink]="['../../../']">{{ 'resource.cancel' | transloco }}</a>
+        }
       </footer>
     } @else {
       <header>
@@ -28,18 +46,22 @@
               {{ 'resource.newTitle' | transloco: { type: typeSummary()?.labelFr ?? type() } }}
             </h2>
             <p>
-              {{ 'resource.inComponent' | transloco: { name: component()!.name } }} ·
-              <a [routerLink]="['../']">{{ 'resource.changeType' | transloco }}</a>
+              {{ 'resource.inComponent' | transloco: { name: component()!.name } }}
+              @if (!partialCreateCleanupFailed()) {
+                · <a [routerLink]="['../']">{{ 'resource.changeType' | transloco }}</a>
+              }
             </p>
           </div>
         </div>
-        <a
-          class="resource-create__close"
-          [routerLink]="['../']"
-          [attr.aria-label]="'resource.closeAdd' | transloco"
-        >
-          <span aria-hidden="true">×</span>
-        </a>
+        @if (!partialCreateCleanupFailed()) {
+          <a
+            class="resource-create__close"
+            [routerLink]="['../../../']"
+            [attr.aria-label]="'resource.closeAdd' | transloco"
+          >
+            <span aria-hidden="true">×</span>
+          </a>
+        }
       </header>
 
       <form (ngSubmit)="create()">
@@ -68,6 +90,99 @@
             </select>
           </label>
         </div>
+
+        @if (!existingMode() && initialPropertyDefinitions().length > 0) {
+          <fieldset class="resource-create__initial-properties">
+            <legend>{{ 'resource.initialProperties' | transloco }}</legend>
+            <p>{{ 'resource.initialPropertiesHelp' | transloco }}</p>
+            <div class="resource-create__property-fields">
+              @for (definition of initialPropertyDefinitions(); track definition.name) {
+                @if (isBooleanDefinition(definition)) {
+                  <label class="resource-create__boolean-property">
+                    <input
+                      type="checkbox"
+                      [attr.aria-label]="propertyLabel(definition)"
+                      [checked]="initialPropertyValue(definition) === true"
+                      [disabled]="saving()"
+                      (change)="onInitialPropertyChange($event, definition)"
+                    />
+                    <span>{{ propertyLabel(definition) }}</span>
+                  </label>
+                } @else if (definition.kind === 'enum') {
+                  <label>
+                    {{ propertyLabel(definition) }}
+                    <select
+                      [attr.aria-label]="propertyLabel(definition)"
+                      [ngModel]="serializeInitialValue(initialPropertyValue(definition))"
+                      [ngModelOptions]="{ standalone: true }"
+                      [disabled]="saving()"
+                      (ngModelChange)="onInitialOptionChange(definition, $event)"
+                    >
+                      <option value="__unset">{{ 'resource.valueAbsent' | transloco }}</option>
+                      @for (option of definition.values ?? []; track $index) {
+                        <option [value]="serializeInitialValue(option)">
+                          {{ formatInitialValue(option) }}
+                        </option>
+                      }
+                    </select>
+                  </label>
+                } @else if (isCidrList(definition)) {
+                  <app-ds-cidr-field
+                    [id]="initialCidrFieldId(definition)"
+                    [label]="propertyLabel(definition)"
+                    [inputLabel]="'resource.cidrInputLabel' | transloco"
+                    [addLabel]="'resource.addRange' | transloco"
+                    [removeLabel]="'resource.removeRange' | transloco"
+                    [invalidMessage]="'resource.cidrInvalid' | transloco"
+                    [maxItems]="definition.maxItems ?? 100"
+                    [disabled]="saving()"
+                    [ngModel]="stringArray(initialPropertyValue(definition))"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="updateInitialCidrValue(definition, $event)"
+                  />
+                } @else if (definition.kind === 'array') {
+                  <label>
+                    {{ propertyLabel(definition) }}
+                    <textarea
+                      [attr.aria-label]="propertyLabel(definition)"
+                      [value]="formatInitialArray(initialPropertyValue(definition))"
+                      [disabled]="saving()"
+                      rows="3"
+                      (change)="onInitialPropertyChange($event, definition)"
+                    ></textarea>
+                    @if (initialPropertyError(definition); as errorKey) {
+                      <span class="resource-create__error" role="alert">
+                        {{ errorKey | transloco: { property: propertyLabel(definition) } }}
+                      </span>
+                    }
+                  </label>
+                } @else {
+                  <label>
+                    {{ propertyLabel(definition) }}
+                    <input
+                      [type]="isNumericDefinition(definition) ? 'number' : 'text'"
+                      [attr.aria-label]="propertyLabel(definition)"
+                      [step]="definition.kind === 'integer' ? '1' : 'any'"
+                      [attr.min]="definition.minimum ?? null"
+                      [attr.max]="definition.maximum ?? null"
+                      [attr.minlength]="definition.minLength ?? null"
+                      [attr.maxlength]="definition.maxLength ?? null"
+                      [attr.pattern]="definition.pattern ?? null"
+                      [value]="formatInitialValue(initialPropertyValue(definition))"
+                      [disabled]="saving()"
+                      (change)="onInitialPropertyChange($event, definition)"
+                    />
+                    @if (initialPropertyError(definition); as errorKey) {
+                      <span class="resource-create__error" role="alert">
+                        {{ errorKey | transloco: { property: propertyLabel(definition) } }}
+                      </span>
+                    }
+                  </label>
+                }
+              }
+            </div>
+          </fieldset>
+        }
 
         @if (existingMode()) {
           <fieldset>
@@ -117,14 +232,39 @@
         @if (saveError() && !conflict()) {
           <p class="resource-create__error" role="alert">{{ saveErrorKey() | transloco }}</p>
         }
+        @if (createdNavigationFailed()) {
+          <p class="resource-create__error" role="alert">
+            {{ 'resource.createdButNavigationFailed' | transloco }}
+          </p>
+        }
+        @if (partialCreateCleanupFailed()) {
+          <div class="resource-create__error" role="alert">
+            <p>{{ 'resource.partialCreateCleanupFailed' | transloco }}</p>
+            @if (partialCreateCleanupRetryFailed()) {
+              <p>{{ 'resource.partialCreateCleanupRetryFailed' | transloco }}</p>
+            }
+            <app-ds-button
+              type="button"
+              variant="secondary"
+              [disabled]="saving()"
+              (click)="retryPartialCreateCleanup()"
+            >
+              {{ 'resource.retryPartialCreateCleanup' | transloco }}
+            </app-ds-button>
+          </div>
+        }
 
         <footer class="resource-create__footer">
-          <a [routerLink]="['../']">{{ 'resource.cancel' | transloco }}</a>
+          @if (!partialCreateCleanupFailed()) {
+            <a [routerLink]="['../../../']">{{ 'resource.cancel' | transloco }}</a>
+          }
           <app-ds-button
             variant="primary"
             type="submit"
             [disabled]="
               saving() ||
+              createdNavigationFailed() ||
+              partialCreateCleanupFailed() ||
               !canEditModel() ||
               !resourceGroupId() ||
               (existingMode() && !allExistingIdsProvided())
@@ -169,8 +309,8 @@
           <tbody>
             <tr>
               <th scope="row">{{ 'resource.component' | transloco }}</th>
-              <td>{{ versions.submitted }}</td>
               <td>{{ versions.current }}</td>
+              <td>{{ versions.submitted }}</td>
             </tr>
           </tbody>
         </table>

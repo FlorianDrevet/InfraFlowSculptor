@@ -14,6 +14,7 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
     private const string LinkSelfCode = "RG-LIA-02";
     private const string ExistingSourceCode = "VAL-LIA-SOURCE-EXISTING";
     private const string LinkKindUnsupportedCode = "VAL-LIA-TYPE";
+    private const string LinkComponentScopeUnsupportedCode = "VAL-LIA-COMPOSANT";
     private const string ImplicitOnlyCode = "VAL-LIA-IMPLICITE";
     private const string IdentityRequiredCode = "RG-LIA-08-IDENTITY-REQUIRED";
     private const string IdentityUnsupportedCode = "VAL-LIA-IDENTITE";
@@ -32,7 +33,10 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
             .ToDictionary(entry => entry.Resource.Id);
         var descriptorByType = catalog.ResourceTypes.ToDictionary(descriptor => descriptor.Type, StringComparer.OrdinalIgnoreCase);
         var issues = new List<WiringIssue>();
-        var implicitApplicationSettings = BuildImplicitApplicationSettings(snapshot, catalog, resourceById, descriptorByType, linkKinds);
+        var identities = new List<WiredIdentity>();
+        var defaultIdentitiesByApplicationId = AddDefaultIdentities(resourceById, descriptorByType, issues, identities);
+        var implicitApplicationSettings = BuildImplicitApplicationSettings(
+            snapshot, catalog, resourceById, descriptorByType, defaultIdentitiesByApplicationId, linkKinds);
         ValidateApplicationSettings(snapshot, resourceById, descriptorByType, implicitApplicationSettings, issues);
         var links = snapshot.Links
             .Concat(linkKinds.Values.SelectMany(handler => handler.GetImplicitLinks(snapshot, catalog)))
@@ -43,11 +47,9 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
             .ThenBy(link => link.Id)
             .ToArray();
         var wiredLinks = new List<WiredLink>();
-        var identities = new List<WiredIdentity>();
         var roleCandidates = new List<RoleCandidate>();
         var dependencies = new List<WiringDependency>();
         var dataAccessRequests = new List<DataAccessRequest>();
-        AddDefaultIdentities(resourceById, descriptorByType, issues, identities);
 
         foreach (var link in links)
         {
@@ -95,6 +97,20 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
             if (!handler.Supports(sourceDescriptor, targetDescriptor))
             {
                 issues.Add(new WiringIssue(LinkKindUnsupportedCode, "The pinned catalog does not allow this source and target for the link kind.", link.Id, link.SourceResourceId));
+                continue;
+            }
+
+            if (!handler.SupportsComponentScope(
+                    sourceDescriptor,
+                    targetDescriptor,
+                    source.Component.Id,
+                    target.Component.Id))
+            {
+                issues.Add(new WiringIssue(
+                    LinkComponentScopeUnsupportedCode,
+                    "The pinned catalog requires this source and target to belong to the same component.",
+                    link.Id,
+                    link.SourceResourceId));
                 continue;
             }
 
@@ -153,31 +169,27 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
                 snapshot,
                 sourceDescriptor,
                 targetDescriptor);
-            wiredLinks.Add(new WiredLink(evaluatedLink, external, createsDeploymentDependency));
             var origin = new WiringOrigin(link.Origin, link.Kind, link.Id, link.SourceResourceId, link.TargetResourceId);
+            var linkRoleCandidates = new List<RoleCandidate>();
 
             if (identity is not null)
             {
-                identities.Add(new WiredIdentity(
-                    source.Component.Id,
-                    source.Resource.Id,
-                    identity.Kind,
-                    identity.AttachedIdentityResourceId,
-                    [origin]));
                 var requiredRoles = handler.GetRequiredRoles(link, target.Resource.Properties, targetDescriptor);
+                var hasUnsupportedRole = false;
                 foreach (var roleName in requiredRoles)
                 {
                     var role = FindAllowedRole(targetDescriptor, roleName);
                     if (role is null || RoleAssignmentPolicy.IsForbiddenRole(role))
                     {
                         issues.Add(new WiringIssue(RoleUnsupportedCode, $"The role '{roleName}' is not assignable on this target.", link.Id, link.TargetResourceId));
+                        hasUnsupportedRole = true;
                         continue;
                     }
 
                     var scopeResourceId = link.AccessScope == LinkAccessScope.ResourceGroup
                         ? target.Resource.ResourceGroupId
                         : target.Resource.Id;
-                    roleCandidates.Add(new RoleCandidate(
+                    linkRoleCandidates.Add(new RoleCandidate(
                         identity.OwnerComponentId,
                         identity.PrincipalKind,
                         identity.PrincipalResourceId,
@@ -191,7 +203,22 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
                         targetDescriptor,
                         origin));
                 }
+
+                if (hasUnsupportedRole)
+                {
+                    continue;
+                }
+
+                identities.Add(new WiredIdentity(
+                    source.Component.Id,
+                    source.Resource.Id,
+                    identity.Kind,
+                    identity.AttachedIdentityResourceId,
+                    [origin]));
             }
+
+            wiredLinks.Add(new WiredLink(evaluatedLink, external, createsDeploymentDependency));
+            roleCandidates.AddRange(linkRoleCandidates);
 
             if (createsDeploymentDependency && source.Component.Id != target.Component.Id)
             {
@@ -229,7 +256,7 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
         {
             foreach (var resource in component.Resources)
             {
-                if (!descriptorByType.TryGetValue(resource.Type, out var descriptor))
+                if (resource.IsExisting || !descriptorByType.TryGetValue(resource.Type, out var descriptor))
                 {
                     continue;
                 }
@@ -300,6 +327,7 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
         CatalogVersion catalog,
         Dictionary<Guid, (ComponentSnapshot Component, ResourceSnapshot Resource)> resources,
         Dictionary<string, CatalogResourceTypeDescriptor> descriptors,
+        IReadOnlyDictionary<Guid, Guid> defaultIdentitiesByApplicationId,
         LinkKindRegistry linkKinds)
     {
         var settings = new List<ImplicitApplicationSetting>();
@@ -314,12 +342,11 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
             }
         }
 
-        foreach (var application in resources.Values
-            .Where(value => value.Resource.DefaultIdentityResourceId is not null)
-            .OrderBy(value => value.Resource.Id))
+        foreach (var (applicationId, identityId) in defaultIdentitiesByApplicationId.OrderBy(pair => pair.Key))
         {
-            if (!resources.TryGetValue(application.Resource.DefaultIdentityResourceId!.Value, out var identity)
-                || !descriptors.TryGetValue(identity.Resource.Type, out var identityDescriptor)
+            var application = resources[applicationId];
+            var identity = resources[identityId];
+            if (!descriptors.TryGetValue(identity.Resource.Type, out var identityDescriptor)
                 || FindOutput(identityDescriptor, "clientId") is not { } clientId)
             {
                 continue;
@@ -327,7 +354,7 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
 
             settings.Add(new ImplicitApplicationSetting(
                 LinkIdFactory.Create($"implicitAppSetting:ApplicationIdentity:{ApplicationSettingNameRules.AzureClientId}", application.Resource.Id, identity.Resource.Id),
-                application.Resource.Id,
+                applicationId,
                 ApplicationSettingNameRules.AzureClientId,
                 identity.Resource.Id,
                 "clientId",
@@ -343,12 +370,13 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
             .ToArray();
     }
 
-    private static void AddDefaultIdentities(
+    private static Dictionary<Guid, Guid> AddDefaultIdentities(
         Dictionary<Guid, (ComponentSnapshot Component, ResourceSnapshot Resource)> resources,
         Dictionary<string, CatalogResourceTypeDescriptor> descriptors,
         List<WiringIssue> issues,
         List<WiredIdentity> identities)
     {
+        var validDefaultIdentitiesByApplicationId = new Dictionary<Guid, Guid>();
         foreach (var application in resources.Values
             .Where(value => value.Resource.DefaultIdentityResourceId is not null)
             .OrderBy(value => value.Resource.Id))
@@ -384,7 +412,10 @@ public sealed class WiringEngine(LinkKindRegistry linkKinds, DataAccessProviderR
                 LinkIdentityKind.UserAssigned,
                 identityId,
                 []));
+            validDefaultIdentitiesByApplicationId.Add(application.Resource.Id, identityId);
         }
+
+        return validDefaultIdentitiesByApplicationId;
     }
 
     private static void ValidateApplicationSettings(

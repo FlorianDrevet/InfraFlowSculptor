@@ -18,7 +18,7 @@ public static partial class SecretValueDetector
         @"(?ix)(?:\b(?:password|pwd|accountkey|sharedaccesskey|clientsecret|client_secret|connectionstring)\s*=\s*[^;\s&]+|\bsig\s*=\s*[^&\s]+|://[^/\s:@]+:[^@\s]+@)",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex SecretLikeNamePattern = new(
-        @"(?i)(password|secret|token|api.?key|connection.?string)",
+        @"(?i)(password|passwd|secret|token|api.?key|connection.?string)",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     public static bool HasSecretLikeName(string? name) =>

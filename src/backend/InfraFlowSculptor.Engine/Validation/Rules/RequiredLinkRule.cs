@@ -18,17 +18,21 @@ public sealed class RequiredLinkRule : IValidationRule
         {
             if (issue.ResourceId is not { } resourceId
                 || issue.Kind is not { } kind
-                || !context.TryGetResource(resourceId, out _, out var resource))
+                || !context.TryGetResource(resourceId, out var sourceComponent, out var resource))
             {
                 continue;
             }
 
             var handler = context.LinkKinds.Get(kind);
-            var canOfferFix = context.ResourceTypes.TryGetValue(resource.Type, out var sourceType)
+            var hasExistingLinkOfKind = context.Snapshot.Links.Any(link =>
+                link.SourceResourceId == resourceId && link.Kind == kind);
+            var canOfferFix = !hasExistingLinkOfKind
+                && context.ResourceTypes.TryGetValue(resource.Type, out var sourceType)
                 && handler.Form.Fields.All(field => !field.Required)
                 && context.Resources.Count(candidate => candidate.Resource.Id != resourceId
                     && context.ResourceTypes.TryGetValue(candidate.Resource.Type, out var targetType)
-                    && handler.Supports(sourceType, targetType)) == 1;
+                    && handler.Supports(sourceType, targetType)
+                    && handler.SupportsComponentScope(sourceType, targetType, sourceComponent.Id, candidate.Component.Id)) == 1;
             var fixCode = canOfferFix ? Code : null;
             findings.Add(context.Finding(
                 Code,

@@ -1,11 +1,18 @@
 import { TestBed } from '@angular/core/testing';
-import { provideTransloco, TranslocoLoader, TranslocoService, type Translation } from '@jsverse/transloco';
+import {
+  provideTransloco,
+  TranslocoLoader,
+  TranslocoService,
+  type Translation,
+} from '@jsverse/transloco';
 import { Observable, of, Subject, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import type {
   ComponentResponse,
+  LinkIdentityKind,
   LinkPreviewResponse,
   ResourceLinkOptionsResponse,
+  ResourceLinkResponse,
   ResourceLinksResponse,
   ResourceResponse,
 } from '../../core/api/generated';
@@ -22,13 +29,18 @@ class ResourceLinksTranslations implements TranslocoLoader {
         outgoingLinks: 'Liaisons sortantes',
         linksHelp: 'Configurez les liaisons pour {{name}}.',
         loadingLinks: 'Chargement des liaisons.',
+        noOutgoingLinks: 'Aucune liaison sortante.',
         linkUses: 'utilise',
         deploymentDependency: 'Dépendance de déploiement',
         addLink: 'Ajouter une liaison',
+        addLinkHelp: 'Ajoutez une liaison au modèle.',
         addLinkFrom: 'Ajouter une liaison depuis {{name}}',
         removeLink: 'Retirer',
         confirmRemoveLink: 'Retirer la liaison',
         linkRemovalSummary: 'Retirer la liaison vers {{name}} ?',
+        linkRemovalError: 'Le retrait a échoué. Rechargez et réessayez.',
+        linkRemovalVersionUnavailable:
+          'La version de cette liaison manque. Rechargez le modèle avant de réessayer.',
         linkRemovalBlockerWarning: isEnglish
           ? 'Blocking break: project generation will be rejected until repaired.'
           : 'Rupture bloquante : vous pouvez retirer cette liaison, mais la génération du projet sera refusée.',
@@ -46,11 +58,17 @@ class ResourceLinksTranslations implements TranslocoLoader {
         previewLink: 'Prévisualiser',
         linkPreviewHeading: 'Ce que la liaison produira',
         linkPreviewHelp: 'Demandez un aperçu.',
-        linkPreviewDependency: '{{environment}} : {{sourceComponent}} dépend de {{targetComponent}}',
-        dataAccess: { Lecture: 'Lecture', LectureEcriture: 'Lecture et écriture', Schema: 'Schéma' },
+        linkPreviewDependency:
+          '{{environment}} : {{sourceComponent}} dépend de {{targetComponent}}',
+        dataAccess: {
+          Lecture: 'Lecture',
+          LectureEcriture: 'Lecture et écriture',
+          Schema: 'Schéma',
+        },
         cancel: 'Annuler',
         explicitLinkOrigin: 'Origine explicite',
         identityKind: { UserAssigned: 'Identité affectée : {{name}}' },
+        defaultIdentity: 'Identité par défaut',
       },
     });
   }
@@ -120,17 +138,21 @@ describe('ResourceLinksPanel', () => {
     const resourceService = {
       links: vi.fn(() => of({ outgoing: [link], incoming: [] })),
       linkOptions: vi.fn(() => of({ kinds: [] })),
-      linkRemovalImpact: vi.fn(() => of({
-        modelVersion: 12,
-        severity: 'Blocker',
-        items: [{
-          code: 'IMPACT-LIA-OBLIGATOIRE-ROMPU',
-          linkId: link.id,
-          message: 'Message d’impact du serveur',
-          resourceId,
+      linkRemovalImpact: vi.fn(() =>
+        of({
+          modelVersion: 12,
           severity: 'Blocker',
-        }],
-      })),
+          items: [
+            {
+              code: 'IMPACT-LIA-OBLIGATOIRE-ROMPU',
+              linkId: link.id,
+              message: 'Message d’impact du serveur',
+              resourceId,
+              severity: 'Blocker',
+            },
+          ],
+        }),
+      ),
       removeLink,
     };
 
@@ -155,7 +177,9 @@ describe('ResourceLinksPanel', () => {
     await vi.waitFor(() => expect(resourceService.links).toHaveBeenCalledOnce());
 
     const host = fixture.nativeElement as HTMLElement;
-    await vi.waitFor(() => expect(host.querySelector('.resource-links__item button')).not.toBeNull());
+    await vi.waitFor(() =>
+      expect(host.querySelector('.resource-links__item button')).not.toBeNull(),
+    );
     [...host.querySelectorAll('button')]
       .find((button) => button.textContent?.includes('Retirer'))
       ?.click();
@@ -165,10 +189,30 @@ describe('ResourceLinksPanel', () => {
     expect(host.textContent).toContain('la génération du projet sera refusée');
     expect(host.textContent).toContain('Une liaison obligatoire est rompue.');
     expect(host.textContent).not.toContain('Message d’impact du serveur');
+
+    fixture.componentRef.setInput('canEdit', false);
+    fixture.detectChanges();
+    const panel = fixture.componentInstance as unknown as {
+      requestRemoval: (link: ResourceLinkResponse) => Promise<void>;
+      confirmRemoval: () => Promise<void>;
+    };
+    const confirmButton = [...host.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('Retirer la liaison'),
+    ) as HTMLButtonElement;
+    expect(confirmButton.disabled).toBe(true);
+    await panel.requestRemoval(link as unknown as ResourceLinkResponse);
+    await panel.confirmRemoval();
+    expect(resourceService.linkRemovalImpact).toHaveBeenCalledOnce();
+    expect(removeLink).not.toHaveBeenCalled();
+
+    fixture.componentRef.setInput('canEdit', true);
+    fixture.detectChanges();
     const transloco = TestBed.inject(TranslocoService);
     transloco.setActiveLang('en');
     await vi.waitFor(() => expect(host.textContent).toContain('A required link is broken.'));
-    expect(host.textContent).toContain('Blocking break: project generation will be rejected until repaired.');
+    expect(host.textContent).toContain(
+      'Blocking break: project generation will be rejected until repaired.',
+    );
     transloco.setActiveLang('fr');
     await vi.waitFor(() => expect(host.textContent).toContain('Retirer la liaison'));
 
@@ -237,17 +281,20 @@ describe('ResourceLinksPanel', () => {
     const impact = (modelVersion: number) => ({
       modelVersion,
       severity: 'Blocker',
-      items: [{
-        code: 'IMPACT-LIA-OBLIGATOIRE-ROMPU',
-        linkId: link.id,
-        message: 'Une liaison obligatoire serait rompue.',
-        resourceId,
-        severity: 'Blocker',
-      }],
+      items: [
+        {
+          code: 'IMPACT-LIA-OBLIGATOIRE-ROMPU',
+          linkId: link.id,
+          message: 'Une liaison obligatoire serait rompue.',
+          resourceId,
+          severity: 'Blocker',
+        },
+      ],
     });
     const refreshedLink = { ...link, version: 5 };
     let currentLink = link;
-    const removeLink = vi.fn()
+    const removeLink = vi
+      .fn()
       .mockImplementationOnce(() => {
         currentLink = refreshedLink;
         return throwError(() => new ApiError(409, 'CONFLICT_VERSION', 'Le modèle a changé.'));
@@ -256,7 +303,8 @@ describe('ResourceLinksPanel', () => {
     const resourceService = {
       links: vi.fn(() => of({ outgoing: [currentLink], incoming: [] })),
       linkOptions: vi.fn(() => of({ kinds: [] })),
-      linkRemovalImpact: vi.fn()
+      linkRemovalImpact: vi
+        .fn()
         .mockReturnValueOnce(of(impact(12)))
         .mockReturnValueOnce(of(impact(13))),
       removeLink,
@@ -283,7 +331,9 @@ describe('ResourceLinksPanel', () => {
     await vi.waitFor(() => expect(resourceService.links).toHaveBeenCalledOnce());
 
     const host = fixture.nativeElement as HTMLElement;
-    await vi.waitFor(() => expect(host.querySelector('.resource-links__item button')).not.toBeNull());
+    await vi.waitFor(() =>
+      expect(host.querySelector('.resource-links__item button')).not.toBeNull(),
+    );
     [...host.querySelectorAll('button')]
       .find((button) => button.textContent?.includes('Retirer'))
       ?.click();
@@ -307,6 +357,68 @@ describe('ResourceLinksPanel', () => {
       expectedModelVersion: 13,
       expectedLinkVersion: 5,
     });
+  });
+
+  it('does not send a missing link version as zero', async () => {
+    const resource = { id: resourceId, isExisting: false, logicalName: 'api' } as ResourceResponse;
+    const component = { id: componentId, version: 12, resources: [resource] } as ComponentResponse;
+    const link = {
+      id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+      kind: 'Hosting',
+      kindLabelEn: 'Hosting',
+      kindLabelFr: 'Hébergement',
+      origin: 'Explicit',
+      sourceResourceName: 'api',
+      targetResourceName: 'main',
+      sourceComponentCode: 'api',
+      targetComponentCode: 'core',
+      identityKind: 'None',
+      identityResourceId: null,
+      roles: [],
+      findings: [],
+      createsDeploymentDependency: true,
+      version: null,
+    } as unknown as ResourceLinkResponse;
+    const removeLink = vi.fn(() => of({ linkId: link.id, summary: '', effects: [], findings: [] }));
+    const resourceService = {
+      links: vi.fn(() => of({ outgoing: [], incoming: [] })),
+      linkOptions: vi.fn(() => of({ kinds: [] })),
+      linkRemovalImpact: vi.fn(() => of({ modelVersion: 12, severity: 'None', items: [] })),
+      removeLink,
+    };
+
+    TestBed.configureTestingModule({
+      imports: [ResourceLinksPanel],
+      providers: [
+        provideTransloco({
+          config: { availableLangs: ['fr', 'en'], defaultLang: 'fr', reRenderOnLangChange: true },
+          loader: ResourceLinksTranslations,
+        }),
+        { provide: ComponentsService, useValue: { get: vi.fn(() => of(component)) } },
+        { provide: ResourcesService, useValue: resourceService },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(ResourceLinksPanel);
+    fixture.componentRef.setInput('projectId', projectId);
+    fixture.componentRef.setInput('component', component);
+    fixture.componentRef.setInput('resource', resource);
+    fixture.componentRef.setInput('canEdit', true);
+    fixture.detectChanges();
+    await vi.waitFor(() => expect(resourceService.links).toHaveBeenCalledOnce());
+
+    const panel = fixture.componentInstance as unknown as {
+      requestRemoval: (value: ResourceLinkResponse) => Promise<void>;
+      confirmRemoval: () => Promise<void>;
+    };
+    await panel.requestRemoval(link);
+    await panel.confirmRemoval();
+    fixture.detectChanges();
+
+    expect(removeLink).not.toHaveBeenCalled();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      'version de cette liaison manque',
+    );
   });
 
   it('previews server effects before creating a link', async () => {
@@ -488,7 +600,9 @@ describe('ResourceLinksPanel', () => {
     const host = fixture.nativeElement as HTMLElement;
     const buttons = (): HTMLButtonElement[] => [...host.querySelectorAll('button')];
     const clickPreview = (): void => {
-      const button = buttons().find((candidate) => candidate.textContent?.includes('Prévisualiser'));
+      const button = buttons().find((candidate) =>
+        candidate.textContent?.includes('Prévisualiser'),
+      );
       expect(button).toBeDefined();
       button?.click();
       fixture.detectChanges();
@@ -507,7 +621,18 @@ describe('ResourceLinksPanel', () => {
     const panel = fixture.componentInstance as unknown as {
       reload(): Promise<void>;
       previewResult(): LinkPreviewResponse | null;
+      identityLabel(
+        kind: LinkIdentityKind,
+        resourceId: string | null,
+        fallbackName?: string | null,
+      ): string;
     };
+    expect(panel.identityLabel('UserAssigned', 'different-component-id', 'shared identity')).toBe(
+      'Identité affectée : shared identity',
+    );
+    expect(panel.identityLabel('UserAssigned', 'different-component-id', '')).toBe(
+      'Identité affectée : different-component-id',
+    );
     clickPreview();
     await vi.waitFor(() => expect(previewLink).toHaveBeenCalledOnce());
     targetSelect.value = duplicateTargetResourceId;

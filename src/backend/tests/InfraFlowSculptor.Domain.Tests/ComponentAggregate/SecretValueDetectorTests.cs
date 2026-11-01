@@ -46,6 +46,7 @@ public sealed class SecretValueDetectorTests
     public void RGPAR05SecretLikeNameIsDetectedWithoutInspectingTheValue()
     {
         Assert.True(SecretValueDetector.HasSecretLikeName("Payments__ApiKey"));
+        Assert.True(SecretValueDetector.HasSecretLikeName("Database__Passwd"));
         Assert.False(SecretValueDetector.HasSecretLikeName("Application__Port"));
     }
 }

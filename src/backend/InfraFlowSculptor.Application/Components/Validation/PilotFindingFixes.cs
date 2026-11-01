@@ -51,6 +51,14 @@ public static partial class PilotFindingFixes
                 return Error.NotFound("VALIDATION_FIX_TARGET_NOT_FOUND", "The source resource was not found.");
             }
 
+            if (context.Snapshot.Links.Any(link =>
+                    link.SourceResourceId == source.Resource.Id && link.Kind == kind))
+            {
+                return Error.Conflict(
+                    "VALIDATION_FIX_LINK_MUST_BE_REPAIRED",
+                    "An existing incompatible link must be updated or removed before applying this fix.");
+            }
+
             if (!linkKinds.Supports(kind))
             {
                 return Error.Validation("VALIDATION_FIX_UNAVAILABLE", "The required link cannot be fixed using the current catalog.");
@@ -67,7 +75,12 @@ public static partial class PilotFindingFixes
                     component.Resources.Select(resource => (Component: component, Resource: resource)))
                 .Where(candidate => candidate.Resource.Id != source.Resource.Id)
                 .Where(candidate => context.Catalog.GetResourceType(candidate.Resource.Type) is { } targetDescriptor
-                    && handler.Supports(sourceDescriptor, targetDescriptor))
+                    && handler.Supports(sourceDescriptor, targetDescriptor)
+                    && handler.SupportsComponentScope(
+                        sourceDescriptor,
+                        targetDescriptor,
+                        source.Component.Id,
+                        candidate.Component.Id))
                 .ToArray();
             if (targets.Length != 1)
             {

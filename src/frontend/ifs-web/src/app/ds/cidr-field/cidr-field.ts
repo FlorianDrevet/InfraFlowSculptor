@@ -34,6 +34,7 @@ export class DsCidrField implements ControlValueAccessor {
   readonly disabled = input(false);
 
   protected readonly value = signal<string[]>([]);
+  protected readonly itemDrafts = signal<string[]>([]);
   protected readonly draft = signal('');
   protected readonly controlDisabled = signal(false);
   protected readonly fieldId = computed(() => this.id() || `st-cidr-field-${this.generatedId}`);
@@ -41,11 +42,13 @@ export class DsCidrField implements ControlValueAccessor {
     const draft = this.draft();
     return draft.length > 0 && !isCanonicalIpv4Cidr(draft) ? this.invalidMessage() : undefined;
   });
-  protected readonly canAdd = computed(() =>
-    this.draft().length > 0
-    && !this.draftError()
-    && this.value().length < this.maxItems()
-    && !this.isDisabled(),
+  protected readonly canAdd = computed(
+    () =>
+      this.draft().length > 0 &&
+      !this.draftError() &&
+      this.itemDrafts().every(isCanonicalIpv4Cidr) &&
+      this.value().length < this.maxItems() &&
+      !this.isDisabled(),
   );
 
   private readonly generatedId = ++nextFieldId;
@@ -53,9 +56,19 @@ export class DsCidrField implements ControlValueAccessor {
   private onTouched: () => void = () => undefined;
 
   writeValue(value: unknown): void {
-    this.value.set(Array.isArray(value) && value.every((item: unknown) => typeof item === 'string')
-      ? [...value]
-      : []);
+    const nextValue =
+      Array.isArray(value) && value.every((item: unknown) => typeof item === 'string')
+        ? [...value]
+        : [];
+    const currentValue = this.value();
+    if (
+      currentValue.length === nextValue.length &&
+      currentValue.every((item, index) => item === nextValue[index])
+    ) {
+      return;
+    }
+    this.value.set(nextValue);
+    this.itemDrafts.set(nextValue);
   }
 
   registerOnChange(fn: (value: string[]) => void): void {
@@ -87,8 +100,19 @@ export class DsCidrField implements ControlValueAccessor {
   }
 
   protected onItemChange(index: number, value: string | undefined): void {
-    const nextValue = [...this.value()];
+    const nextValue = [...this.itemDrafts()];
     nextValue[index] = value ?? '';
+    this.itemDrafts.set(nextValue);
+  }
+
+  protected commitItem(index: number): void {
+    this.onTouched();
+    if (this.isDisabled()) return;
+    const item = this.itemDrafts()[index];
+    if (item === undefined || !isCanonicalIpv4Cidr(item) || item === this.value()[index]) return;
+
+    const nextValue = [...this.value()];
+    nextValue[index] = item;
     this.setValue(nextValue);
   }
 
@@ -112,6 +136,7 @@ export class DsCidrField implements ControlValueAccessor {
 
   private setValue(value: string[]): void {
     this.value.set(value);
+    this.itemDrafts.set([...value]);
     this.onChange([...value]);
     this.onTouched();
   }
@@ -130,10 +155,13 @@ function isCanonicalIpv4Cidr(value: string): boolean {
   }
 
   const octetTexts = parts[0].split('.');
-  if (octetTexts.length !== 4 || !octetTexts.every((octet) => {
-    const octetMatch = /^(0|[1-9]\d{0,2})$/.exec(octet);
-    return octetMatch !== null && octetMatch[0] === octet;
-  })) {
+  if (
+    octetTexts.length !== 4 ||
+    !octetTexts.every((octet) => {
+      const octetMatch = /^(0|[1-9]\d{0,2})$/.exec(octet);
+      return octetMatch !== null && octetMatch[0] === octet;
+    })
+  ) {
     return false;
   }
 

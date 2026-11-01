@@ -189,6 +189,7 @@
                 <app-ds-button
                   variant="danger"
                   size="sm"
+                  [ariaLabel]="'resource.deleteNamed' | transloco: { name: resource.logicalName }"
                   [disabled]="deletingResource()"
                   (click)="requestResourceDeletion(resource)"
                 >
@@ -203,32 +204,42 @@
 
     <section class="component-detail__section" aria-labelledby="dependencies-heading">
       <h3 id="dependencies-heading">{{ 'resourceGroup.dependenciesHeading' | transloco }}</h3>
-      <div class="component-detail__dependencies">
-        <section>
-          <h4>{{ 'resourceGroup.dependsOn' | transloco }}</h4>
-          @if (componentDependencies()?.dependsOn?.length) {
-            <p>
-              @for (dependency of componentDependencies()!.dependsOn; track dependency; let last = $last) {
-                {{ dependency }}@if (!last) {, }
-              }
-            </p>
-          } @else {
-            <p>{{ 'resourceGroup.noDependencies' | transloco }}</p>
-          }
-        </section>
-        <section>
-          <h4>{{ 'resourceGroup.usedBy' | transloco }}</h4>
-          @if (componentDependencies()?.usedBy?.length) {
-            <p>
-              @for (dependent of componentDependencies()!.usedBy; track dependent; let last = $last) {
-                {{ dependent }}@if (!last) {, }
-              }
-            </p>
-          } @else {
-            <p>{{ 'resourceGroup.noDependencies' | transloco }}</p>
-          }
-        </section>
-      </div>
+      @if (validationLoading()) {
+        <p class="component-detail__empty" role="status">
+          {{ 'resourceGroup.validationLoading' | transloco }}
+        </p>
+      } @else if (validationUnavailable()) {
+        <p class="component-detail__empty" role="status">
+          {{ 'resourceGroup.validationUnavailable' | transloco }}
+        </p>
+      } @else {
+        <div class="component-detail__dependencies">
+          <section>
+            <h4>{{ 'resourceGroup.dependsOn' | transloco }}</h4>
+            @if (componentDependencies()?.dependsOn?.length) {
+              <p>
+                @for (dependency of componentDependencies()!.dependsOn; track dependency; let last = $last) {
+                  {{ dependency }}@if (!last) {, }
+                }
+              </p>
+            } @else {
+              <p>{{ 'resourceGroup.noDependencies' | transloco }}</p>
+            }
+          </section>
+          <section>
+            <h4>{{ 'resourceGroup.usedBy' | transloco }}</h4>
+            @if (componentDependencies()?.usedBy?.length) {
+              <p>
+                @for (dependent of componentDependencies()!.usedBy; track dependent; let last = $last) {
+                  {{ dependent }}@if (!last) {, }
+                }
+              </p>
+            } @else {
+              <p>{{ 'resourceGroup.noDependencies' | transloco }}</p>
+            }
+          </section>
+        </div>
+      }
     </section>
   </section>
 }

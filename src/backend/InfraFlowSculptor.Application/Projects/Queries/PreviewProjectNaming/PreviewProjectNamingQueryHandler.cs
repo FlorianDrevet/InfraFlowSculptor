@@ -5,6 +5,7 @@ using InfraFlowSculptor.Application.Naming;
 using InfraFlowSculptor.Catalog;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Engine.Model;
+using InfraFlowSculptor.Engine.Links;
 using InfraFlowSculptor.Engine.Naming;
 using Mediator;
 
@@ -13,7 +14,8 @@ namespace InfraFlowSculptor.Application.Projects.Queries.PreviewProjectNaming;
 public sealed class PreviewProjectNamingQueryHandler(
     ModelSnapshotBuilder snapshotBuilder,
     NameAvailabilityService nameAvailability,
-    ICatalogProvider catalogProvider)
+    ICatalogProvider catalogProvider,
+    LinkKindRegistry linkKinds)
     : IQueryHandler<PreviewProjectNamingQuery, ErrorOr<NamingPreviewResult>>
 {
     public async ValueTask<ErrorOr<NamingPreviewResult>> Handle(
@@ -75,7 +77,7 @@ public sealed class PreviewProjectNamingQueryHandler(
                 TypeAbbreviations = abbreviations
             }
         };
-        var preview = NamingEngine.Preview(updated);
+        var preview = NamingEngine.Preview(updated, linkKinds);
         var issues = preview.Issues.ToList();
         var availabilityCandidates = preview.Items
             .Select(item =>

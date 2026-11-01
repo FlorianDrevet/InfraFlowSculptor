@@ -1,0 +1,8 @@
+{
+  "version": "2026.10-pilot.4",
+  "status": "published",
+  "publishedAt": "2026-10-29",
+  "supportEndsAt": null,
+  "notes": "Bornes SQL, conditions catalogue et mappages directs corrigés; transformations Bicep non décrites reportées à J0-22.",
+  "verifiedAgainstDocsOn": "2026-10-30"
+}

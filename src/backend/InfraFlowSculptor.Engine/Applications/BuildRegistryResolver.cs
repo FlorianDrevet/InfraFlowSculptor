@@ -36,7 +36,7 @@ public static class BuildRegistryResolver
             return Unavailable();
         }
 
-        var naming = NamingEngine.Preview(snapshot);
+        var naming = NamingEngine.Preview(snapshot, linkKinds);
 
         var targetEnvironments = string.Equals(registryComponent.Mode, "Single", StringComparison.Ordinal)
             ? Array.Empty<EnvironmentSnapshot>()

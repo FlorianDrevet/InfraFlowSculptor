@@ -17,7 +17,9 @@ describe('app-ds-cidr-field', () => {
     const changed = vi.fn();
     fixture.componentInstance.registerOnChange(changed);
 
-    fireEvent.input(screen.getByLabelText('Nouvelle plage CIDR'), { target: { value: '10.1.0.0/16' } });
+    fireEvent.input(screen.getByLabelText('Nouvelle plage CIDR'), {
+      target: { value: '10.1.0.0/16' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter une plage' }));
 
     expect(changed).toHaveBeenCalledWith(['10.1.0.0/16']);
@@ -28,12 +30,16 @@ describe('app-ds-cidr-field', () => {
     const changed = vi.fn();
     fixture.componentInstance.registerOnChange(changed);
 
-    fireEvent.input(screen.getByLabelText('Nouvelle plage CIDR'), { target: { value: '256.1.0.0/16' } });
+    fireEvent.input(screen.getByLabelText('Nouvelle plage CIDR'), {
+      target: { value: '256.1.0.0/16' },
+    });
     fixture.detectChanges();
 
     expect(screen.getByText('Saisis un CIDR IPv4 valide.')).toBeTruthy();
     expect(screen.getByLabelText('Nouvelle plage CIDR').getAttribute('aria-invalid')).toBe('true');
-    expect(screen.getByRole('button', { name: 'Ajouter une plage' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Ajouter une plage' }).hasAttribute('disabled')).toBe(
+      true,
+    );
     expect(changed).not.toHaveBeenCalled();
   });
 
@@ -49,14 +55,63 @@ describe('app-ds-cidr-field', () => {
     expect(changed).toHaveBeenCalledWith(['192.168.0.0/16']);
   });
 
+  it('commits an edited range only after it is complete and valid', async () => {
+    const { fixture } = await render(DsCidrField, { bindings });
+    const changed = vi.fn();
+    fixture.componentInstance.registerOnChange(changed);
+    fixture.componentInstance.writeValue(['10.0.0.0/8']);
+    fixture.detectChanges();
+    const range = screen.getByLabelText('Plages IP autorisées 1');
+
+    fireEvent.input(range, { target: { value: '10.1.0.0/16' } });
+
+    expect(range).toHaveProperty('value', '10.1.0.0/16');
+    expect(changed).not.toHaveBeenCalled();
+
+    fireEvent.focusOut(range);
+
+    expect(changed).toHaveBeenCalledWith(['10.1.0.0/16']);
+  });
+
+  it('keeps an invalid edit local and lets the user correct it before saving', async () => {
+    const { fixture } = await render(DsCidrField, { bindings });
+    const changed = vi.fn();
+    fixture.componentInstance.registerOnChange(changed);
+    fixture.componentInstance.writeValue(['10.0.0.0/8']);
+    fixture.detectChanges();
+    const range = screen.getByLabelText('Plages IP autorisées 1');
+
+    fireEvent.input(range, { target: { value: '256.1.0.0/16' } });
+    fireEvent.focusOut(range);
+    fixture.detectChanges();
+
+    expect(changed).not.toHaveBeenCalled();
+    expect(screen.getByText('Saisis un CIDR IPv4 valide.')).toBeTruthy();
+
+    fireEvent.input(range, { target: { value: '10.1.0.0/16' } });
+    fireEvent.focusOut(range);
+
+    expect(changed).toHaveBeenCalledWith(['10.1.0.0/16']);
+  });
+
   it('stops accepting entries at the configured limit', async () => {
     const { fixture } = await render(DsCidrField, {
       bindings: [...bindings, inputBinding('maxItems', () => 1)],
     });
-    fireEvent.input(screen.getByLabelText('Nouvelle plage CIDR'), { target: { value: '10.0.0.0/8' } });
+    const changed = vi.fn();
+    fixture.componentInstance.registerOnChange(changed);
+    fireEvent.input(screen.getByLabelText('Nouvelle plage CIDR'), {
+      target: { value: '10.0.0.0/8' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter une plage' }));
+    fireEvent.input(screen.getByLabelText('Nouvelle plage CIDR'), {
+      target: { value: '10.1.0.0/16' },
+    });
 
-    expect(screen.getByRole('button', { name: 'Ajouter une plage' }).hasAttribute('disabled')).toBe(true);
-    expect(fixture.componentInstance).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ajouter une plage' }).hasAttribute('disabled')).toBe(
+      true,
+    );
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(changed).toHaveBeenCalledWith(['10.0.0.0/8']);
   });
 });

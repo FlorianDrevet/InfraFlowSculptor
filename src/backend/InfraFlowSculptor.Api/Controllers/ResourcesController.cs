@@ -1237,9 +1237,19 @@ public static class ResourcesController
                     finding.Message)).ToArray()));
     }
 
-    private static ErrorOr<InfraFlowSculptor.Domain.ComponentAggregate.ApplicationDefinition> ToApplicationDefinition(
+    internal static ErrorOr<InfraFlowSculptor.Domain.ComponentAggregate.ApplicationDefinition> ToApplicationDefinition(
         SaveApplicationRequest request)
     {
+        if (request.Steps is null
+            || request.Steps.Any(step => step is null
+                || step.Parameters is null
+                || step.Parameters.Any(parameter => parameter is null)))
+        {
+            return Error.Validation(
+                "APPLICATION_STEP_INVALID",
+                "Application steps and their parameter lists must be present and cannot contain null entries.");
+        }
+
         if (!Enum.TryParse<DeploymentStrategyKind>(request.DeploymentStrategy, true, out var strategy)
             || !Enum.IsDefined(strategy))
         {
@@ -1247,7 +1257,7 @@ public static class ResourcesController
         }
 
         var steps = new List<ApplicationStepDefinition>();
-        foreach (var step in request.Steps ?? [])
+        foreach (var step in request.Steps)
         {
             if (!Enum.TryParse<ApplicationStepPosition>(step.Position, true, out var position)
                 || !Enum.IsDefined(position))
@@ -1260,7 +1270,7 @@ public static class ResourcesController
                 step.Enabled,
                 step.Blocking,
                 position,
-                (step.Parameters ?? []).Select(parameter => new ApplicationStepParameter(parameter.Name, parameter.Value)).ToArray()));
+                step.Parameters.Select(parameter => new ApplicationStepParameter(parameter.Name, parameter.Value)).ToArray()));
         }
 
         return new InfraFlowSculptor.Domain.ComponentAggregate.ApplicationDefinition(

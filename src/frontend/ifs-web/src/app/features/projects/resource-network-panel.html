@@ -6,6 +6,7 @@
   @if (rows().length) {
     <app-property-grid
       [rows]="rows()"
+      [syncRevision]="syncRevision()"
       [disabled]="disabled()"
       (updateValue)="updateValue.emit($event)"
       (clearOverride)="clearOverride.emit($event)"

@@ -1,11 +1,15 @@
 using InfraFlowSculptor.Engine.Model;
+using InfraFlowSculptor.Engine.Links;
 using InfraFlowSculptor.Engine.Naming;
 using InfraFlowSculptor.Engine.Tests.Builders;
+using InfraFlowSculptor.Domain.ProjectAggregate;
 
 namespace InfraFlowSculptor.Engine.Tests.Naming;
 
 public sealed class NamingEngineTests
 {
+    private static readonly LinkKindRegistry LinkKinds = new(PilotLinkKindHandlers.Create());
+
     private static readonly string[] PilotResourceGroupNames =
     [
         "rg-shop-core-main-dev", "rg-shop-core-main-prd",
@@ -17,7 +21,7 @@ public sealed class NamingEngineTests
     [Fact]
     public void CompactPresetPreviewsResourceAndResourceGroupNames()
     {
-        var result = NamingEngine.Preview(CreateSnapshot(Compact()));
+        var result = Preview(CreateSnapshot(Compact()));
 
         Assert.Empty(result.Issues);
         var preview = Assert.Single(result.Items);
@@ -28,7 +32,7 @@ public sealed class NamingEngineTests
     [Fact]
     public void CafPresetAddsTheEnvironmentRegionToBothNames()
     {
-        var result = NamingEngine.Preview(CreateSnapshot(Caf()));
+        var result = Preview(CreateSnapshot(Caf()));
 
         Assert.Empty(result.Issues);
         var preview = Assert.Single(result.Items);
@@ -44,7 +48,7 @@ public sealed class NamingEngineTests
             "{abbr}-{project}-{name}-{zone}",
             "rg-{project}-{component}-{name}-{env}");
 
-        var result = NamingEngine.Preview(CreateSnapshot(custom));
+        var result = Preview(CreateSnapshot(custom));
 
         var issue = Assert.Single(result.Issues);
         Assert.Equal("NAMING_TOKEN_UNKNOWN", issue.Code);
@@ -56,7 +60,7 @@ public sealed class NamingEngineTests
     {
         var custom = new NamingConventionSnapshot("Custom", "{abbr}-{project}-{env}", "rg-{project}-{component}-{env}");
 
-        var result = NamingEngine.Preview(CreateSnapshot(custom));
+        var result = Preview(CreateSnapshot(custom));
 
         Assert.Equal(2, result.Issues.Count(issue => issue.Code == "NAMING_NAME_TOKEN_REQUIRED"));
     }
@@ -76,7 +80,7 @@ public sealed class NamingEngineTests
             "Custom", "{abbr}-{project}-{component}-{name}-{env}", "rg-{project}-{component}-{name}-{env}");
         var snapshot = new ModelSnapshotBuilder().WithNaming(naming).WithComponent(component).Build();
 
-        var result = NamingEngine.Preview(snapshot);
+        var result = Preview(snapshot);
 
         Assert.Empty(result.Issues);
         var item = Assert.Single(result.Items);
@@ -108,7 +112,7 @@ public sealed class NamingEngineTests
             .WithComponent(component)
             .Build();
 
-        var result = NamingEngine.Preview(snapshot);
+        var result = Preview(snapshot);
 
         Assert.Empty(result.Issues);
         Assert.Collection(
@@ -150,7 +154,7 @@ public sealed class NamingEngineTests
             .WithComponent(component)
             .Build();
 
-        var result = NamingEngine.Preview(snapshot);
+        var result = Preview(snapshot);
 
         Assert.Empty(result.Issues);
         Assert.Empty(result.Items);
@@ -170,7 +174,7 @@ public sealed class NamingEngineTests
             .WithComponent(component)
             .Build();
 
-        var result = NamingEngine.Preview(snapshot);
+        var result = Preview(snapshot);
 
         var item = Assert.Single(result.Items);
         Assert.Equal("verylonglogicalnameresourcename", item.ResourceName);
@@ -206,7 +210,7 @@ public sealed class NamingEngineTests
             .WithComponent(component)
             .Build();
 
-        var result = NamingEngine.Preview(snapshot);
+        var result = Preview(snapshot);
 
         Assert.Equal("kv-api-main-dev", Assert.Single(result.Items).ResourceName);
     }
@@ -226,10 +230,182 @@ public sealed class NamingEngineTests
             OrganizationGlobalNames = [new GlobalNameReservationSnapshot("KeyVault", "kv-shop-main-dev", Guid.NewGuid())]
         };
 
-        var result = NamingEngine.Preview(snapshot);
+        var result = Preview(snapshot);
 
         var issue = Assert.Single(result.Issues, issue => issue.Code == "VAL-NOM-COLLISION");
         Assert.Equal("kv-shop-main-dev", issue.Value);
+    }
+
+    [Fact]
+    public void ParentUniqueResourceNamesCanRepeatAcrossTargets()
+    {
+        var devId = Guid.NewGuid();
+        var prdId = Guid.NewGuid();
+        var componentId = Guid.NewGuid();
+        var resourceGroupId = Guid.NewGuid();
+        var serverId = Guid.NewGuid();
+        var server = Resource(resourceGroupId, "server", devId) with
+        {
+            Id = serverId,
+            Type = "SqlServer",
+            Presences = new Dictionary<Guid, bool> { [devId] = true, [prdId] = true }
+        };
+        var resource = Resource(resourceGroupId, "orders", devId) with
+        {
+            Type = "SqlDatabase",
+            Presences = new Dictionary<Guid, bool> { [devId] = true, [prdId] = true },
+            ForcedNames = new Dictionary<Guid, string> { [devId] = "orders", [prdId] = "orders" }
+        };
+        var component = new ComponentSnapshot(
+            componentId,
+            "data",
+            "data",
+            "PerEnvironment",
+            [devId, prdId],
+            null,
+            [new ResourceGroupSnapshot(resourceGroupId, "main", null, new Dictionary<string, string>(), new Dictionary<Guid, string>())],
+            [server, resource]);
+        var snapshot = new ModelSnapshotBuilder()
+            .WithNaming(new NamingConventionSnapshot("Parent", "{name}-{env}", "rg-{name}-{env}"))
+            .WithEnvironment(new EnvironmentSnapshot("dev", "francecentral")
+            {
+                Id = devId,
+                Position = 0,
+                SubscriptionId = Guid.NewGuid()
+            })
+            .WithEnvironment(new EnvironmentSnapshot("prd", "francecentral")
+            {
+                Id = prdId,
+                Position = 1,
+                SubscriptionId = Guid.NewGuid()
+            })
+            .WithComponent(component)
+            .Build() with
+        {
+            Links =
+            [
+                new LinkSnapshot(Guid.NewGuid(), componentId, resource.Id, componentId, serverId,
+                    LinkKind.Hosting, LinkOrigin.Explicit, LinkIdentityKind.None, null, [], LinkAccessScope.Resource, null)
+            ]
+        };
+
+        var result = Preview(snapshot);
+
+        Assert.Empty(result.Issues);
+        var databaseItems = result.Items.Where(item => item.ResourceId == resource.Id).ToArray();
+        Assert.Equal(2, databaseItems.Length);
+        Assert.All(databaseItems, item => Assert.Equal("orders", item.ResourceName));
+        Assert.Equal(new[] { devId, prdId }.Order(), databaseItems.Select(item => item.TargetId).Order());
+    }
+
+    [Fact]
+    public void ParentUniqueResourceNamesAreScopedByTheirHostingResource()
+    {
+        var targetId = Guid.NewGuid();
+        var componentId = Guid.NewGuid();
+        var resourceGroupId = Guid.NewGuid();
+        var firstServerId = Guid.NewGuid();
+        var secondServerId = Guid.NewGuid();
+        var firstDatabaseId = Guid.NewGuid();
+        var secondDatabaseId = Guid.NewGuid();
+        var serverA = Resource(resourceGroupId, "server-a", targetId) with { Type = "SqlServer" };
+        var serverB = Resource(resourceGroupId, "server-b", targetId) with { Type = "SqlServer" };
+        var databaseA = Resource(resourceGroupId, "database-a", targetId) with
+        {
+            Id = firstDatabaseId,
+            Type = "SqlDatabase",
+            ForcedNames = new Dictionary<Guid, string> { [targetId] = "orders" }
+        };
+        var databaseB = Resource(resourceGroupId, "database-b", targetId) with
+        {
+            Id = secondDatabaseId,
+            Type = "SqlDatabase",
+            ForcedNames = new Dictionary<Guid, string> { [targetId] = "orders" }
+        };
+        var component = new ComponentSnapshot(
+            componentId,
+            "data",
+            "data",
+            "PerEnvironment",
+            [targetId],
+            null,
+            [new ResourceGroupSnapshot(resourceGroupId, "main", null, new Dictionary<string, string>(), new Dictionary<Guid, string>())],
+            [serverA with { Id = firstServerId }, serverB with { Id = secondServerId }, databaseA, databaseB]);
+        var snapshot = new ModelSnapshotBuilder()
+            .WithNaming(new NamingConventionSnapshot("Parent", "{name}", "rg-{name}-{env}"))
+            .WithEnvironment(new EnvironmentSnapshot("dev", "francecentral") { Id = targetId })
+            .WithComponent(component)
+            .Build() with
+        {
+            Links =
+            [
+                new LinkSnapshot(Guid.NewGuid(), componentId, firstDatabaseId, componentId, firstServerId,
+                    LinkKind.Hosting, LinkOrigin.Explicit, LinkIdentityKind.None, null, [], LinkAccessScope.Resource, null),
+                new LinkSnapshot(Guid.NewGuid(), componentId, secondDatabaseId, componentId, secondServerId,
+                    LinkKind.Hosting, LinkOrigin.Explicit, LinkIdentityKind.None, null, [], LinkAccessScope.Resource, null)
+            ]
+        };
+
+        var result = Preview(snapshot);
+
+        Assert.DoesNotContain(result.Issues, issue =>
+            issue.Code == "VAL-NOM-COLLISION" && issue.ResourceId is not null);
+        Assert.Equal(4, result.Items.Count);
+        Assert.Equal(2, result.Items.Count(item => item.ResourceType == "SqlDatabase" && item.ResourceName == "orders"));
+    }
+
+    [Fact]
+    public void ParentUniqueResourceNamesCollideOnTheSameHostingResourceAndTarget()
+    {
+        var targetId = Guid.NewGuid();
+        var componentId = Guid.NewGuid();
+        var resourceGroupId = Guid.NewGuid();
+        var serverId = Guid.NewGuid();
+        var firstDatabaseId = Guid.NewGuid();
+        var secondDatabaseId = Guid.NewGuid();
+        var server = Resource(resourceGroupId, "server", targetId) with { Id = serverId, Type = "SqlServer" };
+        var firstDatabase = Resource(resourceGroupId, "first-database", targetId) with
+        {
+            Id = firstDatabaseId,
+            Type = "SqlDatabase",
+            ForcedNames = new Dictionary<Guid, string> { [targetId] = "orders" }
+        };
+        var secondDatabase = Resource(resourceGroupId, "second-database", targetId) with
+        {
+            Id = secondDatabaseId,
+            Type = "SqlDatabase",
+            ForcedNames = new Dictionary<Guid, string> { [targetId] = "orders" }
+        };
+        var component = new ComponentSnapshot(
+            componentId,
+            "data",
+            "data",
+            "PerEnvironment",
+            [targetId],
+            null,
+            [new ResourceGroupSnapshot(resourceGroupId, "main", null, new Dictionary<string, string>(), new Dictionary<Guid, string>())],
+            [server, firstDatabase, secondDatabase]);
+        var snapshot = new ModelSnapshotBuilder()
+            .WithNaming(new NamingConventionSnapshot("Parent", "{name}", "rg-{name}-{env}"))
+            .WithEnvironment(new EnvironmentSnapshot("dev", "francecentral") { Id = targetId })
+            .WithComponent(component)
+            .Build() with
+        {
+            Links =
+            [
+                new LinkSnapshot(Guid.NewGuid(), componentId, firstDatabaseId, componentId, serverId,
+                    LinkKind.Hosting, LinkOrigin.Explicit, LinkIdentityKind.None, null, [], LinkAccessScope.Resource, null),
+                new LinkSnapshot(Guid.NewGuid(), componentId, secondDatabaseId, componentId, serverId,
+                    LinkKind.Hosting, LinkOrigin.Explicit, LinkIdentityKind.None, null, [], LinkAccessScope.Resource, null)
+            ]
+        };
+
+        var result = Preview(snapshot);
+
+        var issue = Assert.Single(result.Issues, issue => issue.Code == "VAL-NOM-COLLISION");
+        Assert.Contains(issue.ResourceId, new Guid?[] { firstDatabaseId, secondDatabaseId });
+        Assert.Equal("orders", issue.Value);
+        Assert.Equal(3, result.Items.Count);
     }
 
     [Fact]
@@ -252,7 +428,7 @@ public sealed class NamingEngineTests
             .WithComponent(component)
             .Build();
 
-        var result = NamingEngine.Preview(snapshot);
+        var result = Preview(snapshot);
 
         var issue = Assert.Single(result.Issues, issue => issue.Code == "VAL-NOM-COLLISION");
         Assert.Equal(generated.Id, issue.ResourceId);
@@ -282,7 +458,7 @@ public sealed class NamingEngineTests
             OrganizationGlobalNames = [new GlobalNameReservationSnapshot("KeyVault", azureName, Guid.NewGuid())]
         };
 
-        var result = NamingEngine.Preview(snapshot);
+        var result = Preview(snapshot);
 
         var issue = Assert.Single(result.Issues, issue => issue.Code == "VAL-NOM-COLLISION");
         Assert.Equal(existing.Id, issue.ResourceId);
@@ -304,7 +480,7 @@ public sealed class NamingEngineTests
             .WithComponent(component)
             .Build();
 
-        var result = NamingEngine.Preview(snapshot);
+        var result = Preview(snapshot);
 
         var item = Assert.Single(result.Items);
         Assert.Equal("not_valid", item.ResourceName);
@@ -328,7 +504,7 @@ public sealed class NamingEngineTests
             .WithComponent(component)
             .Build();
 
-        var result = NamingEngine.Preview(snapshot);
+        var result = Preview(snapshot);
 
         Assert.Contains(result.Issues, issue => issue.Code == "RESOURCE_CHILD_NAME_INVALID" && issue.Value == "bad-name");
     }
@@ -354,7 +530,7 @@ public sealed class NamingEngineTests
             .WithComponent(component)
             .Build();
 
-        var result = NamingEngine.Preview(snapshot);
+        var result = Preview(snapshot);
 
         var issue = Assert.Single(result.Issues, issue => issue.Code == "VAL-NOM-COLLISION");
         Assert.Null(issue.TargetId);
@@ -393,7 +569,7 @@ public sealed class NamingEngineTests
             .WithComponent(components[3])
             .Build();
 
-        var result = NamingEngine.Preview(snapshot);
+        var result = Preview(snapshot);
 
         Assert.Empty(result.Issues);
         var expectedResources = new[]
@@ -544,4 +720,6 @@ public sealed class NamingEngineTests
         "CAF",
         "{abbr}-{project}-{name}-{env}-{region}",
         "rg-{project}-{component}-{name}-{env}-{region}");
+
+    private static NamingPreviewResult Preview(ModelSnapshot snapshot) => NamingEngine.Preview(snapshot, LinkKinds);
 }

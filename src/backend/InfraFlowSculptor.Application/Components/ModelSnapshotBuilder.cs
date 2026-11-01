@@ -13,7 +13,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InfraFlowSculptor.Application.Components;
 
-public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvider catalogProvider)
+public sealed class ModelSnapshotBuilder(
+    IIfsDbContext dbContext,
+    ICatalogProvider catalogProvider,
+    LinkKindRegistry linkKinds)
 {
     public Task<ErrorOr<ModelSnapshot>> BuildAsync(Guid projectId, CancellationToken cancellationToken = default) =>
         BuildAsync(projectId, includeOrganizationNamingReservations: false, cancellationToken);
@@ -91,7 +94,7 @@ public sealed class ModelSnapshotBuilder(IIfsDbContext dbContext, ICatalogProvid
                 return otherSnapshot.Errors;
             }
 
-            var otherPreview = NamingEngine.Preview(otherSnapshot.Value);
+            var otherPreview = NamingEngine.Preview(otherSnapshot.Value, linkKinds);
             if (otherPreview.Issues.Any(issue => issue.Code.StartsWith("NAMING_TEMPLATE_", StringComparison.Ordinal)
                 || issue.Code is "NAMING_NAME_TOKEN_REQUIRED" or "NAMING_TOKEN_UNKNOWN"))
             {

@@ -41,9 +41,13 @@ export class ResourceDeleteDialog {
   readonly dismiss = output<void>();
   readonly confirm = output<void>();
 
-  protected readonly canConfirm = computed(
-    () => this.confirmation() === this.resource().logicalName,
-  );
+  protected readonly canConfirm = computed(() => {
+    const impact = this.impact();
+    return impact !== null
+      && impact.status !== 'Blocked'
+      && impact.severity !== 'Blocker'
+      && this.confirmation() === this.resource().logicalName;
+  });
   protected readonly removalExplanation = computed(() =>
     this.removedBehavior() === 'Delete'
       ? 'resource.deleteRemovesAzureResource'

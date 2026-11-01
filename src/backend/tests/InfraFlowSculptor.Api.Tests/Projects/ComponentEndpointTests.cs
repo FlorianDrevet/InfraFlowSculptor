@@ -42,6 +42,10 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         RunSerialAsync(ResourceValuesRoundTripAndIrreversibleOverrideCannotBeReversedCore);
 
     [Fact]
+    public Task ResourcePropertyUpdateIsVisibleAfterFreshRequest() =>
+        RunSerialAsync(ResourcePropertyUpdateIsVisibleAfterFreshRequestCore);
+
+    [Fact]
     public Task ResourceChildCanBeAddedUpdatedAndRemoved() =>
         RunSerialAsync(ResourceChildCanBeAddedUpdatedAndRemovedCore);
 
@@ -62,8 +66,24 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         RunSerialAsync(ResourceLinksCanBeCreatedListedAndPreviewedBeforeRemovalCore);
 
     [Fact]
+    public Task SqlDatabaseHostingIsLimitedToItsComponent() =>
+        RunSerialAsync(SqlDatabaseHostingIsLimitedToItsComponentCore);
+
+    [Fact]
+    public Task ImplicitDiagnosticLinkDoesNotHideExplicitReplacementOption() =>
+        RunSerialAsync(ImplicitDiagnosticLinkDoesNotHideExplicitReplacementOptionCore);
+
+    [Fact]
+    public Task LinkRejectsIdentityResourceIdWhenIdentityKindIsNone() =>
+        RunSerialAsync(LinkRejectsIdentityResourceIdWhenIdentityKindIsNoneCore);
+
+    [Fact]
     public Task LinkPreviewIsServerCalculatedPerEnvironmentWithoutChangingTheModel() =>
         RunSerialAsync(LinkPreviewIsServerCalculatedPerEnvironmentWithoutChangingTheModelCore);
+
+    [Fact]
+    public Task UserAssignedIdentityCanBeTheDataAccessLinkSource() =>
+        RunSerialAsync(UserAssignedIdentityCanBeTheDataAccessLinkSourceCore);
 
     [Fact]
     public Task ResourceLinkUpdateTrimsRolesBeforeCalculatingImpact() =>
@@ -2029,7 +2049,7 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
                     kind = "Access",
                     identityKind = "UserAssigned",
                     identityResourceId = identityId,
-                    roles = KeyVaultSecretUserRoles,
+                    roles = KeyVaultSecretUserRoles.Select(role => $" {role} ").ToArray(),
                     accessScope = "Resource",
                     dataAccessLevel = (string?)null
                 });
@@ -2053,6 +2073,56 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
             using var links = await JsonDocument.ParseAsync(await linksResponse.Content.ReadAsStreamAsync());
             Assert.DoesNotContain(links.RootElement.GetProperty("outgoing").EnumerateArray(),
                 link => link.GetProperty("origin").GetString() == "Explicit");
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task UserAssignedIdentityCanBeTheDataAccessLinkSourceCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            using var identity = JsonDocument.Parse(await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "UserAssignedIdentity",
+                "data-identity",
+                new Dictionary<string, object?>()));
+            using var database = JsonDocument.Parse(await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "SqlDatabase",
+                "orders",
+                new Dictionary<string, object?>()));
+            var identityId = identity.RootElement.GetProperty("id").GetGuid();
+            var databaseId = database.RootElement.GetProperty("id").GetGuid();
+
+            using var addLinkRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{identityId:D}/links",
+                new
+                {
+                    targetComponentId = componentId,
+                    targetResourceId = databaseId,
+                    kind = "DataAccess",
+                    identityKind = "None",
+                    identityResourceId = (Guid?)null,
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = "Lecture",
+                    expectedComponentVersion = await GetComponentVersionFromApiAsync(componentId)
+                });
+            addLinkRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+
+            using var addLinkResponse = await client.SendAsync(addLinkRequest);
+
+            Assert.Equal(HttpStatusCode.Created, addLinkResponse.StatusCode);
         }
         finally
         {
@@ -2656,6 +2726,427 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         }
     }
 
+    private async Task SqlDatabaseHostingIsLimitedToItsComponentCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        Guid? databaseComponentId = null;
+        Guid? serverComponentId = null;
+        Guid? legacyLinkId = null;
+        Guid? removableLegacyLinkId = null;
+        try
+        {
+            databaseComponentId = await CreateResourceTestComponentAsync(environment);
+            serverComponentId = await CreateResourceTestComponentAsync(environment);
+            var databaseGroupId = await CreateResourceTestGroupAsync(databaseComponentId.Value);
+            var serverGroupId = await CreateResourceTestGroupAsync(serverComponentId.Value);
+            using var localServer = JsonDocument.Parse(await CreateResourceAsync(
+                databaseComponentId.Value,
+                databaseGroupId,
+                "SqlServer",
+                "local-server",
+                new Dictionary<string, object?>()));
+            using var database = JsonDocument.Parse(await CreateResourceAsync(
+                databaseComponentId.Value,
+                databaseGroupId,
+                "SqlDatabase",
+                "orders",
+                new Dictionary<string, object?>()));
+            using var server = JsonDocument.Parse(await CreateResourceAsync(
+                serverComponentId.Value,
+                serverGroupId,
+                "SqlServer",
+                "orders-server",
+                new Dictionary<string, object?>()));
+            var databaseId = database.RootElement.GetProperty("id").GetGuid();
+            var serverId = server.RootElement.GetProperty("id").GetGuid();
+            var localServerId = localServer.RootElement.GetProperty("id").GetGuid();
+
+            var legacyLink = LinkAggregate.Create(
+                Guid.NewGuid(),
+                new ProjectId(ProjectId),
+                new OrganizationId(OrganizationId),
+                databaseComponentId.Value,
+                databaseId,
+                serverComponentId.Value,
+                serverId,
+                LinkKind.Hosting,
+                LinkIdentityKind.None,
+                null,
+                [],
+                LinkAccessScope.Resource,
+                null);
+            Assert.False(legacyLink.IsError);
+            legacyLinkId = legacyLink.Value.Id;
+            using (var scope = factory.Services.CreateScope())
+            {
+                scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+                var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+                dbContext.Set<LinkAggregate>().Add(legacyLink.Value);
+                await dbContext.SaveChangesAsync();
+            }
+
+            using var optionsRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{databaseComponentId.Value:D}/resources/{databaseId:D}/links/options");
+            using var optionsResponse = await client.SendAsync(optionsRequest);
+            Assert.Equal(HttpStatusCode.OK, optionsResponse.StatusCode);
+            using var options = await JsonDocument.ParseAsync(await optionsResponse.Content.ReadAsStreamAsync());
+            Assert.DoesNotContain(
+                options.RootElement.GetProperty("kinds").EnumerateArray(),
+                option => option.GetProperty("kind").GetString() == "Hosting");
+
+            using var localAddLinkRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{databaseComponentId.Value:D}/resources/{databaseId:D}/links",
+                new
+                {
+                    targetComponentId = databaseComponentId.Value,
+                    targetResourceId = localServerId,
+                    kind = "Hosting",
+                    identityKind = "None",
+                    identityResourceId = (Guid?)null,
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedComponentVersion = await GetComponentVersionFromApiAsync(databaseComponentId.Value)
+                });
+            localAddLinkRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var localAddLinkResponse = await client.SendAsync(localAddLinkRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, localAddLinkResponse.StatusCode);
+            Assert.Equal("LINK_CARDINALITY_EXCEEDED", await GetProblemCodeAsync(localAddLinkResponse));
+
+            using var addLinkRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{databaseComponentId.Value:D}/resources/{databaseId:D}/links",
+                new
+                {
+                    targetComponentId = serverComponentId.Value,
+                    targetResourceId = serverId,
+                    kind = "Hosting",
+                    identityKind = "None",
+                    identityResourceId = (Guid?)null,
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedComponentVersion = await GetComponentVersionFromApiAsync(databaseComponentId.Value)
+                });
+            addLinkRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var addLinkResponse = await client.SendAsync(addLinkRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, addLinkResponse.StatusCode);
+            Assert.Equal("LINK_COMPONENT_SCOPE_UNSUPPORTED", await GetProblemCodeAsync(addLinkResponse));
+
+            using var crossComponentPreviewRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{databaseComponentId.Value:D}/resources/{databaseId:D}/links/preview",
+                new
+                {
+                    targetComponentId = serverComponentId.Value,
+                    targetResourceId = serverId,
+                    kind = "Hosting",
+                    identityKind = "None",
+                    identityResourceId = (Guid?)null,
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null
+                });
+            using var crossComponentPreviewResponse = await client.SendAsync(crossComponentPreviewRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, crossComponentPreviewResponse.StatusCode);
+            Assert.Equal("LINK_COMPONENT_SCOPE_UNSUPPORTED", await GetProblemCodeAsync(crossComponentPreviewResponse));
+
+            using var crossComponentUpdateRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{databaseComponentId.Value:D}/resources/{databaseId:D}/links/{legacyLinkId.Value:D}",
+                new
+                {
+                    targetComponentId = serverComponentId.Value,
+                    targetResourceId = serverId,
+                    kind = "Hosting",
+                    identityKind = "None",
+                    identityResourceId = (Guid?)null,
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedLinkVersion = 1
+                });
+            crossComponentUpdateRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var crossComponentUpdateResponse = await client.SendAsync(crossComponentUpdateRequest);
+            Assert.Equal(HttpStatusCode.BadRequest, crossComponentUpdateResponse.StatusCode);
+            Assert.Equal("LINK_COMPONENT_SCOPE_UNSUPPORTED", await GetProblemCodeAsync(crossComponentUpdateResponse));
+
+            using var updateLinkRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{databaseComponentId.Value:D}/resources/{databaseId:D}/links/{legacyLinkId.Value:D}",
+                new
+                {
+                    targetComponentId = databaseComponentId.Value,
+                    targetResourceId = localServerId,
+                    kind = "Hosting",
+                    identityKind = "None",
+                    identityResourceId = (Guid?)null,
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedLinkVersion = 1
+                });
+            updateLinkRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var updateLinkResponse = await client.SendAsync(updateLinkRequest);
+            Assert.True(updateLinkResponse.StatusCode == HttpStatusCode.OK, await updateLinkResponse.Content.ReadAsStringAsync());
+
+            using var removableDatabase = JsonDocument.Parse(await CreateResourceAsync(
+                databaseComponentId.Value,
+                databaseGroupId,
+                "SqlDatabase",
+                "orders-removable",
+                new Dictionary<string, object?>()));
+            var removableDatabaseId = removableDatabase.RootElement.GetProperty("id").GetGuid();
+            var removableLegacyLink = LinkAggregate.Create(
+                Guid.NewGuid(),
+                new ProjectId(ProjectId),
+                new OrganizationId(OrganizationId),
+                databaseComponentId.Value,
+                removableDatabaseId,
+                serverComponentId.Value,
+                serverId,
+                LinkKind.Hosting,
+                LinkIdentityKind.None,
+                null,
+                [],
+                LinkAccessScope.Resource,
+                null);
+            Assert.False(removableLegacyLink.IsError);
+            removableLegacyLinkId = removableLegacyLink.Value.Id;
+            using (var scope = factory.Services.CreateScope())
+            {
+                scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+                var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+                dbContext.Set<LinkAggregate>().Add(removableLegacyLink.Value);
+                await dbContext.SaveChangesAsync();
+            }
+
+            using var removalImpactRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{databaseComponentId.Value:D}/resources/{removableDatabaseId:D}/links/{removableLegacyLinkId.Value:D}/impact");
+            using var removalImpactResponse = await client.SendAsync(removalImpactRequest);
+            Assert.Equal(HttpStatusCode.OK, removalImpactResponse.StatusCode);
+            using var removalImpact = await JsonDocument.ParseAsync(await removalImpactResponse.Content.ReadAsStreamAsync());
+            Assert.NotEqual("Blocker", removalImpact.RootElement.GetProperty("severity").GetString());
+
+            using var removeLegacyLinkRequest = CreateRequest(
+                HttpMethod.Delete,
+                $"/v1/projects/{ProjectId:D}/components/{databaseComponentId.Value:D}/resources/{removableDatabaseId:D}/links/{removableLegacyLinkId.Value:D}",
+                new
+                {
+                    expectedLinkVersion = 1,
+                    expectedModelVersion = removalImpact.RootElement.GetProperty("modelVersion").GetInt32()
+                });
+            removeLegacyLinkRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var removeLegacyLinkResponse = await client.SendAsync(removeLegacyLinkRequest);
+            Assert.Equal(HttpStatusCode.OK, removeLegacyLinkResponse.StatusCode);
+
+            using var recoveredOptionsRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{databaseComponentId.Value:D}/resources/{removableDatabaseId:D}/links/options");
+            using var recoveredOptionsResponse = await client.SendAsync(recoveredOptionsRequest);
+            Assert.Equal(HttpStatusCode.OK, recoveredOptionsResponse.StatusCode);
+            using var recoveredOptions = await JsonDocument.ParseAsync(await recoveredOptionsResponse.Content.ReadAsStreamAsync());
+            var recoveredHosting = Assert.Single(
+                recoveredOptions.RootElement.GetProperty("kinds").EnumerateArray(),
+                option => option.GetProperty("kind").GetString() == "Hosting");
+            var recoveredTarget = Assert.Single(recoveredHosting.GetProperty("targets").EnumerateArray());
+            Assert.Equal(localServerId, recoveredTarget.GetProperty("resourceId").GetGuid());
+
+            using var recoveredAddLinkRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{databaseComponentId.Value:D}/resources/{removableDatabaseId:D}/links",
+                new
+                {
+                    targetComponentId = databaseComponentId.Value,
+                    targetResourceId = localServerId,
+                    kind = "Hosting",
+                    identityKind = "None",
+                    identityResourceId = (Guid?)null,
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedComponentVersion = await GetComponentVersionFromApiAsync(databaseComponentId.Value)
+                });
+            recoveredAddLinkRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var recoveredAddLinkResponse = await client.SendAsync(recoveredAddLinkRequest);
+            Assert.Equal(HttpStatusCode.Created, recoveredAddLinkResponse.StatusCode);
+        }
+        finally
+        {
+            foreach (var linkId in new[] { legacyLinkId, removableLegacyLinkId }.OfType<Guid>())
+            {
+                using var scope = factory.Services.CreateScope();
+                scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+                var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+                var legacyLink = await dbContext.Set<LinkAggregate>().SingleOrDefaultAsync(link => link.Id == linkId);
+                if (legacyLink is not null)
+                {
+                    dbContext.Remove(legacyLink);
+                    await dbContext.SaveChangesAsync();
+                }
+            }
+
+            if (serverComponentId is { } serverId)
+            {
+                await CleanupResourceTestComponentAsync(serverId);
+            }
+
+            if (databaseComponentId is { } databaseId)
+            {
+                await CleanupResourceTestComponentAsync(databaseId);
+            }
+        }
+    }
+
+    private async Task ImplicitDiagnosticLinkDoesNotHideExplicitReplacementOptionCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        var componentId = await CreateResourceTestComponentAsync(environment);
+        try
+        {
+            var groupId = await CreateResourceTestGroupAsync(componentId);
+            using var workspace = JsonDocument.Parse(await CreateResourceAsync(
+                componentId,
+                groupId,
+                "LogAnalyticsWorkspace",
+                "default-workspace",
+                new Dictionary<string, object?>()));
+            using var application = JsonDocument.Parse(await CreateResourceAsync(
+                componentId,
+                groupId,
+                "ContainerApp",
+                "diagnostics-source",
+                new Dictionary<string, object?>()));
+            var workspaceId = workspace.RootElement.GetProperty("id").GetGuid();
+            var applicationId = application.RootElement.GetProperty("id").GetGuid();
+
+            using var setDefaultRequest = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/default-log-analytics",
+                new
+                {
+                    workspaceResourceId = workspaceId,
+                    expectedVersion = await GetComponentVersionFromApiAsync(componentId)
+                });
+            setDefaultRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var setDefaultResponse = await client.SendAsync(setDefaultRequest);
+            Assert.Equal(HttpStatusCode.OK, setDefaultResponse.StatusCode);
+
+            using var optionsRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{applicationId:D}/links/options");
+            using var optionsResponse = await client.SendAsync(optionsRequest);
+            Assert.Equal(HttpStatusCode.OK, optionsResponse.StatusCode);
+            using var options = await JsonDocument.ParseAsync(await optionsResponse.Content.ReadAsStreamAsync());
+            var diagnostics = Assert.Single(
+                options.RootElement.GetProperty("kinds").EnumerateArray(),
+                option => option.GetProperty("kind").GetString() == "Diagnostics");
+            var target = Assert.Single(diagnostics.GetProperty("targets").EnumerateArray());
+            Assert.Equal(workspaceId, target.GetProperty("resourceId").GetGuid());
+        }
+        finally
+        {
+            await CleanupResourceTestComponentAsync(componentId);
+        }
+    }
+
+    private async Task LinkRejectsIdentityResourceIdWhenIdentityKindIsNoneCore()
+    {
+        await PrepareAsync();
+        var environment = await GetEditableEnvironmentAsync();
+        Guid? componentId = null;
+        try
+        {
+            componentId = await CreateResourceTestComponentAsync(environment);
+            var groupId = await CreateResourceTestGroupAsync(componentId.Value);
+            using var server = JsonDocument.Parse(await CreateResourceAsync(
+                componentId.Value,
+                groupId,
+                "SqlServer",
+                "identity-parameter-server",
+                new Dictionary<string, object?>()));
+            using var database = JsonDocument.Parse(await CreateResourceAsync(
+                componentId.Value,
+                groupId,
+                "SqlDatabase",
+                "identity-parameter-database",
+                new Dictionary<string, object?>()));
+            var serverId = server.RootElement.GetProperty("id").GetGuid();
+            var databaseId = database.RootElement.GetProperty("id").GetGuid();
+
+            using var request = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId.Value:D}/resources/{databaseId:D}/links",
+                new
+                {
+                    targetComponentId = componentId.Value,
+                    targetResourceId = serverId,
+                    kind = "Hosting",
+                    identityKind = "None",
+                    identityResourceId = Guid.NewGuid(),
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null,
+                    expectedComponentVersion = await GetComponentVersionFromApiAsync(componentId.Value)
+                });
+            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var response = await client.SendAsync(request);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal("LINK_IDENTITY_PARAMETER_INVALID", await GetProblemCodeAsync(response));
+
+            using var previewRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId.Value:D}/resources/{databaseId:D}/links/preview",
+                new
+                {
+                    targetComponentId = componentId.Value,
+                    targetResourceId = serverId,
+                    kind = "Hosting",
+                    identityKind = "None",
+                    identityResourceId = Guid.NewGuid(),
+                    roles = Array.Empty<string>(),
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null
+                });
+            using var previewResponse = await client.SendAsync(previewRequest);
+
+            Assert.Equal(HttpStatusCode.BadRequest, previewResponse.StatusCode);
+            Assert.Equal("LINK_IDENTITY_PARAMETER_INVALID", await GetProblemCodeAsync(previewResponse));
+
+            using var optionalRolesPreviewRequest = CreateRequest(
+                HttpMethod.Post,
+                $"/v1/projects/{ProjectId:D}/components/{componentId.Value:D}/resources/{databaseId:D}/links/preview",
+                new
+                {
+                    targetComponentId = componentId.Value,
+                    targetResourceId = serverId,
+                    kind = "Hosting",
+                    identityKind = "None",
+                    identityResourceId = (Guid?)null,
+                    accessScope = "Resource",
+                    dataAccessLevel = (string?)null
+                });
+            using var optionalRolesPreviewResponse = await client.SendAsync(optionalRolesPreviewRequest);
+
+            Assert.Equal(HttpStatusCode.OK, optionalRolesPreviewResponse.StatusCode);
+            using var optionalRolesPreview = await JsonDocument.ParseAsync(await optionalRolesPreviewResponse.Content.ReadAsStreamAsync());
+            Assert.Empty(optionalRolesPreview.RootElement.GetProperty("findings").EnumerateArray());
+        }
+        finally
+        {
+            if (componentId is { } id)
+            {
+                await CleanupResourceTestComponentAsync(id);
+            }
+        }
+    }
+
     private async Task DeletingComponentWithIncomingLinksIsBlockedCore()
     {
         await PrepareAsync();
@@ -2681,6 +3172,19 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
             var sourceResourceId = source.RootElement.GetProperty("id").GetGuid();
             var targetResourceId = target.RootElement.GetProperty("id").GetGuid();
             var targetVersionBeforeLink = await GetComponentVersionFromApiAsync(targetComponentId);
+
+            using var optionsRequest = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{sourceComponentId:D}/resources/{sourceResourceId:D}/links/options");
+            using var optionsResponse = await client.SendAsync(optionsRequest);
+            Assert.Equal(HttpStatusCode.OK, optionsResponse.StatusCode);
+            using var options = await JsonDocument.ParseAsync(await optionsResponse.Content.ReadAsStreamAsync());
+            var hostingOption = Assert.Single(
+                options.RootElement.GetProperty("kinds").EnumerateArray(),
+                option => option.GetProperty("kind").GetString() == "Hosting");
+            Assert.Contains(hostingOption.GetProperty("targets").EnumerateArray(), targetOption =>
+                targetOption.GetProperty("componentId").GetGuid() == targetComponentId
+                && targetOption.GetProperty("resourceId").GetGuid() == targetResourceId);
 
             using var addLinkRequest = CreateRequest(
                 HttpMethod.Post,
@@ -2960,6 +3464,76 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
 
         Assert.Equal(HttpStatusCode.BadRequest, reverseResponse.StatusCode);
         Assert.Equal("RESOURCE_PROPERTY_IRREVERSIBLE", await GetProblemCodeAsync(reverseResponse));
+    }
+
+    private async Task ResourcePropertyUpdateIsVisibleAfterFreshRequestCore()
+    {
+        await PrepareAsync();
+        var originalCatalogVersion = await PinProjectCatalogVersionAsync("2026.10-pilot.4");
+        Guid? testComponentId = null;
+
+        try
+        {
+            var environment = await GetEditableEnvironmentAsync();
+            var componentId = await CreateResourceTestComponentAsync(environment);
+            testComponentId = componentId;
+            var resourceGroupId = await CreateResourceTestGroupAsync(componentId);
+            var resourceBody = await CreateResourceAsync(
+                componentId,
+                resourceGroupId,
+                "ContainerApp",
+                "api",
+                new Dictionary<string, object?>
+                {
+                    ["memoryGi"] = "0.5Gi",
+                    ["ingress"] = "None"
+                });
+            using var created = JsonDocument.Parse(resourceBody);
+            var resourceId = created.RootElement.GetProperty("id").GetGuid();
+            var resourceVersion = created.RootElement.GetProperty("version").GetInt32();
+
+            using var update = CreateRequest(
+                HttpMethod.Put,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}/resources/{resourceId:D}/properties",
+                new
+                {
+                    properties = new Dictionary<string, object?>
+                    {
+                        ["memoryGi"] = "1Gi",
+                        ["ingress"] = "External"
+                    },
+                    expectedVersion = resourceVersion
+                });
+            update.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+            using var updateResponse = await client.SendAsync(update);
+            Assert.True(updateResponse.StatusCode == HttpStatusCode.OK, await updateResponse.Content.ReadAsStringAsync());
+
+            using var readBack = CreateRequest(
+                HttpMethod.Get,
+                $"/v1/projects/{ProjectId:D}/components/{componentId:D}");
+            using var readBackResponse = await client.SendAsync(readBack);
+            Assert.True(readBackResponse.StatusCode == HttpStatusCode.OK, await readBackResponse.Content.ReadAsStringAsync());
+            using var component = await JsonDocument.ParseAsync(await readBackResponse.Content.ReadAsStreamAsync());
+            var resource = component.RootElement.GetProperty("resources").EnumerateArray()
+                .Single(item => item.GetProperty("id").GetGuid() == resourceId);
+            var properties = resource.GetProperty("properties");
+            Assert.Equal("1Gi", properties.GetProperty("memoryGi").GetString());
+            Assert.Equal("External", properties.GetProperty("ingress").GetString());
+        }
+        finally
+        {
+            try
+            {
+                if (testComponentId is { } componentId)
+                {
+                    await CleanupResourceTestComponentAsync(componentId);
+                }
+            }
+            finally
+            {
+                await PinProjectCatalogVersionAsync(originalCatalogVersion);
+            }
+        }
     }
 
     private async Task ComponentAndResourceGroupCanBeCreatedAndListedCore()

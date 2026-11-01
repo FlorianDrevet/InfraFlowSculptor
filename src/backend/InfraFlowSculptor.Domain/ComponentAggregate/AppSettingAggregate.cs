@@ -127,6 +127,7 @@ public sealed partial class AppSettingAggregate : AggregateRoot<Guid>, IOrganiza
         AppSettingDefinition definition,
         IReadOnlyCollection<AppSettingAggregate> existingSettings)
     {
+        var normalizedDefinition = definition with { SecretName = definition.SecretName?.Trim() };
         if (!VariableNamePattern().IsMatch(normalizedName))
         {
             var detail = normalizedName.Contains(':', StringComparison.Ordinal)
@@ -148,7 +149,7 @@ public sealed partial class AppSettingAggregate : AggregateRoot<Guid>, IOrganiza
             return Error.Conflict("VAL-PAR-03", $"A parameter named '{duplicate.Name}' already exists on this application.");
         }
 
-        var sourceResult = ValidateSource(normalizedName, definition);
+        var sourceResult = ValidateSource(normalizedName, normalizedDefinition);
         if (sourceResult.IsError)
         {
             return sourceResult.Errors;
@@ -167,8 +168,8 @@ public sealed partial class AppSettingAggregate : AggregateRoot<Guid>, IOrganiza
             && definition.SecretFeedKind == AppSettingSecretFeedKind.PipelineSecret)
         {
             var duplicateWriter = existingSettings.FirstOrDefault(setting =>
-                setting.KeyVaultResourceId == definition.KeyVaultResourceId
-                && string.Equals(setting.SecretName, definition.SecretName, StringComparison.OrdinalIgnoreCase)
+                setting.KeyVaultResourceId == normalizedDefinition.KeyVaultResourceId
+                && string.Equals(setting.SecretName, normalizedDefinition.SecretName, StringComparison.OrdinalIgnoreCase)
                 && setting.SecretFeedKind == AppSettingSecretFeedKind.PipelineSecret);
             if (duplicateWriter is not null)
             {
@@ -303,7 +304,7 @@ public sealed partial class AppSettingAggregate : AggregateRoot<Guid>, IOrganiza
     [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_.-]{0,255}$", RegexOptions.CultureInvariant)]
     private static partial Regex VariableNamePattern();
 
-    [GeneratedRegex("^[A-Za-z0-9-]{1,127}$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^[A-Za-z0-9-]{1,127}\\z", RegexOptions.CultureInvariant)]
     private static partial Regex SecretNamePattern();
 
     [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_]{0,127}$", RegexOptions.CultureInvariant)]

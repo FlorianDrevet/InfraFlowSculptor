@@ -13,6 +13,7 @@ import type { PropertyGridUpdate } from '../../shared/property-grid/property-gri
 })
 export class ResourceNetworkPanel {
   readonly rows = input<PropertyGridRow[]>([]);
+  readonly syncRevision = input(0);
   readonly disabled = input(false);
   readonly updateValue = output<PropertyGridUpdate>();
   readonly clearOverride = output<{ property: string; targetId: string }>();

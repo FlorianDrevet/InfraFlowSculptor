@@ -85,6 +85,12 @@ public abstract class LinkKindHandler(
         && SupportsTarget(target)
         && SupportsTypes(source, target);
 
+    public virtual bool SupportsComponentScope(
+        CatalogResourceTypeDescriptor source,
+        CatalogResourceTypeDescriptor target,
+        Guid sourceComponentId,
+        Guid targetComponentId) => true;
+
     protected virtual bool SupportsSource(CatalogResourceTypeDescriptor source) =>
         source.Definition.GetProperty("links").GetProperty("asSource")
             .EnumerateArray()

@@ -1,10 +1,12 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   computed,
   inject,
   input,
-  OnInit,
+  OnChanges,
+  SimpleChanges,
   signal,
 } from '@angular/core';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
@@ -65,7 +67,7 @@ import {
   styleUrl: './resource-editor.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ResourceEditor implements OnInit {
+export class ResourceEditor implements OnChanges {
   readonly projectId = input.required<string>();
   readonly componentId = input.required<string>();
   readonly resourceId = input.required<string>();
@@ -94,8 +96,11 @@ export class ResourceEditor implements OnInit {
   protected readonly loading = signal(true);
   protected readonly loadError = signal(false);
   protected readonly saving = signal(false);
+  protected readonly syncRevision = signal(0);
+  protected readonly presenceSelections = signal<Record<string, boolean>>({});
   protected readonly canEditModel = signal(false);
   protected readonly actionError = signal(false);
+  protected readonly actionErrorKey = signal('resource.saveError');
   protected readonly conflict = signal<{
     label: string;
     original: string;
@@ -111,6 +116,8 @@ export class ResourceEditor implements OnInit {
     label: string;
     saved: (resource: ResourceResponse) => string;
   } | null>(null);
+  private loadRequestId = 0;
+  private actionRequestId = 0;
   protected readonly rows = computed(() => {
     const resource = this.resource();
     return resource
@@ -135,8 +142,35 @@ export class ResourceEditor implements OnInit {
   private readonly catalog = inject(CatalogService);
   private readonly resources = inject(ResourcesService);
   private readonly transloco = inject(TranslocoService);
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  ngOnInit(): void {
+  ngOnChanges(changes: SimpleChanges<ResourceEditor>): void {
+    if (!changes.projectId && !changes.componentId && !changes.resourceId) return;
+    this.loadRequestId++;
+    this.actionRequestId++;
+    this.saving.set(false);
+    this.project.set(null);
+    this.component.set(null);
+    this.resource.set(null);
+    this.presenceSelections.set({});
+    this.resourceType.set(null);
+    this.applicationSettingsAvailable.set(false);
+    this.networkAvailable.set(false);
+    this.canEditModel.set(false);
+    this.effectiveValues.set([]);
+    this.definitions.set([]);
+    this.existingIdDrafts.set({});
+    this.forcedNameDrafts.set({});
+    this.showForcedNameEditor.set(false);
+    this.descriptionDraft.set('');
+    this.tagsDraft.set('');
+    this.tagError.set(false);
+    this.generatedNames.set([]);
+    this.generatedNamesLoading.set(false);
+    this.generatedNamesError.set(false);
+    this.actionError.set(false);
+    this.conflict.set(null);
+    this.pendingConflictAction.set(null);
     void this.load(true);
   }
 
@@ -191,8 +225,13 @@ export class ResourceEditor implements OnInit {
     return (
       this.canEditModel() &&
       !this.saving() &&
+      !this.loadError() &&
       (!this.resource()?.isExisting || !!this.currentExistingId(target.id))
     );
+  }
+
+  protected currentPresence(target: EffectiveValueTargetResponse): boolean {
+    return this.presenceSelections()[target.id] ?? target.isPresent;
   }
 
   protected async saveMetadata(): Promise<void> {
@@ -225,10 +264,15 @@ export class ResourceEditor implements OnInit {
     );
   }
 
-  protected async setPresence(target: EffectiveValueTargetResponse): Promise<void> {
-    const nextPresence = !target.isPresent;
+  protected async setPresence(
+    target: EffectiveValueTargetResponse,
+    requestedPresence?: boolean,
+  ): Promise<void> {
+    const currentPresence = this.currentPresence(target);
+    const nextPresence = requestedPresence ?? !currentPresence;
     const resource = this.resource();
     if (!resource || !this.canTogglePresence(target)) return;
+    this.presenceSelections.update((selections) => ({ ...selections, [target.id]: nextPresence }));
     await this.runAction(
       (current) =>
         firstValueFrom(
@@ -241,7 +285,7 @@ export class ResourceEditor implements OnInit {
       {
         label: 'resource.presence',
         original: this.transloco.translate(
-          target.isPresent ? 'resource.present' : 'resource.absent',
+          currentPresence ? 'resource.present' : 'resource.absent',
         ),
         submitted: this.transloco.translate(nextPresence ? 'resource.present' : 'resource.absent'),
         saved: () =>
@@ -299,7 +343,11 @@ export class ResourceEditor implements OnInit {
 
   protected async updateProperty(update: PropertyGridUpdate): Promise<void> {
     const resource = this.resource();
-    if (!resource || this.saving()) return;
+    if (!resource) return;
+    if (!this.canEditModel() || this.saving() || this.loadError()) {
+      this.syncRevision.update((revision) => revision + 1);
+      return;
+    }
 
     const action = (current: ResourceResponse): Promise<void> => {
       if (update.targetId) {
@@ -320,9 +368,7 @@ export class ResourceEditor implements OnInit {
       ).then(() => undefined);
     };
     await this.runAction(action, {
-      label:
-        this.definitions().find((item) => item.name === update.property)?.labels?.fr ??
-        update.property,
+      label: this.propertyLabel(update.property),
       original: this.currentPropertyValue(resource, update.property, update.targetId),
       submitted: this.valueText(update.value),
       saved: (current) => this.currentPropertyValue(current, update.property, update.targetId),
@@ -347,7 +393,7 @@ export class ResourceEditor implements OnInit {
           }),
         ).then(() => undefined),
       {
-        label: this.definitions().find((item) => item.name === property)?.labels?.fr ?? property,
+        label: this.propertyLabel(property),
         original: this.currentPropertyValue(resource, property, targetId),
         submitted: this.transloco.translate('resource.catalogDefault'),
         saved: (current) => this.currentPropertyValue(current, property, targetId),
@@ -389,16 +435,37 @@ export class ResourceEditor implements OnInit {
     },
   ): Promise<void> {
     const resource = this.resource();
-    if (!resource) return;
+    if (!resource || !this.canEditModel() || this.saving() || this.loadError()) {
+      this.syncRevision.update((revision) => revision + 1);
+      return;
+    }
+    const requestId = ++this.actionRequestId;
+    const projectId = this.projectId();
+    const componentId = this.componentId();
+    const resourceId = this.resourceId();
+    const isCurrent = (): boolean =>
+      requestId === this.actionRequestId &&
+      projectId === this.projectId() &&
+      componentId === this.componentId() &&
+      resourceId === this.resourceId();
     this.saving.set(true);
     this.actionError.set(false);
+    this.actionErrorKey.set('resource.saveError');
     this.conflict.set(null);
+    let actionSucceeded = false;
     try {
       await action(resource);
+      actionSucceeded = true;
+      if (!isCurrent()) return;
       await this.load(false);
     } catch (error) {
+      if (!isCurrent()) return;
       this.actionError.set(true);
+      if (error instanceof ApiError && error.code === 'RESOURCE_PROPERTY_IRREVERSIBLE') {
+        this.actionErrorKey.set('resource.irreversiblePropertyError');
+      }
       const latest = await this.load(false);
+      if (!isCurrent()) return;
       if (error instanceof ApiError && error.status === 409 && latest) {
         this.conflict.set({
           label: details.label,
@@ -411,27 +478,40 @@ export class ResourceEditor implements OnInit {
         this.pendingConflictAction.set({ action, ...details });
       }
     } finally {
-      this.saving.set(false);
+      if (isCurrent()) {
+        this.saving.set(false);
+        if (!actionSucceeded) {
+          this.syncRevision.update((revision) => revision + 1);
+          this.presenceSelections.set({});
+          this.restorePresenceControls();
+        }
+      }
     }
   }
 
   private async load(resetDrafts: boolean): Promise<ResourceResponse | null> {
+    const requestId = ++this.loadRequestId;
+    const projectId = this.projectId();
+    const componentId = this.componentId();
+    const resourceId = this.resourceId();
     const initializeDrafts = resetDrafts || this.resource() === null;
-    this.loading.set(true);
+    if (initializeDrafts) this.loading.set(true);
     this.loadError.set(false);
     try {
       const [project, component, effectiveValues, permissions] = await Promise.all([
-        firstValueFrom(this.projects.get(this.projectId())),
-        firstValueFrom(this.components.get(this.projectId(), this.componentId())),
-        firstValueFrom(this.resources.effectiveValues(this.projectId(), this.resourceId())),
-        firstValueFrom(this.projects.myPermissions(this.projectId())),
+        firstValueFrom(this.projects.get(projectId)),
+        firstValueFrom(this.components.get(projectId, componentId)),
+        firstValueFrom(this.resources.effectiveValues(projectId, resourceId)),
+        firstValueFrom(this.projects.myPermissions(projectId)),
       ]);
-      const resource = component.resources.find((item) => item.id === this.resourceId()) ?? null;
+      if (requestId !== this.loadRequestId) return null;
+      const resource = component.resources.find((item) => item.id === resourceId) ?? null;
       if (!resource) throw new Error('Resource not found in component response.');
       const [descriptor, resourceTypes] = await Promise.all([
         firstValueFrom(this.catalog.type(project.catalogVersion, resource.type)),
         firstValueFrom(this.catalog.types(project.catalogVersion)),
       ]);
+      if (requestId !== this.loadRequestId) return null;
       this.project.set(project);
       this.component.set(component);
       this.resource.set(resource);
@@ -440,6 +520,7 @@ export class ResourceEditor implements OnInit {
       this.networkAvailable.set(this.networkExposureSupported(descriptor));
       this.canEditModel.set(permissions.permissions.includes('model.edit'));
       this.effectiveValues.set(effectiveValues);
+      this.presenceSelections.set({});
       this.definitions.set(parseResourceTypeProperties(descriptor));
       if (initializeDrafts) {
         this.existingIdDrafts.set(
@@ -452,13 +533,33 @@ export class ResourceEditor implements OnInit {
         this.descriptionDraft.set(resource.description);
         this.tagsDraft.set(this.entriesText(resource.tags));
       }
-      void this.loadGeneratedNames(component, resource, effectiveValues);
+      void this.loadGeneratedNames(component, resource, effectiveValues, projectId, requestId);
       return resource;
     } catch {
-      this.loadError.set(true);
+      if (requestId === this.loadRequestId) {
+        this.loadError.set(true);
+        this.canEditModel.set(false);
+      }
       return null;
     } finally {
-      this.loading.set(false);
+      if (requestId === this.loadRequestId) this.loading.set(false);
+    }
+  }
+
+  private propertyLabel(property: string): string {
+    const language = this.transloco.getActiveLang() === 'en' ? 'en' : 'fr';
+    const definition = this.definitions().find((item) => item.name === property);
+    return definition?.labels?.[language] ?? definition?.labels?.fr ?? property;
+  }
+
+  private restorePresenceControls(): void {
+    const targets = new Map(this.effectiveValues().map((target) => [target.id, target]));
+    const controls = this.elementRef.nativeElement.querySelectorAll<HTMLInputElement>(
+      'input[data-presence-target-id]',
+    );
+    for (const control of controls) {
+      const target = targets.get(control.getAttribute('data-presence-target-id') ?? '');
+      if (target) control.checked = this.currentPresence(target);
     }
   }
 
@@ -466,7 +567,10 @@ export class ResourceEditor implements OnInit {
     component: ComponentResponse,
     resource: ResourceResponse,
     targets: EffectiveValueTargetResponse[],
+    projectId: string,
+    requestId: number,
   ): Promise<void> {
+    if (requestId !== this.loadRequestId) return;
     if (resource.isExisting) {
       this.generatedNames.set([]);
       this.generatedNamesLoading.set(false);
@@ -477,13 +581,14 @@ export class ResourceEditor implements OnInit {
     this.generatedNamesError.set(false);
     try {
       const preview = await firstValueFrom(
-        this.resources.previewName(this.projectId(), component.id, {
+        this.resources.previewName(projectId, component.id, {
           logicalName: resource.logicalName,
           resourceGroupId: resource.resourceGroupId,
           resourceId: resource.id,
           type: resource.type,
         }),
       );
+      if (requestId !== this.loadRequestId) return;
       const targetsById = new Map(targets.map((target) => [target.id, target]));
       const rows = preview.items.flatMap((item: ProjectNamingPreviewItemResponse) => {
         const target = targetsById.get(item.targetId);
@@ -501,9 +606,9 @@ export class ResourceEditor implements OnInit {
       this.generatedNames.set(rows);
       this.generatedNamesError.set(preview.issues.length > 0 && rows.length === 0);
     } catch {
-      this.generatedNamesError.set(true);
+      if (requestId === this.loadRequestId) this.generatedNamesError.set(true);
     } finally {
-      this.generatedNamesLoading.set(false);
+      if (requestId === this.loadRequestId) this.generatedNamesLoading.set(false);
     }
   }
 
@@ -514,15 +619,16 @@ export class ResourceEditor implements OnInit {
   ): string {
     if (targetId) {
       const target = this.effectiveValues().find((item) => item.id === targetId);
-      const value = target?.properties.find((item) => item.name === property)?.value;
-      return this.valueText(value);
+      const value = target?.properties.find((item) => item.name === property);
+      return this.valueText(value?.provenance === 'absent' ? undefined : value?.value);
     }
     const resourceProperties = this.propertiesRecord(resource.properties);
     if (Object.prototype.hasOwnProperty.call(resourceProperties, property)) {
-      return this.valueText(resourceProperties[property]);
+      const value = resourceProperties[property];
+      return this.valueText(value === null ? undefined : value);
     }
     const defaultValue = this.definitions().find((item) => item.name === property)?.default;
-    return this.valueText(defaultValue);
+    return this.valueText(defaultValue === null ? undefined : defaultValue);
   }
 
   private parseTags(value: string): Record<string, string> | null {
@@ -544,8 +650,8 @@ export class ResourceEditor implements OnInit {
   }
 
   private valueText(value: unknown): string {
-    if (value === null || value === undefined)
-      return this.transloco.translate('resource.valueAbsent');
+    if (value === undefined) return this.transloco.translate('resource.valueAbsent');
+    if (value === null) return 'null';
     return typeof value === 'string' ? value : JSON.stringify(value);
   }
 

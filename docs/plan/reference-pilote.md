@@ -154,7 +154,7 @@ Azure. Pour les preuves, le code projet peut devenir `shopNN` (deux chiffres de 
 | Élément | Origine |
 |---|---|
 | `id api` attachée à `ca api` | Liaisons utilisant `id api` |
-| `AcrPull` pour `id-shop-api-<env>` sur `crshopmainshared` (portée externe : abonnement C) | Tirage d'image |
+| `AcrPull` pour `id-shop-api-<env>` sur `crshopmainshared` (composant `platform`, cible `shared`; même abonnement que `orders` pour les preuves) | Tirage d'image |
 | Key Vault Secrets User pour `id-shop-api-<env>` sur `kv-shop-main-<env>` | Paramètre `Payments__ApiKey` |
 | Log Analytics Reader pour `id-shop-api-<env>` sur `log-shop-main-<env>` | Liaison d'accès explicite |
 | Paramètres `APPLICATIONINSIGHTS_CONNECTION_STRING`, `AZURE_CLIENT_ID` | Télémétrie, identité par défaut |
@@ -165,7 +165,7 @@ Azure. Pour les preuves, le code projet peut devenir `shopNN` (deux chiffres de 
 
 | Code | Gravité | Objet |
 |---|---|---|
-| `VAL-LIA-PORTEE-EXTERNE` | Info | `AcrPull` attribué dans l'abonnement C par le déploiement d'`orders` |
+| `VAL-LIA-PORTEE-EXTERNE` | Info | Attribution à une ressource existante ou dans un abonnement distinct. Elle n'est pas attendue pour les preuves P1–P9 : A, B et C sont le même abonnement selon DT-42, et `cr main` est modélisé dans le projet. |
 | `VAL-LIA-SQL-ADMIN` | Avertissement | Tant que l'adhésion des identités de déploiement à `sg-shop-sql-admins` n'est pas confirmée |
 | `VAL-NOM-DISPONIBILITE` | Info | Pour chaque nom global déjà résolu dans le DNS public, le cas échéant |
 

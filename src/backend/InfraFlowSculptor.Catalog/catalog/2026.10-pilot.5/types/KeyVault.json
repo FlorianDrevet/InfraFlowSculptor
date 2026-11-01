@@ -1,0 +1,233 @@
+{
+  "type": "KeyVault",
+  "labels": {
+    "fr": "Coffre de clés",
+    "en": "Key Vault"
+  },
+  "category": "security",
+  "icon": "key-vault",
+  "armType": "Microsoft.KeyVault/vaults",
+  "availableFrom": "lot1",
+  "documentationUrl": "https://learn.microsoft.com/en-us/azure/templates/microsoft.keyvault/vaults",
+  "verifiedAgainstDocsOn": "2026-10-27",
+  "naming": {
+    "abbreviation": "kv",
+    "allowed": "^[a-zA-Z][a-zA-Z0-9-]{1,22}[a-zA-Z0-9]$",
+    "case": "lower",
+    "separators": [
+      "-"
+    ],
+    "forbidConsecutiveSeparators": true,
+    "minLength": 3,
+    "maxLength": 24,
+    "firstChar": "letter",
+    "lastChar": "alphanumeric",
+    "uniqueness": "global",
+    "availabilityDomain": "vault.azure.net"
+  },
+  "properties": [
+    {
+      "name": "sku",
+      "labels": {
+        "fr": "SKU",
+        "en": "SKU"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "standard",
+      "values": [
+        "standard",
+        "premium"
+      ]
+    },
+    {
+      "name": "purgeProtection",
+      "labels": {
+        "fr": "Protection contre la purge",
+        "en": "Purge protection"
+      },
+      "kind": "boolean",
+      "overridable": true,
+      "default": true,
+      "irreversible": {
+        "from": false,
+        "to": true
+      }
+    },
+    {
+      "name": "softDeleteRetentionInDays",
+      "labels": {
+        "fr": "Rétention après suppression (jours)",
+        "en": "Soft-delete retention (days)"
+      },
+      "kind": "integer",
+      "overridable": false,
+      "default": 90,
+      "lockedAfterPublish": true,
+      "minimum": 7,
+      "maximum": 90
+    },
+    {
+      "name": "exposure",
+      "labels": {
+        "fr": "Exposition",
+        "en": "Exposure"
+      },
+      "kind": "enum",
+      "overridable": true,
+      "default": "Public",
+      "values": [
+        "Public",
+        "Restricted"
+      ]
+    },
+    {
+      "name": "allowedIpRanges",
+      "labels": {
+        "fr": "Plages IP autorisées",
+        "en": "Allowed IP ranges"
+      },
+      "kind": "array",
+      "overridable": true,
+      "default": [],
+      "condition": "requires:exposure=Restricted",
+      "items": {
+        "kind": "string",
+        "format": "ipv4Cidr"
+      },
+      "maxItems": 100
+    }
+  ],
+  "fixedValues": [
+    {
+      "name": "rbacAuthorization",
+      "value": true,
+      "labels": {
+        "fr": "Autorisation RBAC",
+        "en": "RBAC authorization"
+      }
+    },
+    {
+      "name": "softDeleteEnabled",
+      "value": true,
+      "labels": {
+        "fr": "Suppression réversible",
+        "en": "Soft delete"
+      }
+    }
+  ],
+  "children": [],
+  "identities": {
+    "system": false,
+    "userAssignedMax": 0
+  },
+  "links": {
+    "asSource": [],
+    "asTarget": [
+      "Access",
+      "SecretRead"
+    ],
+    "required": []
+  },
+  "outputs": [
+    {
+      "name": "vaultUri",
+      "description": "URI du coffre.",
+      "sensitive": false,
+      "computableFromName": false
+    },
+    {
+      "name": "name",
+      "description": "Nom du coffre.",
+      "sensitive": false,
+      "computableFromName": true
+    },
+    {
+      "name": "id",
+      "description": "Identifiant de la ressource.",
+      "sensitive": false,
+      "computableFromName": false
+    }
+  ],
+  "lifecycle": {
+    "family": "data"
+  },
+  "roles": [
+    "Key Vault Administrator",
+    "Key Vault Secrets Officer",
+    "Key Vault Secrets User",
+    "Key Vault Certificates Officer",
+    "Key Vault Certificate User",
+    "Key Vault Crypto Officer",
+    "Key Vault Crypto User",
+    "Key Vault Crypto Service Encryption User",
+    "Key Vault Reader"
+  ],
+  "roleEquivalences": {
+    "secretRead": [
+      "Key Vault Secrets User",
+      "Key Vault Secrets Officer",
+      "Key Vault Administrator"
+    ]
+  },
+  "dataAccess": {
+    "supported": false,
+    "levels": [],
+    "databaseEngine": null
+  },
+  "exposure": {
+    "modes": [
+      "Public",
+      "Restricted"
+    ],
+    "privateGroupIds": [],
+    "privateDnsZones": [],
+    "conditions": []
+  },
+  "diagnostics": {
+    "supported": true
+  },
+  "applicationSettings": {
+    "destination": "none"
+  },
+  "languageSupport": {
+    "Bicep": "full",
+    "Terraform": "none",
+    "Pulumi": "none"
+  },
+  "generation": {
+    "Bicep": {
+      "module": "br/public:avm/res/key-vault/vault:0.14.0",
+      "versionPin": "0.14.0",
+      "map": {
+        "sku": "sku",
+        "purgeProtection": "enablePurgeProtection",
+        "softDeleteRetentionInDays": "softDeleteRetentionInDays",
+        "rbacAuthorization": "enableRbacAuthorization"
+      }
+    }
+  },
+  "deprecations": [],
+  "privateDnsZones": [
+    {
+      "groupId": "vault",
+      "zoneName": "privatelink.vaultcore.azure.net"
+    }
+  ],
+  "requiredNetworkRules": [],
+  "recommendedAlerts": [],
+  "pricing": {
+    "source": "azure-retail-prices",
+    "meters": [
+      {
+        "serviceName": "Key Vault",
+        "productName": "Vaults",
+        "meterName": "Standard operations"
+      }
+    ],
+    "assumptions": [],
+    "estimated": false,
+    "unestimatedReason": "Aucun scénario tarifaire par défaut n’est estimé pour le profil du pilote."
+  },
+  "drift": []
+}

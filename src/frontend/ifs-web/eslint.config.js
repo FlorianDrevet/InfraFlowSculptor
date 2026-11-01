@@ -19,6 +19,7 @@ module.exports = defineConfig([
             'e2e/organization-audit.spec.ts',
             'e2e/wizard.spec.ts',
             'e2e/project.spec.ts',
+            'e2e/project-reader.spec.ts',
             'e2e/project-findings.spec.ts',
             'e2e/resources.spec.ts',
             'e2e/links.spec.ts',

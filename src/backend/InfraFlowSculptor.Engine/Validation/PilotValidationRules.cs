@@ -25,6 +25,7 @@ public static class PilotValidationRules
         new ResourceAbsentEverywhereRule(),
         new CatalogRegionRule(),
         new LinkPlacementRule(),
+        new LinkComponentScopeRule(),
         new RequiredLinkRule(),
         new SharedIdentityRule(),
         new ExternalLinkScopeRule(),

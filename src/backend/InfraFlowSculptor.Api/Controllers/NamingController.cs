@@ -10,6 +10,7 @@ using InfraFlowSculptor.Catalog;
 using InfraFlowSculptor.Contracts.Naming;
 using InfraFlowSculptor.Domain.Common.Features;
 using InfraFlowSculptor.Engine.Model;
+using InfraFlowSculptor.Engine.Links;
 using InfraFlowSculptor.Engine.Naming;
 using Mediator;
 
@@ -24,7 +25,7 @@ public static class NamingController
             .RequireFeature(Features.Organizations)
             .RequireFeature(Features.ProjectSetup);
 
-        naming.MapPost("/preview", (NamingPreviewRequest request, ICatalogProvider catalogProvider) =>
+        naming.MapPost("/preview", (NamingPreviewRequest request, ICatalogProvider catalogProvider, LinkKindRegistry linkKinds) =>
             {
                 if (string.IsNullOrWhiteSpace(request.ProjectName)
                     || string.IsNullOrWhiteSpace(request.ProjectCode)
@@ -95,7 +96,7 @@ public static class NamingController
                     NamingRules = CatalogNamingSnapshotMapper.CreateRules(catalog),
                     RegionCodes = CatalogNamingSnapshotMapper.CreateRegionCodes(catalog)
                 };
-                var preview = NamingEngine.Preview(snapshot);
+                var preview = NamingEngine.Preview(snapshot, linkKinds);
                 return Results.Ok(new NamingPreviewResponse(
                     preview.Items.Select(item => new NamingPreviewItemResponse(
                         item.EnvironmentCode,
@@ -109,7 +110,8 @@ public static class NamingController
             .RequireRateLimiting(RateLimitingPolicies.Read)
             .Produces<NamingPreviewResponse>(StatusCodes.Status200OK)
             .ProducesValidationProblem()
-            .ProducesProblem(StatusCodes.Status403Forbidden);
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
         var projectNaming = v1.MapGroup("/projects/{projectId:guid}/naming")
             .WithTags("Naming")

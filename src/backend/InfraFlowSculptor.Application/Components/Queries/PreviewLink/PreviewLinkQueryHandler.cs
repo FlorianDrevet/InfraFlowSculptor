@@ -71,7 +71,7 @@ public sealed class PreviewLinkQueryHandler(
             LinkOrigin.Explicit,
             query.IdentityKind,
             query.IdentityResourceId,
-            query.Roles,
+            LinkCommandSupport.NormalizeRoleNames(query.Roles),
             query.AccessScope,
             query.DataAccessLevel);
 

@@ -78,6 +78,7 @@ export class ResourceLinksPanel implements OnChanges, OnInit {
   } | null>(null);
   protected readonly removalBusy = signal(false);
   protected readonly removalError = signal(false);
+  protected readonly removalErrorKey = signal('resource.linkRemovalError');
   protected readonly removalConflict = signal(false);
 
   private previewSequence = 0;
@@ -275,8 +276,9 @@ export class ResourceLinksPanel implements OnChanges, OnInit {
   }
 
   protected async requestRemoval(link: ResourceLinkResponse): Promise<void> {
-    if (this.saving() || this.removalBusy()) return;
+    if (!this.canEdit() || this.loadError() || this.saving() || this.removalBusy()) return;
     this.removalError.set(false);
+    this.removalErrorKey.set('resource.linkRemovalError');
     this.removalConflict.set(false);
     try {
       const impact = await firstValueFrom(
@@ -297,14 +299,22 @@ export class ResourceLinksPanel implements OnChanges, OnInit {
     if (this.removalBusy()) return;
     this.removal.set(null);
     this.removalError.set(false);
+    this.removalErrorKey.set('resource.linkRemovalError');
     this.removalConflict.set(false);
   }
 
   protected async confirmRemoval(): Promise<void> {
     const pending = this.removal();
-    if (!pending || this.removalBusy()) return;
+    if (!pending || !this.canEdit() || this.loadError() || this.removalBusy()) return;
+    const expectedLinkVersion = this.expectedLinkVersion(pending.link.version);
+    if (expectedLinkVersion === null) {
+      this.removalErrorKey.set('resource.linkRemovalVersionUnavailable');
+      this.removalError.set(true);
+      return;
+    }
     this.removalBusy.set(true);
     this.removalError.set(false);
+    this.removalErrorKey.set('resource.linkRemovalError');
     this.removalConflict.set(false);
     try {
       await firstValueFrom(
@@ -314,7 +324,7 @@ export class ResourceLinksPanel implements OnChanges, OnInit {
           this.resource().id,
           pending.link.id,
           {
-            expectedLinkVersion: Number(pending.link.version),
+            expectedLinkVersion,
             expectedModelVersion: pending.impact.modelVersion,
           },
         ),
@@ -374,12 +384,19 @@ export class ResourceLinksPanel implements OnChanges, OnInit {
     return this.transloco.translate('resource.implicitLinkOrigin');
   }
 
-  protected identityLabel(kind: LinkIdentityKind, resourceName: string | null): string {
-    const name = resourceName
-      ? ((this.currentComponent() ?? this.component()).resources.find(
-          (resource) => resource.id === resourceName,
-        )?.logicalName ?? resourceName)
-      : '';
+  protected identityLabel(
+    kind: LinkIdentityKind,
+    resourceId: string | null,
+    fallbackName: string | null = null,
+  ): string {
+    const resourceName = resourceId
+      ? (this.currentComponent() ?? this.component()).resources.find(
+          (resource) => resource.id === resourceId,
+        )?.logicalName
+      : null;
+    const name = resourceId
+      ? resourceName?.trim() || fallbackName?.trim() || resourceId
+      : (fallbackName?.trim() ?? '');
     return this.transloco.translate(this.identityKindTranslationKeys[kind], { name });
   }
 
@@ -431,6 +448,16 @@ export class ResourceLinksPanel implements OnChanges, OnInit {
       Number(this.currentComponent()?.version ?? 0),
       Number(this.component().version),
     );
+  }
+
+  private expectedLinkVersion(version: number | string | null): number | null {
+    const parsed =
+      typeof version === 'number'
+        ? version
+        : typeof version === 'string' && /^\d+$/.test(version)
+          ? Number(version)
+          : Number.NaN;
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
   }
 
   private async refreshRemoval(linkId: string): Promise<void> {

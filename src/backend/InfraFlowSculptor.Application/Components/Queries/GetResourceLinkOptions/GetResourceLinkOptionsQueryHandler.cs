@@ -59,7 +59,6 @@ public sealed class GetResourceLinkOptionsQueryHandler(
             .Where(value => value.Resource.Id != sourceResource.Id)
             .ToArray();
         var linkCounts = snapshot.Links
-            .Concat(handlers.Values.SelectMany(handler => handler.GetImplicitLinks(snapshot, catalog)))
             .GroupBy(link => (link.SourceResourceId, link.Kind))
             .ToDictionary(group => group.Key, group => group.Count());
         var options = handlers.Values
@@ -82,7 +81,13 @@ public sealed class GetResourceLinkOptionsQueryHandler(
                     .Select(value =>
                     {
                         var descriptor = catalog.GetResourceType(value.Resource.Type);
-                        if (descriptor is null || !handler.Supports(sourceDescriptor, descriptor))
+                        if (descriptor is null
+                            || !handler.Supports(sourceDescriptor, descriptor)
+                            || !handler.SupportsComponentScope(
+                                sourceDescriptor,
+                                descriptor,
+                                sourceComponent.Id,
+                                value.Component.Id))
                         {
                             return null;
                         }

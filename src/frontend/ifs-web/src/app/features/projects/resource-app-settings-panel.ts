@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
@@ -12,14 +20,32 @@ import type {
 } from '../../core/api/generated';
 import { ApiError } from '../../core/http/api-error';
 import { CatalogService } from '../../core/catalog/catalog.service';
+import { ComponentsService } from '../../core/projects/components.service';
 import { ProjectsService } from '../../core/projects/projects.service';
 import { ResourcesService } from '../../core/resources/resources.service';
 import { DsButton } from '../../ds/button/button';
 
 interface ResourceOutputChoice {
   resourceId: string;
+  componentCode: string;
   resourceName: string;
+  resourceType: string;
   outputName: string;
+}
+
+interface ResourceOutputResource {
+  resourceId: string;
+  componentCode: string;
+  resourceName: string;
+  resourceType: string;
+}
+
+interface ProjectResourceChoice {
+  id: string;
+  componentId: string;
+  componentCode: string;
+  logicalName: string;
+  type: string;
 }
 
 const PIPELINE_VARIABLE_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]{0,127}$/;
@@ -47,10 +73,14 @@ export class ResourceAppSettingsPanel implements OnInit {
 
   protected readonly settings = signal<AppSettingResponse[]>([]);
   protected readonly outputChoices = signal<ResourceOutputChoice[]>([]);
+  protected readonly projectResources = signal<ProjectResourceChoice[]>([]);
   protected readonly loading = signal(true);
   protected readonly loadError = signal(false);
+  protected readonly outputOptionsLoading = signal(false);
+  protected readonly outputOptionsError = signal(false);
   protected readonly saving = signal(false);
   protected readonly actionError = signal(false);
+  protected readonly settingConflict = signal(false);
   protected readonly secretDeclarationRequired = signal(false);
   protected readonly secretSuspectError = signal(false);
   protected readonly formOpen = signal(false);
@@ -68,27 +98,66 @@ export class ResourceAppSettingsPanel implements OnInit {
   protected readonly identityResourceId = signal('');
   protected readonly secretFeedKind = signal<'PipelineSecret' | 'ManagedOutsideIfs'>('PipelineSecret');
 
-  protected readonly keyVaults = computed(() => this.component().resources.filter((resource) => resource.type === 'KeyVault'));
-  protected readonly identities = computed(() => this.component().resources.filter((resource) => resource.type === 'UserAssignedIdentity'));
-  protected readonly outputResources = computed(() => this.component().resources.filter((resource) =>
-    this.outputChoices().some((choice) => choice.resourceId === resource.id),
-  ));
+  protected readonly keyVaults = computed(() => this.projectResources().filter((resource) => resource.type === 'KeyVault'));
+  protected readonly identities = computed(() => this.projectResources().filter((resource) =>
+    resource.type === 'UserAssignedIdentity' && resource.componentId === this.component().id));
+  protected readonly outputResources = computed(() => {
+    const seen = new Set<string>();
+    return this.outputChoices().flatMap((choice): ResourceOutputResource[] => {
+      if (seen.has(choice.resourceId)) return [];
+      seen.add(choice.resourceId);
+      return [{
+        resourceId: choice.resourceId,
+        componentCode: choice.componentCode,
+        resourceName: choice.resourceName,
+        resourceType: choice.resourceType,
+      }];
+    });
+  });
   protected readonly selectedOutputs = computed(() => this.outputChoices().filter((choice) => choice.resourceId === this.sourceResourceId()));
+  protected readonly hasUnavailableReference = computed(() => {
+    if (this.outputOptionsLoading() || this.outputOptionsError()) return false;
+    if (this.sourceKind() === 'KeyVaultSecret') {
+      const keyVaultResourceId = this.keyVaultResourceId();
+      const identityResourceId = this.identityResourceId();
+      return (keyVaultResourceId.length > 0
+        && !this.keyVaults().some((vault) => vault.id === keyVaultResourceId))
+        || (identityResourceId.length > 0
+          && !this.identities().some((identity) => identity.id === identityResourceId));
+    }
+    if (this.sourceKind() === 'ResourceOutput') {
+      const sourceResourceId = this.sourceResourceId();
+      const outputName = this.outputName();
+      return (sourceResourceId.length > 0
+        && !this.outputResources().some((resource) => resource.resourceId === sourceResourceId))
+        || (outputName.length > 0
+          && !this.selectedOutputs().some((output) => output.outputName === outputName));
+    }
+    return false;
+  });
   protected readonly canSubmit = computed(() => APP_SETTING_NAME_PATTERN.test(this.name().trim()) && !this.saving()
+    && !this.settingConflict()
+    && !this.outputOptionsLoading()
+    && (this.sourceKind() === 'Literal' || (!this.outputOptionsLoading() && !this.outputOptionsError()))
+    && !this.hasUnavailableReference()
     && (this.sourceKind() !== 'KeyVaultSecret' || (this.keyVaultResourceId().length > 0
       && SECRET_NAME_PATTERN.test(this.secretName().trim())
       && (this.secretFeedKind() !== 'PipelineSecret' || PIPELINE_VARIABLE_NAME_PATTERN.test(this.pipelineVariableName().trim()))))
     && (this.sourceKind() !== 'ResourceOutput' || (this.sourceResourceId().length > 0 && this.outputName().length > 0)));
 
   private readonly resources = inject(ResourcesService);
+  private readonly componentsService = inject(ComponentsService);
   private readonly projects = inject(ProjectsService);
   private readonly catalog = inject(CatalogService);
   private readonly transloco = inject(TranslocoService);
   private secretNameCustomized = false;
   private pipelineVariableNameCustomized = false;
+  private outputOptionsRequest: Promise<void> | undefined;
+  private createRequestId = 0;
 
   ngOnInit(): void {
-    const defaultVault = this.keyVaults()[0];
+    const defaultVault = this.keyVaults()[0]
+      ?? this.component().resources.find((resource) => resource.type === 'KeyVault');
     if (defaultVault) {
       this.keyVaultResourceId.set(defaultVault.id);
       this.pipelineVariableName.set(this.defaultPipelineName(defaultVault.logicalName, ''));
@@ -101,14 +170,26 @@ export class ResourceAppSettingsPanel implements OnInit {
     void this.loadOutputs();
   }
 
-  protected startCreate(): void {
+  protected async startCreate(): Promise<void> {
+    if (this.saving() || this.outputOptionsLoading() || this.formOpen()) return;
+    const requestId = ++this.createRequestId;
+    await this.loadOutputs();
+    if (this.saving() || requestId !== this.createRequestId) return;
     this.editing.set(null);
     this.resetForm();
     this.formOpen.set(true);
     this.actionError.set(false);
+    this.settingConflict.set(false);
+  }
+
+  protected async retryOutputOptions(): Promise<void> {
+    if (this.saving() || this.outputOptionsLoading()) return;
+    await this.loadOutputs();
   }
 
   protected startEdit(setting: AppSettingResponse): void {
+    if (this.saving() || this.outputOptionsLoading() || this.formOpen()) return;
+    this.createRequestId++;
     this.editing.set(setting);
     this.name.set(setting.name);
     this.sourceKind.set(setting.sourceKind);
@@ -127,14 +208,17 @@ export class ResourceAppSettingsPanel implements OnInit {
     this.secretFeedKind.set(setting.secretFeedKind === 'ManagedOutsideIfs' ? 'ManagedOutsideIfs' : 'PipelineSecret');
     this.formOpen.set(true);
     this.actionError.set(false);
+    this.settingConflict.set(false);
     this.secretSuspectError.set(false);
   }
 
   protected cancelForm(): void {
     if (this.saving()) return;
+    this.createRequestId++;
     this.formOpen.set(false);
     this.editing.set(null);
     this.actionError.set(false);
+    this.settingConflict.set(false);
     this.secretSuspectError.set(false);
   }
 
@@ -192,6 +276,15 @@ export class ResourceAppSettingsPanel implements OnInit {
     this.secretSuspectError.set(false);
   }
 
+  protected convertSuspectToPipelineSecret(): void {
+    if (!this.secretSuspectError() || this.keyVaults().length === 0) return;
+    this.literalValue.set('');
+    this.forceNonSecret.set(false);
+    this.secretDeclarationRequired.set(false);
+    this.updateSourceKind('KeyVaultSecret');
+    this.secretFeedKind.set('PipelineSecret');
+  }
+
   protected updateKeyVault(value: string): void {
     this.keyVaultResourceId.set(value);
     const vault = this.keyVaults().find((item) => item.id === value);
@@ -206,6 +299,10 @@ export class ResourceAppSettingsPanel implements OnInit {
     this.secretSuspectError.set(false);
     const body = this.createRequest();
     try {
+      if (body.sourceKind !== 'Literal') {
+        await this.loadOutputs();
+        if (this.outputOptionsError() || this.hasUnavailableReference()) return;
+      }
       const editing = this.editing();
       if (editing) {
         const update: AppSettingUpdateRequest = { ...body, expectedVersion: editing.version };
@@ -221,7 +318,10 @@ export class ResourceAppSettingsPanel implements OnInit {
       this.editing.set(null);
       await this.load();
     } catch (error) {
-      if (error instanceof ApiError && error.code === 'VAL-PAR-SECRET-SUSPECT'
+      if (error instanceof ApiError && error.status === 409 && error.code === 'CONFLICT_VERSION' && this.editing()) {
+        this.settingConflict.set(true);
+        await this.load();
+      } else if (error instanceof ApiError && error.code === 'VAL-PAR-SECRET-SUSPECT'
         && this.sourceKind() === 'Literal') {
         this.secretDeclarationRequired.set(true);
         this.secretSuspectError.set(true);
@@ -234,7 +334,7 @@ export class ResourceAppSettingsPanel implements OnInit {
   }
 
   protected async delete(setting: AppSettingResponse): Promise<void> {
-    if (!this.canEdit() || this.saving()) return;
+    if (!this.canEdit() || this.saving() || this.formOpen()) return;
     this.saving.set(true);
     this.actionError.set(false);
     try {
@@ -313,28 +413,58 @@ export class ResourceAppSettingsPanel implements OnInit {
   }
 
   private async loadOutputs(): Promise<void> {
-    try {
-      const project = await firstValueFrom(this.projects.get(this.projectId()));
-      const types = [...new Set(this.component().resources.map((resource) => resource.type))];
-      const descriptors = await Promise.all(types.map((type) => firstValueFrom(this.catalog.type(project.catalogVersion, type))));
-      const byType = new Map(types.map((type, index) => [type, descriptors[index]]));
-      const choices = this.component().resources.flatMap((resource) => {
-        const descriptor = byType.get(resource.type);
-        if (!descriptor || typeof descriptor !== 'object' || Array.isArray(descriptor)) return [];
-        const outputs = descriptor['outputs'];
-        if (!Array.isArray(outputs)) return [];
-        return outputs.flatMap((output): ResourceOutputChoice[] => {
-          if (typeof output !== 'object' || output === null || Array.isArray(output)) return [];
-          const outputName = output['name'];
-          return typeof outputName === 'string' && output['sensitive'] !== true
-            ? [{ resourceId: resource.id, resourceName: resource.logicalName, outputName }]
-            : [];
-        });
+    if (this.outputOptionsRequest) return this.outputOptionsRequest;
+    this.outputOptionsLoading.set(true);
+    this.outputOptionsError.set(false);
+    const request = this.fetchOutputOptions().catch(() => {
+      this.outputOptionsError.set(true);
+    }).finally(() => {
+      this.outputOptionsLoading.set(false);
+      this.outputOptionsRequest = undefined;
+    });
+    this.outputOptionsRequest = request;
+    return request;
+  }
+
+  private async fetchOutputOptions(): Promise<void> {
+    const project = await firstValueFrom(this.projects.get(this.projectId()));
+    const components = await firstValueFrom(this.componentsService.list(this.projectId()));
+    const resources = components.flatMap((component) => component.resources.map((resource) => ({
+      componentId: component.id,
+      componentCode: component.code,
+      resource,
+    })));
+    this.projectResources.set(resources.map(({ componentId, componentCode, resource }) => ({
+      id: resource.id,
+      componentId,
+      componentCode,
+      logicalName: resource.logicalName,
+      type: resource.type,
+    })));
+    this.outputChoices.set([]);
+    const types = [...new Set(resources.map(({ resource }) => resource.type))];
+    const descriptors = await Promise.all(types.map((type) => firstValueFrom(this.catalog.type(project.catalogVersion, type))));
+    const byType = new Map(types.map((type, index) => [type, descriptors[index]]));
+    const choices = resources.flatMap(({ componentCode, resource }) => {
+      const descriptor = byType.get(resource.type);
+      if (!descriptor || typeof descriptor !== 'object' || Array.isArray(descriptor)) return [];
+      const outputs = descriptor['outputs'];
+      if (!Array.isArray(outputs)) return [];
+      return outputs.flatMap((output): ResourceOutputChoice[] => {
+        if (typeof output !== 'object' || output === null || Array.isArray(output)) return [];
+        const outputName = output['name'];
+        return typeof outputName === 'string' && output['sensitive'] !== true
+          ? [{
+            resourceId: resource.id,
+            componentCode,
+            resourceName: resource.logicalName,
+            resourceType: resource.type,
+            outputName,
+          }]
+          : [];
       });
-      this.outputChoices.set(choices);
-    } catch {
-      this.outputChoices.set([]);
-    }
+    });
+    this.outputChoices.set(choices);
   }
 
   private defaultSecretName(name: string): string {

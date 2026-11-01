@@ -36,6 +36,7 @@ class StaticTranslationLoader implements TranslocoLoader {
         cancel: 'Annuler',
         confirmDeleteByName: 'Tapez {name} pour confirmer',
         delete: 'Supprimer du modèle',
+        deleteNamed: 'Supprimer {{name}} du modèle',
         deletedWithResource: 'Supprimé avec elle',
         deleteAlreadyRemoved: 'Cette ressource a déjà été supprimée par une autre action.',
         deleteSuccess: 'Ressource supprimée du modèle.',
@@ -60,6 +61,8 @@ class StaticTranslationLoader implements TranslocoLoader {
         dependsOn: 'Dépend de',
         usedBy: 'Utilisé par',
         noDependencies: 'Aucun composant',
+        validationLoading: 'Calcul des dépendances…',
+        validationUnavailable: 'Dépendances indisponibles.',
       },
     });
   }
@@ -119,7 +122,14 @@ async function renderComponentDetail(
     deletionImpact: ReturnType<typeof vi.fn>;
     delete: ReturnType<typeof vi.fn>;
   },
-  validation = { orderedComponents: [] as { id: string; dependsOn: string[]; usedBy: string[] }[] },
+  validation = {
+    orderedComponents: [{ id: testComponentId, dependsOn: [], usedBy: [] }] as {
+      id: string;
+      dependsOn: string[];
+      usedBy: string[];
+    }[],
+  },
+  validationResult = of(validation),
 ) {
   await TestBed.configureTestingModule({
     imports: [ComponentDetail],
@@ -139,7 +149,7 @@ async function renderComponentDetail(
         useValue: {
           environments: vi.fn().mockReturnValue(of([])),
           myPermissions: vi.fn().mockReturnValue(of({ permissions: ['model.edit'] })),
-          validation: vi.fn().mockReturnValue(of(validation)),
+          validation: vi.fn().mockReturnValue(validationResult),
         },
       },
       { provide: ResourcesService, useValue: resourceService },
@@ -163,6 +173,9 @@ async function renderComponentDetail(
   );
   await harness.fixture.whenStable();
   harness.fixture.detectChanges();
+  await vi.waitFor(() =>
+    expect(harness.routeNativeElement?.querySelector('.component-detail')).not.toBeNull(),
+  );
   return { harness, componentElement: harness.routeNativeElement! };
 }
 
@@ -191,6 +204,109 @@ function confirmTestDeletion(harness: RouterTestingHarness, dialog: HTMLElement)
 }
 
 describe('ComponentDetail', () => {
+  it('reloads when Angular reuses the component route for another component', async () => {
+    const secondComponentId = '77777777-7777-4777-8777-777777777777';
+    const firstComponent = createTestComponent();
+    const secondComponent = {
+      ...createTestComponent(),
+      id: secondComponentId,
+      name: 'Data',
+      code: 'data',
+    };
+    const componentService = {
+      get: vi.fn((_projectId: string, componentId: string) =>
+        of(componentId === testComponentId ? firstComponent : secondComponent),
+      ),
+    };
+    const resourceService = {
+      deletionImpact: vi.fn(),
+      delete: vi.fn(),
+    };
+    const { harness } = await renderComponentDetail(componentService, resourceService);
+    const secondComponentUrl =
+      `/o/33333333-3333-4333-8333-333333333333/projects/${testProjectId}/components/${secondComponentId}`;
+
+    await harness.navigateByUrl(secondComponentUrl, ComponentDetail);
+
+    await vi.waitFor(() =>
+      expect(componentService.get).toHaveBeenLastCalledWith(testProjectId, secondComponentId),
+    );
+    await vi.waitFor(() => expect(harness.routeNativeElement?.textContent).toContain('Data'));
+    expect(harness.routeNativeElement?.textContent).not.toContain('Core');
+  });
+
+  it('clears the prior component deletion notice when reusing the route', async () => {
+    const secondComponentId = '77777777-7777-4777-8777-777777777777';
+    const firstComponent = createTestComponent();
+    const secondComponent = {
+      ...createTestComponent(),
+      id: secondComponentId,
+      name: 'Data',
+      code: 'data',
+    };
+    const componentService = {
+      get: vi.fn()
+        .mockReturnValueOnce(of(firstComponent))
+        .mockReturnValueOnce(of({ ...firstComponent, resources: [] }))
+        .mockReturnValue(of(secondComponent)),
+    };
+    const impact: ResourceDeletionImpactResponse = {
+      resourceVersion: 8,
+      status: 'Partial',
+      severity: 'Information',
+      items: [],
+      pendingAreas: ['IncomingLinks'],
+    };
+    const resourceService = {
+      deletionImpact: vi.fn().mockReturnValue(of(impact)),
+      delete: vi.fn().mockReturnValue(of(undefined)),
+    };
+    const { harness, componentElement } = await renderComponentDetail(componentService, resourceService);
+
+    const dialog = await openTestDeleteDialog(harness, componentElement);
+    confirmTestDeletion(harness, dialog);
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+    expect(componentElement.querySelector('[role="status"]')?.textContent).toContain(
+      'Ressource supprimée du modèle.',
+    );
+
+    await harness.navigateByUrl(
+      `/o/33333333-3333-4333-8333-333333333333/projects/${testProjectId}/components/${secondComponentId}`,
+      ComponentDetail,
+    );
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+    await vi.waitFor(() => expect(componentElement.textContent).toContain('Data'));
+
+    expect(componentElement.querySelector('.component-detail__error[role="status"]')).toBeNull();
+    expect(componentElement.textContent).not.toContain('Ressource supprimée du modèle.');
+  });
+
+  it('includes the resource name in each delete button accessible name', async () => {
+    const component = createTestComponent();
+    component.resources.push({
+      ...createTestResource(),
+      id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      logicalName: 'backup',
+    });
+    const { componentElement } = await renderComponentDetail(
+      { get: vi.fn().mockReturnValue(of(component)) },
+      { deletionImpact: vi.fn(), delete: vi.fn() },
+    );
+
+    const deleteButtons = [
+      ...componentElement.querySelectorAll<HTMLButtonElement>(
+        '.component-detail__resources app-ds-button button',
+      ),
+    ];
+
+    expect(deleteButtons.map((button) => button.getAttribute('aria-label'))).toEqual([
+      'Supprimer main du modèle',
+      'Supprimer backup du modèle',
+    ]);
+  });
+
   it('renders component dependencies returned by project validation', async () => {
     const { componentElement } = await renderComponentDetail(
       { get: vi.fn().mockReturnValue(of(createTestComponent())) },
@@ -205,6 +321,14 @@ describe('ComponentDetail', () => {
         ],
       },
     );
+    await vi.waitFor(() =>
+      expect(
+        componentElement
+          .querySelector('.component-detail__dependencies')
+          ?.textContent?.replace(/\s+/g, ' ')
+          .trim(),
+      ).toContain('core, data, platform'),
+    );
 
     const dependencySection = componentElement.querySelector(
       '.component-detail__dependencies section:first-child',
@@ -213,6 +337,36 @@ describe('ComponentDetail', () => {
     expect(dependencySection?.querySelector('p')?.textContent?.replace(/\s+/g, ' ').trim()).toContain(
       'core, data, platform',
     );
+  });
+
+  it('keeps the component screen available when project validation fails', async () => {
+    const { componentElement } = await renderComponentDetail(
+      { get: vi.fn().mockReturnValue(of(createTestComponent())) },
+      { deletionImpact: vi.fn(), delete: vi.fn() },
+      undefined,
+      throwError(() => new Error('Validation unavailable.')),
+    );
+    await vi.waitFor(() =>
+      expect(componentElement.textContent).toContain('Dépendances indisponibles.'),
+    );
+
+    expect(componentElement.querySelector('.component-detail')).not.toBeNull();
+    expect(componentElement.textContent).toContain('Dépendances indisponibles.');
+    expect(componentElement.textContent).not.toContain('Le composant n’a pas pu être chargé.');
+    expect(componentElement.querySelector('[aria-labelledby="resources-heading"]')).not.toBeNull();
+  });
+
+  it('does not report no dependencies when validation omits this component', async () => {
+    const { componentElement } = await renderComponentDetail(
+      { get: vi.fn().mockReturnValue(of(createTestComponent())) },
+      { deletionImpact: vi.fn(), delete: vi.fn() },
+      { orderedComponents: [] },
+    );
+    await vi.waitFor(() =>
+      expect(componentElement.textContent).toContain('Dépendances indisponibles.'),
+    );
+
+    expect(componentElement.textContent).not.toContain('Aucun composant');
   });
 
   it('renders link impacts as messages instead of resource names', async () => {
@@ -324,7 +478,9 @@ describe('ComponentDetail', () => {
     const projectService = {
       environments: vi.fn().mockReturnValue(of([])),
       myPermissions: vi.fn().mockReturnValue(of({ permissions: ['model.edit'] })),
-      validation: vi.fn().mockReturnValue(of({ orderedComponents: [] })),
+      validation: vi.fn().mockReturnValue(
+        of({ orderedComponents: [{ id: componentId, dependsOn: [], usedBy: [] }] }),
+      ),
     };
     const resourceService = {
       deletionImpact: vi
@@ -369,6 +525,9 @@ describe('ComponentDetail', () => {
     );
     await harness.fixture.whenStable();
     harness.fixture.detectChanges();
+    await vi.waitFor(() =>
+      expect(harness.routeNativeElement?.querySelector('.component-detail__resources')).not.toBeNull(),
+    );
 
     const componentElement = harness.routeNativeElement!;
     const openDeleteButton = () =>
@@ -474,7 +633,9 @@ describe('ComponentDetail', () => {
     const projectService = {
       environments: vi.fn().mockReturnValue(of([])),
       myPermissions: vi.fn().mockReturnValue(of({ permissions: ['model.edit'] })),
-      validation: vi.fn().mockReturnValue(of({ orderedComponents: [] })),
+      validation: vi.fn().mockReturnValue(
+        of({ orderedComponents: [{ id: componentId, dependsOn: [], usedBy: [] }] }),
+      ),
     };
     const resourceService = {
       deletionImpact: vi.fn().mockReturnValue(of(impact)),
@@ -516,6 +677,9 @@ describe('ComponentDetail', () => {
     );
     await harness.fixture.whenStable();
     harness.fixture.detectChanges();
+    await vi.waitFor(() =>
+      expect(harness.routeNativeElement?.querySelector('.component-detail__resources')).not.toBeNull(),
+    );
 
     const componentElement = harness.routeNativeElement!;
     componentElement
@@ -616,7 +780,9 @@ describe('ComponentDetail', () => {
     const projectService = {
       environments: vi.fn().mockReturnValue(of([])),
       myPermissions: vi.fn().mockReturnValue(of({ permissions: ['model.edit'] })),
-      validation: vi.fn().mockReturnValue(of({ orderedComponents: [] })),
+      validation: vi.fn().mockReturnValue(
+        of({ orderedComponents: [{ id: componentId, dependsOn: [], usedBy: [] }] }),
+      ),
     };
     const resourceService = {
       deletionImpact: vi.fn().mockReturnValue(of(impact)),
@@ -662,6 +828,9 @@ describe('ComponentDetail', () => {
     );
     await harness.fixture.whenStable();
     harness.fixture.detectChanges();
+    await vi.waitFor(() =>
+      expect(harness.routeNativeElement?.querySelector('.component-detail__resources')).not.toBeNull(),
+    );
 
     const componentElement = harness.routeNativeElement!;
     componentElement
@@ -853,7 +1022,9 @@ describe('ComponentDetail', () => {
     const projectService = {
       environments: vi.fn().mockReturnValue(of([])),
       myPermissions: vi.fn().mockReturnValue(of({ permissions: ['model.edit'] })),
-      validation: vi.fn().mockReturnValue(of({ orderedComponents: [] })),
+      validation: vi.fn().mockReturnValue(
+        of({ orderedComponents: [{ id: componentId, dependsOn: [], usedBy: [] }] }),
+      ),
     };
     const resourceService = {
       deletionImpact: vi.fn().mockReturnValue(of(impact)),
@@ -899,6 +1070,9 @@ describe('ComponentDetail', () => {
     );
     await harness.fixture.whenStable();
     harness.fixture.detectChanges();
+    await vi.waitFor(() =>
+      expect(harness.routeNativeElement?.querySelector('.component-detail__resources')).not.toBeNull(),
+    );
 
     const componentElement = harness.routeNativeElement!;
     componentElement

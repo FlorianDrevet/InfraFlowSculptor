@@ -20,7 +20,7 @@ public sealed class ValidationEngine(
             snapshot,
             catalog,
             ordering,
-            NamingEngine.Preview(snapshot),
+            NamingEngine.Preview(snapshot, linkKinds),
             linkKinds,
             deploymentStrategies);
         var findings = ruleSources

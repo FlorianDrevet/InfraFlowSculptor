@@ -182,6 +182,30 @@ public sealed class AppSettingAggregateTests
         Assert.Equal("VAL-PAR-SECRET-PROPRIETAIRE", Assert.Single(duplicateWriter.Errors).Code);
     }
 
+    [Fact]
+    public void DEC105PipelineSecretTrailingNewlineCannotBypassSingleWriterRule()
+    {
+        var vaultId = Guid.NewGuid();
+        var first = Create(new AppSettingDefinition(
+            "Payments__ApiKey",
+            AppSettingSourceKind.KeyVaultSecret,
+            KeyVaultResourceId: vaultId,
+            SecretName: "payments-api-key",
+            SecretFeedKind: AppSettingSecretFeedKind.PipelineSecret,
+            PipelineVariableName: "MAIN_PAYMENTS_API_KEY")).Value;
+
+        var duplicateWriter = Create(new AppSettingDefinition(
+            "Checkout__ApiKey",
+            AppSettingSourceKind.KeyVaultSecret,
+            KeyVaultResourceId: vaultId,
+            SecretName: "payments-api-key\n",
+            SecretFeedKind: AppSettingSecretFeedKind.PipelineSecret,
+            PipelineVariableName: "CHECKOUT_PAYMENTS_API_KEY"), [first]);
+
+        Assert.True(duplicateWriter.IsError);
+        Assert.Equal("VAL-PAR-SECRET-PROPRIETAIRE", Assert.Single(duplicateWriter.Errors).Code);
+    }
+
     private static ErrorOr<AppSettingAggregate> Create(
         AppSettingDefinition definition,
         IReadOnlyCollection<AppSettingAggregate>? existing = null) => AppSettingAggregate.Create(

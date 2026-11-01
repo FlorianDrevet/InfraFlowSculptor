@@ -33,22 +33,33 @@
             <label class="property-grid__boolean">
               <input
                 type="checkbox"
+                [attr.data-property-grid-control]="controlKey(row, null)"
                 [attr.aria-label]="resourceCellLabel(row)"
-                [checked]="row.resource.value === true"
+                [checked]="controlValue(row, null) === true"
                 [disabled]="disabled()"
                 (change)="onValueChange($event, row, null)"
               />
-              <span>{{ formatValue(row.resource.value) }}</span>
+              <span>{{ formatValue(controlValue(row, null), row.resource.provenance) }}</span>
             </label>
           } @else if (row.definition.kind === 'enum') {
             <select
               [attr.aria-label]="resourceCellLabel(row)"
-              [value]="formatValue(row.resource.value)"
+              [attr.data-property-grid-control]="controlKey(row, null)"
               [disabled]="disabled()"
               (change)="onValueChange($event, row, null)"
             >
               @for (option of row.definition.values ?? []; track $index) {
-                <option [value]="formatOption(option)">{{ formatOption(option) }}</option>
+                <option
+                  [value]="enumOptionKey(option)"
+                  [selected]="enumOptionKey(option) === enumOptionKey(enumValue(row, null))"
+                >
+                  {{ formatOption(option) }}
+                </option>
+              }
+              @if (isEnumValueMissing(row.definition.values, enumValue(row, null))) {
+                <option [value]="enumOptionKey(enumValue(row, null))" disabled selected>
+                  {{ formatEnumMissingValue(enumValue(row, null)) }}
+                </option>
               }
             </select>
           } @else if (isCidrList(row)) {
@@ -60,33 +71,35 @@
               [removeLabel]="'resource.removeRange' | transloco"
               [invalidMessage]="'resource.cidrInvalid' | transloco"
               [disabled]="disabled()"
-              [ngModel]="stringArray(row.resource.value)"
+              [ngModel]="stringArray(controlValue(row, null))"
               (ngModelChange)="updateCidrValue(row, null, $event)"
             />
           } @else if (row.definition.kind === 'array') {
             <textarea
+              [attr.data-property-grid-control]="controlKey(row, null)"
               [attr.aria-label]="resourceCellLabel(row)"
-              [value]="formatArrayValue(row.resource.value)"
+              [value]="formatArrayValue(controlValue(row, null))"
               [disabled]="disabled()"
               rows="3"
               (change)="onValueChange($event, row, null)"
             ></textarea>
           } @else {
             <input
+              [attr.data-property-grid-control]="controlKey(row, null)"
               [type]="isNumericDefinition(row.definition.kind) ? 'number' : 'text'"
               [attr.aria-label]="resourceCellLabel(row)"
               [step]="row.definition.kind === 'integer' ? '1' : 'any'"
               [min]="row.definition.minimum ?? null"
               [max]="row.definition.maximum ?? null"
-              [value]="
-                row.resource.value === null ? '' : formatValue(row.resource.value)
-              "
+              [value]="controlInputValue(row, null)"
               [disabled]="disabled()"
               (change)="onValueChange($event, row, null)"
             />
           }
         } @else {
-          <span class="property-grid__readonly">{{ formatValue(row.resource.value) }}</span>
+          <span class="property-grid__readonly">
+            {{ formatValue(row.resource.value, row.resource.provenance) }}
+          </span>
         }
         <app-provenance [value]="row.resource.provenance" />
       </div>
@@ -107,22 +120,37 @@
               <label class="property-grid__boolean">
                 <input
                   type="checkbox"
+                  [attr.data-property-grid-control]="controlKey(row, cell.targetId)"
                   [attr.aria-label]="targetCellLabel(row, cell.code)"
-                  [checked]="cell.value === true"
+                  [checked]="controlValue(row, cell.targetId) === true"
                   [disabled]="disabled()"
                   (change)="onValueChange($event, row, cell.targetId)"
                 />
-                <span>{{ formatValue(cell.value) }}</span>
+                <span>
+                  {{ formatValue(controlValue(row, cell.targetId), cell.provenance) }}
+                </span>
               </label>
             } @else if (row.definition.kind === 'enum') {
               <select
                 [attr.aria-label]="targetCellLabel(row, cell.code)"
-                [value]="formatValue(cell.value)"
+                [attr.data-property-grid-control]="controlKey(row, cell.targetId)"
                 [disabled]="disabled()"
                 (change)="onValueChange($event, row, cell.targetId)"
               >
                 @for (option of row.definition.values ?? []; track $index) {
-                  <option [value]="formatOption(option)">{{ formatOption(option) }}</option>
+                  <option
+                    [value]="enumOptionKey(option)"
+                    [selected]="
+                      enumOptionKey(option) === enumOptionKey(enumValue(row, cell.targetId))
+                    "
+                  >
+                    {{ formatOption(option) }}
+                  </option>
+                }
+                @if (isEnumValueMissing(row.definition.values, enumValue(row, cell.targetId))) {
+                  <option [value]="enumOptionKey(enumValue(row, cell.targetId))" disabled selected>
+                    {{ formatEnumMissingValue(enumValue(row, cell.targetId)) }}
+                  </option>
                 }
               </select>
             } @else if (isCidrList(row)) {
@@ -134,31 +162,35 @@
                 [removeLabel]="'resource.removeRange' | transloco"
                 [invalidMessage]="'resource.cidrInvalid' | transloco"
                 [disabled]="disabled()"
-                [ngModel]="stringArray(cell.value)"
+                [ngModel]="stringArray(controlValue(row, cell.targetId))"
                 (ngModelChange)="updateCidrValue(row, cell.targetId, $event)"
               />
             } @else if (row.definition.kind === 'array') {
               <textarea
+                [attr.data-property-grid-control]="controlKey(row, cell.targetId)"
                 [attr.aria-label]="targetCellLabel(row, cell.code)"
-                [value]="formatArrayValue(cell.value)"
+                [value]="formatArrayValue(controlValue(row, cell.targetId))"
                 [disabled]="disabled()"
                 rows="3"
                 (change)="onValueChange($event, row, cell.targetId)"
               ></textarea>
             } @else {
               <input
+                [attr.data-property-grid-control]="controlKey(row, cell.targetId)"
                 [type]="isNumericDefinition(row.definition.kind) ? 'number' : 'text'"
                 [attr.aria-label]="targetCellLabel(row, cell.code)"
                 [step]="row.definition.kind === 'integer' ? '1' : 'any'"
                 [min]="row.definition.minimum ?? null"
                 [max]="row.definition.maximum ?? null"
-                [value]="cell.value === null ? '' : formatValue(cell.value)"
+                [value]="controlInputValue(row, cell.targetId)"
                 [disabled]="disabled()"
                 (change)="onValueChange($event, row, cell.targetId)"
               />
             }
           } @else {
-            <span class="property-grid__readonly">{{ formatValue(cell.value) }}</span>
+            <span class="property-grid__readonly">
+              {{ formatValue(cell.value, cell.provenance) }}
+            </span>
           }
           @if (cell.provenance) {
             <app-provenance [value]="cell.provenance" />

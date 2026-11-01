@@ -208,12 +208,72 @@
           'component.cancel' | transloco
         }}</app-ds-button>
         @if (canManage()) {
-          <app-ds-button variant="primary" type="submit" [disabled]="saving()">
+          <app-ds-button
+            variant="primary"
+            type="submit"
+            [disabled]="saving() || savingDefaultLogAnalytics()"
+          >
             {{ (saving() ? 'component.saving' : 'component.save') | transloco }}
           </app-ds-button>
         }
       </div>
     </form>
+
+    @if (!isCreating() && component()) {
+      <section class="component-editor__section" aria-labelledby="component-exploitation-title">
+        <h3 id="component-exploitation-title">{{ 'component.exploitation' | transloco }}</h3>
+        @if (canManage()) {
+          <label class="component-editor__select-label" for="default-log-analytics">
+            {{ 'component.defaultLogAnalytics' | transloco }}
+            <span>{{ 'component.chooseDefaultLogAnalytics' | transloco }}</span>
+            <select
+              id="default-log-analytics"
+              name="defaultLogAnalytics"
+              [value]="defaultLogAnalyticsResourceId()"
+              [disabled]="savingDefaultLogAnalytics()"
+              (change)="updateDefaultLogAnalyticsResource($any($event.target).value)"
+            >
+              <option value="">{{ 'component.noDefaultLogAnalytics' | transloco }}</option>
+              @for (option of defaultLogAnalyticsOptions(); track option.resourceId) {
+                <option [value]="option.resourceId">{{ option.label }}</option>
+              }
+            </select>
+          </label>
+          @if (defaultLogAnalyticsOptions().length === 0) {
+            <p class="component-editor__hint" role="status">
+              {{ 'component.defaultLogAnalyticsUnavailable' | transloco }}
+            </p>
+          }
+          <div class="component-editor__actions">
+            <app-ds-button
+              type="button"
+              variant="primary"
+              [disabled]="
+                saving() || savingDefaultLogAnalytics() || !defaultLogAnalyticsHasChanged()
+              "
+              (click)="saveDefaultLogAnalytics()"
+            >
+              {{
+                (savingDefaultLogAnalytics()
+                  ? 'component.savingDefaultLogAnalytics'
+                  : 'component.saveDefaultLogAnalytics'
+                ) | transloco
+              }}
+            </app-ds-button>
+          </div>
+        } @else {
+          <p class="component-editor__read-only-value">
+            <span>{{ 'component.defaultLogAnalytics' | transloco }}</span>
+            {{ defaultLogAnalyticsLabel() ?? ('component.noDefaultLogAnalytics' | transloco) }}
+          </p>
+        }
+        @if (defaultLogAnalyticsError()) {
+          <p class="component-editor__error" role="alert">
+            {{ defaultLogAnalyticsErrorKey() | transloco }}
+          </p>
+        }
+      </section>
+    }
 
     @if (!isCreating() && component()?.firstPublishedAt === null && canManage()) {
       <section class="component-editor__delete">

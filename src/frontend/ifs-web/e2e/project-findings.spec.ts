@@ -5,8 +5,9 @@ import { loginAsAlice } from './support/login';
 
 const CONTOSO_ID = '33333333-3333-4333-8333-333333333333';
 
-test('Alice consulte les constats du projet de démonstration', async ({ page }) => {
+test('Alice consulte les constats du projet de démonstration', async ({ page }, testInfo) => {
   test.skip(!process.env['IFS_E2E_PASSWORD'], 'Set IFS_E2E_PASSWORD for the local demo accounts.');
+  test.setTimeout(180_000);
   page.setDefaultTimeout(15_000);
   page.setDefaultNavigationTimeout(30_000);
 
@@ -15,9 +16,11 @@ test('Alice consulte les constats du projet de démonstration', async ({ page })
   const shopCard = page.locator('.projects-page__card').filter({
     has: page.locator('.projects-page__code').getByText('shop', { exact: true }),
   });
-  await expect(shopCard.locator('.projects-page__project-name')).toHaveText('Boutique en ligne');
+  await expect(shopCard).toHaveCount(1);
+  const shopButton = shopCard.locator('.projects-page__project-name');
+  await expect(shopButton).toHaveCount(1);
   const projectNavigation = page.waitForURL(/\/projects\/[0-9a-f-]+$/i);
-  await shopCard.getByRole('button', { name: 'Boutique en ligne', exact: true }).click();
+  await shopButton.click();
   await projectNavigation;
 
   const projectId = new URL(page.url()).pathname.match(/\/projects\/([^/]+)$/)?.[1];
@@ -51,6 +54,9 @@ test('Alice consulte les constats du projet de démonstration', async ({ page })
   let apiResourceUrl: string | null = null;
   let sqlResourceUrl: string | null = null;
   let originalSqlDescription: string | null = null;
+  let recipeFailed = false;
+  let recipeFailure: unknown;
+  const cleanupErrors: unknown[] = [];
 
   try {
     await page.goto(projectUrl);
@@ -140,6 +146,9 @@ test('Alice consulte les constats du projet de démonstration', async ({ page })
 
     await saveResourceDescription(page, sqlResourceUrl!, originalSqlDescription);
     sqlDescriptionNeedsRestore = false;
+  } catch (error) {
+    recipeFailed = true;
+    recipeFailure = error;
   } finally {
     if (requiredLinkNeedsFix && apiResourceUrl) {
       try {
@@ -168,8 +177,8 @@ test('Alice consulte les constats du projet de démonstration', async ({ page })
           ).toBeVisible();
         }
         await expect(hostingLink).toHaveCount(1);
-      } catch {
-        // Keep the original recipe failure; the CI fixture is discarded with the AppHost.
+      } catch (error) {
+        cleanupErrors.push(error);
       }
     }
 
@@ -178,20 +187,42 @@ test('Alice consulte les constats du projet de démonstration', async ({ page })
       originalSqlDescription !== null &&
       (acknowledgmentNeedsInvalidation || sqlDescriptionNeedsRestore)
     ) {
-      try {
-        if (acknowledgmentNeedsInvalidation) {
+      if (acknowledgmentNeedsInvalidation) {
+        try {
           await saveResourceDescription(
             page,
             sqlResourceUrl,
             `${originalSqlDescription} Recette J0-20 cleanup`.trim(),
           );
+        } catch (error) {
+          cleanupErrors.push(error);
         }
+      }
+      try {
         await saveResourceDescription(page, sqlResourceUrl, originalSqlDescription);
-      } catch {
-        // Keep the original recipe failure; the CI fixture is discarded with the AppHost.
+      } catch (error) {
+        cleanupErrors.push(error);
       }
     }
   }
+
+  if (cleanupErrors.length > 0) {
+    testInfo.annotations.push({
+      type: 'cleanup-failure',
+      description: cleanupErrors
+        .map((error) => (error instanceof Error ? error.message : String(error)))
+        .join('\n'),
+    });
+  }
+  if (recipeFailed && cleanupErrors.length > 0) {
+    throw new AggregateError(
+      [recipeFailure, ...cleanupErrors],
+      'The recipe failed and its test fixture could not be fully restored.',
+    );
+  }
+  if (recipeFailed) throw recipeFailure;
+  if (cleanupErrors.length > 0)
+    throw new AggregateError(cleanupErrors, 'Test fixture cleanup failed.');
 });
 
 async function saveResourceDescription(

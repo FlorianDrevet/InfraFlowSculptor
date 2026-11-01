@@ -10,6 +10,7 @@ using InfraFlowSculptor.Domain.OrganizationAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Domain.UserProfileAggregate;
 using InfraFlowSculptor.Engine.Model;
+using InfraFlowSculptor.Engine.Links;
 using InfraFlowSculptor.Engine.Naming;
 using Mediator;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +23,8 @@ public sealed class CreateProjectFromWizardCommandHandler(
     ICurrentOrganization currentOrganization,
     ICurrentUser currentUser,
     IPlanLimitGuard planLimitGuard,
-    ICatalogProvider catalogProvider)
+    ICatalogProvider catalogProvider,
+    LinkKindRegistry linkKinds)
     : ICommandHandler<CreateProjectFromWizardCommand, ErrorOr<ModelCommandOutcome>>
 {
     public async ValueTask<ErrorOr<ModelCommandOutcome>> Handle(
@@ -79,7 +81,7 @@ public sealed class CreateProjectFromWizardCommandHandler(
                 command.ResourceGroupNameTemplate),
             command.Tags,
             []);
-        var preview = NamingEngine.Preview(snapshot);
+        var preview = NamingEngine.Preview(snapshot, linkKinds);
         if (preview.Issues.Count > 0)
         {
             return preview.Issues

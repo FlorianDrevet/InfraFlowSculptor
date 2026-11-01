@@ -116,7 +116,7 @@
     }
     @if (removalError()) {
       <p class="resource-links__error" role="alert">
-        {{ 'resource.linkRemovalError' | transloco }}
+        {{ removalErrorKey() | transloco }}
       </p>
     }
   }
@@ -167,7 +167,7 @@
                   track identity.kind + ':' + identity.resourceId
                 ) {
                   <option [value]="identity.kind + ':' + (identity.resourceId ?? '')">
-                    {{ identityLabel(identity.kind, identity.resourceName)
+                    {{ identityLabel(identity.kind, identity.resourceId, identity.resourceName)
                     }}{{
                       identity.isDefault ? ' · ' + ('resource.defaultIdentity' | transloco) : ''
                     }}
@@ -346,18 +346,23 @@
         </ul>
         @if (removalError()) {
           <p class="resource-links__error" role="alert">
-            {{ 'resource.linkRemovalError' | transloco }}
+            {{ removalErrorKey() | transloco }}
           </p>
         }
         <footer>
           <app-ds-button variant="ghost" [disabled]="removalBusy()" (click)="closeRemoval()">{{
             'resource.cancel' | transloco
           }}</app-ds-button>
-          <app-ds-button variant="danger" [disabled]="removalBusy()" (click)="confirmRemoval()">{{
-            removalBusy()
-              ? ('resource.removingLink' | transloco)
-              : ('resource.confirmRemoveLink' | transloco)
-          }}</app-ds-button>
+          <app-ds-button
+            variant="danger"
+            [disabled]="removalBusy() || !canEdit() || loadError()"
+            (click)="confirmRemoval()"
+            >{{
+              removalBusy()
+                ? ('resource.removingLink' | transloco)
+                : ('resource.confirmRemoveLink' | transloco)
+            }}</app-ds-button
+          >
         </footer>
       </section>
     </div>

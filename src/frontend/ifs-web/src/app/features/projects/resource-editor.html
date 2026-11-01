@@ -1,10 +1,13 @@
 <section class="resource-editor">
   <a [routerLink]="['../../']">{{ 'resource.backToComponent' | transloco }}</a>
-  @if (loading()) {
+  @if (loading() && (!resource() || !component())) {
     <p role="status">{{ 'resource.loadingResource' | transloco }}</p>
-  } @else if (loadError() || !resource() || !component()) {
+  } @else if (!resource() || !component()) {
     <p class="resource-editor__error" role="alert">{{ 'resource.loadError' | transloco }}</p>
   } @else {
+    @if (loadError()) {
+      <p class="resource-editor__error" role="alert">{{ 'resource.refreshError' | transloco }}</p>
+    }
     <header class="resource-editor__header">
       <app-ds-resource-icon [type]="resource()!.type" [size]="40" />
       <div>
@@ -75,7 +78,7 @@
     </nav>
 
     @if (actionError() && !conflict()) {
-      <p class="resource-editor__error" role="alert">{{ 'resource.saveError' | transloco }}</p>
+      <p class="resource-editor__error" role="alert">{{ actionErrorKey() | transloco }}</p>
     }
 
     @if (activeTab() === 'general') {
@@ -99,12 +102,16 @@
                       [name]="'resourceId-' + target.id"
                       [value]="currentExistingId(target.id)"
                       required
+                      [disabled]="saving() || loadError() || !canEditModel()"
                       (input)="updateExistingId(target.id, $any($event.target).value)"
                     />
                   </label>
-                  <app-ds-button size="sm" type="submit" [disabled]="saving() || !canEditModel()">{{
-                    'resource.save' | transloco
-                  }}</app-ds-button>
+                  <app-ds-button
+                    size="sm"
+                    type="submit"
+                    [disabled]="saving() || loadError() || !canEditModel()"
+                    >{{ 'resource.save' | transloco }}</app-ds-button
+                  >
                 </form>
               }
               <p class="resource-editor__note">{{ 'resource.existingSafety' | transloco }}</p>
@@ -127,6 +134,7 @@
                 <input
                   name="resourceDescription"
                   [value]="descriptionDraft()"
+                  [disabled]="saving() || loadError() || !canEditModel()"
                   (input)="updateDescription($any($event.target).value)"
                 />
               </label>
@@ -136,6 +144,7 @@
                   name="resourceTags"
                   rows="2"
                   [value]="tagsDraft()"
+                  [disabled]="saving() || loadError() || !canEditModel()"
                   (input)="updateTags($any($event.target).value)"
                 ></textarea>
                 <span>{{ 'resource.tagsHelp' | transloco }}</span>
@@ -149,7 +158,7 @@
                 class="resource-editor__metadata-save"
                 variant="primary"
                 type="submit"
-                [disabled]="saving() || !canEditModel()"
+                [disabled]="saving() || loadError() || !canEditModel()"
                 >{{ 'resource.save' | transloco }}</app-ds-button
               >
             </form>
@@ -162,7 +171,11 @@
               @if (!hasForcedNames() && !showForcedNameEditor()) {
                 <p class="resource-editor__empty-forced-name">
                   {{ 'resource.noForcedNames' | transloco }}
-                  <button type="button" (click)="startForcedNameEdit()">
+                  <button
+                    type="button"
+                    [disabled]="saving() || loadError() || !canEditModel()"
+                    (click)="startForcedNameEdit()"
+                  >
                     {{ 'resource.forceName' | transloco }}
                   </button>
                 </p>
@@ -177,6 +190,7 @@
                         [value]="currentForcedName(target.id)"
                         [placeholder]="'resource.forcedNamePlaceholder' | transloco"
                         maxlength="90"
+                        [disabled]="saving() || loadError() || !canEditModel()"
                         (input)="updateForcedName(target.id, $any($event.target).value)"
                       />
                     </label>
@@ -184,7 +198,10 @@
                       size="sm"
                       type="submit"
                       [disabled]="
-                        saving() || !canEditModel() || !currentForcedName(target.id).trim()
+                        saving() ||
+                        loadError() ||
+                        !canEditModel() ||
+                        !currentForcedName(target.id).trim()
                       "
                       >{{ 'resource.save' | transloco }}</app-ds-button
                     >
@@ -205,13 +222,14 @@
                     <input
                       type="checkbox"
                       role="switch"
+                      [attr.data-presence-target-id]="target.id"
                       [attr.aria-label]="
                         'resource.presenceForTarget' | transloco: { code: target.code }
                       "
-                      [attr.aria-checked]="target.isPresent"
-                      [checked]="target.isPresent"
+                      [attr.aria-checked]="currentPresence(target)"
+                      [ngModel]="currentPresence(target)"
                       [disabled]="!canTogglePresence(target)"
-                      (change)="setPresence(target)"
+                      (ngModelChange)="setPresence(target, $event)"
                     />
                     <span>{{ target.code }}</span>
                   </label>
@@ -264,7 +282,8 @@
         <div class="resource-editor__grid-scroll">
           <app-property-grid
             [rows]="rows()"
-            [disabled]="saving() || resource()!.isExisting || !canEditModel()"
+            [syncRevision]="syncRevision()"
+            [disabled]="saving() || loadError() || resource()!.isExisting || !canEditModel()"
             (updateValue)="updateProperty($event)"
             (clearOverride)="clearOverride($event.property, $event.targetId)"
           />
@@ -275,33 +294,34 @@
         [projectId]="projectId()"
         [component]="component()!"
         [resource]="resource()!"
-        [canEdit]="canEditModel()"
+        [canEdit]="canEditModel() && !loadError()"
       />
     } @else if (activeTab() === 'identity') {
       <app-resource-identity-panel
         [projectId]="projectId()"
         [component]="component()!"
         [resource]="resource()!"
-        [canEdit]="canEditModel()"
+        [canEdit]="canEditModel() && !loadError()"
       />
     } @else if (activeTab() === 'settings') {
       <app-resource-app-settings-panel
         [projectId]="projectId()"
         [component]="component()!"
         [resource]="resource()!"
-        [canEdit]="canEditModel()"
+        [canEdit]="canEditModel() && !loadError()"
       />
     } @else if (activeTab() === 'application') {
       <app-resource-application-panel
         [projectId]="projectId()"
         [componentId]="componentId()"
         [resource]="resource()!"
-        [canEdit]="canEditModel()"
+        [canEdit]="canEditModel() && !loadError()"
       />
     } @else if (activeTab() === 'network') {
       <app-resource-network-panel
         [rows]="networkRows()"
-        [disabled]="saving() || resource()!.isExisting || !canEditModel()"
+        [syncRevision]="syncRevision()"
+        [disabled]="saving() || loadError() || resource()!.isExisting || !canEditModel()"
         (updateValue)="updateProperty($event)"
         (clearOverride)="clearOverride($event.property, $event.targetId)"
       />
@@ -354,12 +374,17 @@
           </table>
         </div>
         <footer>
-          <app-ds-button [disabled]="saving()" (click)="abandonConflict()">{{
+          <app-ds-button [disabled]="saving() || loadError()" (click)="abandonConflict()">{{
             'resource.abandon' | transloco
           }}</app-ds-button>
-          <app-ds-button variant="primary" [disabled]="saving()" (click)="retryConflict()">{{
-            'resource.resumeVersion' | transloco: { version: details.currentVersion }
-          }}</app-ds-button>
+          <app-ds-button
+            variant="primary"
+            [disabled]="saving() || loadError()"
+            (click)="retryConflict()"
+            >{{
+              'resource.resumeVersion' | transloco: { version: details.currentVersion }
+            }}</app-ds-button
+          >
         </footer>
       </section>
     </div>

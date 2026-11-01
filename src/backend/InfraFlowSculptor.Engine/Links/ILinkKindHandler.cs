@@ -37,6 +37,12 @@ public interface ILinkKindHandler : IKeyed<LinkKind>
 
     bool Supports(CatalogResourceTypeDescriptor source, CatalogResourceTypeDescriptor target);
 
+    bool SupportsComponentScope(
+        CatalogResourceTypeDescriptor source,
+        CatalogResourceTypeDescriptor target,
+        Guid sourceComponentId,
+        Guid targetComponentId);
+
     IReadOnlyList<LinkSnapshot> GetImplicitLinks(ModelSnapshot snapshot, CatalogVersion catalog);
 
     IReadOnlyList<ImplicitApplicationSetting> GetImplicitApplicationSettings(

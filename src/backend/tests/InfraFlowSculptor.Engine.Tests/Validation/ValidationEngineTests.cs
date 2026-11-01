@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
+using System.Security.Cryptography;
+using System.Text;
 using InfraFlowSculptor.Catalog;
 using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.Common;
@@ -19,6 +21,8 @@ namespace InfraFlowSculptor.Engine.Tests.Validation;
 public sealed class ValidationEngineTests
 {
     private static readonly CatalogVersion Catalog = CatalogLoader.Load().GetVersion("2026.10-pilot.3")!;
+    private static readonly CatalogVersion CatalogWithSqlAdministrator = CatalogLoader.Load().GetVersion("2026.10-pilot.4")!;
+    private static readonly CatalogVersion CatalogWithResourceConstraints = CatalogLoader.Load().GetVersion("2026.10-pilot.5")!;
 
     [Fact]
     public void ReferenceProjectProducesOnlyExternalScopeInfoAndSqlAdminWarning()
@@ -163,6 +167,44 @@ public sealed class ValidationEngineTests
     }
 
     [Fact]
+    public void RequiredSqlHostingLinkDoesNotOfferAnIncompatibleCrossComponentFix()
+    {
+        var devId = Guid.NewGuid();
+        var prdId = Guid.NewGuid();
+        var databaseComponentId = Guid.NewGuid();
+        var serverComponentId = Guid.NewGuid();
+        var database = Resource("SqlDatabase", "orders", Guid.NewGuid());
+        var localServer = Resource("SqlServer", "local-server", database.ResourceGroupId);
+        var server = Resource("SqlServer", "orders-server", Guid.NewGuid());
+        var secondServer = Resource("SqlServer", "orders-server-secondary", Guid.NewGuid());
+        var databaseComponent = Component(databaseComponentId, "data", "PerEnvironment", [database, localServer], [devId, prdId]);
+        var serverComponent = Component(serverComponentId, "platform", "PerEnvironment", [server, secondServer], [devId, prdId]);
+        var firstInvalidLink = Link(databaseComponentId, database.Id, serverComponentId, server.Id, LinkKind.Hosting);
+        var secondInvalidLink = Link(databaseComponentId, database.Id, serverComponentId, secondServer.Id, LinkKind.Hosting);
+        var snapshot = Snapshot(
+            [databaseComponent, serverComponent],
+            [firstInvalidLink, secondInvalidLink],
+            [
+                new EnvironmentSnapshot("dev", "francecentral") { Id = devId, SubscriptionId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc") },
+                new EnvironmentSnapshot("prd", "francecentral") { Id = prdId, SubscriptionId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc") }
+            ]);
+
+        var result = CreateEngine().Evaluate(snapshot, Catalog);
+
+        var requiredFinding = Assert.Single(result.Findings, finding =>
+            finding.Code == "VAL-LIA-OBLIGATOIRE" && finding.Subject.Id == database.Id);
+        Assert.Null(requiredFinding.FixCode);
+        var scopeFinding = Assert.Single(result.Findings, finding =>
+            finding.Code == "VAL-LIA-COMPOSANT" && finding.Subject.Id == database.Id);
+        Assert.Equal(FindingSeverity.Error, scopeFinding.Severity);
+        Assert.Contains("même composant", scopeFinding.MessageFr, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("same component", scopeFinding.MessageEn, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(
+            new[] { firstInvalidLink.Id, secondInvalidLink.Id }.Order(),
+            scopeFinding.RelatedLinkIds);
+    }
+
+    [Fact]
     public void RequiredLinkRuleSkipsAnIssueWhoseResourceIsMissingFromTheSnapshot()
     {
         var snapshot = Snapshot([], []);
@@ -269,6 +311,532 @@ public sealed class ValidationEngineTests
     }
 
     [Fact]
+    public void ResourceConstraintRuleChecksReplicaRangeForEachEffectiveEnvironment()
+    {
+        using var invalidMinimum = JsonDocument.Parse("11");
+        using var validMaximum = JsonDocument.Parse("10");
+        var fixture = ReferenceProject();
+        var productionId = fixture.Snapshot.Environments.Single(environment => environment.Code == "prd").Id;
+        var app = FindResource(fixture.Snapshot, fixture.ContainerAppId);
+        var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(app.Overrides)
+        {
+            [productionId] = new Dictionary<string, JsonElement>
+            {
+                ["minReplicas"] = invalidMinimum.RootElement.Clone(),
+                ["maxReplicas"] = validMaximum.RootElement.Clone()
+            }
+        };
+        var snapshot = ReplaceResource(fixture.Snapshot, app with { Overrides = overrides });
+
+        var result = CreateEngine([new ResourceConstraintRule()]).Evaluate(snapshot, CatalogWithResourceConstraints);
+        var finding = Assert.Single(result.Findings, value => value.Code == "VAL-RES-CONTRAINTE"
+            && value.Subject.Id == app.Id);
+
+        Assert.Equal(productionId, finding.EnvironmentId);
+        Assert.Equal("constraint-replica-range", finding.DetailKey);
+        Assert.Contains("must be less than or equal to", finding.MessageEn, StringComparison.Ordinal);
+        Assert.DoesNotContain("doit être inférieur ou égal à", finding.MessageEn, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleAcceptsNumericEnumValuesDeclaredByLogAnalyticsDescriptor()
+    {
+        using var capacityReservationName = JsonDocument.Parse("\"CapacityReservation\"");
+        using var capacityReservationLevel = JsonDocument.Parse("100");
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var workspace = fixture.Snapshot.Components.SelectMany(component => component.Resources)
+            .Single(resource => resource.Type == "LogAnalyticsWorkspace");
+        var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(workspace.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["sku"] = capacityReservationName.RootElement.Clone(),
+                ["capacityReservationLevel"] = capacityReservationLevel.RootElement.Clone()
+            }
+        };
+        var snapshot = ReplaceResource(fixture.Snapshot, workspace with { Overrides = overrides });
+
+        var result = CreateEngine([new ResourceConstraintRule()]).Evaluate(snapshot, CatalogWithResourceConstraints);
+
+        Assert.DoesNotContain(result.Findings, finding => finding.Code == "VAL-RES-CONTRAINTE"
+            && finding.Subject.Id == workspace.Id && finding.EnvironmentId == developmentId);
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleAppliesAllowedTuplesOnlyWhenTheProfileConditionMatches()
+    {
+        using var cpu = JsonDocument.Parse("1");
+        using var memory = JsonDocument.Parse("\"1Gi\"");
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var app = FindResource(fixture.Snapshot, fixture.ContainerAppId);
+        var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(app.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["cpu"] = cpu.RootElement.Clone(),
+                ["memoryGi"] = memory.RootElement.Clone()
+            }
+        };
+        var snapshot = ReplaceResource(fixture.Snapshot, app with { Overrides = overrides });
+
+        var result = CreateEngine([new ResourceConstraintRule()]).Evaluate(snapshot, CatalogWithResourceConstraints);
+
+        var finding = Assert.Single(result.Findings, value => value.Code == "VAL-RES-CONTRAINTE"
+            && value.Subject.Id == app.Id);
+        Assert.Equal(developmentId, finding.EnvironmentId);
+        Assert.Equal("constraint-consumption-cpu-memory", finding.DetailKey);
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleDoesNotThrowWhenAComparedEffectiveValueHasTheWrongType()
+    {
+        using var invalidReplicaCount = JsonDocument.Parse("\"two\"");
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var app = FindResource(fixture.Snapshot, fixture.ContainerAppId);
+        var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(app.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["minReplicas"] = invalidReplicaCount.RootElement.Clone()
+            }
+        };
+        var snapshot = ReplaceResource(fixture.Snapshot, app with { Overrides = overrides });
+
+        var result = CreateEngine([new ResourceConstraintRule()]).Evaluate(snapshot, CatalogWithResourceConstraints);
+
+        Assert.Contains(result.Findings, finding => finding.Code == "VAL-RES-CONTRAINTE"
+            && finding.Subject.Id == app.Id
+            && finding.EnvironmentId == developmentId
+            && finding.MessageEn.Contains("minReplicas", StringComparison.Ordinal));
+        Assert.DoesNotContain(result.Findings, finding => finding.Code == "VAL-RES-CONTRAINTE"
+            && finding.Subject.Id == app.Id
+            && finding.EnvironmentId == developmentId
+            && finding.DetailKey == "constraint-replica-range");
+        Assert.False(result.Readiness.ModelValid);
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleAssignsDistinctKeysToInvalidEffectiveProperties()
+    {
+        using var invalidCpu = JsonDocument.Parse("\"fast\"");
+        using var invalidMemory = JsonDocument.Parse("\"large\"");
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var app = FindResource(fixture.Snapshot, fixture.ContainerAppId);
+        var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(app.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["cpu"] = invalidCpu.RootElement.Clone(),
+                ["memoryGi"] = invalidMemory.RootElement.Clone()
+            }
+        };
+        var snapshot = ReplaceResource(fixture.Snapshot, app with { Overrides = overrides });
+
+        var valueFindings = CreateEngine([new ResourceConstraintRule()])
+            .Evaluate(snapshot, CatalogWithResourceConstraints)
+            .Findings
+            .Where(finding => finding.Code == "VAL-RES-CONTRAINTE"
+                && finding.Subject.Id == app.Id
+                && finding.EnvironmentId == developmentId
+                && finding.MessageEn.Contains("violates the catalog", StringComparison.Ordinal))
+            .ToArray();
+
+        Assert.Equal(2, valueFindings.Length);
+        Assert.Equal(["value-cpu", "value-memoryGi"], valueFindings.Select(finding => finding.DetailKey).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleSanitizesUntrustedUnknownMemberNamesInFindings()
+    {
+        using var malformedProfiles = JsonDocument.Parse("""
+            [{"bad\u202Ekey":true,"name":"D4","workloadProfileType":"D4","minimumCount":0,"maximumCount":4}]
+            """);
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var environment = fixture.Snapshot.Components.SelectMany(component => component.Resources)
+            .Single(resource => resource.Type == "ContainerAppsEnvironment");
+        var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(environment.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["workloadProfiles"] = malformedProfiles.RootElement.Clone()
+            }
+        };
+        var snapshot = ReplaceResource(fixture.Snapshot, environment with { Overrides = overrides });
+
+        var finding = Assert.Single(CreateEngine([new ResourceConstraintRule()])
+            .Evaluate(snapshot, CatalogWithResourceConstraints)
+            .Findings,
+            value => value.Code == "VAL-RES-CONTRAINTE"
+                && value.Subject.Id == environment.Id
+                && value.EnvironmentId == developmentId);
+
+        Assert.DoesNotContain('\u202E', finding.MessageEn);
+        Assert.Contains('�', finding.MessageEn);
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleAcceptsAProfileDeclaredByTheLinkedEnvironment()
+    {
+        using var profiles = JsonDocument.Parse("""
+            [{"name":"D4","workloadProfileType":"D4","minimumCount":0,"maximumCount":4}]
+            """);
+        using var profileName = JsonDocument.Parse("\"D4\"");
+        using var cpu = JsonDocument.Parse("1");
+        using var memory = JsonDocument.Parse("\"1Gi\"");
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var environment = fixture.Snapshot.Components.SelectMany(component => component.Resources)
+            .Single(resource => resource.Type == "ContainerAppsEnvironment");
+        var app = FindResource(fixture.Snapshot, fixture.ContainerAppId);
+        var environmentOverrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(environment.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["workloadProfiles"] = profiles.RootElement.Clone()
+            }
+        };
+        var snapshot = ReplaceResource(fixture.Snapshot, environment with { Overrides = environmentOverrides });
+        var appOverrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(app.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["workloadProfileName"] = profileName.RootElement.Clone(),
+                ["cpu"] = cpu.RootElement.Clone(),
+                ["memoryGi"] = memory.RootElement.Clone()
+            }
+        };
+        var appWithProfile = FindResource(snapshot, app.Id) with
+        {
+            Overrides = appOverrides
+        };
+        snapshot = ReplaceResource(snapshot, appWithProfile);
+
+        var result = CreateEngine([new ResourceConstraintRule()]).Evaluate(snapshot, CatalogWithResourceConstraints);
+
+        Assert.DoesNotContain(result.Findings, finding => finding.Code == "VAL-RES-CONTRAINTE"
+            && finding.Subject.Id == app.Id);
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleDoesNotRejectAnUnverifiedProfileOnAnExistingEnvironment()
+    {
+        using var profileName = JsonDocument.Parse("\"D4\"");
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var environment = fixture.Snapshot.Components.SelectMany(component => component.Resources)
+            .Single(resource => resource.Type == "ContainerAppsEnvironment");
+        var existingIds = new Dictionary<Guid, string>(environment.ExistingIds)
+        {
+            [developmentId] = "/subscriptions/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/resourceGroups/rg-shop-orders-dev/providers/Microsoft.App/managedEnvironments/cae-shop"
+        };
+        environment = environment with { IsExisting = true, ExistingIds = existingIds };
+        var snapshot = ReplaceResource(fixture.Snapshot, environment);
+        var app = FindResource(snapshot, fixture.ContainerAppId);
+        var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(app.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["workloadProfileName"] = profileName.RootElement.Clone()
+            }
+        };
+        snapshot = ReplaceResource(snapshot, app with { Overrides = overrides });
+
+        var result = CreateEngine([new ResourceConstraintRule()]).Evaluate(snapshot, CatalogWithResourceConstraints);
+
+        Assert.DoesNotContain(result.Findings, finding => finding.Code == "VAL-RES-CONTRAINTE"
+            && finding.Subject.Id == app.Id
+            && finding.DetailKey == "allowed-from-workloadProfileName");
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleRejectsAProfileMissingFromTheLinkedEnvironment()
+    {
+        using var unknownProfile = JsonDocument.Parse("\"D8\"");
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var app = FindResource(fixture.Snapshot, fixture.ContainerAppId);
+        var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(app.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["workloadProfileName"] = unknownProfile.RootElement.Clone()
+            }
+        };
+        var snapshot = ReplaceResource(fixture.Snapshot, app with { Overrides = overrides });
+
+        var result = CreateEngine([new ResourceConstraintRule()]).Evaluate(snapshot, CatalogWithResourceConstraints);
+        var finding = Assert.Single(result.Findings, value => value.Code == "VAL-RES-CONTRAINTE"
+            && value.Subject.Id == app.Id);
+
+        Assert.Equal(developmentId, finding.EnvironmentId);
+        Assert.Equal("allowed-from-workloadProfileName", finding.DetailKey);
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleSanitizesAndBoundsUnknownLinkedProfileNames()
+    {
+        var unknownProfileName = "D\u202E" + new string('X', 96);
+        using var unknownProfile = JsonDocument.Parse(JsonSerializer.Serialize(unknownProfileName));
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var app = FindResource(fixture.Snapshot, fixture.ContainerAppId);
+        var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(app.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["workloadProfileName"] = unknownProfile.RootElement.Clone()
+            }
+        };
+        var snapshot = ReplaceResource(fixture.Snapshot, app with { Overrides = overrides });
+
+        var finding = Assert.Single(CreateEngine([new ResourceConstraintRule()])
+            .Evaluate(snapshot, CatalogWithResourceConstraints)
+            .Findings,
+            value => value.Code == "VAL-RES-CONTRAINTE"
+                && value.Subject.Id == app.Id
+                && value.EnvironmentId == developmentId
+                && value.DetailKey == "allowed-from-workloadProfileName");
+
+        Assert.DoesNotContain('\u202E', finding.MessageEn);
+        Assert.DoesNotContain(unknownProfileName, finding.MessageEn, StringComparison.Ordinal);
+        Assert.True(finding.MessageEn.Length < 300);
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleChecksWorkloadProfileInstanceRangePerEffectiveEnvironment()
+    {
+        using var invalidProfiles = JsonDocument.Parse("""
+            [{"name":"D4","workloadProfileType":"D4","minimumCount":5,"maximumCount":2}]
+            """);
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var environment = fixture.Snapshot.Components.SelectMany(component => component.Resources)
+            .Single(resource => resource.Type == "ContainerAppsEnvironment");
+        var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(environment.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["workloadProfiles"] = invalidProfiles.RootElement.Clone()
+            }
+        };
+        var snapshot = ReplaceResource(fixture.Snapshot, environment with { Overrides = overrides });
+
+        var result = CreateEngine([new ResourceConstraintRule()]).Evaluate(snapshot, CatalogWithResourceConstraints);
+        var finding = Assert.Single(result.Findings, value => value.Code == "VAL-RES-CONTRAINTE"
+            && value.Subject.Id == environment.Id);
+
+        Assert.Equal(developmentId, finding.EnvironmentId);
+        Assert.Matches("^constraint-workload-profile-instance-range:item-[a-f0-9]{64}$", finding.DetailKey);
+        Assert.Contains("name = D4", finding.MessageEn, StringComparison.Ordinal);
+        var expectedHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("workloadProfiles\0name\0string\0D4")))
+            .ToLowerInvariant();
+        Assert.EndsWith($"item-{expectedHash}", finding.DetailKey, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleIdentifiesInvalidArrayItemsWithStableUniqueKeys()
+    {
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var environment = fixture.Snapshot.Components.SelectMany(component => component.Resources)
+            .Single(resource => resource.Type == "ContainerAppsEnvironment");
+
+        ValidationResult Evaluate(string profilesJson)
+        {
+            using var profiles = JsonDocument.Parse(profilesJson);
+            var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(environment.Overrides)
+            {
+                [developmentId] = new Dictionary<string, JsonElement>
+                {
+                    ["workloadProfiles"] = profiles.RootElement.Clone()
+                }
+            };
+            var snapshot = ReplaceResource(fixture.Snapshot, environment with { Overrides = overrides });
+            return CreateEngine([new ResourceConstraintRule()]).Evaluate(snapshot, CatalogWithResourceConstraints);
+        }
+
+        const string orderedProfiles = """
+            [
+              {"name":"D4","workloadProfileType":"D4","minimumCount":5,"maximumCount":2},
+              {"name":"E4","workloadProfileType":"E4","minimumCount":6,"maximumCount":3}
+            ]
+            """;
+        const string reversedProfiles = """
+            [
+              {"name":"E4","workloadProfileType":"E4","minimumCount":6,"maximumCount":3},
+              {"name":"D4","workloadProfileType":"D4","minimumCount":5,"maximumCount":2}
+            ]
+            """;
+
+        var orderedFindings = Evaluate(orderedProfiles).Findings
+            .Where(finding => finding.Code == "VAL-RES-CONTRAINTE"
+                && finding.Subject.Id == environment.Id
+                && finding.EnvironmentId == developmentId)
+            .OrderBy(finding => finding.MessageEn, StringComparer.Ordinal)
+            .ToArray();
+        var reversedFindings = Evaluate(reversedProfiles).Findings
+            .Where(finding => finding.Code == "VAL-RES-CONTRAINTE"
+                && finding.Subject.Id == environment.Id
+                && finding.EnvironmentId == developmentId)
+            .ToArray();
+
+        Assert.Equal(2, orderedFindings.Length);
+        Assert.Contains(orderedFindings, finding => finding.MessageEn.Contains("D4", StringComparison.Ordinal));
+        Assert.Contains(orderedFindings, finding => finding.MessageEn.Contains("E4", StringComparison.Ordinal));
+        Assert.All(orderedFindings, finding => Assert.True(finding.DetailKey?.Length <= 128));
+        Assert.Equal(orderedFindings.Select(finding => finding.DetailKey).Order(StringComparer.Ordinal),
+            reversedFindings.Select(finding => finding.DetailKey).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleDoesNotThrowWhenAnArrayItemRepeatsAJsonMember()
+    {
+        using var malformedProfiles = JsonDocument.Parse("""
+            [{"name":"D4","name":"E4","workloadProfileType":"D4","minimumCount":5,"maximumCount":2}]
+            """);
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var environment = fixture.Snapshot.Components.SelectMany(component => component.Resources)
+            .Single(resource => resource.Type == "ContainerAppsEnvironment");
+        var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(environment.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["workloadProfiles"] = malformedProfiles.RootElement.Clone()
+            }
+        };
+        var snapshot = ReplaceResource(fixture.Snapshot, environment with { Overrides = overrides });
+
+        var exception = Record.Exception(() => CreateEngine([new ResourceConstraintRule()])
+            .Evaluate(snapshot, CatalogWithResourceConstraints));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleRejectsNullForRequiredTypedItemMembers()
+    {
+        using var malformedProfiles = JsonDocument.Parse("""
+            [{"name":null,"workloadProfileType":"D4","minimumCount":null,"maximumCount":4}]
+            """);
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var environment = fixture.Snapshot.Components.SelectMany(component => component.Resources)
+            .Single(resource => resource.Type == "ContainerAppsEnvironment");
+        var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(environment.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["workloadProfiles"] = malformedProfiles.RootElement.Clone()
+            }
+        };
+        var snapshot = ReplaceResource(fixture.Snapshot, environment with { Overrides = overrides });
+
+        var finding = Assert.Single(CreateEngine([new ResourceConstraintRule()])
+            .Evaluate(snapshot, CatalogWithResourceConstraints)
+            .Findings,
+            value => value.Code == "VAL-RES-CONTRAINTE"
+                && value.Subject.Id == environment.Id
+                && value.EnvironmentId == developmentId);
+
+        Assert.Contains("required member 'name' is missing or null", finding.MessageEn, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleSkipsPerItemConstraintsWhenUniqueKeysAreDuplicated()
+    {
+        using var duplicateProfiles = JsonDocument.Parse("""
+            [
+              {"name":"D4","workloadProfileType":"D4","minimumCount":5,"maximumCount":2},
+              {"name":"D4","workloadProfileType":"D4","minimumCount":6,"maximumCount":3}
+            ]
+            """);
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var environment = fixture.Snapshot.Components.SelectMany(component => component.Resources)
+            .Single(resource => resource.Type == "ContainerAppsEnvironment");
+        var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(environment.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["workloadProfiles"] = duplicateProfiles.RootElement.Clone()
+            }
+        };
+        var snapshot = ReplaceResource(fixture.Snapshot, environment with { Overrides = overrides });
+
+        var findings = CreateEngine([new ResourceConstraintRule()])
+            .Evaluate(snapshot, CatalogWithResourceConstraints)
+            .Findings
+            .Where(finding => finding.Code == "VAL-RES-CONTRAINTE"
+                && finding.Subject.Id == environment.Id
+                && finding.EnvironmentId == developmentId)
+            .ToArray();
+
+        var finding = Assert.Single(findings);
+        Assert.Contains("share the same", finding.MessageEn, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleReplacesUnicodeFormatCharactersInItemLabels()
+    {
+        using var malformedProfiles = JsonDocument.Parse("""
+            [{"name":"D\u202E4","workloadProfileType":"D4","minimumCount":5,"maximumCount":2}]
+            """);
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var environment = fixture.Snapshot.Components.SelectMany(component => component.Resources)
+            .Single(resource => resource.Type == "ContainerAppsEnvironment");
+        var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(environment.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["workloadProfiles"] = malformedProfiles.RootElement.Clone()
+            }
+        };
+        var snapshot = ReplaceResource(fixture.Snapshot, environment with { Overrides = overrides });
+
+        var finding = Assert.Single(
+            CreateEngine([new ResourceConstraintRule()]).Evaluate(snapshot, CatalogWithResourceConstraints).Findings,
+            value => value.Code == "VAL-RES-CONTRAINTE"
+                && value.Subject.Id == environment.Id
+                && value.EnvironmentId == developmentId);
+
+        Assert.DoesNotContain('\u202E', finding.MessageEn);
+        Assert.Contains('�', finding.MessageEn);
+    }
+
+    [Fact]
+    public void ResourceConstraintRuleReportsMalformedTypedWorkloadProfileItems()
+    {
+        using var malformedProfiles = JsonDocument.Parse("""
+            [{"name":"D4","workloadProfileType":"D4","minimumCount":0,"maximumCount":4,"unsupported":true}]
+            """);
+        var fixture = ReferenceProject();
+        var developmentId = fixture.Snapshot.Environments.Single(environment => environment.Code == "dev").Id;
+        var environment = fixture.Snapshot.Components.SelectMany(component => component.Resources)
+            .Single(resource => resource.Type == "ContainerAppsEnvironment");
+        var overrides = new Dictionary<Guid, IReadOnlyDictionary<string, JsonElement>>(environment.Overrides)
+        {
+            [developmentId] = new Dictionary<string, JsonElement>
+            {
+                ["workloadProfiles"] = malformedProfiles.RootElement.Clone()
+            }
+        };
+        var snapshot = ReplaceResource(fixture.Snapshot, environment with { Overrides = overrides });
+
+        var result = CreateEngine([new ResourceConstraintRule()]).Evaluate(snapshot, CatalogWithResourceConstraints);
+        var finding = Assert.Single(result.Findings, value => value.Code == "VAL-RES-CONTRAINTE"
+            && value.Subject.Id == environment.Id);
+
+        Assert.Equal(developmentId, finding.EnvironmentId);
+    }
+
+    [Fact]
     public void UnresolvedCatalogConditionWithConfiguredValueBlocksValidation()
     {
         using var enabled = JsonDocument.Parse("true");
@@ -285,6 +853,9 @@ public sealed class ValidationEngineTests
         var finding = Assert.Single(result.Findings);
         Assert.Equal("VAL-RES-CONTRAINTE", finding.Code);
         Assert.Equal(FindingSeverity.Error, finding.Severity);
+        var conditionKeyHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+            "zoneRedundant\0virtualNetworkConfiguration"))).ToLowerInvariant();
+        Assert.Equal($"condition-{conditionKeyHash}", finding.DetailKey);
         Assert.False(result.Readiness.ModelValid);
     }
 
@@ -446,22 +1017,59 @@ public sealed class ValidationEngineTests
     public void CatalogRegexValidationDoesNotThrowForInvalidPattern()
     {
         using var value = JsonDocument.Parse("\"value\"");
-        using var definition = JsonDocument.Parse("{\"pattern\":\"(\"}");
+        using var definition = JsonDocument.Parse("{\"kind\":\"string\",\"pattern\":\"(\"}");
 
         var failure = InvokeConstraintFailure(value.RootElement, definition.RootElement);
 
-        Assert.Contains("motif", failure, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(CatalogPropertyValueFailureKind.Pattern, failure?.Kind);
+    }
+
+    [Theory]
+    [InlineData("[42]", "{\"kind\":\"array\",\"items\":{\"kind\":\"string\"}}")]
+    [InlineData("[null]", "{\"kind\":\"array\",\"items\":{\"kind\":\"string\"}}")]
+    [InlineData("[\"203.0.113.01/24\"]", "{\"kind\":\"array\",\"items\":{\"kind\":\"string\",\"format\":\"ipv4Cidr\"}}")]
+    [InlineData("[\"203.0.113.1/24\"]", "{\"kind\":\"array\",\"items\":{\"kind\":\"string\",\"format\":\"ipv4Cidr\"}}")]
+    public void CatalogArrayConstraintsValidateItemTypeAndFormat(string valueJson, string definitionJson)
+    {
+        using var value = JsonDocument.Parse(valueJson);
+        using var definition = JsonDocument.Parse(definitionJson);
+
+        var failure = InvokeConstraintFailure(value.RootElement, definition.RootElement);
+
+        Assert.NotNull(failure);
+    }
+
+    [Fact]
+    public void CatalogArrayConstraintsAcceptCanonicalIpv4CidrItems()
+    {
+        using var value = JsonDocument.Parse("[\"203.0.113.0/24\"]");
+        using var definition = JsonDocument.Parse("{\"kind\":\"array\",\"items\":{\"kind\":\"string\",\"format\":\"ipv4Cidr\"}}");
+
+        var failure = InvokeConstraintFailure(value.RootElement, definition.RootElement);
+
+        Assert.Null(failure);
+    }
+
+    [Fact]
+    public void CatalogArrayConstraintsAcceptAFullIpv4RangeAsAValidCidr()
+    {
+        using var value = JsonDocument.Parse("[\"0.0.0.0/0\"]");
+        using var definition = JsonDocument.Parse("{\"kind\":\"array\",\"items\":{\"kind\":\"string\",\"format\":\"ipv4Cidr\"}}");
+
+        var failure = InvokeConstraintFailure(value.RootElement, definition.RootElement);
+
+        Assert.Null(failure);
     }
 
     [Fact]
     public void CatalogRegexValidationDoesNotThrowWhenPatternExceedsItsTimeLimit()
     {
         using var value = JsonDocument.Parse($"\"{new string('a', 5000)}!\"");
-        using var definition = JsonDocument.Parse("{\"pattern\":\"(a+)+$\"}");
+        using var definition = JsonDocument.Parse("{\"kind\":\"string\",\"pattern\":\"(a+)+$\"}");
 
         var failure = InvokeConstraintFailure(value.RootElement, definition.RootElement);
 
-        Assert.Contains("motif", failure, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(CatalogPropertyValueFailureKind.Pattern, failure?.Kind);
     }
 
     [Fact]
@@ -569,6 +1177,27 @@ public sealed class ValidationEngineTests
         var result = CreateEngine([new ResourceRequiredPropertyRule()]).Evaluate(snapshot, Catalog);
 
         Assert.Empty(result.Findings);
+    }
+
+    [Fact]
+    public void SqlServerRequiresEntraAdministratorDisplayNameAndObjectId()
+    {
+        var resource = Resource("SqlServer", "orders", Guid.NewGuid());
+        var targetId = Guid.NewGuid();
+        var component = Component(Guid.NewGuid(), "data", "Single", [resource], singleTargetId: targetId);
+        var baseline = Snapshot([component], []);
+        var snapshot = baseline with
+        {
+            Project = baseline.Project with { CatalogVersion = CatalogWithSqlAdministrator.Version }
+        };
+
+        var result = CreateEngine([new ResourceRequiredPropertyRule()]).Evaluate(snapshot, CatalogWithSqlAdministrator);
+
+        var findings = result.Findings.Where(finding => finding.Code == "VAL-RES-REQUIS").ToArray();
+        Assert.Equal(2, findings.Length);
+        Assert.Contains(findings, finding => finding.MessageFr.Contains("administratorDisplayName", StringComparison.Ordinal));
+        Assert.Contains(findings, finding => finding.MessageFr.Contains("administratorObjectId", StringComparison.Ordinal));
+        Assert.All(findings, finding => Assert.Equal(targetId, finding.EnvironmentId));
     }
 
     [Fact]
@@ -884,15 +1513,13 @@ public sealed class ValidationEngineTests
             snapshot,
             Catalog,
             new ComponentOrderingResult([], [], wiring),
-            NamingEngine.Preview(snapshot),
+            NamingEngine.Preview(snapshot, linkKinds),
             linkKinds,
             new DeploymentStrategyRegistry([new DirectDeploymentStrategy()]));
     }
 
-    private static string? InvokeConstraintFailure(JsonElement value, JsonElement definition) =>
-        (string?)typeof(ResourceConstraintRule)
-            .GetMethod("GetConstraintFailure", BindingFlags.NonPublic | BindingFlags.Static)!
-            .Invoke(null, [value, definition]);
+    private static CatalogPropertyValueFailure? InvokeConstraintFailure(JsonElement value, JsonElement definition) =>
+        CatalogPropertyValueValidator.Validate(value, definition);
 
     private static ApplicationSnapshot CreateApplication(Guid componentId, Guid resourceId, string codeSourcePath) => new(
         Guid.NewGuid(),
@@ -970,6 +1597,18 @@ public sealed class ValidationEngineTests
         components)
     {
         Links = links
+    };
+
+    private static ResourceSnapshot FindResource(ModelSnapshot snapshot, Guid resourceId) =>
+        snapshot.Components.SelectMany(component => component.Resources)
+            .Single(resource => resource.Id == resourceId);
+
+    private static ModelSnapshot ReplaceResource(ModelSnapshot snapshot, ResourceSnapshot replacement) => snapshot with
+    {
+        Components = snapshot.Components.Select(component => component with
+        {
+            Resources = component.Resources.Select(resource => resource.Id == replacement.Id ? replacement : resource).ToArray()
+        }).ToArray()
     };
 
     private static EnvironmentSnapshot Environment(Guid id, string code) => new(code, "francecentral")

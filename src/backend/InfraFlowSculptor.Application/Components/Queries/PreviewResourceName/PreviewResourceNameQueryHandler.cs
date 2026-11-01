@@ -2,6 +2,7 @@ using ErrorOr;
 using InfraFlowSculptor.Application.Components;
 using InfraFlowSculptor.Catalog;
 using InfraFlowSculptor.Engine.Model;
+using InfraFlowSculptor.Engine.Links;
 using InfraFlowSculptor.Engine.Naming;
 using Mediator;
 
@@ -9,7 +10,8 @@ namespace InfraFlowSculptor.Application.Components.Queries.PreviewResourceName;
 
 public sealed class PreviewResourceNameQueryHandler(
     ModelSnapshotBuilder snapshotBuilder,
-    ICatalogProvider catalogProvider)
+    ICatalogProvider catalogProvider,
+    LinkKindRegistry linkKinds)
     : IQueryHandler<PreviewResourceNameQuery, ErrorOr<NamingPreviewResult>>
 {
     public async ValueTask<ErrorOr<NamingPreviewResult>> Handle(
@@ -94,7 +96,7 @@ public sealed class PreviewResourceNameQueryHandler(
             };
         }
 
-        var preview = NamingEngine.Preview(namingSnapshot);
+        var preview = NamingEngine.Preview(namingSnapshot, linkKinds);
         return preview with
         {
             Items = preview.Items.Where(item => item.ResourceId == resourceId).ToArray(),

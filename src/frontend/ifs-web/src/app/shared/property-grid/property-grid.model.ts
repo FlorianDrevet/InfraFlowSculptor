@@ -26,11 +26,14 @@ export interface ResourcePropertyDefinition {
   labels?: { fr: string; en: string };
   default?: JsonElement;
   values?: JsonElement[];
+  itemsKind?: string;
+  itemsValues?: JsonElement[];
   itemsFormat?: string;
   minimum?: number;
   maximum?: number;
   minLength?: number;
   maxLength?: number;
+  maxItems?: number;
   pattern?: string;
   lockedAfterPublish?: boolean;
   condition?: string;
@@ -58,15 +61,21 @@ export function createPropertyGridRows(
 ): PropertyGridRow[] {
   return definitions
     .map((definition) => {
-      const hasResourceValue = Object.prototype.hasOwnProperty.call(resourceProperties, definition.name)
-        && resourceProperties[definition.name] !== null;
+      const hasResourceValue =
+        Object.prototype.hasOwnProperty.call(resourceProperties, definition.name) &&
+        resourceProperties[definition.name] !== null;
       const resourceValue = hasResourceValue
-        ? { value: resourceProperties[definition.name], provenance: EFFECTIVE_VALUE_PROVENANCE.Resource }
+        ? {
+            value: resourceProperties[definition.name],
+            provenance: EFFECTIVE_VALUE_PROVENANCE.Resource,
+          }
         : definition.default !== undefined && definition.default !== null
           ? { value: definition.default, provenance: EFFECTIVE_VALUE_PROVENANCE.CatalogDefault }
           : { value: null, provenance: EFFECTIVE_VALUE_PROVENANCE.Absent };
       const cells = targets.map((target): PropertyGridCell => {
-        const effectiveValue = target.properties.find((property) => property.name === definition.name);
+        const effectiveValue = target.properties.find(
+          (property) => property.name === definition.name,
+        );
         return effectiveValue
           ? {
               targetId: target.id,
@@ -93,9 +102,11 @@ export function canClearOverride(
   definition: ResourcePropertyDefinition,
   cell: PropertyGridCell,
 ): boolean {
-  return definition.overridable
-    && cell.applicable
-    && cell.provenance === EFFECTIVE_VALUE_PROVENANCE.Override;
+  return (
+    definition.overridable &&
+    cell.applicable &&
+    cell.provenance === EFFECTIVE_VALUE_PROVENANCE.Override
+  );
 }
 
 export function createClearOverrideRequest(
@@ -159,9 +170,18 @@ export function parseResourceTypeProperties(descriptor: JsonElement): ResourcePr
     }
 
     const items = property['items'];
-    if (typeof items === 'object' && items !== null && !Array.isArray(items)
-      && typeof items['format'] === 'string') {
-      definition.itemsFormat = items['format'];
+    if (isJsonObject(items)) {
+      const itemsKind = items['kind'];
+      if (typeof itemsKind === 'string') {
+        definition.itemsKind = itemsKind;
+      }
+      if (Array.isArray(items['values'])) {
+        definition.itemsValues = items['values'];
+      }
+      const itemsFormat = items['format'];
+      if (typeof itemsFormat === 'string') {
+        definition.itemsFormat = itemsFormat;
+      }
     }
 
     const minimum = property['minimum'];
@@ -179,6 +199,10 @@ export function parseResourceTypeProperties(descriptor: JsonElement): ResourcePr
     const maxLength = property['maxLength'];
     if (typeof maxLength === 'number') {
       definition.maxLength = maxLength;
+    }
+    const maxItems = property['maxItems'];
+    if (typeof maxItems === 'number') {
+      definition.maxItems = maxItems;
     }
     const pattern = property['pattern'];
     if (typeof pattern === 'string') {
