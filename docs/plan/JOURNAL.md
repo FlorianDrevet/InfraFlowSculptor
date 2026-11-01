@@ -123,3 +123,4 @@
 | 2026-11-01 13:57 | Codex | `J0-22` blocage résolu | docs/plan/revues/J0-21b-correctif-diagnostics-20261101.md |
 | 2026-11-01 14:09 | Codex | `J0-22` blocage confirmé | docs/plan/revues/J0-22-blocage-metadonnees-bicep-20261101.md |
 | 2026-11-01 17:39 | Codex | `J0-22` blocage résolu | docs/plan/revues/J0-22-blocage-metadonnees-bicep-20261101.md |
+| 2026-11-01 17:39 | Codex | `J0-22` terminée | commit `7f04129` |
