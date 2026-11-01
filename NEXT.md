@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`R-05`](docs/plan/02-jalon-0-pilote.md#-r-05--revue-du-modèle-et-du-moteur) — Revue du modèle et du moteur |
+| **Étape courante** | [`J0-21`](docs/plan/02-jalon-0-pilote.md#j0-21--plan-de-déploiement) — Plan de déploiement |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-20`](docs/plan/02-jalon-0-pilote.md#j0-20--ordre-des-composants-validation-et-constats) — Ordre des composants, validation et constats (commit `af75781`) |
-| **Étape suivante** | `J0-21` — Plan de déploiement |
+| **Dernière étape terminée** | [`R-05`](docs/plan/02-jalon-0-pilote.md#-r-05--revue-du-modèle-et-du-moteur) — Revue du modèle et du moteur (auto-validée) |
+| **Étape suivante** | `J0-22` — Émetteur Bicep |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-modele` (créée depuis `origin/impl/j0-acces`, PR empilée après R-04) |
-| **Dernière mise à jour** | 2026-10-29 — Codex |
+| **Dernière mise à jour** | 2026-11-01 — Codex (auto-validation R-05) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
@@ -68,7 +68,7 @@ L’omission initiale de `deploymentPrincipalId` avait détaché l’attribution
 | Secret de dépôt GitHub Actions `IFS_E2E_PASSWORD` | Configuré (valeur masquée) | 2026-10-06 |
 
 | Nettoyage résiduel Azure shop42 (demande de réduction des coûts) | Les trois groupes du kit encore présents ont été supprimés; C5 après opération : 135 ressources, 16 groupes, 0 pile, 30 rôles et 7 budgets. Recontrôle CLI du 2026-10-27 : 0 ressource correspondant aux noms/tags shop42/43/44 et 0 groupe de recette actif. Six coffres Key Vault standards restent en soft-delete jusqu’au 23–25 janvier 2027 ; ils ne génèrent pas de facturation d’usage en état supprimé. Voir [preuve](docs/plan/preuves/nettoyage-residuel-shop42-20261027.md). | 2026-10-27 |
-| Stack local de recette | AppHost Aspire arrêté après les vérifications R-04 pour libérer les DLL ; relance : `cd src/backend; aspire run`. Les paramètres de développement restent dans User Secrets. Le PostgreSQL local garde les données des recettes, dont Emma membre de Contoso après une invitation précédente ; ne pas réinitialiser la base. Le scénario E2E « Emma sans organisation » échoue donc sur cet état persistant. Aucun secret n’est consigné. | 2026-10-27 |
+| Stack local de recette | Recontrôle le 2026-11-01 : AppHost IFS actif en mode persistant sur le volume PostgreSQL existant; `/alive` 200, `/scalar/` 200, OIDC `ifs` 200. Chloé est confirmée par `/v1/me`; ses seuls droits sur `shop` sont `project.read`. Dans Scalar, l'unique commande M13 d'attribution à Bob renvoie 403 `PROJECT_PERMISSION_REQUIRED` pour `members.manage`. Le jeton OAuth a été effacé de Scalar; aucun mot de passe n'a été modifié. Les AppHosts Vole-Papillon restent arrêtés. Aucun changement ni coût Azure. | 2026-11-01 |
 
 ## Recettes autonomes en attente de Codex
 
@@ -79,6 +79,16 @@ L’omission initiale de `deploymentPrincipalId` avait détaché l’attribution
 Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md), puis retire la ligne.
 
 ## Points ouverts et historique des décisions
+
+### R-05 — connexion Chloé pour la recette Scalar — résolu le 2026-11-01
+
+Sur autorisation explicite de Florian, les deux AppHosts Vole-Papillon identifiés ont été arrêtés et resteront arrêtés. Le conteneur Keycloak Vole-Papillon qui retenait 8080 a été arrêté sans suppression. L'AppHost IFS tourne en mode persistant avec le volume PostgreSQL existant `ifs-postgres-17-data`; aucun volume n'a été supprimé ou réinitialisé. L'API répond 200 sur `/alive`, Scalar est servi dans Chrome et le realm Keycloak `ifs` répond 200.
+
+Le bouton OAuth2 de Scalar ouvre la connexion Keycloak locale. La skill `computer-use` autorise ce realm de développement lorsque Florian l'a explicitement demandé. Le mot de passe de test n'était pas dans l'environnement ni les User Secrets, mais était déjà défini dans le fichier de realm local; il a été utilisé sans modification ni réinitialisation.
+
+**Résolution M13 :** la connexion et `GET /v1/me` confirment `Chloe Petit` (`chloe@contoso.example`). Ses permissions sur `shop` sont `project.read` uniquement, sans `members.manage`; la liste Contoso confirme Bob Bernard. Le POST prévu pour lui attribuer `Auditor` dans `shop`, portée `Project`, version attendue `1661`, a été envoyé une seule fois depuis Scalar et renvoie 403 `PROJECT_PERMISSION_REQUIRED`, permission `members.manage`. La preuve est dans [`R-05-resolution-20261101.md`](docs/plan/revues/R-05-resolution-20261101.md).
+
+**Contexte et nettoyage :** l'AppHost IFS a été redémarré seul avec `AppHost:PersistentContainers=true` et `AppHost:EnableDevelopmentExtras=false`, sans toucher aux AppHosts Vole-Papillon ni au volume PostgreSQL. Le jeton OAuth a été effacé de l'interface Scalar après la vérification; aucune valeur de secret ou de jeton n'est consignée. Aucun changement ni coût Azure.
 
 ### J0-09 — écrans du projet — 2026-10-28
 
@@ -104,10 +114,13 @@ Sur demande de Florian, l'avis de Claude CLI est retenu : conserver `2026.10-pil
 
 **Résolution — 2026-10-29 :** Florian a confié le choix à Codex après avis Claude. Le catalogue correctif `2026.10-pilot.1` autorise `Access` vers Log Analytics; seul le projet temporaire `shop15` l'utilise, tandis que `shop` garde la version publiée originale. La recette Scalar locale est passée et le projet temporaire a été archivé de façon récupérable. Voir [`J0-15-deblocage-20261029.md`](docs/plan/revues/J0-15-deblocage-20261029.md).
 
-### J0-20 — recette locale en attente — 2026-10-29
+### R-05 — modèle et moteur implémentés; recette manuelle M13 passée — 2026-11-01
 
-Le code et les tests sans conteneurs passent. Les tests PostgreSQL/Testcontainers et le parcours authentifié ne démarrent pas sur ce PC : Windows refuse le démarrage du service Docker, et `IFS_E2E_PASSWORD` n'est pas configuré localement. Le test PostgreSQL d'un doublon d'acquittement est ajouté; la CI dispose du secret de recette et doit fournir les captures `/findings` en 1440/390 px. Comparaison de la capture bureau à `ProjectFindings.html` à faire avant de déclarer R-05 terminé. Aucun coût ni changement Azure.
+M1–M11 restent consignés dans les parcours locaux et captures précédents. M12 passe : les vues d'ensemble, ressource et constats tiennent en 390 × 844 sans débordement horizontal; captures `R05-M12-Overview-390.png`, `R05-M12-Resource-390.png` et `R05-M12-Findings-390.png`. M13 passe par Playwright sur bureau et mobile (2/2), et manuellement dans Scalar : Chloé n'a aucun contrôle de gestion des rôles; `GET /v1/me` confirme son identité, puis le POST unique prévu renvoie 403 `PROJECT_PERMISSION_REQUIRED` pour `members.manage`. Le mot de passe préconfiguré du realm local a été utilisé sans modification; le jeton OAuth a été effacé de Scalar.
 
+Sur demande explicite de Florian de demander à Claude la meilleure solution et de continuer, Claude Sonnet a recommandé un DSL fermé de contraintes déclaratives; il est implémenté avec les évaluateurs `compare` et `allowedTuples`. Les violations sont des constats `VAL-RES-CONTRAINTE` par cible effective, afin de permettre l'édition progressive d'une propriété. Les contraintes CPU/mémoire et min/max réplicas du pilote sont déclarées dans les catalogues `.4`/`.5`. Les résultats de revues et leurs vérifications figurent dans [`R-05-autovalidation.md`](docs/plan/revues/R-05-autovalidation.md).
+
+M13 est terminée; la résolution du blocage et l'auto-validation R-05 sont consignées dans [`R-05-resolution-20261101.md`](docs/plan/revues/R-05-resolution-20261101.md) et [`R-05-autovalidation.md`](docs/plan/revues/R-05-autovalidation.md). Le gate a validé R-05 et a avancé à J0-21. Les résultats de build, tests et Graphify sont détaillés dans l'auto-validation. Aucun changement ni coût Azure; les AppHosts Vole-Papillon restent arrêtés.
 ### R-04 — portée d’idempotence de création d’organisation — 2026-10-27
 
 R-04 : arbitrage de Florian reçu le 2026-10-27, clé distincte par tenant et utilisateur retenue. La création d'organisation utilise un magasin et une migration dédiés ; les écritures avec organisation dérivent leur clé de stockage avec l'identité utilisateur. Réservation, écriture métier et réponse sont transactionnelles. Les tests de rejeu, de corps différent, d’isolation entre utilisateurs, de conflit PostgreSQL au savepoint et d'acceptation concurrente idempotente passent. A14 Scalar est passée avec Alice et Chloé. [PR #4](https://github.com/FlorianDrevet/InfraFlowSculptor/pull/4) est ouverte vers `impl/socle`. Avant l'appel de la purge d'audit par le Worker hébergé en J0-31, accorder `EXECUTE` à son identité. L'auto-validation est dans [la revue R-04](docs/plan/revues/R-04-autovalidation.md) ; le détail de l'arbitrage est dans [la résolution de l’idempotence](docs/plan/revues/R-04-blocage-idempotence.md).

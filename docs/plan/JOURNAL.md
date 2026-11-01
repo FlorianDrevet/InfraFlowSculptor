@@ -109,3 +109,12 @@
 | 2026-10-29 18:04 | Codex | `J0-20` recette autonome à exécuter |  |
 | 2026-10-29 22:50 | Codex | `J0-20` reprise après recette autonome vérifiée |  |
 | 2026-10-29 22:50 | Codex | `J0-20` terminée | commit `af75781` |
+| 2026-10-30 03:51 | Codex | `R-05` recette autonome à exécuter |  |
+| 2026-10-31 16:45 | Codex | `R-05` reprise après recette autonome vérifiée |  |
+| 2026-10-31 16:45 | Codex | `R-05` blocage confirmé | docs/plan/revues/R-05-blocage-20261031.md |
+| 2026-10-31 18:42 | Codex | `R-05` décision DSL appliquée sur recommandation Claude Sonnet; 683 tests .NET et 199 tests frontend passent, M13 Scalar manuel reste bloqué par Work settings | docs/plan/revues/R-05-autovalidation.md |
+| 2026-10-31 19:10 | Codex | `R-05` recontrôle M13 : Computer Use/Chrome autorisés, mais l'AppHost IFS est arrêté et les ports locaux pointent vers d'autres projets; Scalar renvoie 404. Claude Sonnet confirme qu'aucun port alternatif n'est prévu; volume `ifs-postgres-17-data` présent, arrêt temporaire des autres AppHosts à arbitrer. Aucune commande de rôle ni service externe touché | docs/plan/revues/R-05-blocage-20261031.md |
+| 2026-10-31 19:22 | Codex | `R-05` reprise M13 : AppHosts Vole-Papillon arrêtés sur autorisation, sans relance; AppHost IFS démarré avec volume PostgreSQL existant; Scalar et Keycloak local répondent. La connexion OAuth mène à la fenêtre Chloé, mais le mot de passe de recette est absent des accès locaux; aucune commande de rôle n'a été envoyée. Skill `computer-use` mise à jour et validée avec exception Keycloak local; gate toujours `BLOQUE` | docs/plan/revues/R-05-blocage-20261031.md |
+| 2026-11-01 09:38 | Codex | `R-05` AppHost IFS relancé après arrêt entre sessions; `/alive`, Scalar et OIDC répondent, `/v1/me` reste anonyme. Mot de passe Chloé absent des accès locaux vérifiables; demande de connexion directe dans Chrome, sans transmission du secret. Aucun AppHost Vole-Papillon relancé; gate `BLOQUE` | docs/plan/revues/R-05-blocage-20261031.md |
+| 2026-11-01 09:59 | Codex | `R-05` blocage résolu | docs/plan/revues/R-05-resolution-20261101.md |
+| 2026-11-01 09:59 | Codex | `R-05` auto-validée | R-05-autovalidation.md |
