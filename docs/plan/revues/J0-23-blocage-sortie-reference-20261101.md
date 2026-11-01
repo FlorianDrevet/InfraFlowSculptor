@@ -14,8 +14,8 @@ Blocage confirmé : CONFIRMÉ
 - pwsh -File reference/tools/Test-ReferencePipelines.ps1 : 25/25 fichiers Azure Pipelines de la référence conformes au schéma épinglé.
 - pwsh -File reference/tools/Test-ReferenceDeterminism.ps1 : 79 fichiers de référence en UTF-8 sans BOM, LF, saut final et en-tête requis.
 - git diff --check passe. python -m graphify update . a extrait 1 613 fichiers puis échoué à produire le rendu HTML, car le graphe de 5 777 nœuds dépasse la limite de visualisation de 5 000.
-- Une consultation demandée à Claude CLI avec --restricted --model sonnet a échoué sur la limite de quota de cinq heures. Aucun appel à Opus n’a été fait.
-- Aucune recette Azure ou Azure DevOps, écriture de ressource externe ou dépense n’a été exécutée. Sur demande explicite de Florian, cet état partiel est commité et poussé dans l’attente de la revue Claude; le gate reste BLOQUE.
+- Après le renouvellement du quota, Claude CLI Sonnet a analysé les specs, le plan, la référence et les émetteurs en lecture seule (`claude -p --restricted --model sonnet`). Claude n’a modifié aucun fichier et aucun appel à Opus n’a été fait. L’avis détaillé et les vérifications Codex figurent ci-dessous.
+- Aucune recette Azure ou Azure DevOps, écriture de ressource externe ou dépense n’a été exécutée. L’implémentation partielle reste committée et poussée ; le gate reste BLOQUE.
 
 ## Condition bloquante
 
@@ -28,4 +28,25 @@ Le contenu demandé par J0-23 ne peut pas être produit simultanément à partir
 
 ## Question à Florian
 
-Quelle option dois-je appliquer pour lever ce blocage J0-23 ? Je recommande l’option 1 afin que l’arborescence générée soit exécutable et pilotée par le modèle, mais cela implique de mettre à jour la référence et le périmètre du plan.
+Quelle option dois-je appliquer pour lever ce blocage J0-23 ? Claude recommande une variante ciblée de l’option 1 afin que l’arborescence générée soit exécutable et pilotée par le modèle, mais cela implique de mettre à jour la référence et le périmètre du plan. La décision reste à Florian conformément à AGENTS.md.
+
+## Consultation Claude Sonnet et vérification Codex — 2026-11-01
+
+### Recommandation de Claude
+
+Claude recommande une extension ciblée de l’option 1. L’option 2 laisserait les pipelines et le kit incomplets alors que J0-23 exige l’arborescence entière, l’étape de référence exige une sortie exécutable et la spec demande que le comportement CI découle du plan. En revanche, les paramètres et la logique de reprise `shop42/orders/recover-prd-762` sont des résidus de la preuve P-08 : ils ne doivent pas entrer dans la génération.
+
+Pour `DependencyCache` et `ImageScan`, Claude recommande de ne pas créer des modèles YAML absents de la référence ni de changer le catalogue immuable pour conserver des chemins de templates fictifs. Les étapes connues seraient traduites vers des paramètres explicites du pipeline applicatif et du script de build ; une étape sans traduction/support doit provoquer un échec explicite. Le paramètre de sévérité du scan doit venir du plan.
+
+### Constats vérifiés indépendamment
+
+- **Fermeture de ressources — confirmé.** Le projet Azure DevOps embarque huit modèles et quatre scripts, sans les schémas appelés par `IfsRelease.psm1`, `pins.json` lu par le module, ni tous les scripts/Bicep appelés par les modèles et le kit. `AzureDevOpsTemplateResources.ReadAll()` ne peut donc pas produire une sortie autonome conforme aux références de chemins.
+- **Résidus P-08 — confirmé.** `orders/infra/pipelines/release.yml`, `infra-data-access-recovery.yml`, `infra-release.yml`, `infra-target-stages.yml` et `IfsRelease.psm1` contiennent des valeurs/gardes propres à `shop42`, `orders` et à l’opération de reprise #762. Elles ne sont pas portées par le plan neutre.
+- **Étapes applicatives — confirmé.** Le dépôt ne contient aucun appel de `IStepTranslator` depuis l’émetteur Azure DevOps. Les descripteurs pointent vers `.ifs/templates/steps/*.yml`, absent de la référence ; `ApplicationStepPlan.Enabled` n’est pas pris en compte par `AzureDevOpsStepTranslator`, et celui-ci ne vérifie pas que le fichier de template existe.
+- **Chemins d’application — confirmé statiquement.** `ApplicationAggregate.IsRelativePath` rejette les chemins absolus, segments parent et caractères de contrôle, mais accepte notamment les guillemets, `#`, `$(` et `${{`. `AzureDevOpsPipelineEmitter` écrit ces chemins dans des scalaires YAML non quotés. Aucun essai d’injection n’a été exécuté ; un test de rejet/échappement reste nécessaire.
+- **Codes de projet — confirmé.** Les émetteurs du kit remplacent chaque sous-chaîne `shop` sans jetons dédiés, tandis que les ressources Azure DevOps embarquées gardent l’en-tête « projet shop ». L’installation de référence fixe également les cibles et la région France Central et refuse un manifeste autre que `shop`. La portée pilote de cette limite doit être explicite avant d’en faire une garantie générique.
+- **Parité — confirmé.** `ReferenceOutputTests` utilise une liste manuelle de fichiers pipeline/installation/README plutôt qu’un inventaire exhaustif de la fermeture décrite par le plan ; un nouveau fichier peut donc être omis silencieusement du test.
+
+### Décision encore requise
+
+La recommandation ne constitue pas une autorisation de modifier la référence ou le texte du plan. Florian doit confirmer l’extension ciblée, notamment l’archivage des artefacts de reprise P-08, l’inventaire complet des assets, la traduction des deux étapes du catalogue et la limite pilote/générique du kit. Aucun changement de code ou de référence dépendant de cet arbitrage n’est engagé avant confirmation.
