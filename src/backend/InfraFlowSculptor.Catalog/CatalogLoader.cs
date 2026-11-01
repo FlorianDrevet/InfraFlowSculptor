@@ -58,6 +58,10 @@ public static class CatalogLoader
                     region.GetProperty("code").GetString()!))
                 .ToImmutableArray();
 
+            var pinsFile = files.Single(file => string.Equals(file.Path, $"{versionPrefix}pins.json", StringComparison.Ordinal));
+            using var pinsDocument = JsonDocument.Parse(pinsFile.Content);
+            var pins = ParsePins(pinsDocument.RootElement);
+
             var fingerprint = ComputeFingerprint(files.Where(file => file.Path.StartsWith(versionPrefix, StringComparison.Ordinal))
                 .Select(file => new CatalogFingerprintInput(file.Path[versionPrefix.Length..], file.Content)));
             var supportEndsAtElement = metadata.GetProperty("supportEndsAt");
@@ -76,6 +80,7 @@ public static class CatalogLoader
                 buildProfiles,
                 pipelineSteps,
                 regions,
+                pins,
                 fingerprint));
         }
 
@@ -120,6 +125,50 @@ public static class CatalogLoader
     {
         using var document = JsonDocument.Parse(file.Content);
         return new CatalogPipelineStepDescriptor(document.RootElement);
+    }
+
+    private static CatalogVersionPins ParsePins(JsonElement definition)
+    {
+        var startupImage = definition.GetProperty("startupImage");
+        var modules = definition.GetProperty("modules").EnumerateObject()
+            .ToDictionary(
+                module => module.Name,
+                module => new CatalogModulePin(
+                    module.Value.GetProperty("reference").GetString()!,
+                    module.Value.GetProperty("version").GetString()!,
+                    module.Value.GetProperty("versionSource").GetString()!),
+                StringComparer.Ordinal);
+        var pipelineValidation = definition.GetProperty("pipelineValidation");
+        var azurePipelinesSchema = pipelineValidation.GetProperty("azurePipelinesSchema");
+        var nativeResources = definition.GetProperty("nativeResources").EnumerateObject()
+            .ToDictionary(
+                resource => resource.Name,
+                resource => new CatalogNativeResourcePin(
+                    resource.Value.GetProperty("type").GetString()!,
+                    resource.Value.GetProperty("apiVersion").GetString()!,
+                    resource.Value.GetProperty("reason").GetString()!),
+                StringComparer.Ordinal);
+
+        return new CatalogVersionPins(
+            definition.GetProperty("bicepCliVersion").GetString()!,
+            new CatalogStartupImagePin(
+                startupImage.GetProperty("reference").GetString()!,
+                startupImage.GetProperty("source").GetString()!),
+            modules,
+            definition.GetProperty("powerShellModules").EnumerateObject()
+                .ToDictionary(
+                    module => module.Name,
+                    module => module.Value.GetString()!,
+                    StringComparer.Ordinal),
+            new CatalogPipelineValidationPins(
+                new CatalogPipelineSchemaPin(
+                    azurePipelinesSchema.GetProperty("repository").GetString()!,
+                    azurePipelinesSchema.GetProperty("commit").GetString()!,
+                    azurePipelinesSchema.GetProperty("path").GetString()!,
+                    azurePipelinesSchema.GetProperty("sha256").GetString()!,
+                    azurePipelinesSchema.GetProperty("source").GetString()!),
+                pipelineValidation.GetProperty("trivyVersion").GetString()!),
+            nativeResources);
     }
 
     private static string ComputeFingerprint(IEnumerable<CatalogFingerprintInput> sourceFiles)

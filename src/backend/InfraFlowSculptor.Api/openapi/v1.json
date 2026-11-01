@@ -1665,6 +1665,91 @@
         ]
       }
     },
+    "/v1/projects/{id}/deployment-plan": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Consulter le plan de déploiement déterministe d’un projet.",
+        "operationId": "GetProjectDeploymentPlan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "component",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "target",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentPlan"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/projects/{id}/validation/findings/{code}/acknowledgment": {
       "post": {
         "tags": [
@@ -7916,6 +8001,89 @@
           }
         }
       },
+      "AppSettingPlan": {
+        "required": [
+          "name",
+          "destination",
+          "source",
+          "value",
+          "sourceResource",
+          "outputName",
+          "keyVault",
+          "secretName",
+          "identity",
+          "secretFeedKind",
+          "pipelineVariableName",
+          "isImplicit",
+          "isSensitive"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "destination": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceResource": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "outputName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "keyVault": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "secretName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "identity": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "secretFeedKind": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pipelineVariableName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isImplicit": {
+            "type": "boolean"
+          },
+          "isSensitive": {
+            "type": "boolean"
+          }
+        }
+      },
       "AppSettingRequest": {
         "required": [
           "name",
@@ -8406,6 +8574,55 @@
           }
         }
       },
+      "ApplicationPlan": {
+        "required": [
+          "name",
+          "resource",
+          "codeSourcePath",
+          "dockerfilePath",
+          "buildContextPath",
+          "imageRepository",
+          "healthCheckPath",
+          "strategy",
+          "targets"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "resource": {
+            "type": "string"
+          },
+          "codeSourcePath": {
+            "type": "string"
+          },
+          "dockerfilePath": {
+            "type": "string"
+          },
+          "buildContextPath": {
+            "type": "string"
+          },
+          "imageRepository": {
+            "type": "string"
+          },
+          "healthCheckPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "strategy": {
+            "$ref": "#/components/schemas/DeploymentStrategyKind"
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationTargetPlan"
+            }
+          }
+        }
+      },
       "ApplicationStepParameterRequest": {
         "required": [
           "name",
@@ -8518,6 +8735,56 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ApplicationStepParameterResponse"
+            }
+          }
+        }
+      },
+      "ApplicationTargetPlan": {
+        "required": [
+          "targetCode",
+          "buildRegistryComponent",
+          "buildRegistryResource",
+          "buildRegistryName",
+          "promotionRequired",
+          "infrastructurePrerequisites",
+          "stageSteps"
+        ],
+        "type": "object",
+        "properties": {
+          "targetCode": {
+            "type": "string"
+          },
+          "buildRegistryComponent": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "buildRegistryResource": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "buildRegistryName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "promotionRequired": {
+            "type": "boolean"
+          },
+          "infrastructurePrerequisites": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "stageSteps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeploymentStageStepKind"
             }
           }
         }
@@ -8720,6 +8987,134 @@
           }
         }
       },
+      "CatalogModulePin": {
+        "required": [
+          "reference",
+          "version",
+          "versionSource"
+        ],
+        "type": "object",
+        "properties": {
+          "reference": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "versionSource": {
+            "type": "string"
+          }
+        }
+      },
+      "CatalogNativeResourcePin": {
+        "required": [
+          "type",
+          "apiVersion",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "apiVersion": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "CatalogPins": {
+        "required": [
+          "version",
+          "fingerprint",
+          "bicepCliVersion",
+          "startupImage",
+          "modules",
+          "powerShellModules",
+          "pipelineValidation",
+          "nativeResources"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "bicepCliVersion": {
+            "type": "string"
+          },
+          "startupImage": {
+            "$ref": "#/components/schemas/CatalogStartupImagePin"
+          },
+          "modules": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CatalogModulePin"
+            }
+          },
+          "powerShellModules": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "pipelineValidation": {
+            "$ref": "#/components/schemas/CatalogPipelineValidationPins"
+          },
+          "nativeResources": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CatalogNativeResourcePin"
+            }
+          }
+        }
+      },
+      "CatalogPipelineSchemaPin": {
+        "required": [
+          "repository",
+          "commit",
+          "path",
+          "sha256",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "repository": {
+            "type": "string"
+          },
+          "commit": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        }
+      },
+      "CatalogPipelineValidationPins": {
+        "required": [
+          "azurePipelinesSchema",
+          "trivyVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "azurePipelinesSchema": {
+            "$ref": "#/components/schemas/CatalogPipelineSchemaPin"
+          },
+          "trivyVersion": {
+            "type": "string"
+          }
+        }
+      },
       "CatalogRegion": {
         "required": [
           "name",
@@ -8762,6 +9157,21 @@
             "type": "string"
           },
           "abbreviation": {
+            "type": "string"
+          }
+        }
+      },
+      "CatalogStartupImagePin": {
+        "required": [
+          "reference",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "reference": {
+            "type": "string"
+          },
+          "source": {
             "type": "string"
           }
         }
@@ -8870,6 +9280,42 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "ComponentPlan": {
+        "required": [
+          "componentCode",
+          "mode",
+          "dependsOn",
+          "targets",
+          "applications"
+        ],
+        "type": "object",
+        "properties": {
+          "componentCode": {
+            "type": "string"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/ComponentDeploymentMode"
+          },
+          "dependsOn": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TargetPlan"
+            }
+          },
+          "applications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationPlan"
+            }
           }
         }
       },
@@ -9201,6 +9647,52 @@
           "Schema"
         ]
       },
+      "DataAccessPlan": {
+        "required": [
+          "server",
+          "database",
+          "principalKind",
+          "principalResourceId",
+          "level",
+          "databaseRoles",
+          "exposure",
+          "applyScript",
+          "removeScript"
+        ],
+        "type": "object",
+        "properties": {
+          "server": {
+            "type": "string"
+          },
+          "database": {
+            "type": "string"
+          },
+          "principalKind": {
+            "type": "string"
+          },
+          "principalResourceId": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "databaseRoles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exposure": {
+            "type": "string"
+          },
+          "applyScript": {
+            "type": "string"
+          },
+          "removeScript": {
+            "type": "string"
+          }
+        }
+      },
       "DeleteAppSettingRequest": {
         "required": [
           "expectedVersion"
@@ -9256,6 +9748,39 @@
             "format": "int32"
           }
         }
+      },
+      "DeploymentPlan": {
+        "required": [
+          "project",
+          "components",
+          "pins"
+        ],
+        "type": "object",
+        "properties": {
+          "project": {
+            "$ref": "#/components/schemas/ProjectInfo"
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComponentPlan"
+            }
+          },
+          "pins": {
+            "$ref": "#/components/schemas/CatalogPins"
+          }
+        }
+      },
+      "DeploymentStageStepKind": {
+        "enum": [
+          "DeployContainerImage",
+          "CheckHealth"
+        ]
+      },
+      "DeploymentStrategyKind": {
+        "enum": [
+          "Direct"
+        ]
       },
       "EffectiveProjectPermissionsResponse": {
         "required": [
@@ -9369,6 +9894,77 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "ExposurePlan": {
+        "required": [
+          "mode",
+          "allowedIpRanges"
+        ],
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "allowedIpRanges": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ExternalReference": {
+        "required": [
+          "componentCode",
+          "targetCode",
+          "resourceType",
+          "logicalName",
+          "name",
+          "resourceGroup",
+          "subscriptionId",
+          "resourceId",
+          "isExisting"
+        ],
+        "type": "object",
+        "properties": {
+          "componentCode": {
+            "type": "string"
+          },
+          "targetCode": {
+            "type": "string"
+          },
+          "resourceType": {
+            "type": "string"
+          },
+          "logicalName": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "resourceGroup": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subscriptionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resourceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isExisting": {
+            "type": "boolean"
           }
         }
       },
@@ -10516,6 +11112,29 @@
           }
         }
       },
+      "PipelineSecretPlan": {
+        "required": [
+          "variable",
+          "vault",
+          "secret",
+          "writer"
+        ],
+        "type": "object",
+        "properties": {
+          "variable": {
+            "type": "string"
+          },
+          "vault": {
+            "type": "string"
+          },
+          "secret": {
+            "type": "string"
+          },
+          "writer": {
+            "type": "string"
+          }
+        }
+      },
       "PreviewResourceNameRequest": {
         "required": [
           "resourceGroupId",
@@ -10657,6 +11276,44 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "ProjectInfo": {
+        "required": [
+          "name",
+          "code",
+          "description",
+          "infrastructureLanguage",
+          "ciPlatform",
+          "moduleSource",
+          "publishingPreset"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "infrastructureLanguage": {
+            "type": "string"
+          },
+          "ciPlatform": {
+            "type": "string"
+          },
+          "moduleSource": {
+            "type": "string"
+          },
+          "publishingPreset": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -11466,6 +12123,247 @@
           }
         }
       },
+      "ReleaseAppOwnedStatePlan": {
+        "required": [
+          "resourceId",
+          "parameter",
+          "kind",
+          "bootstrapImage"
+        ],
+        "type": "object",
+        "properties": {
+          "resourceId": {
+            "type": "string"
+          },
+          "parameter": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "bootstrapImage": {
+            "type": "string"
+          }
+        }
+      },
+      "ReleaseDataAccessPlan": {
+        "required": [
+          "server",
+          "database",
+          "principal",
+          "level",
+          "exposure"
+        ],
+        "type": "object",
+        "properties": {
+          "server": {
+            "type": "string"
+          },
+          "database": {
+            "type": "string"
+          },
+          "principal": {
+            "$ref": "#/components/schemas/ReleaseDataAccessPrincipalPlan"
+          },
+          "level": {
+            "type": "string"
+          },
+          "exposure": {
+            "type": "string"
+          }
+        }
+      },
+      "ReleaseDataAccessPrincipalPlan": {
+        "required": [
+          "resourceId",
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "resourceId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          }
+        }
+      },
+      "ReleaseDataPlan": {
+        "required": [
+          "schema",
+          "project",
+          "component",
+          "target",
+          "unit",
+          "subscriptionId",
+          "location",
+          "protected",
+          "deploymentIdentityObjectId",
+          "dependencies",
+          "secretWrites",
+          "secretReferences",
+          "appOwnedState",
+          "dataAccess",
+          "accessObjectTypes",
+          "restartOnSecretChange"
+        ],
+        "type": "object",
+        "properties": {
+          "schema": {
+            "type": "string"
+          },
+          "project": {
+            "type": "string"
+          },
+          "component": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "subscriptionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "location": {
+            "type": "string"
+          },
+          "protected": {
+            "type": "boolean"
+          },
+          "deploymentIdentityObjectId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReleaseDependencyPlan"
+            }
+          },
+          "secretWrites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReleaseSecretWritePlan"
+            }
+          },
+          "secretReferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReleaseSecretReferencePlan"
+            }
+          },
+          "appOwnedState": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReleaseAppOwnedStatePlan"
+            }
+          },
+          "dataAccess": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReleaseDataAccessPlan"
+            }
+          },
+          "accessObjectTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "restartOnSecretChange": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "explicitAccessRevocations": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ReleaseDependencyPlan": {
+        "required": [
+          "component",
+          "resources"
+        ],
+        "type": "object",
+        "properties": {
+          "component": {
+            "type": "string"
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReleaseDependencyResourcePlan"
+            }
+          }
+        }
+      },
+      "ReleaseDependencyResourcePlan": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "ReleaseSecretReferencePlan": {
+        "required": [
+          "vault",
+          "secret",
+          "writer"
+        ],
+        "type": "object",
+        "properties": {
+          "vault": {
+            "type": "string"
+          },
+          "secret": {
+            "type": "string"
+          },
+          "writer": {
+            "type": "string"
+          }
+        }
+      },
+      "ReleaseSecretWritePlan": {
+        "required": [
+          "variable",
+          "vault",
+          "secret",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "variable": {
+            "type": "string"
+          },
+          "vault": {
+            "type": "string"
+          },
+          "secret": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        }
+      },
       "RemoveLinkRequest": {
         "required": [
           "expectedLinkVersion",
@@ -11496,6 +12394,21 @@
           "Detach",
           "Delete"
         ]
+      },
+      "RemovedResourcePlan": {
+        "required": [
+          "resourceId",
+          "treatment"
+        ],
+        "type": "object",
+        "properties": {
+          "resourceId": {
+            "type": "string"
+          },
+          "treatment": {
+            "type": "string"
+          }
+        }
       },
       "RenameOrganizationRequest": {
         "required": [
@@ -11542,6 +12455,32 @@
                 "$ref": "#/components/schemas/ApplicationConfigurationResponse"
               }
             ]
+          }
+        }
+      },
+      "ResourceChildPlan": {
+        "required": [
+          "type",
+          "armType",
+          "name",
+          "properties"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "armType": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourcePropertyPlan"
+            }
           }
         }
       },
@@ -11675,6 +12614,39 @@
           "Blocked"
         ]
       },
+      "ResourceGroupPlan": {
+        "required": [
+          "logicalName",
+          "name",
+          "region",
+          "present",
+          "tags"
+        ],
+        "type": "object",
+        "properties": {
+          "logicalName": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "region": {
+            "type": "string"
+          },
+          "present": {
+            "type": "boolean"
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "ResourceGroupResponse": {
         "required": [
           "id",
@@ -11718,6 +12690,32 @@
             "additionalProperties": {
               "type": "string"
             }
+          }
+        }
+      },
+      "ResourceIdentityPlan": {
+        "required": [
+          "kind",
+          "resourceName",
+          "resourceId",
+          "attached"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "resourceName": {
+            "type": "string"
+          },
+          "resourceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "attached": {
+            "type": "boolean"
           }
         }
       },
@@ -12048,6 +13046,133 @@
           }
         }
       },
+      "ResourcePlan": {
+        "required": [
+          "type",
+          "armType",
+          "logicalName",
+          "name",
+          "resourceGroup",
+          "region",
+          "present",
+          "resourceId",
+          "properties",
+          "fixedValues",
+          "children",
+          "identities",
+          "exposure",
+          "tags",
+          "isExisting",
+          "existingId"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "armType": {
+            "type": "string"
+          },
+          "logicalName": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "resourceGroup": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "region": {
+            "type": "string"
+          },
+          "present": {
+            "type": "boolean"
+          },
+          "resourceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "properties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourcePropertyPlan"
+            }
+          },
+          "fixedValues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourcePropertyPlan"
+            }
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceChildPlan"
+            }
+          },
+          "identities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceIdentityPlan"
+            }
+          },
+          "exposure": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ExposurePlan"
+              }
+            ]
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "isExisting": {
+            "type": "boolean"
+          },
+          "existingId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ResourcePropertyPlan": {
+        "required": [
+          "name",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          }
+        }
+      },
       "ResourceResponse": {
         "required": [
           "id",
@@ -12157,6 +13282,67 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "RoleAssignmentOriginPlan": {
+        "required": [
+          "kind",
+          "linkKind",
+          "source",
+          "target"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "linkKind": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        }
+      },
+      "RoleAssignmentPlan": {
+        "required": [
+          "principalKind",
+          "principal",
+          "role",
+          "scopeKind",
+          "scope",
+          "name",
+          "origins"
+        ],
+        "type": "object",
+        "properties": {
+          "principalKind": {
+            "type": "string"
+          },
+          "principal": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "scopeKind": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "origins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleAssignmentOriginPlan"
+            }
           }
         }
       },
@@ -12698,6 +13884,119 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "TargetInfo": {
+        "required": [
+          "code",
+          "subscriptionId",
+          "region",
+          "deploymentConnection",
+          "isProtected",
+          "approvers",
+          "executors"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "subscriptionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "region": {
+            "type": "string"
+          },
+          "deploymentConnection": {
+            "type": "string"
+          },
+          "isProtected": {
+            "type": "boolean"
+          },
+          "approvers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "executors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "TargetPlan": {
+        "required": [
+          "target",
+          "resourceGroups",
+          "resources",
+          "externalReferences",
+          "roleAssignments",
+          "appSettings",
+          "expectedSecrets",
+          "dataAccess",
+          "removed",
+          "release"
+        ],
+        "type": "object",
+        "properties": {
+          "target": {
+            "$ref": "#/components/schemas/TargetInfo"
+          },
+          "resourceGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceGroupPlan"
+            }
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourcePlan"
+            }
+          },
+          "externalReferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalReference"
+            }
+          },
+          "roleAssignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleAssignmentPlan"
+            }
+          },
+          "appSettings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppSettingPlan"
+            }
+          },
+          "expectedSecrets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PipelineSecretPlan"
+            }
+          },
+          "dataAccess": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DataAccessPlan"
+            }
+          },
+          "removed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RemovedResourcePlan"
+            }
+          },
+          "release": {
+            "$ref": "#/components/schemas/ReleaseDataPlan"
           }
         }
       },

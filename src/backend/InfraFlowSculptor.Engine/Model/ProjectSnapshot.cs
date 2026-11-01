@@ -10,6 +10,12 @@ public sealed record ProjectSnapshot(string Name, string Code, string Descriptio
 
     public string CatalogVersion { get; init; } = string.Empty;
 
+    public string InfrastructureLanguage { get; init; } = "Bicep";
+
+    public string CiPlatform { get; init; } = "AzureDevOps";
+
+    public string ModuleSource { get; init; } = "AVM registre public";
+
     public bool SystemTagsEnabled { get; init; } = true;
 
     public string? PublishingPreset { get; init; }

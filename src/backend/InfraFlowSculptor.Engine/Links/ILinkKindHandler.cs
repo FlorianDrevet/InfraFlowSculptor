@@ -15,6 +15,10 @@ public interface ILinkKindHandler : IKeyed<LinkKind>
 
     bool IsResourceHostingRelationship { get; }
 
+    bool ProducesDiagnosticSettings { get; }
+
+    bool IsImagePullRelationship { get; }
+
     bool CreatesDeploymentDependency { get; }
 
     bool RequiresSameSubscriptionAndRegion { get; }

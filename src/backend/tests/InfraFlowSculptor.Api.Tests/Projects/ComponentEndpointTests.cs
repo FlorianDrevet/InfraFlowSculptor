@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using InfraFlowSculptor.Api.Configuration;
 using InfraFlowSculptor.Api.Tests.Common;
 using InfraFlowSculptor.Contracts.Projects;
@@ -31,6 +32,7 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
     private static readonly string[] DuplicateKeyVaultSecretUserRoles = [" key vault secrets user "];
     private static readonly string[] WhitespaceKeyVaultSecretUserRoles = [" Key Vault Secrets User "];
     private static readonly string[] DuplicateRoleEntries = ["Key Vault Secrets User", " key vault secrets user "];
+    private static readonly string[] ExpectedDeploymentDependencies = ["core", "data", "platform"];
     private readonly HttpClient client = factory.CreateClient();
 
     [Fact]
@@ -56,6 +58,10 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
     [Fact]
     public Task EffectiveValuesExposeTargetPresenceTagsAndPropertyProvenance() =>
         RunSerialAsync(EffectiveValuesExposeTargetPresenceTagsAndPropertyProvenanceCore);
+
+    [Fact]
+    public Task DeploymentPlanExposesThePilotOrdersProductionPlanDeterministically() =>
+        RunSerialAsync(DeploymentPlanExposesThePilotOrdersProductionPlanDeterministicallyCore);
 
     [Fact]
     public Task ResourceDeletionImpactPreviewIsServerCalculatedAndReportsPartialCoverage() =>
@@ -1623,6 +1629,199 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         var existingTarget = Assert.Single(existingResult.RootElement.EnumerateArray());
         Assert.False(existingTarget.GetProperty("isPresent").GetBoolean());
         Assert.Empty(existingTarget.GetProperty("properties").EnumerateArray());
+    }
+
+    private async Task DeploymentPlanExposesThePilotOrdersProductionPlanDeterministicallyCore()
+    {
+        await PrepareAsync();
+        var shouldCleanupReferenceModel = false;
+        Guid? testAppSettingId = null;
+        try
+        {
+        Guid applicationId;
+        Guid keyVaultId;
+        Guid identityId;
+        Guid ordersId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+            var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+            var alice = await dbContext.UserProfiles.SingleAsync(profile =>
+                profile.ObjectId == Guid.Parse("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"));
+            var bob = await dbContext.UserProfiles.SingleAsync(profile =>
+                profile.ObjectId == Guid.Parse("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"));
+            var chloe = await dbContext.UserProfiles.SingleAsync(profile =>
+                profile.ObjectId == Guid.Parse("cccccccc-cccc-4ccc-8ccc-cccccccccccc"));
+            var project = await dbContext.Projects.SingleAsync(candidate => candidate.Id == new ProjectId(ProjectId));
+            shouldCleanupReferenceModel = !await dbContext.Components
+                .AnyAsync(candidate => candidate.ProjectId == project.Id);
+            await new EfDemoProjectSeeder(dbContext).SeedShopAsync(
+                project.Id,
+                new OrganizationId(OrganizationId),
+                alice.Id,
+                bob.Id,
+                chloe.Id,
+                project.CatalogVersion,
+                seedReferenceModel: true);
+
+            var components = await dbContext.Components
+                .Include(component => component.Resources)
+                .Where(component => component.ProjectId == new ProjectId(ProjectId))
+                .ToArrayAsync();
+            var orders = components.Single(component => component.Code == "orders");
+            var core = components.Single(component => component.Code == "core");
+            var application = orders.Resources.Single(resource => resource.Type == "ContainerApp");
+            var keyVault = core.Resources.Single(resource => resource.Type == "KeyVault");
+            var identity = orders.Resources.Single(resource => resource.Type == "UserAssignedIdentity");
+            applicationId = application.Id;
+            keyVaultId = keyVault.Id;
+            identityId = identity.Id;
+            ordersId = orders.Id.Value;
+
+            var setting = AppSettingAggregate.Create(
+                Guid.NewGuid(),
+                project.Id,
+                new OrganizationId(OrganizationId),
+                ordersId,
+                applicationId,
+                new AppSettingDefinition(
+                    "Payments__ApiKey",
+                    AppSettingSourceKind.KeyVaultSecret,
+                    KeyVaultResourceId: keyVaultId,
+                    SecretName: "payments-api-key",
+                    SecretFeedKind: AppSettingSecretFeedKind.PipelineSecret,
+                    PipelineVariableName: "MAIN_PAYMENTS_API_KEY",
+                    IdentityResourceId: identityId));
+            Assert.False(setting.IsError, setting.IsError ? setting.FirstError.Description : null);
+            dbContext.AppSettings.Add(setting.Value);
+            testAppSettingId = setting.Value.Id;
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var firstRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/v1/projects/{ProjectId:D}/deployment-plan?component=orders&target=prd");
+        using var firstResponse = await client.SendAsync(firstRequest);
+        Assert.True(firstResponse.StatusCode == HttpStatusCode.OK, await firstResponse.Content.ReadAsStringAsync());
+        var firstJson = await firstResponse.Content.ReadAsStringAsync();
+        using var firstPlan = JsonDocument.Parse(firstJson);
+
+        using var secondRequest = CreateRequest(
+            HttpMethod.Get,
+            $"/v1/projects/{ProjectId:D}/deployment-plan?component=orders&target=prd");
+        using var secondResponse = await client.SendAsync(secondRequest);
+        Assert.Equal(HttpStatusCode.OK, secondResponse.StatusCode);
+        Assert.Equal(firstJson, await secondResponse.Content.ReadAsStringAsync());
+
+        var component = Assert.Single(firstPlan.RootElement.GetProperty("components").EnumerateArray());
+        Assert.Equal("orders", component.GetProperty("componentCode").GetString());
+        Assert.Equal(ExpectedDeploymentDependencies,
+            component.GetProperty("dependsOn").EnumerateArray().Select(item => item.GetString()));
+        var target = Assert.Single(component.GetProperty("targets").EnumerateArray());
+        Assert.Equal("prd", target.GetProperty("target").GetProperty("code").GetString());
+        Assert.True(target.GetProperty("target").GetProperty("isProtected").GetBoolean());
+        Assert.Contains(target.GetProperty("roleAssignments").EnumerateArray(), assignment =>
+            assignment.GetProperty("origins").GetArrayLength() > 0);
+
+        var expectedSecret = Assert.Single(target.GetProperty("expectedSecrets").EnumerateArray());
+        Assert.Equal("MAIN_PAYMENTS_API_KEY", expectedSecret.GetProperty("variable").GetString());
+        Assert.Equal("core", expectedSecret.GetProperty("writer").GetString());
+
+        var release = target.GetProperty("release");
+        Assert.Equal("ifs-shop-orders-prd", release.GetProperty("unit").GetString());
+        Assert.Equal("payments-api-key", Assert.Single(release.GetProperty("secretReferences").EnumerateArray())
+            .GetProperty("secret").GetString());
+        var dataAccess = Assert.Single(release.GetProperty("dataAccess").EnumerateArray());
+        Assert.Equal("systemAssigned", dataAccess.GetProperty("principal").GetProperty("kind").GetString());
+        Assert.Equal("ReadWrite", dataAccess.GetProperty("level").GetString());
+
+        using var fullPlanRequest = CreateRequest(HttpMethod.Get, $"/v1/projects/{ProjectId:D}/deployment-plan");
+        using var fullPlanResponse = await client.SendAsync(fullPlanRequest);
+        Assert.Equal(HttpStatusCode.OK, fullPlanResponse.StatusCode);
+        using var fullPlan = JsonDocument.Parse(await fullPlanResponse.Content.ReadAsStringAsync());
+        foreach (var componentPlan in fullPlan.RootElement.GetProperty("components").EnumerateArray()
+            .Where(componentPlan => componentPlan.GetProperty("componentCode").GetString() != "orders"))
+        {
+            foreach (var targetPlan in componentPlan.GetProperty("targets").EnumerateArray())
+            {
+                Assert.DoesNotContain(targetPlan.GetProperty("expectedSecrets").EnumerateArray(), secret =>
+                    secret.GetProperty("variable").GetString() == "MAIN_PAYMENTS_API_KEY");
+            }
+        }
+
+        var subscriptionIdsByTarget = fullPlan.RootElement.GetProperty("components").EnumerateArray()
+            .SelectMany(componentPlan => componentPlan.GetProperty("targets").EnumerateArray())
+            .Select(targetPlan => targetPlan.GetProperty("target"))
+            .GroupBy(targetInfo => targetInfo.GetProperty("code").GetString()!, StringComparer.Ordinal)
+            .ToDictionary(
+                group => group.Key,
+                group => group.First().GetProperty("subscriptionId").GetGuid().ToString("D"),
+                StringComparer.Ordinal);
+        var repositoryRoot = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..", "..", "..", "..", "..", "..", ".."));
+        foreach (var componentPlan in fullPlan.RootElement.GetProperty("components").EnumerateArray())
+        {
+            var componentCode = componentPlan.GetProperty("componentCode").GetString()!;
+            foreach (var targetPlan in componentPlan.GetProperty("targets").EnumerateArray())
+            {
+                var targetInfo = targetPlan.GetProperty("target");
+                var targetCode = targetInfo.GetProperty("code").GetString()!;
+                var reference = await File.ReadAllTextAsync(Path.Combine(
+                    repositoryRoot,
+                    "reference",
+                    "pilot",
+                    "bicep-azdo",
+                    componentCode,
+                    "infra",
+                    $"release.{targetCode}.json"));
+                var expectedReference = reference
+                    .Replace("<A>", subscriptionIdsByTarget["dev"], StringComparison.Ordinal)
+                    .Replace("<B>", subscriptionIdsByTarget["prd"], StringComparison.Ordinal)
+                    .Replace("<C>", subscriptionIdsByTarget["shared"], StringComparison.Ordinal);
+                var expectedRelease = JsonNode.Parse(expectedReference);
+                var actualRelease = JsonSerializer.SerializeToNode(targetPlan.GetProperty("release"));
+                Assert.True(JsonNode.DeepEquals(expectedRelease, actualRelease),
+                    $"The release data for {componentCode}/{targetCode} differs from its reference file.");
+            }
+        }
+        }
+        finally
+        {
+            if (shouldCleanupReferenceModel)
+            {
+                Guid[] componentIds;
+                using (var cleanupScope = factory.Services.CreateScope())
+                {
+                    cleanupScope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>()
+                        .Set(new OrganizationId(OrganizationId));
+                    var cleanupDbContext = cleanupScope.ServiceProvider.GetRequiredService<IfsDbContext>();
+                    componentIds = await cleanupDbContext.Components
+                        .Where(candidate => candidate.ProjectId == new ProjectId(ProjectId))
+                        .Select(candidate => candidate.Id.Value)
+                        .ToArrayAsync();
+                }
+
+                foreach (var componentId in componentIds)
+                {
+                    await CleanupResourceTestComponentAsync(componentId);
+                }
+            }
+            else if (testAppSettingId is { } settingId)
+            {
+                using var cleanupScope = factory.Services.CreateScope();
+                cleanupScope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>()
+                    .Set(new OrganizationId(OrganizationId));
+                var cleanupDbContext = cleanupScope.ServiceProvider.GetRequiredService<IfsDbContext>();
+                var setting = await cleanupDbContext.AppSettings
+                    .SingleOrDefaultAsync(candidate => candidate.Id == settingId);
+                if (setting is not null)
+                {
+                    cleanupDbContext.AppSettings.Remove(setting);
+                    await cleanupDbContext.SaveChangesAsync();
+                }
+            }
+        }
     }
 
     private async Task ResourceDeletionImpactPreviewIsServerCalculatedAndReportsPartialCoverageCore()

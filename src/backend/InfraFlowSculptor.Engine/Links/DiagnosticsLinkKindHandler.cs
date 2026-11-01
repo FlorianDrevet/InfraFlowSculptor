@@ -13,6 +13,8 @@ public sealed class DiagnosticsLinkKindHandler() : LinkKindHandler(
     LinkIdentityRequirement.None,
     new LinkFormDefinition([new LinkFormField("excludedCategories", "array", false)]))
 {
+    public override bool ProducesDiagnosticSettings => true;
+
     public override int? MaximumFor(CatalogResourceTypeDescriptor source) => 1;
 
     protected override bool SupportsSource(CatalogResourceTypeDescriptor source) =>

@@ -12,6 +12,7 @@ using InfraFlowSculptor.Engine.Applications;
 using InfraFlowSculptor.Engine.Exposure;
 using InfraFlowSculptor.Engine.Links;
 using InfraFlowSculptor.Engine.Ordering;
+using InfraFlowSculptor.Engine.Plan;
 using InfraFlowSculptor.Engine.Validation;
 using InfraFlowSculptor.Application.Components.Validation;
 
@@ -48,6 +49,8 @@ public static class DependencyInjection
             [new DirectDeploymentStrategy()]));
         services.TryAddSingleton<WiringEngine>();
         services.TryAddSingleton<ComponentOrdering>();
+        services.TryAddSingleton<DeploymentPlanBuilder>();
+        services.TryAddSingleton<EngineFacade>();
         services.TryAddSingleton<IRuleSource>(_ => new CodeRuleSource(PilotValidationRules.Create()));
         services.TryAddSingleton<ValidationEngine>();
         services.TryAddSingleton<FindingFixRegistry>(provider => new FindingFixRegistry(

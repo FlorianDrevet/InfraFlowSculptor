@@ -53,6 +53,8 @@ export type { DeleteProject$Params as DeleteProject$Params } from './fn/projects
 export { deleteProject as deleteProject } from './fn/projects/delete-project';
 export type { GetProjectValidation$Params as GetProjectValidation$Params } from './fn/projects/get-project-validation';
 export { getProjectValidation as getProjectValidation } from './fn/projects/get-project-validation';
+export type { GetProjectDeploymentPlan$Params as GetProjectDeploymentPlan$Params } from './fn/projects/get-project-deployment-plan';
+export { getProjectDeploymentPlan as getProjectDeploymentPlan } from './fn/projects/get-project-deployment-plan';
 export type { AcknowledgeFinding$Params as AcknowledgeFinding$Params } from './fn/projects/acknowledge-finding';
 export { acknowledgeFinding as acknowledgeFinding } from './fn/projects/acknowledge-finding';
 export type { ApplyFindingFix$Params as ApplyFindingFix$Params } from './fn/projects/apply-finding-fix';

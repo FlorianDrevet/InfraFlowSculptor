@@ -16,11 +16,25 @@ public sealed class ValidationEngine(
         InfraFlowSculptor.Catalog.CatalogVersion catalog)
     {
         var ordering = componentOrdering.Order(snapshot, catalog);
+        var naming = NamingEngine.Preview(snapshot, linkKinds);
+        return Evaluate(snapshot, catalog, ordering, naming);
+    }
+
+    public ValidationResult Evaluate(
+        InfraFlowSculptor.Engine.Model.ModelSnapshot snapshot,
+        InfraFlowSculptor.Catalog.CatalogVersion catalog,
+        ComponentOrderingResult ordering,
+        NamingPreviewResult naming)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(catalog);
+        ArgumentNullException.ThrowIfNull(ordering);
+        ArgumentNullException.ThrowIfNull(naming);
         var context = new ValidationContext(
             snapshot,
             catalog,
             ordering,
-            NamingEngine.Preview(snapshot, linkKinds),
+            naming,
             linkKinds,
             deploymentStrategies);
         var findings = ruleSources

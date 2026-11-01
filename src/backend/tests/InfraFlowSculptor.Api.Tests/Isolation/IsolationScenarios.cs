@@ -281,6 +281,11 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}/validation",
                 HttpStatusCode.NotFound),
+            ["GetProjectDeploymentPlan"] = OrganizationScenario(
+                "GetProjectDeploymentPlan",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/deployment-plan?component=orders&target=prd",
+                HttpStatusCode.NotFound),
             ["AcknowledgeFinding"] = OrganizationScenario(
                 "AcknowledgeFinding",
                 HttpMethod.Post,

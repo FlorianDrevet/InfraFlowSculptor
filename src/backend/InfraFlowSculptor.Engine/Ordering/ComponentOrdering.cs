@@ -8,7 +8,16 @@ public sealed class ComponentOrdering(WiringEngine wiringEngine)
 {
     public ComponentOrderingResult Order(ModelSnapshot snapshot, CatalogVersion catalog)
     {
-        var wiring = wiringEngine.Evaluate(snapshot, catalog);
+        ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(catalog);
+        return Order(snapshot, catalog, wiringEngine.Evaluate(snapshot, catalog));
+    }
+
+    public static ComponentOrderingResult Order(ModelSnapshot snapshot, CatalogVersion catalog, WiringResult wiring)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(catalog);
+        ArgumentNullException.ThrowIfNull(wiring);
         var components = snapshot.Components.ToDictionary(component => component.Id);
         var dependencies = wiring.Dependencies
             .Where(dependency => components.ContainsKey(dependency.SourceComponentId)

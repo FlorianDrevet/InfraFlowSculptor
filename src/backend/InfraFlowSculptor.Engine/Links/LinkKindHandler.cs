@@ -23,6 +23,10 @@ public abstract class LinkKindHandler(
 
     public virtual bool IsResourceHostingRelationship => false;
 
+    public virtual bool ProducesDiagnosticSettings => false;
+
+    public virtual bool IsImagePullRelationship => false;
+
     public bool CreatesDeploymentDependency { get; } = createsDeploymentDependency;
 
     public virtual bool RequiresSameSubscriptionAndRegion => false;

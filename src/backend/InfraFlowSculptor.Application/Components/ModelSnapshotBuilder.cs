@@ -156,8 +156,10 @@ public sealed class ModelSnapshotBuilder(
                 Name = environment.Name,
                 Position = environment.Position,
                 SubscriptionId = environment.SubscriptionId,
+                DeploymentConnection = environment.DeploymentConnection,
                 IsProtected = environment.IsProtected,
                 Approvers = environment.Approvers,
+                Runners = environment.Runners,
                 Tags = environment.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase)
             })
             .ToArray();
@@ -211,6 +213,9 @@ public sealed class ModelSnapshotBuilder(
                 Version = project.Version,
                 ModelVersion = project.ModelVersion,
                 CatalogVersion = project.CatalogVersion,
+                InfrastructureLanguage = project.InfrastructureLanguage,
+                CiPlatform = project.CiPlatform,
+                ModuleSource = project.ModuleSource,
                 SystemTagsEnabled = project.SystemTagsEnabled,
                 PublishingPreset = project.PublishingPreset
             },

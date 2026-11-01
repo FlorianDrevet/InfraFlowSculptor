@@ -101,8 +101,8 @@ public sealed class EfDemoProjectSeeder(IfsDbContext dbContext)
             SharedSubscriptionId,
             "francecentral",
             deploymentConnection: null,
-            isProtected: false,
-            approvers: [],
+            isProtected: true,
+            approvers: ["Shop Release Approvers"],
             runners: [],
             projectEnvironments: environments,
             projectDefaultRunners: project.DefaultRunners).Value;

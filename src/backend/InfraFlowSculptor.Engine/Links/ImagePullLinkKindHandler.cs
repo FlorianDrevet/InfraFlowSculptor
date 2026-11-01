@@ -12,6 +12,8 @@ public sealed class ImagePullLinkKindHandler() : LinkKindHandler(
     LinkIdentityRequirement.UserAssigned,
     new LinkFormDefinition([new LinkFormField("identity", "identity", true)]))
 {
+    public override bool IsImagePullRelationship => true;
+
     public override int? MaximumFor(CatalogResourceTypeDescriptor source) => 1;
 
     protected override bool SupportsTypes(CatalogResourceTypeDescriptor source, CatalogResourceTypeDescriptor target) =>

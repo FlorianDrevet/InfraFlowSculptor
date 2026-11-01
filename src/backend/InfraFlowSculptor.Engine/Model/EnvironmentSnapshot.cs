@@ -14,9 +14,13 @@ public sealed record EnvironmentSnapshot(string Code, string Region)
 
     public Guid SubscriptionId { get; init; }
 
+    public string DeploymentConnection { get; init; } = string.Empty;
+
     public bool IsProtected { get; init; }
 
     public IReadOnlyList<string> Approvers { get; init; } = [];
+
+    public IReadOnlyList<string> Runners { get; init; } = [];
 
     public IReadOnlyDictionary<string, string> Tags { get; init; } =
         ImmutableDictionary<string, string>.Empty.WithComparers(StringComparer.OrdinalIgnoreCase);

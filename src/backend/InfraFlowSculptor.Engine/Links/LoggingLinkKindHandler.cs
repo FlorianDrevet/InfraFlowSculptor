@@ -12,6 +12,8 @@ public sealed class LoggingLinkKindHandler() : LinkKindHandler(
     LinkIdentityRequirement.None,
     new LinkFormDefinition([]))
 {
+    public override bool ProducesDiagnosticSettings => true;
+
     public override int? MaximumFor(CatalogResourceTypeDescriptor source) => 1;
 
     protected override bool SupportsTypes(CatalogResourceTypeDescriptor source, CatalogResourceTypeDescriptor target) =>

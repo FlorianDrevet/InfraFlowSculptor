@@ -876,6 +876,7 @@ public sealed class WiringEngineTests
                     typeof(ImmutableArray<CatalogBuildProfileDescriptor>),
                     typeof(ImmutableArray<CatalogPipelineStepDescriptor>),
                     typeof(ImmutableArray<CatalogRegion>),
+                    typeof(CatalogVersionPins),
                     typeof(string)
                 ],
                 modifiers: null)
@@ -891,6 +892,7 @@ public sealed class WiringEngineTests
             catalog.BuildProfiles,
             catalog.PipelineSteps,
             catalog.Regions,
+            catalog.Pins,
             catalog.Fingerprint
         ]);
     }

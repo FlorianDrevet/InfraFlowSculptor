@@ -5,6 +5,7 @@ using InfraFlowSculptor.Application.Common.ModelCommands;
 using InfraFlowSculptor.Application.Components.Commands.AcknowledgeFinding;
 using InfraFlowSculptor.Application.Components.Commands.ApplyFindingFix;
 using InfraFlowSculptor.Application.Components.Queries.GetProjectValidation;
+using InfraFlowSculptor.Application.Components.Queries.GetDeploymentPlan;
 using InfraFlowSculptor.Application.Projects;
 using InfraFlowSculptor.Application.Projects.Commands.AddProjectEnvironment;
 using InfraFlowSculptor.Application.Projects.Commands.AssignProjectRole;
@@ -145,6 +146,25 @@ public static class ProjectsController
             .Produces<ProjectValidationResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
+
+        projects.MapGet("/{id:guid}/deployment-plan", async (
+                Guid id,
+                [FromQuery] string? component,
+                [FromQuery] string? target,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new GetDeploymentPlanQuery(id, component, target), cancellationToken);
+                return result.Match<IResult>(value => Results.Ok(value), errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.GetProjectDeploymentPlan)
+            .WithSummary("Consulter le plan de déploiement déterministe d’un projet.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces<InfraFlowSculptor.Engine.Plan.DeploymentPlan>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesValidationProblem();
 
         projects.MapPost("/{id:guid}/validation/findings/{code}/acknowledgment", async (
                 Guid id,
