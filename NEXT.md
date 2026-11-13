@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-23`](docs/plan/02-jalon-0-pilote.md#j0-23--émetteurs-azure-devops-kit-dinstallation-et-readme) — Émetteurs Azure DevOps, kit d'installation et README |
-| **Statut** | `EN_COURS` |
-| **Dernière étape terminée** | [`J0-22`](docs/plan/02-jalon-0-pilote.md#j0-22--émetteur-bicep) — Émetteur Bicep (commit `7f04129`) |
-| **Étape suivante** | `J0-24` — Révisions : génération asynchrone, contrôles de sortie, consultation |
+| **Étape courante** | [`J0-24`](docs/plan/02-jalon-0-pilote.md#j0-24--révisions--génération-asynchrone-contrôles-de-sortie-consultation) — Révisions : génération asynchrone, contrôles de sortie, consultation |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`J0-23`](docs/plan/02-jalon-0-pilote.md#j0-23--émetteurs-azure-devops-kit-dinstallation-et-readme) — Émetteurs Azure DevOps, kit d'installation et README (commit `58a4c9d`) |
+| **Étape suivante** | `J0-25` — Export du modèle et sortie autonome |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-generation` (créée depuis `origin/impl/j0-modele`, segment empilé après R-05) |
-| **Dernière mise à jour** | 2026-11-13 — Codex (blocage résolu) |
+| **Dernière mise à jour** | 2026-11-13 — Codex |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
