@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-24`](docs/plan/02-jalon-0-pilote.md#j0-24--révisions--génération-asynchrone-contrôles-de-sortie-consultation) — Révisions : génération asynchrone, contrôles de sortie, consultation |
+| **Étape courante** | [`J0-25`](docs/plan/02-jalon-0-pilote.md#j0-25--export-du-modèle-et-sortie-autonome) — Export du modèle et sortie autonome |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-23`](docs/plan/02-jalon-0-pilote.md#j0-23--émetteurs-azure-devops-kit-dinstallation-et-readme) — Émetteurs Azure DevOps, kit d'installation et README (commit `58a4c9d`) |
-| **Étape suivante** | `J0-25` — Export du modèle et sortie autonome |
+| **Dernière étape terminée** | [`J0-24`](docs/plan/02-jalon-0-pilote.md#j0-24--révisions--génération-asynchrone-contrôles-de-sortie-consultation) — Révisions : génération asynchrone, contrôles de sortie, consultation (commit `d061225`) |
+| **Étape suivante** | `R-06` — Revue de la génération |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-generation` (créée depuis `origin/impl/j0-modele`, segment empilé après R-05) |
 | **Dernière mise à jour** | 2026-11-13 — Codex |
@@ -47,10 +47,15 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 | Bicep CLI | `0.47.16` | Oui (`0.47.16`) |
 | Git / GitHub CLI | présence | Oui (`2.45.1` / `2.92.0`) |
 
+## Reprise J0-24 — 2026-11-13
+
+La recette manuelle G1–G6 est exécutée et consignée dans `docs/plan/recettes/suivi.md` : génération de la révision, ouverture des paramètres prd, comparaison ZIP (80/80 fichiers après normalisation des placeholders), détection d'une génération inchangée, inspection du plan et blocage `VAL-LIA-OBLIGATOIRE`. La suite .NET séquentielle passe (774 réussis, 1 ignoré pour Bicep CLI opt-in). Frontend : 208 tests, 3 tests tokens, 3 icônes, 1 normaliseur et 6 motifs catalogue passent; lint/i18n passe avec 904 clés; build réussi avec dépassements de budgets consignés. Les E2E publics passent (2/2); la tentative authentifiée s'est arrêtée après 6/34 parcours desktop (1 réussi, 5 échoués/timeout). Le cas `links` reçoit une page 404 sur `/o/.../projects` et ne trouve pas la carte `shop15`; la cause n'est pas établie et le parcours mobile authentifié n'a pas été exécuté. CUA est désactivé dans les paramètres Work : les captures de référence et la capture mobile initiale sont conservées, mais le dialogue mobile n'a pas pu être recapturé après son ajustement CSS. AppHost API, Worker et Web sont de nouveau Running sous Aspire/Podman (`aspire wait` réussi); les volumes préexistants ont été conservés. Aucun accès ni coût Azure/Azure DevOps. Détails et limites : `docs/plan/recettes/suivi.md`.
+
 ## État hors dépôt 📌
 
 | Élément | État | Depuis |
 |---|---|---|
+| Image Worker locale sous Podman | `ifs-worker:j0-24` construite depuis l'arbre de travail avec le contexte racine; UID non privilégié et Bicep 0.47.16, PowerShell 7.5.0, PSScriptAnalyzer 1.25.0, powershell-yaml 0.4.12 vérifiés. Image locale non publiée, distincte du Worker .NET lancé par l'AppHost. | 2026-11-13 |
 | PostgreSQL local — recettes J0-15/J0-16 | Projet `shop15` (`01a1867f-37d7-7b4b-9d3b-fd50709f2a86`) conservé actif comme fixture locale réutilisable. L’archiver ne réduirait aucun coût Azure; aucun service ni coût Azure associé. | 2026-10-29 |
 | Abonnements Azure de test (preuves) | Souscription `fc4fa56f-e4e7-41e9-8a0d-559fcd27b827`, tenant `c833b396-517c-465d-bcce-b79702eaf932` ; `francecentral` et les fournisseurs/SKU requis disponibles ; utilisateur connecté Owner au scope souscription et User Access Administrator au scope tenant ; même souscription pour dev/prd/shared | 2026-10-15 |
 | Décision de coût et estimation des preuves ([contrôle](docs/plan/recettes/01-preuves.md#01-surveillance-des-coûts-avant-toute-action-sur-les-ressources-azure)) | Le portail Cost Analysis avant #840 affichait 103,13 EUR MTD et 134,61 EUR projetés à 22:14Z. Après #840, l’API Cost Management donne 103,125364 EUR MTD (données jusqu’au 25/10), 30,254608 EUR de prévision restante du 25 au 31/10 et 133,379972 EUR projetés. Avec la réserve complète P4/P5/P7 de +22,15 EUR, l’estimation prudente est 155,529972 EUR HT, 44,470028 EUR sous l’alerte préexistante de 200 EUR, inchangée ; poursuite autorisée par Florian au profil minimal. Le rafraîchissement portail post-run a demandé une authentification ; l’API sert à cette vérification. C5 pré-run et post-run #840 : 174 ressources, 29 groupes, 7 piles, 63 rôles, 7 budgets, sans changement d’ID. Captures hors dépôt : %LOCALAPPDATA%/InfraFlowSculptor/P08/before-p4-rev4-ci839-20261025T221335Z/, %LOCALAPPDATA%/InfraFlowSculptor/P08/after-p4-rev4-run840-20261025T223927Z/ et %LOCALAPPDATA%/InfraFlowSculptor/P08/after-p4-rev4-run840-20261025T224325Z/. J+1 shop42 tenté le 2026-10-26, résultat inconclusif (données Cost Management disponibles jusqu’au 24/10). Préflight avant approbation PRD #843, après DEV, à 2026-10-25T23:15:51Z : ActualCost MTD 103,125364 EUR (données au 25/10), Forecast 27,045203 EUR du 26 au 31/10, projection 130,170566 EUR ; avec la réserve P4/P5/P7 de 22,15 EUR, total prudent 152,320566 EUR, soit 47,679434 EUR sous le budget indicatif de 200 EUR. C5 après DEV à 23:14:44Z : 174 ressources, 29 groupes, 7 piles, 63 rôles et 7 budgets, zéro ajout/retrait dans les cinq collections. Détails sous %LOCALAPPDATA%/InfraFlowSculptor/P08/after-p4-rev5-dev-20261025T231300Z/. Après #843, Cost Management API à 2026-10-25T23:30:13Z : ActualCost MTD 103,125364 EUR (usage jusqu’au 25/10), Forecast restant 27,045203 EUR du 26 au 31/10, projection 130,170566 EUR ; réserve complète P4/P5/P7 +22,15 EUR, estimation prudente 152,320566 EUR, marge 47,679434 EUR sous l’alerte non plafonnante de 200 EUR. Captures C5/coût : %LOCALAPPDATA%/InfraFlowSculptor/P08/after-p4-rev5-run843-20261025T232741Z/. | 2026-10-26 |

@@ -129,3 +129,6 @@
 | 2026-11-11 16:31 | Codex | `J0-23` blocage confirmé | docs/plan/revues/J0-23-blocage-exceptions-imagescan-20261111.md |
 | 2026-11-13 16:02 | Codex | `J0-23` blocage résolu | docs/plan/revues/J0-23-deblocage-exceptions-imagescan-20261113.md |
 | 2026-11-13 16:35 | Codex | `J0-23` terminée | commit `58a4c9d` |
+| 2026-11-13 23:36 | Codex | `J0-24` recette autonome à exécuter |  |
+| 2026-11-13 23:36 | Codex | `J0-24` reprise après recette autonome vérifiée |  |
+| 2026-11-13 23:37 | Codex | `J0-24` terminée | commit `d061225` |
