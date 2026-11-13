@@ -28,9 +28,10 @@ public sealed class AzureDevOpsStepTranslator : IStepTranslator
 
         if (!descriptor.Template.StartsWith(TemplatePrefix, StringComparison.Ordinal)
             || descriptor.Template.Contains("..", StringComparison.Ordinal)
-            || descriptor.Template.Contains('\\'))
+            || descriptor.Template.Contains('\\')
+            || !AzureDevOpsTemplateResources.ContainsTemplate(descriptor.Template))
         {
-            throw new InvalidOperationException($"Catalog step '{descriptor.Name}' has an invalid Azure Pipelines template path.");
+            throw new InvalidOperationException($"Catalog step '{descriptor.Name}' has an invalid or missing Azure Pipelines template.");
         }
 
         var configured = applicationStep.Parameters.ToDictionary(parameter => parameter.Name, parameter => parameter.Value,

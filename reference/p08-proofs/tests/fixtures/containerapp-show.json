@@ -1,0 +1,12 @@
+{
+  "properties": {
+    "template": {
+      "containers": [
+        {
+          "image": "mcr.microsoft.com/example:1"
+        }
+      ]
+    },
+    "provisioningState": "Succeeded"
+  }
+}

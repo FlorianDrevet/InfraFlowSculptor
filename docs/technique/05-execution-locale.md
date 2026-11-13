@@ -7,7 +7,8 @@ aspire start        # depuis src/backend (aspire.config.json pointe l'AppHost)
 ```
 
 Le tableau de bord Aspire s'ouvre (URL affichée dans la console) : chaque ressource, ses journaux, ses
-traces OpenTelemetry et ses métriques. Prérequis : Docker Desktop démarré ([S-01](../plan/00-socle.md)).
+traces OpenTelemetry et ses métriques. Prérequis : Docker Desktop démarré, ou Podman Desktop avec sa machine WSL2
+démarrée et `ASPIRE_CONTAINER_RUNTIME=podman` défini au niveau utilisateur ([S-01](../plan/00-socle.md)).
 
 ## 2. Ressources de l'AppHost
 
@@ -55,7 +56,7 @@ atteint, le lot s'arrête ; les messages restants n'ont pas consommé de tentati
 
 PostgreSQL, Azurite, Service Bus et son sidecar SQL, Redis, MailPit, Keycloak et Gitea utilisent
 `ContainerLifetime.Persistent` : leurs conteneurs restent démarrés quand l'AppHost s'arrête et Aspire peut les
-réutiliser au prochain `aspire start` si leur configuration n'a pas changé. Docker doit rester démarré. L'API,
+réutiliser au prochain `aspire start` si leur configuration n'a pas changé. Le runtime choisi doit rester démarré. L'API,
 le Worker, le Web et les ressources d'observation restent à durée de vie de session.
 
 La durée persistante du conteneur ne protège pas les données si Aspire doit le recréer. Les volumes de PostgreSQL,

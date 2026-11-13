@@ -1,0 +1,32 @@
+# Généré par InfraFlowSculptor — projet {{PROJECT_CODE}}. Ne pas modifier : la prochaine publication remplacera ce fichier. Personnalisation : voir README.ifs.md.
+parameters:
+- name: application
+  type: string
+- name: tool
+  type: string
+- name: minimumSeverity
+  type: string
+- name: exceptions
+  type: string
+- name: blocking
+  type: boolean
+  default: true
+
+steps:
+- pwsh: |
+    $ErrorActionPreference = 'Stop'
+    & "$(Build.SourcesDirectory)/.ifs/templates/scripts/Install-IfsTrivy.ps1"
+    $scanParameters = @{
+      RepositoryRoot = $env:BUILD_SOURCESDIRECTORY
+      Application = $env:IFS_APP_NAME
+      BuildId = $env:BUILD_BUILDID
+      MinimumSeverity = $env:IFS_IMAGE_SCAN_MINIMUM_SEVERITY
+      Exceptions = $env:IFS_IMAGE_SCAN_EXCEPTIONS
+    }
+    & "$(Build.SourcesDirectory)/.ifs/templates/scripts/Invoke-IfsImageScan.ps1" @scanParameters
+  displayName: Analyser l’image avec ${{ parameters.tool }}
+  env:
+    IFS_APP_NAME: ${{ parameters.application }}
+    IFS_IMAGE_SCAN_MINIMUM_SEVERITY: ${{ parameters.minimumSeverity }}
+    IFS_IMAGE_SCAN_EXCEPTIONS: ${{ parameters.exceptions }}
+  continueOnError: ${{ not(parameters.blocking) }}

@@ -652,7 +652,7 @@ Describe 'Kit installation P-05' {
         $releaseTemplate | Should -Be '.ifs/templates/app-release.yml'
         $ciPipeline | Should -Match ("template:\s*/?" + [regex]::Escape($ciTemplate))
         $releasePipeline | Should -Match ("template:\s*/?" + [regex]::Escape($releaseTemplate))
-        $ciPipeline | Should -Match 'registryServiceConnection: ifs-shop-shared-app'
+        $ciPipeline | Should -Match "registryServiceConnection: 'ifs-shop-shared-app'"
     }
 
     It 'active la règle SQL Azure Services seulement si le réseau public est activé' {

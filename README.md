@@ -31,8 +31,15 @@ Claude (Opus) conçoit et relit à chaque verrou ; Codex (modèle Luna) impléme
 
 ## Démarrer (Windows)
 
-Prérequis : Docker Desktop démarré, PowerShell 7, et les outils aux versions minimales de
-[`tools/versions.json`](tools/versions.json). Vérifier la machine depuis la racine du dépôt :
+Prérequis : PowerShell 7, les outils aux versions minimales de [`tools/versions.json`](tools/versions.json) et un
+runtime conteneur démarré. Docker Desktop est utilisé par défaut ; pour Podman Desktop, démarrer sa machine et définir
+`ASPIRE_CONTAINER_RUNTIME=podman` dans les variables utilisateur Windows (puis ouvrir un nouveau terminal) :
+
+```powershell
+[Environment]::SetEnvironmentVariable('ASPIRE_CONTAINER_RUNTIME', 'podman', 'User')
+```
+
+Le contrôle choisit le runtime indiqué par cette variable. Vérifier la machine depuis la racine du dépôt :
 
 ```powershell
 pwsh tools/dev/check-prereqs.ps1
@@ -72,7 +79,7 @@ pwsh tools/dev/gitea-init.ps1
 
 `Ctrl+C` arrête l’AppHost et les processus API, Worker et Web. Les conteneurs de dépendances configurés comme
 persistants restent démarrés et Aspire les réutilise au prochain `aspire run` si leur configuration n’a pas changé ;
-laisser Docker Desktop actif. PostgreSQL, Azurite, Keycloak et Gitea ont aussi un volume de données. Redis et MailPit
+laisser le runtime choisi actif. PostgreSQL, Azurite, Keycloak et Gitea ont aussi un volume de données. Redis et MailPit
 n’en ont pas : leurs données peuvent disparaître si Aspire doit recréer leur conteneur. Voir le [guide d’exécution locale](docs/technique/05-execution-locale.md#durée-de-vie-entre-les-lancements).
 
 ## Reprendre le travail

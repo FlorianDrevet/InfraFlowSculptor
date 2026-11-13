@@ -50,5 +50,50 @@
     <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\scripts\Invoke-IfsAppDeploy.ps1">
       <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.scripts.Invoke-IfsAppDeploy.ps1</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\scripts\Publish-IfsImage.ps1">
+      <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.scripts.Publish-IfsImage.ps1</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\scripts\Build-IfsImage.ps1">
+      <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.scripts.Build-IfsImage.ps1</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\scripts\IfsLeaseRenewal.ps1">
+      <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.scripts.IfsLeaseRenewal.ps1</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\scripts\Install-IfsTrivy.ps1">
+      <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.scripts.Install-IfsTrivy.ps1</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\scripts\Invoke-IfsImageScan.ps1">
+      <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.scripts.Invoke-IfsImageScan.ps1</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\scripts\Set-IfsRunName.ps1">
+      <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.scripts.Set-IfsRunName.ps1</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\scripts\Test-IfsBicep.ps1">
+      <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.scripts.Test-IfsBicep.ps1</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\schemas\ifs-app-report.schema.json">
+      <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.schemas.ifs-app-report.schema.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\schemas\ifs-preview.schema.json">
+      <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.schemas.ifs-preview.schema.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\schemas\ifs-report.schema.json">
+      <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.schemas.ifs-report.schema.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\schemas\ifs-report.v2.schema.json">
+      <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.schemas.ifs-report.v2.schema.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\schemas\operation-journal.schema.json">
+      <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.schemas.operation-journal.schema.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\schemas\release-data.schema.json">
+      <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.schemas.release-data.schema.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\steps\DependencyCache.yml">
+      <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.steps.DependencyCache.yml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\templates\steps\ImageScan.yml">
+      <LogicalName>InfraFlowSculptor.Emitters.AzureDevOps.Templates.steps.ImageScan.yml</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

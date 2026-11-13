@@ -14,12 +14,7 @@ public sealed class AzureDevOpsInstallKitPlatformEmitter : IInstallKitPlatformEm
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentNullException.ThrowIfNull(catalog);
 
-        var content = ReferenceInstallResources.Read("install.pipeline.yml");
-        if (!string.Equals(plan.Project.Code, "shop", StringComparison.Ordinal))
-        {
-            content = content.Replace("shop", plan.Project.Code, StringComparison.Ordinal);
-        }
-
+        var content = ReferenceInstallResources.Read("install.pipeline.yml", plan.Project.Code, plan.Project.Name);
         return [new GeneratedFile(".ifs/install/install.pipeline.yml", content)];
     }
 }

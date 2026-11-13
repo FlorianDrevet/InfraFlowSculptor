@@ -125,3 +125,6 @@
 | 2026-11-01 17:39 | Codex | `J0-22` blocage résolu | docs/plan/revues/J0-22-blocage-metadonnees-bicep-20261101.md |
 | 2026-11-01 17:39 | Codex | `J0-22` terminée | commit `7f04129` |
 | 2026-11-01 18:00 | Codex | `J0-23` blocage confirmé | docs/plan/revues/J0-23-blocage-sortie-reference-20261101.md |
+| 2026-11-11 15:15 | Codex | `J0-23` blocage résolu | docs/plan/revues/J0-23-deblocage-perimetre-20261111.md |
+| 2026-11-11 16:31 | Codex | `J0-23` blocage confirmé | docs/plan/revues/J0-23-blocage-exceptions-imagescan-20261111.md |
+| 2026-11-13 16:02 | Codex | `J0-23` blocage résolu | docs/plan/revues/J0-23-deblocage-exceptions-imagescan-20261113.md |

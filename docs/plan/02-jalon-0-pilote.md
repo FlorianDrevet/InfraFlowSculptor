@@ -799,18 +799,24 @@ de test) pour voir sa lisibilité.
 | **Dépend de** | J0-22 |
 | **Commit** | `feat(generation): pipelines Azure DevOps, kit d'installation et README` |
 
-🎯 **Objectif.** L'arborescence complète de [reference-pilote § 3](reference-pilote.md#3-sortie-attendue-dépôt-shop),
-identique à la référence.
+🎯 **Objectif.** Émettre exactement l'arborescence de [reference-pilote § 3](reference-pilote.md#3-sortie-attendue-dépôt-shop),
+avec tous les fichiers nécessaires à l'exécution autonome des pipelines Azure DevOps et du kit d'installation.
 
 🔧 **À faire.** Registres ([DT-35](../technique/01-decisions.md#dt-35--registres-et-stratégies-pas-de-switch)) : `IPipelineEmitter : IKeyed<CiPlatform>`, `IInstallKitPlatformEmitter : IKeyed<CiPlatform>`
 (la partie Azure du kit — `azure-setup.ps1` — est commune et ne dépend pas de la plateforme), `IStepTranslator :
-IKeyed<CiPlatform>` ; `CiPlatform` dans `ExtensionKeys.Types`. `InfraFlowSculptor.Emitters.AzureDevOps` (`YamlWriter`, pipelines par composant et application,
-modèles partagés et module PowerShell copiés comme **ressources embarquées** depuis `reference/pilot/bicep-azdo/.ifs/templates/`
-par une cible MSBuild — une seule source), `InfraFlowSculptor.Emitters.InstallKit` (`azure-setup.ps1` avec ses
-données par cible, `install.pipeline.yml`, `SETUP.md`), `ReadmeEmitter` (`README.ifs.md`, diagramme Mermaid
-déterministe) ; `ReferenceOutputTests` étendu à **toute** l'arborescence.
+IKeyed<CiPlatform>` ; `CiPlatform` dans `ExtensionKeys.Types`. `InfraFlowSculptor.Emitters.AzureDevOps` émet les pipelines
+par composant et application, puis embarque depuis la référence unique leurs modèles, scripts, schémas épinglés et
+modèles d'étapes `DependencyCache`/`ImageScan`. L'application insère les étapes actives par position : avant build,
+build local avec cache Buildx, étapes après build, puis publication OIDC dans ACR ; la PR ne publie pas et n'a aucune
+connexion Azure. `InfraFlowSculptor.Emitters.InstallKit` embarque le pipeline et les scripts d'installation, readiness,
+pins et guide. `ReadmeEmitter` produit `README.ifs.md` et son diagramme Mermaid déterministe. Les assets et leurs
+références locales sont validés sur l'arborescence complète. Les paramètres et scripts propres aux reprises P-08 restent
+archivés hors de la sortie canonique.
 
-✅ **Vérification automatique.** `ReferenceOutputTests` vert sur l'arborescence entière ; déterminisme.
+✅ **Vérification automatique.** `ReferenceOutputTests` vert sur l'arborescence entière et déterminisme ;
+`Test-ReferencePipelines.ps1` valide le schéma épinglé, la fermeture des références locales, l'ordre Cache/build/scan/
+publication, l'absence de publication et de connexion Azure en PR, et l'absence de ressources P-08 ; tests Pester des
+scripts Buildx et de publication ; manifeste de référence cohérent.
 
 🧪 **Test manuel.** Aucun distinct (même raison que J0-22).
 

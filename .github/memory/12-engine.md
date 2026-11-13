@@ -1,10 +1,11 @@
 # 12 — Moteur, catalogue et émetteurs
 
-> Au 2026-11-01, le moteur porte les snapshots, les résolveurs purs, les liaisons, l'exposition, l'ordre, la validation, le plan de déploiement et l'émetteur Bicep J0-22. La revue de génération R-06 reste à effectuer après J0-25.
+> Au 2026-11-13, le moteur porte les snapshots, les résolveurs purs, les liaisons, l'exposition, l'ordre, la validation et le plan de déploiement; les émetteurs Bicep et Azure DevOps/install-kit couvrent les références J0-22/J0-23. La revue de génération R-06 reste à effectuer après J0-25.
 > Cible : `docs/technique/03-moteur-et-generation.md`, DT-14 à DT-16. Étapes J0-06, J0-12 à J0-24.
 
 ## Faits vérifiés
 
+- J0-23 émet les pipelines Azure DevOps, le kit d’installation, les modèles `DependencyCache`/`ImageScan` et les scripts embarqués depuis la référence. `ImageScan.exceptions` vide désactive les exclusions; sinon le paramètre accepte un chemin relatif au dépôt vers un `.trivyignore` existant. `Invoke-IfsImageScan.ps1` refuse les chemins absolus, les segments de traversal et les liens symboliques, puis passe le chemin absolu à Trivy avec `--ignorefile`. `Install-IfsTrivy.ps1` ajoute son binaire au `PATH` de la tâche courante et des suivantes. Vérifications J0-23 : backend Release 753 réussis + 1 Bicep CLI ignoré, build strict sans avertissement, Pester 149/149, tests ImageScan 9/9, 26 YAML valides, manifeste/déterminisme 80 fichiers; l’AppHost répond 200 sur Web, `/alive`, Scalar, OIDC local en HTTPS et Gitea.
 - `InfraFlowSculptor.Catalog` charge les JSON embarqués de `catalog/2026.10-pilot/` : neuf descripteurs ARM, 24 régions, rôles Azure avec leurs identifiants, pins, schéma Azure Pipelines et deux étapes de pipeline. Les schémas sont sous `catalog/schema/`; le hash SHA-256 canonique est épinglé dans `catalog/published-hashes.json`.
 - `CatalogVersion` expose une collection immuable; `ICatalogProvider` retourne les versions disponibles et `LatestPublished`. L'API expose les versions, la recherche par catégorie/texte et le détail d'un type sans calcul métier.
 - Les tests valident tous les documents JSON, l'empreinte, les rôles et les propriétés mappées aux paramètres des modules AVM restaurés. `CatalogEndpointTests` valide les libellés français « Coffre de clés » et « Identité managée affectée par l’utilisateur » sur le filtre `category=security`.

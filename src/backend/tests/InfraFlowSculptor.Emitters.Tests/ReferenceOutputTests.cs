@@ -52,6 +52,165 @@ public sealed class ReferenceOutputTests
     }
 
     [Fact]
+    public void ApplicationPipelinesEmitEnabledCatalogStepsInTheirConfiguredPositions()
+    {
+        var files = Emit(LoadPilotPlan());
+        var pullRequest = Assert.Single(files, file => file.RelativePath == "orders/apps/api/pipelines/pr.yml").Content;
+        var ci = Assert.Single(files, file => file.RelativePath == "orders/apps/api/pipelines/ci.yml").Content;
+        var ciTemplate = Assert.Single(files, file => file.RelativePath == ".ifs/templates/app-ci.yml").Content;
+        var prTemplate = Assert.Single(files, file => file.RelativePath == ".ifs/templates/app-pr.yml").Content;
+
+        foreach (var pipeline in new[] { pullRequest, ci })
+        {
+            Assert.Contains("stepsBeforeBuild:", pipeline, StringComparison.Ordinal);
+            Assert.Contains("template: /.ifs/templates/steps/DependencyCache.yml", pipeline, StringComparison.Ordinal);
+            Assert.Contains("stepsAfterBuild:", pipeline, StringComparison.Ordinal);
+            Assert.Contains("template: /.ifs/templates/steps/ImageScan.yml", pipeline, StringComparison.Ordinal);
+            Assert.Contains("minimumSeverity: 'CRITICAL'", pipeline, StringComparison.Ordinal);
+            Assert.Contains("blocking: true", pipeline, StringComparison.Ordinal);
+        }
+
+        Assert.Contains("type: stepList", ciTemplate, StringComparison.Ordinal);
+        Assert.Contains("parameters.stepsBeforeBuild", ciTemplate, StringComparison.Ordinal);
+        Assert.Contains("parameters.stepsAfterBuild", ciTemplate, StringComparison.Ordinal);
+        Assert.Contains("parameters.stepsBeforeBuild", prTemplate, StringComparison.Ordinal);
+        Assert.Contains("parameters.stepsAfterBuild", prTemplate, StringComparison.Ordinal);
+        Assert.True(ciTemplate.IndexOf("parameters.stepsBeforeBuild", StringComparison.Ordinal)
+            < ciTemplate.IndexOf("Build-IfsImage.ps1", StringComparison.Ordinal));
+        Assert.True(ciTemplate.IndexOf("parameters.stepsAfterBuild", StringComparison.Ordinal)
+            > ciTemplate.IndexOf("Build-IfsImage.ps1", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void DisabledCatalogStepsAreNotEmitted()
+    {
+        var plan = WithApplication(LoadPilotPlan(), application => application with
+        {
+            Steps = application.Steps.Select(step => step with { Enabled = false }).ToArray()
+        });
+
+        var files = Emit(plan);
+        var ci = Assert.Single(files, file => file.RelativePath == "orders/apps/api/pipelines/ci.yml").Content;
+        var pullRequest = Assert.Single(files, file => file.RelativePath == "orders/apps/api/pipelines/pr.yml").Content;
+
+        Assert.DoesNotContain(".ifs/templates/steps/DependencyCache.yml", ci, StringComparison.Ordinal);
+        Assert.DoesNotContain(".ifs/templates/steps/ImageScan.yml", ci, StringComparison.Ordinal);
+        Assert.DoesNotContain(".ifs/templates/steps/DependencyCache.yml", pullRequest, StringComparison.Ordinal);
+        Assert.DoesNotContain(".ifs/templates/steps/ImageScan.yml", pullRequest, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ApplicationPipelineEmitsImageScanExceptionFileFromTheModel()
+    {
+        var plan = WithApplication(LoadPilotPlan(), application => application with
+        {
+            Steps = application.Steps.Select(step => step.Name == "ImageScan"
+                ? step with
+                {
+                    Parameters = [new ApplicationStepParameterPlan("exceptions", "security/.trivyignore")]
+                }
+                : step).ToArray()
+        });
+
+        var ci = Assert.Single(Emit(plan), file => file.RelativePath == "orders/apps/api/pipelines/ci.yml").Content;
+
+        Assert.Contains("exceptions: 'security/.trivyignore'", ci, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ApplicationOutputContainsEveryRequiredExecutableReferenceAsset()
+    {
+        var paths = Emit(LoadPilotPlan()).Select(file => file.RelativePath).ToHashSet(StringComparer.Ordinal);
+        var required = new[]
+        {
+            ".ifs/pins.json",
+            ".ifs/install/readiness.bicep",
+            ".ifs/install/scripts/IfsInstall.psm1",
+            ".ifs/install/scripts/Install-Azdo.ps1",
+            ".ifs/templates/schemas/ifs-report.schema.json",
+            ".ifs/templates/scripts/Build-IfsImage.ps1",
+            ".ifs/templates/scripts/IfsLeaseRenewal.ps1",
+            ".ifs/templates/scripts/Install-IfsTrivy.ps1",
+            ".ifs/templates/scripts/Invoke-IfsImageScan.ps1",
+            ".ifs/templates/scripts/Set-IfsRunName.ps1",
+            ".ifs/templates/scripts/Test-IfsBicep.ps1",
+            ".ifs/templates/steps/DependencyCache.yml",
+            ".ifs/templates/steps/ImageScan.yml"
+        };
+
+        foreach (var path in required)
+        {
+            Assert.Contains(path, paths);
+        }
+    }
+
+    [Fact]
+    public void InstallKitAndReadmeRenderProjectCodeAcrossAllAssets()
+    {
+        var pilotPlan = LoadPilotPlan();
+        var plan = pilotPlan with { Project = pilotPlan.Project with { Code = "shop42" } };
+        var files = Emit(plan).Where(file => file.RelativePath.StartsWith(".ifs/", StringComparison.Ordinal)
+            || string.Equals(file.RelativePath, "README.ifs.md", StringComparison.Ordinal));
+        var content = string.Join(Environment.NewLine, files.Select(file => file.Content));
+
+        Assert.Contains("ifs-shop42-dev", content, StringComparison.Ordinal);
+        Assert.Contains("sg-shop42-sql-admins", content, StringComparison.Ordinal);
+        Assert.Contains("ProjectCode -ne 'shop42'", content, StringComparison.Ordinal);
+        Assert.Contains("projet shop42", content, StringComparison.Ordinal);
+        Assert.Contains("crshop42mainshared", content, StringComparison.Ordinal);
+        Assert.Contains("security/.trivyignore", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("ifs-shop-dev", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("sg-shop-sql-admins", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("ProjectCode -ne 'shop'", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("projet shop.", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("crshopmainshared", content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GeneratedAzureDevOpsOutputDoesNotContainP08RecoveryBindings()
+    {
+        var files = Emit(LoadPilotPlan());
+        var paths = files.Select(file => file.RelativePath).ToArray();
+        var contents = string.Join(Environment.NewLine, files.Select(file => file.Content));
+
+        Assert.DoesNotContain(paths, path => path.Contains("data-access-recovery", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain("recover-prd-762", contents, StringComparison.Ordinal);
+        Assert.DoesNotContain("recoveryMode", contents, StringComparison.Ordinal);
+        Assert.DoesNotContain("recoveryOperationId", contents, StringComparison.Ordinal);
+        Assert.DoesNotContain("ifs-shop42-orders-prd", contents, StringComparison.Ordinal);
+        Assert.DoesNotContain("shop42", contents, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void InfrastructureReleasePipelinesExposeSystemAssignedSqlClientIdsFromThePlan()
+    {
+        var files = Emit(LoadPilotPlan());
+        var ordersRelease = Assert.Single(files, file => file.RelativePath == "orders/infra/pipelines/release.yml").Content;
+        var coreRelease = Assert.Single(files, file => file.RelativePath == "core/infra/pipelines/release.yml").Content;
+
+        Assert.Contains("- name: systemAssignedSqlClientIdDev", ordersRelease, StringComparison.Ordinal);
+        Assert.Contains("- name: systemAssignedSqlClientIdPrd", ordersRelease, StringComparison.Ordinal);
+        Assert.Contains("systemAssignedSqlClientId: ${{ parameters.systemAssignedSqlClientIdDev }}", ordersRelease, StringComparison.Ordinal);
+        Assert.Contains("systemAssignedSqlClientId: ${{ parameters.systemAssignedSqlClientIdPrd }}", ordersRelease, StringComparison.Ordinal);
+        Assert.DoesNotContain("systemAssignedSqlClientId", coreRelease, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("src/api/$(System.AccessToken)")]
+    [InlineData("src/api/${{ variables.injected }}")]
+    public void ApplicationOutputRejectsAzureExpressionSyntaxInPaths(string buildContextPath)
+    {
+        var plan = WithApplication(LoadPilotPlan(), application => application with
+        {
+            BuildContextPath = buildContextPath
+        });
+
+        var exception = Assert.Throws<InvalidOperationException>(() => Emit(plan));
+
+        Assert.Contains("path", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void UserAssignedIdentityIsNotGivenUnsupportedDiagnosticSettings()
     {
         var plan = LoadPilotPlan();
@@ -128,7 +287,7 @@ public sealed class ReferenceOutputTests
         Assert.Equal(first, second);
 
         var actual = first.ToDictionary(file => file.RelativePath, file => Normalize(file.Content, plan), StringComparer.Ordinal);
-        var expected = ReadCompleteReferenceFiles();
+        var expected = ReadCompleteReferenceFiles(plan);
         var differences = new List<string>();
 
         foreach (var path in expected.Keys.Union(actual.Keys, StringComparer.Ordinal).OrderBy(path => path, StringComparer.Ordinal))
@@ -703,12 +862,25 @@ public sealed class ReferenceOutputTests
         => PilotReferenceModel.Create(CatalogLoader.Load().GetVersion("2026.10-pilot.6")
             ?? throw new InvalidOperationException("The reference catalog version is unavailable."));
 
+    private static DeploymentPlan WithApplication(
+        DeploymentPlan plan,
+        Func<ApplicationPlan, ApplicationPlan> update) => plan with
+        {
+            Components = plan.Components.Select(component => component with
+            {
+                Applications = component.Applications.Select(application => application.Name == "api"
+                    ? update(application)
+                    : application).ToArray()
+            }).ToArray()
+        };
+
     private static GeneratedFile[] Emit(DeploymentPlan plan)
     {
         var catalog = CatalogLoader.Load().GetVersion(plan.Pins.Version)
             ?? throw new InvalidOperationException("The reference catalog version is unavailable.");
         return CreateEmitter().Emit(plan, catalog)
-            .Concat(new AzureDevOpsPipelineEmitter().Emit(plan, catalog))
+            .Concat(new AzureDevOpsPipelineEmitter(
+                new StepTranslatorRegistry([new AzureDevOpsStepTranslator()])).Emit(plan, catalog))
             .Concat(InstallKitEmitter.Emit(plan))
             .Concat(new AzureDevOpsInstallKitPlatformEmitter().Emit(plan, catalog))
             .Append(ReadmeEmitter.Emit(plan))
@@ -953,7 +1125,7 @@ public sealed class ReferenceOutputTests
                 StringComparer.Ordinal);
     }
 
-    private static Dictionary<string, string> ReadCompleteReferenceFiles()
+    private static Dictionary<string, string> ReadCompleteReferenceFiles(DeploymentPlan plan)
     {
         var root = FindRepositoryRoot();
         var referenceRoot = Path.Combine(root, "reference", "pilot", "bicep-azdo");
@@ -961,7 +1133,7 @@ public sealed class ReferenceOutputTests
             .Where(path => IsBicepReference(referenceRoot, path) || IsPipelineInstallOrReadmeReference(referenceRoot, path))
             .ToDictionary(
                 path => Path.GetRelativePath(referenceRoot, path).Replace(Path.DirectorySeparatorChar, '/'),
-                File.ReadAllText,
+                path => RenderProjectPlaceholders(File.ReadAllText(path), plan),
                 StringComparer.Ordinal);
     }
 
@@ -970,17 +1142,9 @@ public sealed class ReferenceOutputTests
         var relative = Path.GetRelativePath(referenceRoot, path)
             .Replace(Path.DirectorySeparatorChar, '/');
         return relative == "README.ifs.md"
+            || relative.StartsWith(".ifs/", StringComparison.Ordinal)
             || relative.Contains("/pipelines/", StringComparison.Ordinal)
-                && path.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)
-            || relative is ".ifs/install/azure-setup.ps1" or ".ifs/install/install.pipeline.yml" or ".ifs/install/SETUP.md"
-            || relative is ".ifs/templates/infra-pr.yml" or ".ifs/templates/infra-ci.yml"
-                or ".ifs/templates/infra-release.yml" or ".ifs/templates/infra-target-stages.yml"
-                or ".ifs/templates/app-pr.yml" or ".ifs/templates/app-ci.yml"
-                or ".ifs/templates/app-release.yml" or ".ifs/templates/app-target-stage.yml"
-                or ".ifs/templates/scripts/IfsRelease.psm1"
-                or ".ifs/templates/scripts/Invoke-IfsInfraPreview.ps1"
-                or ".ifs/templates/scripts/Invoke-IfsInfraDeploy.ps1"
-                or ".ifs/templates/scripts/Invoke-IfsAppDeploy.ps1";
+                && path.EndsWith(".yml", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsBicepReference(string referenceRoot, string path)
@@ -1048,6 +1212,10 @@ public sealed class ReferenceOutputTests
 
         return content;
     }
+
+    private static string RenderProjectPlaceholders(string content, DeploymentPlan plan) =>
+        content.Replace("{{PROJECT_CODE}}", plan.Project.Code, StringComparison.Ordinal)
+            .Replace("{{PROJECT_NAME}}", plan.Project.Name, StringComparison.Ordinal);
 
     private static string DescribeDifference(string path, string expected, string actual)
     {

@@ -6,8 +6,22 @@ pr: none
 extends:
   template: /.ifs/templates/app-pr.yml
   parameters:
-    project: shop
-    component: orders
-    application: api
-    buildContext: src/api
-    dockerfile: src/api/Dockerfile
+    project: 'shop'
+    component: 'orders'
+    application: 'api'
+    buildContext: 'src/api'
+    dockerfile: 'src/api/Dockerfile'
+    dependencyCachePath: '$(Pipeline.Workspace)/.ifs-buildx-cache'
+    stepsBeforeBuild:
+    - template: /.ifs/templates/steps/DependencyCache.yml
+      parameters:
+        application: 'api'
+        blocking: false
+    stepsAfterBuild:
+    - template: /.ifs/templates/steps/ImageScan.yml
+      parameters:
+        application: 'api'
+        exceptions: ''
+        minimumSeverity: 'CRITICAL'
+        tool: 'Trivy'
+        blocking: true

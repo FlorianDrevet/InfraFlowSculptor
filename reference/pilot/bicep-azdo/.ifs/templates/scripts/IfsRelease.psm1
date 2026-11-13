@@ -877,96 +877,6 @@ function Set-IfsOperationState {
     return $operation
 }
 
-function Invoke-IfsDataAccessRecovery {
-    <#
-    .SYNOPSIS
-    Reprend une seule opération data-access PRD sous le bail exclusif du journal.
-    .DESCRIPTION
-    Refuse tout journal différent, toute opération différente ou tout détail d'accès qui ne correspond plus
-    exactement à la release courante. L'opération reste Started si SQL échoue.
-    #>
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)][object] $ReleaseData,
-        [Parameter(Mandatory)][ValidatePattern('^[0-9a-f]{64}$')][string] $OperationId,
-        [Parameter(Mandatory)][ValidateRange(1, 2147483647)][int] $ExpectedRevision,
-        [Parameter(Mandatory)][ValidatePattern('^[0-9a-f]{40}$')][string] $ExpectedCommit,
-        [Parameter(Mandatory)][ValidatePattern('^[0-9a-f]{40}$')][string] $CompletionCommit,
-        [Parameter(Mandatory)][string] $SqlScript,
-        [Parameter(Mandatory)][string] $RunId
-    )
-
-    if ([string]$ReleaseData.target -cne 'prd' -or -not [bool]$ReleaseData.protected) {
-        throw 'La reprise data-access exige une cible PRD protégée.'
-    }
-    if ([string]$ReleaseData.project -cne 'shop42' -or [string]$ReleaseData.component -cne 'orders' -or
-        [string]$ReleaseData.unit -cne 'ifs-shop42-orders-prd') {
-        throw 'La reprise ciblée est réservée à l''unité orders PRD de Shop42.'
-    }
-
-    $context = $null
-    try {
-        $context = Open-IfsOperationJournal -ReleaseData $ReleaseData -RequireExisting
-        if ([string]$context.Journal.schema -cne 'ifs-operation-journal/v1' -or
-            [string]$context.Journal.unit -cne [string]$ReleaseData.unit -or
-            [string]$context.Journal.target -cne 'prd') {
-            throw 'Le journal verrouillé ne correspond pas à l''unité PRD de la release.'
-        }
-
-        $pending = @(Get-IfsPendingOperation -Journal $context.Journal)
-        if ($pending.Count -ne 1) { throw 'La reprise exige une seule opération en attente dans le journal.' }
-        $operation = $pending[0]
-        if ([string]$operation.id -cne $OperationId -or
-            [string]$operation.kind -cne 'data-access' -or
-            [string]$operation.state -cne 'Started' -or
-            [int]$operation.revision -ne $ExpectedRevision -or
-            [string]$operation.commit -cne $ExpectedCommit) {
-            throw 'L''opération en attente ne correspond pas à l''identifiant, la révision et au commit autorisés.'
-        }
-
-        $matchingAccesses = @($ReleaseData.dataAccess | Where-Object {
-            ('{0}/{1}/{2}' -f $_.server, $_.database, $_.principal.resourceId) -ceq [string]$operation.objectId
-        })
-        if ($matchingAccesses.Count -ne 1) { throw 'L''opération ne correspond pas à un accès SQL unique de la release.' }
-        $access = $matchingAccesses[0]
-        if ([string]$access.exposure -cne 'Public') { throw 'La reprise ciblée n''autorise pas de mutation de règle de pare-feu.' }
-        $details = $operation.details
-        $detailMatches =
-            [string](Get-IfsValue $details 'server' '') -ceq [string]$access.server -and
-            [string](Get-IfsValue $details 'database' '') -ceq [string]$access.database -and
-            [string](Get-IfsValue $details 'level' '') -ceq [string]$access.level -and
-            [string](Get-IfsValue $details 'exposure' '') -ceq [string]$access.exposure -and
-            [string](Get-IfsValue (Get-IfsValue $details 'principal' $null) 'resourceId' '') -ceq [string]$access.principal.resourceId -and
-            [string](Get-IfsValue (Get-IfsValue $details 'principal' $null) 'kind' '') -ceq [string]$access.principal.kind
-        if (-not $detailMatches) { throw 'Le détail de l''opération ne correspond plus à la release PRD courante.' }
-
-        $oneAccess = [pscustomobject]@{
-            dataAccess = @($access)
-            dependencies = @($ReleaseData.dependencies)
-            subscriptionId = $ReleaseData.subscriptionId
-        }
-        $dataResult = Invoke-IfsDataAccess -ReleaseData $oneAccess -SqlScript $SqlScript -RunId $RunId -SkipStaleFirewallCleanup
-        $operation.commit = $CompletionCommit
-        [void](Set-IfsOperationState -Context $context -OperationId $operation.id -State 'Done')
-        return [pscustomobject]@{
-            result = 'Succeeded'
-            operationId = [string]$operation.id
-            project = [string]$ReleaseData.project
-            component = [string]$ReleaseData.component
-            unit = [string]$ReleaseData.unit
-            target = [string]$ReleaseData.target
-            revision = [int]$operation.revision
-            expectedCommit = $ExpectedCommit
-            commit = [string]$operation.commit
-            temporaryFirewallRules = @($dataResult.temporaryFirewallRules)
-            cleanedFirewallRules = @($dataResult.cleanedFirewallRules)
-        }
-    }
-    finally {
-        if ($null -ne $context) { Close-IfsOperationJournal -Context $context }
-    }
-}
-
 function Get-IfsAccessDeleteArguments {
     param([Parameter(Mandatory)][string] $ObjectId)
     if ($ObjectId -match ('(?i)/providers/{0}/[^/]+$' -f [regex]::Escape($script:IfsRoleAssignmentResourceType))) {
@@ -1643,7 +1553,7 @@ Export-ModuleMember -Function @(
     'Get-IfsPendingOperation', 'Test-IfsDependency', 'Test-IfsSecretVariable', 'Test-IfsSecretReference',
     'Get-IfsManagedIdentity',
     'Invoke-IfsPreview', 'Get-IfsEffectFingerprint', 'Read-IfsAppOwnedState', 'Add-IfsOperation',
-    'Set-IfsOperationState', 'Invoke-IfsDataAccessRecovery', 'Invoke-IfsStackDeployment', 'Invoke-IfsRevocation', 'Invoke-IfsSecretWrite',
+    'Set-IfsOperationState', 'Invoke-IfsStackDeployment', 'Invoke-IfsRevocation', 'Invoke-IfsSecretWrite',
     'Invoke-IfsDataAccess', 'Write-IfsReleaseReport', 'Invoke-IfsInfraPreview', 'Invoke-IfsInfraDeploy',
     'Invoke-IfsAppDeploy', 'Test-IfsReleaseData'
 )

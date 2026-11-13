@@ -170,7 +170,20 @@ internal static class PilotReferenceModel
             null,
             DeploymentStrategyKind.Direct,
             null,
-            []);
+            [
+                new ApplicationStepDefinition(
+                    "DependencyCache",
+                    true,
+                    false,
+                    ApplicationStepPosition.BeforeBuild,
+                    []),
+                new ApplicationStepDefinition(
+                    "ImageScan",
+                    true,
+                    true,
+                    ApplicationStepPosition.AfterBuild,
+                    [])
+            ]);
 
         return new ModelSnapshot(
             project,

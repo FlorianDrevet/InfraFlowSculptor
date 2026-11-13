@@ -13,18 +13,6 @@ parameters:
 - name: targets
   type: object
   default: []
-- name: recoveryMode
-  type: string
-  default: standard
-- name: recoveryOperationId
-  type: string
-  default: ''
-- name: recoveryRevision
-  type: string
-  default: '0'
-- name: recoveryCommit
-  type: string
-  default: ''
 
 stages:
 - ${{ each target in parameters.targets }}:
@@ -35,14 +23,4 @@ stages:
       defaultBranch: ${{ parameters.defaultBranch }}
       secretWrites: ${{ parameters.secretWrites }}
       systemAssignedSqlClientId: ${{ coalesce(target.systemAssignedSqlClientId, '') }}
-      recoveryMode: ${{ parameters.recoveryMode }}
       target: ${{ target }}
-- ${{ if eq(parameters.project, 'shop42') }}:
-  - template: /.ifs/templates/infra-data-access-recovery.yml
-    parameters:
-      project: ${{ parameters.project }}
-      component: ${{ parameters.component }}
-      recoveryMode: ${{ parameters.recoveryMode }}
-      recoveryOperationId: ${{ parameters.recoveryOperationId }}
-      recoveryRevision: ${{ parameters.recoveryRevision }}
-      recoveryCommit: ${{ parameters.recoveryCommit }}

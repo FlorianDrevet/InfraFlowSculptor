@@ -1,80 +1,98 @@
-# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+# Généré par InfraFlowSculptor — projet {{PROJECT_CODE}}. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)] [string] $RepositoryRoot,
-    [Parameter(Mandatory)] [string] $ReleasePath,
     [Parameter(Mandatory)] [string] $BuildContext,
     [Parameter(Mandatory)] [string] $DockerfilePath,
-    [Parameter(Mandatory)] [string] $Application,
-    [Parameter(Mandatory)] [string] $ImageManifestPath
+    [Parameter(Mandatory)] [string] $ImageName,
+    [string] $CacheDirectory = ''
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-Import-Module (Join-Path $PSScriptRoot 'IfsRelease.psm1') -Force
-$data = Read-IfsReleaseData -Path $ReleasePath
-$registryResources = @($data.dependencies | Where-Object { $_.component -eq 'platform' } | ForEach-Object { $_.resources })
-$registryResource = @($registryResources | Where-Object { $_.id -match '/providers/Microsoft\.ContainerRegistry/registries/[^/]+$' }) | Select-Object -First 1
-if (-not $registryResource) { throw 'La release ne référence aucun registre Azure Container Registry dans le composant platform.' }
-$registryResourceId = [string]$registryResource.id
-if ($registryResourceId -notmatch '^/subscriptions/([^/]+)/') { throw "L'identifiant de ressource du registre ne contient pas son abonnement." }
-$registrySubscription = $Matches[1]
-if ($registryResourceId -notmatch '/registries/([^/]+)$') { throw 'Le nom du registre est absent de son identifiant de ressource.' }
-$registryName = $Matches[1]
-# RG-APP-08: the build identity has AcrPush only, so resolve the public login suffix without an ARM read.
-$suffixOutput = @(& az cloud show --query suffixes.acrLoginServerEndpoint --output tsv 2>&1)
-if ($LASTEXITCODE -ne 0) { throw "Lecture du suffixe de connexion ACR du cloud Azure impossible : $($suffixOutput -join ' ')" }
-$registrySuffix = ($suffixOutput -join [Environment]::NewLine).Trim()
-if ($registrySuffix -notmatch '^\.[A-Za-z0-9][A-Za-z0-9.-]*$') { throw 'Le suffixe de connexion ACR du cloud Azure est invalide.' }
-$registry = [pscustomobject]@{ name = $registryName; loginServer = '{0}{1}' -f $registryName, $registrySuffix }
-[void](& az acr login --name $registryName --subscription $registrySubscription --only-show-errors 2>&1)
-if ($LASTEXITCODE -ne 0) { throw "Connexion au registre $registryName impossible." }
 
-$contextPath = Join-Path $RepositoryRoot $BuildContext
-$dockerfile = Join-Path $RepositoryRoot $DockerfilePath
+function Resolve-RepositoryPath {
+    param(
+        [Parameter(Mandatory)] [string] $Root,
+        [Parameter(Mandatory)] [string] $RelativePath,
+        [Parameter(Mandatory)] [string] $Description
+    )
+
+    if ([string]::IsNullOrWhiteSpace($RelativePath) -or [IO.Path]::IsPathRooted($RelativePath)) {
+        throw "$Description doit être un chemin relatif du dépôt."
+    }
+
+    $rootPath = [IO.Path]::GetFullPath($Root).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+    $candidate = [IO.Path]::GetFullPath((Join-Path $rootPath $RelativePath))
+    $rootPrefix = $rootPath + [IO.Path]::DirectorySeparatorChar
+    if (-not $candidate.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "$Description sort du dépôt."
+    }
+
+    return $candidate
+}
+
+$contextPath = Resolve-RepositoryPath -Root $RepositoryRoot -RelativePath $BuildContext -Description 'Le contexte Docker'
+$dockerfile = Resolve-RepositoryPath -Root $RepositoryRoot -RelativePath $DockerfilePath -Description 'Le Dockerfile'
 if (-not (Test-Path -LiteralPath $contextPath -PathType Container)) { throw "Contexte Docker absent : $contextPath" }
 if (-not (Test-Path -LiteralPath $dockerfile -PathType Leaf)) { throw "Dockerfile absent : $dockerfile" }
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { throw "Docker est absent de l'agent." }
-if (-not (Get-Command trivy -ErrorAction SilentlyContinue)) { throw "Trivy doit être installé avant la construction de l'image." }
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { throw "Docker est absent de l’agent." }
+if ($ImageName -notmatch '^[a-z0-9][a-z0-9._:/-]{0,254}$') { throw "Le nom de l’image locale est invalide." }
 
-$repository = '{0}/{1}/{2}' -f $data.project, $data.component, $Application
-$commit = [string]$env:BUILD_SOURCEVERSION
-if ($commit -notmatch '^[a-fA-F0-9]{12,}$') { throw 'BUILD_SOURCEVERSION doit contenir un SHA Git.' }
-$tag = '{0}-{1}' -f $env:BUILD_BUILDID, $commit.Substring(0, 12).ToLowerInvariant()
-$image = '{0}/{1}:{2}' -f $registry.loginServer, $repository, $tag
-$cache = '{0}/{1}:buildcache' -f $registry.loginServer, $repository
-$builder = 'ifs-{0}' -f $env:BUILD_BUILDID
+$buildId = [string]$env:BUILD_BUILDID
+if ($buildId -notmatch '^[A-Za-z0-9_.-]+$') { throw 'BUILD_BUILDID doit identifier le builder Buildx.' }
+$builder = 'ifs-{0}' -f $buildId
+$cacheRoot = $null
+$nextCache = $null
+if (-not [string]::IsNullOrWhiteSpace($CacheDirectory)) {
+    $cacheRoot = [IO.Path]::GetFullPath($CacheDirectory)
+    if ($cacheRoot -eq [IO.Path]::GetPathRoot($cacheRoot)) { throw 'Le cache Buildx ne peut pas être la racine du disque.' }
+    $cacheParent = Split-Path -Parent $cacheRoot
+    if ([string]::IsNullOrWhiteSpace($cacheParent)) { throw 'Le cache Buildx doit avoir un dossier parent.' }
+    [void][IO.Directory]::CreateDirectory($cacheParent)
+    $nextCache = "$cacheRoot.next"
+    if (Test-Path -LiteralPath $nextCache -PathType Container) {
+        Remove-Item -LiteralPath $nextCache -Recurse -Force
+    }
+}
 
 try {
     [void](& docker buildx create --name $builder --driver docker-container --use 2>&1)
     if ($LASTEXITCODE -ne 0) { throw 'Création du builder Docker Buildx impossible.' }
     [void](& docker buildx inspect --bootstrap 2>&1)
     if ($LASTEXITCODE -ne 0) { throw 'Initialisation du builder Docker Buildx impossible.' }
-    $buildOutput = @(& docker buildx build --platform linux/amd64 --cache-from "type=registry,ref=$cache" --cache-to "type=registry,ref=$cache,mode=max" --file $dockerfile --tag $image --load $contextPath 2>&1)
+
+    $buildArguments = @('buildx', 'build', '--platform', 'linux/amd64')
+    if ($null -ne $cacheRoot -and (Test-Path -LiteralPath $cacheRoot -PathType Container)) {
+        $buildArguments += @('--cache-from', "type=local,src=$cacheRoot")
+    }
+    if ($null -ne $nextCache) {
+        $buildArguments += @('--cache-to', "type=local,dest=$nextCache,mode=max")
+    }
+    $buildArguments += @('--file', $dockerfile, '--tag', $ImageName, '--load', $contextPath)
+    $buildOutput = @(& docker @buildArguments 2>&1)
     if ($LASTEXITCODE -ne 0) { throw "Construction Buildx impossible : $($buildOutput -join ' ')" }
 
-    $scanOutput = @(& trivy image --scanners vuln --severity CRITICAL --exit-code 1 --format table $image 2>&1)
-    if ($LASTEXITCODE -ne 0) { throw "Trivy a bloqué l'image à cause d'une vulnérabilité critique ou d'un échec de scan : $($scanOutput -join ' ')" }
-
-    $pushOutput = @(& docker push $image 2>&1)
-    if ($LASTEXITCODE -ne 0) { throw "Publication de l'image dans ACR impossible : $($pushOutput -join ' ')" }
-    $digest = [string](& az acr repository show --name $registryName --image "$repository`:$tag" --subscription $registrySubscription --query digest --output tsv 2>&1)
-    if ($LASTEXITCODE -ne 0 -or $digest -notmatch '^sha256:[a-fA-F0-9]{64}$') { throw "Impossible de lire l'empreinte SHA-256 publiée par ACR." }
-
-    $manifest = [ordered]@{
-        schema = 'ifs-image/v1'
-        project = [string]$data.project
-        component = [string]$data.component
-        application = $Application
-        tag = $tag
-        image = '{0}/{1}@{2}' -f $registry.loginServer, $repository, $digest
-        commit = $commit
-        generatedAt = [DateTime]::UtcNow.ToString('o')
+    if ($null -ne $nextCache -and (Test-Path -LiteralPath $nextCache -PathType Container)) {
+        $backupCache = "$cacheRoot.previous"
+        if (Test-Path -LiteralPath $backupCache -PathType Container) {
+            Remove-Item -LiteralPath $backupCache -Recurse -Force
+        }
+        $hadExistingCache = Test-Path -LiteralPath $cacheRoot -PathType Container
+        if ($hadExistingCache) { Move-Item -LiteralPath $cacheRoot -Destination $backupCache }
+        try {
+            Move-Item -LiteralPath $nextCache -Destination $cacheRoot
+        }
+        catch {
+            if ($hadExistingCache -and (Test-Path -LiteralPath $backupCache -PathType Container)) {
+                Move-Item -LiteralPath $backupCache -Destination $cacheRoot
+            }
+            throw
+        }
+        if (Test-Path -LiteralPath $backupCache -PathType Container) {
+            Remove-Item -LiteralPath $backupCache -Recurse -Force
+        }
     }
-    $directory = Split-Path -Parent $ImageManifestPath
-    New-Item -ItemType Directory -Path $directory -Force | Out-Null
-    [IO.File]::WriteAllText($ImageManifestPath, (ConvertTo-Json -InputObject $manifest -Depth 20), [Text.UTF8Encoding]::new($false))
-    Write-Output "Image publiée et contrôlée : $($manifest.image)"
 }
 finally {
     [void](& docker buildx rm $builder 2>&1)

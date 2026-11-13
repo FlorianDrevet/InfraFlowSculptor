@@ -10,12 +10,12 @@
 | | |
 |---|---|
 | **Étape courante** | [`J0-23`](docs/plan/02-jalon-0-pilote.md#j0-23--émetteurs-azure-devops-kit-dinstallation-et-readme) — Émetteurs Azure DevOps, kit d'installation et README |
-| **Statut** | `BLOQUE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`J0-22`](docs/plan/02-jalon-0-pilote.md#j0-22--émetteur-bicep) — Émetteur Bicep (commit `7f04129`) |
 | **Étape suivante** | `J0-24` — Révisions : génération asynchrone, contrôles de sortie, consultation |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-generation` (créée depuis `origin/impl/j0-modele`, segment empilé après R-05) |
-| **Dernière mise à jour** | 2026-11-01 — Codex (blocage confirmé) |
+| **Dernière mise à jour** | 2026-11-13 — Codex (blocage résolu) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
@@ -38,10 +38,11 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 |---|---|---|
 | SDK .NET | `10.0.203` | Oui (`10.0.203`) |
 | Node | `24.15.0` | Oui (`24.15.0`) |
-| Docker | `27.0.0` | Oui (`29.4.3` installé) ; service Windows `Stopped`, mais Docker Engine répond et Testcontainers fonctionne. Conteneurs préexistants laissés en marche. |
-| CLI Aspire | `13.5.x` | Oui (`13.5.4`, DCP `0.22.11`; packages AppHost épinglés à `13.5.3`) |
+| Docker | `27.0.0` | Oui (`29.4.3` installé) ; service `com.docker.service` arrêté et moteur injoignable. Docker Desktop échoue à initialiser l’Inference manager (`dockerInference` inaccessible) le 2026-11-11. |
+| Podman (runtime Aspire sélectionné) | version non épinglée | Oui (`6.2.0`, machine WSL2 `podman-machine-default` démarrée ; `ASPIRE_CONTAINER_RUNTIME=podman` défini au niveau utilisateur ; `aspire doctor` confirme ce runtime actif le 2026-11-13). |
+| CLI Aspire | `13.5.x` | Oui (`13.6.5`; packages AppHost épinglés à `13.5.3`) |
 | Python | `3.11` | Oui (`3.14.4`) |
-| PowerShell 7 | `7.5.0` | Oui (`7.6.5`) |
+| PowerShell 7 | `7.5.0` | Oui (`7.6.9`) |
 | Azure CLI | `2.90.0` | Oui (`2.91.0`, prérequis vérifiés le 2026-10-27) |
 | Bicep CLI | `0.47.16` | Oui (`0.47.16`) |
 | Git / GitHub CLI | présence | Oui (`2.45.1` / `2.92.0`) |
@@ -80,9 +81,13 @@ Codex exécute chaque 🧪, consigne le résultat dans [`docs/plan/recettes/suiv
 
 ## Points ouverts et historique des décisions
 
-### J0-23 — périmètre de sortie et assets de pipeline — décision requise le 2026-11-01
+### J0-23 — périmètre de sortie et assets de pipeline — résolu le 2026-11-11
 
-La comparaison complète échoue sur les paramètres P-08 propres à un ancien run dans orders/infra/pipelines/release.yml. De plus, les modèles partagés et le kit d’installation référencent plusieurs scripts et fichiers absents de la liste de sortie J0-23; les descripteurs DependencyCache et ImageScan pointent vers des modèles d’étape inexistants. Il faut choisir si J0-23 et sa référence sont élargis pour produire des fichiers exécutables, ou si ces assets et paramètres restent hors génération et sont exclus de la preuve. [Vérifications et options](docs/plan/revues/J0-23-blocage-sortie-reference-20261101.md).
+Florian a choisi l’élargissement : la référence et J0-23 doivent couvrir une sortie Azure DevOps exécutable, y compris la fermeture des assets du kit et les modèles/insertion de `DependencyCache` et `ImageScan`. Les paramètres et ressources de reprise propres à P-08 restent hors génération. [Décision et preuve de déblocage](docs/plan/revues/J0-23-deblocage-perimetre-20261111.md) ; [constats initiaux](docs/plan/revues/J0-23-blocage-sortie-reference-20261101.md).
+
+### J0-23 — format de `ImageScan.exceptions` — résolu le 2026-11-13
+
+Florian a confirmé le choix recommandé : une chaîne vide désactive les exceptions; sinon la valeur est le chemin relatif au dépôt d’un fichier `.trivyignore` versionné. Le template transmet ce chemin à Trivy avec `--ignorefile` après validation qu’il existe dans le checkout et ne sort pas du dépôt. [Décision et preuve de déblocage](docs/plan/revues/J0-23-deblocage-exceptions-imagescan-20261113.md) ; [blocage et preuves de validation](docs/plan/revues/J0-23-blocage-exceptions-imagescan-20261111.md).
 
 ### J0-22 — diagnostics absents du plan — résolu le 2026-11-01
 

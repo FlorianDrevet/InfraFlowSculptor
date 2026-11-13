@@ -1,6 +1,6 @@
 # Généré par InfraFlowSculptor — tests du kit d'installation.
 BeforeAll {
-    $script:repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "../../../../../..")).Path
+    $script:repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "../../..")).Path
     $script:modulePath = Join-Path $script:repoRoot "reference/pilot/bicep-azdo/.ifs/install/scripts/IfsInstall.psm1"
     Import-Module $script:modulePath -Force
 }

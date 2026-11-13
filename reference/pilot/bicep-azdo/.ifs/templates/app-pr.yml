@@ -1,4 +1,4 @@
-# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+# Généré par InfraFlowSculptor — projet {{PROJECT_CODE}}. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
 parameters:
 - name: project
   type: string
@@ -10,13 +10,22 @@ parameters:
   type: string
 - name: dockerfile
   type: string
+- name: dependencyCachePath
+  type: string
+  default: ''
+- name: stepsBeforeBuild
+  type: stepList
+  default: []
+- name: stepsAfterBuild
+  type: stepList
+  default: []
 
 stages:
 - stage: Validate
   displayName: Build de pull request sans connexion Azure
   jobs:
   - job: Build
-    displayName: Construire l’image sans la publier
+    displayName: Construire et analyser l’image sans la publier
     pool:
       vmImage: ubuntu-latest
     steps:
@@ -25,17 +34,23 @@ stages:
     - pwsh: |
         $ErrorActionPreference = 'Stop'
         & "$env:IFS_REPOSITORY_ROOT/.ifs/templates/scripts/Set-IfsRunName.ps1" -ManifestPath $env:IFS_MANIFEST_PATH -Component $env:IFS_COMPONENT -Target 'PR'
-        $context = Join-Path $env:IFS_REPOSITORY_ROOT $env:IFS_BUILD_CONTEXT
-        $dockerfile = Join-Path $env:IFS_REPOSITORY_ROOT $env:IFS_DOCKERFILE
-        if (-not (Test-Path -LiteralPath $context -PathType Container)) { throw "Contexte Docker absent : $context" }
-        if (-not (Test-Path -LiteralPath $dockerfile -PathType Leaf)) { throw "Dockerfile absent : $dockerfile" }
-        $image = 'ifs-pr:{0}' -f $env:BUILD_BUILDID
-        & docker buildx build --platform linux/amd64 --file $dockerfile --tag $image --load $context
-        if ($LASTEXITCODE -ne 0) { throw 'Le build Docker de la pull request a échoué.' }
-      displayName: Nommer et construire l’application
+      displayName: Nommer le run depuis le manifeste
       env:
         IFS_REPOSITORY_ROOT: $(Build.SourcesDirectory)
         IFS_MANIFEST_PATH: $(Build.SourcesDirectory)/.ifs/manifest.json
         IFS_COMPONENT: ${{ parameters.component }}
+    - ${{ each step in parameters.stepsBeforeBuild }}:
+      - ${{ step }}
+    - pwsh: |
+        $ErrorActionPreference = 'Stop'
+        & "$env:IFS_REPOSITORY_ROOT/.ifs/templates/scripts/Build-IfsImage.ps1" -RepositoryRoot $env:IFS_REPOSITORY_ROOT -BuildContext $env:IFS_BUILD_CONTEXT -DockerfilePath $env:IFS_DOCKERFILE -ImageName $env:IFS_LOCAL_IMAGE_NAME -CacheDirectory $env:IFS_BUILDX_CACHE_DIR
+      displayName: Construire l’image localement
+      env:
+        IFS_REPOSITORY_ROOT: $(Build.SourcesDirectory)
+        IFS_COMPONENT: ${{ parameters.component }}
         IFS_BUILD_CONTEXT: ${{ parameters.buildContext }}
         IFS_DOCKERFILE: ${{ parameters.dockerfile }}
+        IFS_LOCAL_IMAGE_NAME: ifs-app-${{ parameters.application }}-$(Build.BuildId)
+        IFS_BUILDX_CACHE_DIR: ${{ parameters.dependencyCachePath }}
+    - ${{ each step in parameters.stepsAfterBuild }}:
+      - ${{ step }}

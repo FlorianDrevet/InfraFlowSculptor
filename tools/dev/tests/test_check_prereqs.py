@@ -66,9 +66,13 @@ class CheckPrerequisitesTests(unittest.TestCase):
     def write_command(self, name: str, contents: str) -> None:
         (self.bin_dir / f"{name}.cmd").write_text(contents, encoding="ascii")
 
-    def run_check(self) -> subprocess.CompletedProcess[str]:
+    def run_check(self, container_runtime: str | None = None) -> subprocess.CompletedProcess[str]:
         environment = os.environ.copy()
         environment["PATH"] = str(self.bin_dir) + os.pathsep + environment.get("PATH", "")
+        if container_runtime is not None:
+            environment["ASPIRE_CONTAINER_RUNTIME"] = container_runtime
+        else:
+            environment.pop("ASPIRE_CONTAINER_RUNTIME", None)
         return subprocess.run(
             [PWSH or "pwsh", "-NoLogo", "-NoProfile", "-File", str(SCRIPT), "-VersionsPath", str(self.versions_path)],
             cwd=ROOT,
@@ -97,6 +101,28 @@ class CheckPrerequisitesTests(unittest.TestCase):
         self.assertIn("Node", output)
         self.assertIn("KO", output)
         self.assertIn("OpenJS.NodeJS.LTS", output)
+
+    def test_selected_podman_runtime_passes_when_docker_engine_is_unavailable(self) -> None:
+        self.write_command(
+            "docker",
+            "@echo off\n"
+            'if "%1"=="--version" echo Docker version 29.5.3, build test\n'
+            'if "%1"=="info" exit /b 1\n',
+        )
+        self.write_command(
+            "podman",
+            "@echo off\n"
+            'if "%1"=="--version" echo podman version 6.2.0\n'
+            'if "%1"=="info" echo podman machine ready\n',
+        )
+
+        result = self.run_check(container_runtime="podman")
+        output = result.stdout + result.stderr
+
+        self.assertEqual(result.returncode, 0, output)
+        self.assertIn("Podman", output)
+        self.assertIn("6.2.0", output)
+        self.assertNotIn("Docker", output)
 
 
 if __name__ == "__main__":

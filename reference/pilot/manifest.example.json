@@ -30,20 +30,16 @@
       "sha256": "89e927978b88e2303a9b4311bf94e4f1e3b0df285a9aea69473f29256f915ccf"
     },
     {
-      "path": ".ifs/install/tests/IfsInstall.Tests.ps1",
-      "sha256": "49e97e582174af0d437a9dd7ec08ad23eca30c6adae03af9bd26b6b73ce91836"
-    },
-    {
       "path": ".ifs/pins.json",
       "sha256": "ed0e24a48ed8e278c415eeea4563c08c3d9349b01989d6cef1d82b42e5291f34"
     },
     {
       "path": ".ifs/templates/app-ci.yml",
-      "sha256": "5ad4f0fc5123389c0535b8bb91af9fd512e52c5a06c39390fca02e286bf50777"
+      "sha256": "8ee131646ace2363f0780804cffd1b3c5f587f571e03bff137009d851b953731"
     },
     {
       "path": ".ifs/templates/app-pr.yml",
-      "sha256": "7e49633a8afc085e56c4cbd9ca7598cddaa808c53bd8ef0d1f94f28fa8476616"
+      "sha256": "d486f414e47a1b265c3b14631962dc68ca51fa8cff62ba51c824ad8af66a5232"
     },
     {
       "path": ".ifs/templates/app-release.yml",
@@ -58,20 +54,16 @@
       "sha256": "7c21570f8d26d46720258303690cb9197fa26af965de85c4d0469dea3a72ad20"
     },
     {
-      "path": ".ifs/templates/infra-data-access-recovery.yml",
-      "sha256": "f6665de822c0751fce1c4930dd6dce689e8a4a8d901c06bb2157f7317964720e"
-    },
-    {
       "path": ".ifs/templates/infra-pr.yml",
       "sha256": "54af46640e0347b4d1d2daf50628c027cf73cf16a787519b14fc2b8656dc83b3"
     },
     {
       "path": ".ifs/templates/infra-release.yml",
-      "sha256": "b8aec3ef21f7064677af033153f7e27770233e355ad98f1174c838a10c157529"
+      "sha256": "356aa04015d9fc4a84dea91f72b222afbba057d3268f0372d8f168d99ef3c789"
     },
     {
       "path": ".ifs/templates/infra-target-stages.yml",
-      "sha256": "ba6124eef1d15e410b5424bafef9dce95724b3d2edb78fe71b4df324e6953421"
+      "sha256": "3cb8bdcade0fd4dad13e013510aea85d173a8964702559911e9a4c6336822b14"
     },
     {
       "path": ".ifs/templates/schemas/ifs-app-report.schema.json",
@@ -99,7 +91,7 @@
     },
     {
       "path": ".ifs/templates/scripts/Build-IfsImage.ps1",
-      "sha256": "d7f30bdfc5e9e1941e89615672c1ef409634c3c10990aa89416ee9a67c0206f2"
+      "sha256": "7ba6c3a50bd7469ad7423a54df67db682c4f52cf3750dd9a1516f97b39592cc7"
     },
     {
       "path": ".ifs/templates/scripts/IfsLeaseRenewal.ps1",
@@ -107,19 +99,19 @@
     },
     {
       "path": ".ifs/templates/scripts/IfsRelease.psm1",
-      "sha256": "199f2982e7de06ae9d3e77bd8c0136ae930526489fb17789335311aa950c50ed"
+      "sha256": "238b288ea872ff301156c35f5c1c72a721a15e58c1853def5d12b41c92027794"
     },
     {
       "path": ".ifs/templates/scripts/Install-IfsTrivy.ps1",
-      "sha256": "ad7914adee69b2512e747b7dd0d86e68203224c8028c0ed9f99cbd5aa9ef8f2e"
+      "sha256": "4a5682170f73aefde189b518fb0cbd015e65aac22149ccf457c986c4c7c34820"
     },
     {
       "path": ".ifs/templates/scripts/Invoke-IfsAppDeploy.ps1",
       "sha256": "5f127b6c6d8773ffa484b4127f31a7b156d0d5e9300670ac17f1b1b8213eee14"
     },
     {
-      "path": ".ifs/templates/scripts/Invoke-IfsDataAccessRecovery.ps1",
-      "sha256": "39c3831d55bc07fc1ac93514f0830864d2b55d88f866fec82eb6c73290c34309"
+      "path": ".ifs/templates/scripts/Invoke-IfsImageScan.ps1",
+      "sha256": "7d3471b7b6ced48b77b4eeefabdc390ffd114b818b0daac376d85473f086f4b5"
     },
     {
       "path": ".ifs/templates/scripts/Invoke-IfsInfraDeploy.ps1",
@@ -130,6 +122,10 @@
       "sha256": "456e549b46718fc8e14a74d9ce0b6826d68c9fda6d61c01421b0b5050573b2c4"
     },
     {
+      "path": ".ifs/templates/scripts/Publish-IfsImage.ps1",
+      "sha256": "4f17c3670f045db8e8b95fa24d3e4171490b5dd0570bd22829e0337a7fef2aad"
+    },
+    {
       "path": ".ifs/templates/scripts/Set-IfsRunName.ps1",
       "sha256": "1f3dd9cc403713e7cd048590a9460a958f32bf3cb0e053e7d9c3c46847962648"
     },
@@ -138,8 +134,16 @@
       "sha256": "c1bfa733bab747a59e3302efa6440908c912d9146e300060973a6ee543071a62"
     },
     {
+      "path": ".ifs/templates/steps/DependencyCache.yml",
+      "sha256": "f4fd7e59c0e23e98014b5090e0e13502ae225ca17f5c41d0b5a97eff9dec2a6b"
+    },
+    {
+      "path": ".ifs/templates/steps/ImageScan.yml",
+      "sha256": "0881d9515412abff3fb981dfc60f2c3b68fb328960aa42bae8dcd93c39ccbadc"
+    },
+    {
       "path": "README.ifs.md",
-      "sha256": "fb0612591245a829947fa4d39dcf1287a958ef777a89bee3abd9058350679302"
+      "sha256": "5b1186787d7f0f7c1f18801ac1ce0e8efb098324a13fb6db1c7df6a2f1192672"
     },
     {
       "path": "core/infra/key-vault-role-assignment.bicep",
@@ -219,11 +223,11 @@
     },
     {
       "path": "orders/apps/api/pipelines/ci.yml",
-      "sha256": "a4a83e08aeae1a387e259c35ebdebe4f7fb29c3a2f470fcdca04aa35b1a6ded4"
+      "sha256": "3592ef789a46d294f201bead436967ca36c6433b39698577409c4160b8d3e18d"
     },
     {
       "path": "orders/apps/api/pipelines/pr.yml",
-      "sha256": "0ef1b1e84604599788346306744691f3c5e28db22f0ea70956885f09a1c7df8e"
+      "sha256": "a02615f6dea4b64dd2eb6b687d04100a6eb445ad03a92984ccb0da3e5205721c"
     },
     {
       "path": "orders/apps/api/pipelines/release.yml",
@@ -259,7 +263,7 @@
     },
     {
       "path": "orders/infra/pipelines/release.yml",
-      "sha256": "bf9726876a79b22a9bd01f91522afd0b7aa0a4c5dfd1e2fe7ba3a6291b3eaff9"
+      "sha256": "19ad319872d4679f5794f75d8e964d83b098b7061af91a69568060e3eb2a2bde"
     },
     {
       "path": "orders/infra/registry-role-assignment.bicep",
@@ -295,7 +299,7 @@
     },
     {
       "path": "platform/infra/main.shared.bicepparam",
-      "sha256": "2a6c473dc36e3f3e4d0d1d04fac0a803af652cb5d17f22548e54f04b7d1341bc"
+      "sha256": "5346e8e9b5f409995981a7d67efe2621556d34d53792378b1eb125514c37ec40"
     },
     {
       "path": "platform/infra/pipelines/ci.yml",

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://infraflowsculptor.example/schemas/ifs-app-report.schema.json",
+  "title": "IFS application release report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "application", "target", "image", "fingerprint", "revision", "healthStatus", "result", "generatedAt"],
+  "properties": {
+    "schema": { "const": "ifs-app-report/v1" },
+    "application": { "type": "string", "minLength": 1 },
+    "target": { "enum": ["dev", "prd", "shared"] },
+    "image": { "type": "string", "pattern": "@sha256:[a-fA-F0-9]{64}$" },
+    "fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "revision": { "type": "string", "minLength": 1 },
+    "healthStatus": { "type": "integer", "minimum": 0, "maximum": 599 },
+    "result": { "enum": ["Succeeded", "Failed"] },
+    "generatedAt": { "type": "string", "format": "date-time" }
+  }
+}

@@ -74,6 +74,10 @@ Les noms globaux peuvent déjà exister dans Azure. Pour une preuve, remplacez `
 
 Déployez les composants dans cet ordre pour chaque environnement. Le pipeline de release séquence les cibles `dev` puis `prd` pour les composants qui déclarent cette dépendance. `prd` et `shared` sont protégés par approbation.
 
+## Scan des images de conteneur
+
+Les étapes `ImageScan` exécutent Trivy après la construction. Laissez le paramètre `exceptions` vide pour appliquer le seuil sans exception. Pour configurer des exceptions, indiquez un chemin relatif au dépôt vers un fichier `.trivyignore` versionné, par exemple `security/.trivyignore`. Le fichier doit être présent dans le checkout et respecter le format de la version de Trivy épinglée dans `.ifs/pins.json`.
+
 ## Paramètres et rôles
 
 | Élément | Destination ou portée | Source |

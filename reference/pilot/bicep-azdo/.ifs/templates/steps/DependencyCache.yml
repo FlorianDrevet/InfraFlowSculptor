@@ -1,0 +1,17 @@
+# Généré par InfraFlowSculptor — projet {{PROJECT_CODE}}. Ne pas modifier : la prochaine publication remplacera ce fichier. Personnalisation : voir README.ifs.md.
+parameters:
+- name: application
+  type: string
+- name: blocking
+  type: boolean
+  default: false
+
+steps:
+- task: Cache@2
+  displayName: Restaurer le cache Buildx de ${{ parameters.application }}
+  inputs:
+    key: '"ifs-buildx" | "$(Agent.OS)" | "${{ parameters.application }}" | **/Dockerfile | **/package-lock.json | **/pnpm-lock.yaml | **/yarn.lock | **/poetry.lock | **/requirements*.txt'
+    restoreKeys: |
+      "ifs-buildx" | "$(Agent.OS)" | "${{ parameters.application }}"
+    path: $(Pipeline.Workspace)/.ifs-buildx-cache
+  continueOnError: ${{ not(parameters.blocking) }}

@@ -30,6 +30,10 @@ if (-not (Test-Path -LiteralPath (Join-Path $installRoot 'trivy') -PathType Leaf
     if ($LASTEXITCODE -ne 0) { throw 'Extraction de Trivy impossible.' }
 }
 
+# Le logger met à jour les étapes suivantes; cette modification sert aussi au scan dans la même étape.
+if (-not (($env:PATH -split [IO.Path]::PathSeparator) -contains $installRoot)) {
+    $env:PATH = "$installRoot$([IO.Path]::PathSeparator)$env:PATH"
+}
 Write-Output "##vso[task.prependpath]$installRoot"
 & (Join-Path $installRoot 'trivy') --version
 if ($LASTEXITCODE -ne 0) { throw "Trivy $version ne démarre pas correctement." }

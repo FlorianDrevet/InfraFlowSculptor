@@ -182,10 +182,15 @@ Aucune erreur.
 
 ```
 .ifs/
+  pins.json
   install/
     azure-setup.ps1
     install.pipeline.yml
+    readiness.bicep
     SETUP.md
+    scripts/
+      IfsInstall.psm1
+      Install-Azdo.ps1
   templates/
     infra-pr.yml
     infra-ci.yml
@@ -195,11 +200,27 @@ Aucune erreur.
     app-ci.yml
     app-release.yml
     app-target-stage.yml
+    schemas/
+      ifs-app-report.schema.json
+      ifs-preview.schema.json
+      ifs-report.schema.json
+      ifs-report.v2.schema.json
+      operation-journal.schema.json
+      release-data.schema.json
     scripts/
+      Build-IfsImage.ps1
+      IfsLeaseRenewal.ps1
       IfsRelease.psm1
+      Install-IfsTrivy.ps1
       Invoke-IfsInfraPreview.ps1
       Invoke-IfsInfraDeploy.ps1
       Invoke-IfsAppDeploy.ps1
+      Publish-IfsImage.ps1
+      Set-IfsRunName.ps1
+      Test-IfsBicep.ps1
+    steps/
+      DependencyCache.yml
+      ImageScan.yml
 README.ifs.md
 core/infra/
   main.bicep
@@ -221,6 +242,11 @@ orders/infra/
   pipelines/pr.yml, ci.yml, release.yml
 orders/apps/api/pipelines/pr.yml, ci.yml, release.yml
 ```
+
+Le pipeline applicatif CI construit l'image localement, exécute les étapes actives avant et après le build (dont le
+scan de l'image), puis la publie avec la connexion OIDC du registre déterminé par le plan. La PR suit le même chemin de
+build et de scan sans connexion Azure ni publication. Les références de modèles et de scripts nécessaires sont
+embarquées dans `.ifs/`; aucune pipeline produite ne dépend d'un dépôt externe pour son exécution.
 
 Le manifeste `.ifs/manifest.json` est écrit par la publication, pas par la génération : il figure dans la
 sortie de référence sous `reference/pilot/manifest.example.json` (hors du dossier comparé) pour la recette, avec une

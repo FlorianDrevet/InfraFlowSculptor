@@ -48,6 +48,13 @@ $templateSchema = [ordered]@{
     definitions = $officialSchema.definitions
 }
 [IO.File]::WriteAllText($templateSchemaPath, (ConvertTo-Json -InputObject $templateSchema -Depth 100 -Compress), [Text.UTF8Encoding]::new($false))
+$stepsTemplateSchemaPath = Join-Path ([IO.Path]::GetTempPath()) "ifs-azure-pipelines-steps-$PID.schema.json"
+$stepsTemplateSchema = [ordered]@{
+    '$schema' = $officialSchema['$schema']
+    oneOf = @($officialSchema.definitions.stepsTemplate)
+    definitions = $officialSchema.definitions
+}
+[IO.File]::WriteAllText($stepsTemplateSchemaPath, (ConvertTo-Json -InputObject $stepsTemplateSchema -Depth 100 -Compress), [Text.UTF8Encoding]::new($false))
 
 function ConvertTo-IfsSchemaDocument {
     param([Parameter(Mandatory)] [object] $Node, [string] $Context)
@@ -60,6 +67,17 @@ function ConvertTo-IfsSchemaDocument {
         foreach ($key in $Node.Keys) {
             $childContext = if ([string]$key -eq 'env') { 'env' } else { $null }
             $normalizedKey = [regex]::Replace([string]$key, '\$\{\{.*?\}\}', 'sample')
+            if ([string]$key -eq 'default' -and
+                [string]$Node.type -eq 'boolean' -and
+                $Node[$key] -is [bool]) {
+                $result[$normalizedKey] = $Node[$key].ToString().ToLowerInvariant()
+                continue
+            }
+            if ([string]$key -eq 'continueOnError' -and
+                $Node[$key] -is [string] -and
+                $Node[$key].Contains('${{')) {
+                continue
+            }
             $result[$normalizedKey] = ConvertTo-IfsSchemaDocument -Node $Node[$key] -Context $childContext
         }
         return $result
@@ -71,6 +89,10 @@ function ConvertTo-IfsSchemaDocument {
             if ($item -is [System.Collections.IDictionary] -and $item.Count -eq 1) {
                 $dynamicKey = [string]@($item.Keys)[0]
                 if ($dynamicKey -match '^\$\{\{\s*(if|each)\b' -and $item[$dynamicKey] -is [System.Collections.IList]) {
+                    if ($dynamicKey -match '^\$\{\{\s*each\s+step\s+in\s+parameters\.steps(?:Before|After)Build\s*\}\}') {
+                        $result.Add([ordered]@{ pwsh = 'Write-Host IFS_SCHEMA_STEP' })
+                        continue
+                    }
                     foreach ($expandedItem in $item[$dynamicKey]) {
                         $result.Add((ConvertTo-IfsSchemaDocument -Node $expandedItem -Context $Context))
                     }
@@ -111,10 +133,11 @@ function Test-LocalReference {
 }
 
 $yamlFiles = @(Get-ChildItem -LiteralPath $pipelineRoot -Filter '*.yml' -File -Recurse -Force | Sort-Object FullName)
-if ($yamlFiles.Count -ne 25) { throw "25 fichiers YAML sont attendus après P-08 ; trouvé : $($yamlFiles.Count)." }
+if ($yamlFiles.Count -ne 26) { throw "26 fichiers YAML sont attendus ; trouvé : $($yamlFiles.Count)." }
 $expectedFiles = @(
-    '.ifs/templates/infra-pr.yml', '.ifs/templates/infra-ci.yml', '.ifs/templates/infra-release.yml', '.ifs/templates/infra-target-stages.yml', '.ifs/templates/infra-data-access-recovery.yml',
+    '.ifs/templates/infra-pr.yml', '.ifs/templates/infra-ci.yml', '.ifs/templates/infra-release.yml', '.ifs/templates/infra-target-stages.yml',
     '.ifs/templates/app-pr.yml', '.ifs/templates/app-ci.yml', '.ifs/templates/app-release.yml', '.ifs/templates/app-target-stage.yml',
+    '.ifs/templates/steps/DependencyCache.yml', '.ifs/templates/steps/ImageScan.yml',
     'core/infra/pipelines/pr.yml', 'core/infra/pipelines/ci.yml', 'core/infra/pipelines/release.yml',
     'data/infra/pipelines/pr.yml', 'data/infra/pipelines/ci.yml', 'data/infra/pipelines/release.yml',
     'platform/infra/pipelines/pr.yml', 'platform/infra/pipelines/ci.yml', 'platform/infra/pipelines/release.yml',
@@ -144,8 +167,10 @@ foreach ($file in $yamlFiles) {
         Test-LocalReference -Path ('.ifs/install/scripts/{0}' -f $match.Groups[1].Value) -Description 'Script du kit installation'
     }
 
-    $isTemplate = $file.FullName.StartsWith((Join-Path $pipelineRoot '.ifs/templates'), [StringComparison]::OrdinalIgnoreCase)
-    $schema = if ($isTemplate) { $templateSchemaPath } else { $schemaPath }
+    $templatesRoot = Join-Path $pipelineRoot '.ifs/templates'
+    $isTemplate = $file.FullName.StartsWith($templatesRoot, [StringComparison]::OrdinalIgnoreCase)
+    $isStepsTemplate = $file.FullName.StartsWith((Join-Path $templatesRoot 'steps'), [StringComparison]::OrdinalIgnoreCase)
+    $schema = if (-not $isTemplate) { $schemaPath } elseif ($isStepsTemplate) { $stepsTemplateSchemaPath } else { $templateSchemaPath }
     $schemaDocument = if ($isTemplate) { ConvertTo-IfsSchemaDocument -Node $document -Context $null } else { $document }
     $json = ConvertTo-Json -InputObject $schemaDocument -Depth 100 -Compress
     try { $isValid = Test-Json -Json $json -SchemaFile $schema -ErrorAction Stop }
@@ -183,6 +208,31 @@ $appCiTask = @($appCiTemplate.stages[0].jobs[0].steps | Where-Object { $_ -is [S
 if ($null -eq $appCiTask -or $appCiTask.inputs.azureSubscription -ne '${{ parameters.registryServiceConnection }}') {
     throw 'Le build applicatif doit utiliser la connexion applicative de la cible du registre.'
 }
+$appCiTemplateText = Get-Content -LiteralPath (Join-Path $pipelineRoot '.ifs/templates/app-ci.yml') -Raw
+$ciStepOrder = @(
+    $appCiTemplateText.IndexOf('parameters.stepsBeforeBuild', [StringComparison]::Ordinal)
+    $appCiTemplateText.IndexOf('Build-IfsImage.ps1', [StringComparison]::Ordinal)
+    $appCiTemplateText.IndexOf('parameters.stepsAfterBuild', [StringComparison]::Ordinal)
+    $appCiTemplateText.IndexOf('Publish-IfsImage.ps1', [StringComparison]::Ordinal)
+)
+if (@($ciStepOrder | Where-Object { $_ -lt 0 }).Count -gt 0 -or
+    $ciStepOrder[0] -ge $ciStepOrder[1] -or
+    $ciStepOrder[1] -ge $ciStepOrder[2] -or
+    $ciStepOrder[2] -ge $ciStepOrder[3]) {
+    throw 'La CI applicative doit exécuter les étapes avant build, construire, exécuter les étapes après build (dont le scan), puis publier.'
+}
+$appPrTemplateText = Get-Content -LiteralPath (Join-Path $pipelineRoot '.ifs/templates/app-pr.yml') -Raw
+$prStepOrder = @(
+    $appPrTemplateText.IndexOf('parameters.stepsBeforeBuild', [StringComparison]::Ordinal)
+    $appPrTemplateText.IndexOf('Build-IfsImage.ps1', [StringComparison]::Ordinal)
+    $appPrTemplateText.IndexOf('parameters.stepsAfterBuild', [StringComparison]::Ordinal)
+)
+if (@($prStepOrder | Where-Object { $_ -lt 0 }).Count -gt 0 -or
+    $prStepOrder[0] -ge $prStepOrder[1] -or
+    $prStepOrder[1] -ge $prStepOrder[2] -or
+    $appPrTemplateText -match '(?i)AzureCLI@|AzurePowerShell@|azureSubscription\s*:|Publish-IfsImage\.ps1') {
+    throw 'La PR applicative doit exécuter les étapes avant/après build autour du build local, sans connexion Azure ni publication.'
+}
 $appCiPipeline = ConvertFrom-Yaml -Yaml (Get-Content -LiteralPath (Join-Path $pipelineRoot 'orders/apps/api/pipelines/ci.yml') -Raw) -Ordered
 if ($appCiPipeline.extends.parameters.registryServiceConnection -ne 'ifs-shop-shared-app') {
     throw "Le build de l'application témoin doit publier vers le registre de la cible shared."
@@ -216,21 +266,18 @@ if ([regex]::Matches((Get-Content -LiteralPath (Join-Path $pipelineRoot '.ifs/te
 
 $ordersReleasePipelineText = Get-Content -LiteralPath (Join-Path $pipelineRoot 'orders/infra/pipelines/release.yml') -Raw
 $infraReleaseTemplateText = Get-Content -LiteralPath (Join-Path $pipelineRoot '.ifs/templates/infra-release.yml') -Raw
-$infraRecoveryTemplateText = Get-Content -LiteralPath (Join-Path $pipelineRoot '.ifs/templates/infra-data-access-recovery.yml') -Raw
-if ($infraReleaseTemplateText -notmatch '(?m)^[ \t]*-[ \t]*\$\{\{[ \t]*if[ \t]+eq\(parameters\.project,[ \t]*''shop42''[ \t]*\)[ \t]*\}\}:[ \t]*\r?\n[ \t]+-[ \t]+template:[ \t]*/\.ifs/templates/infra-data-access-recovery\.yml[ \t]*$') {
-    throw 'Le modèle de reprise Shop42 doit être inclus uniquement pour le projet shop42.'
+if ($ordersReleasePipelineText -match 'recover-prd-762|recoveryMode|recoveryOperationId|recoveryRevision|recoveryCommit|shop42' -or
+    $infraReleaseTemplateText -match 'infra-data-access-recovery|recoveryMode|recoveryOperationId|shop42' -or
+    (Get-Content -LiteralPath (Join-Path $pipelineRoot '.ifs/templates/infra-target-stages.yml') -Raw) -match 'recoveryMode|shop42' -or
+    (Test-Path -LiteralPath (Join-Path $pipelineRoot '.ifs/templates/infra-data-access-recovery.yml') -PathType Leaf) -or
+    (Test-Path -LiteralPath (Join-Path $pipelineRoot '.ifs/templates/scripts/Invoke-IfsDataAccessRecovery.ps1') -PathType Leaf)) {
+    throw 'Une ressource ou un paramètre de reprise P-08 a fui dans la sortie Azure DevOps.'
 }
-if ($ordersReleasePipelineText -notmatch '(?ms)name:\s*recoveryMode\s+displayName:.*?type:\s*string\s+default:\s*standard\s+values:\s*\r?\n\s*- standard\s*\r?\n\s*- recover-prd-762' -or
-    $ordersReleasePipelineText -notmatch "(?m)^\s+recoveryMode:\s*\$\{\{ parameters\.recoveryMode \}\}\s*$") {
-    throw 'La reprise Shop42 doit rester désactivée en mode standard et choisir le mode ciblé explicitement.'
-}
-if ($infraRecoveryTemplateText -notmatch "(?m)^\s+condition:\s*and\(eq\('\$\{\{ parameters\.recoveryMode \}\}', 'recover-prd-762'\), eq\('\$\{\{ parameters\.project \}\}', 'shop42'\), eq\('\$\{\{ parameters\.component \}\}', 'orders'\)\)\s*$" -or
-    (Get-Content -LiteralPath (Join-Path $pipelineRoot '.ifs/templates/infra-target-stages.yml') -Raw) -notmatch "(?m)^\s+condition:\s*and\(succeeded\(\), eq\('\$\{\{ parameters\.recoveryMode \}\}', 'standard'\)\)\s*$" -or
-    $infraRecoveryTemplateText -notmatch '(?m)^\s+environment:\s*shop42-prd\s*$' -or
-    $infraRecoveryTemplateText -notmatch '(?m)^\s+azureSubscription:\s*ifs-shop42-prd\s*$' -or
-    $infraRecoveryTemplateText -notmatch '(?m)^\s+lockBehavior:\s*sequential\s*$' -or
-    $infraRecoveryTemplateText -notmatch '(?m)Invoke-IfsDataAccessRecovery\.ps1') {
-    throw 'La reprise doit être un stage manuel PRD, protégé par l''environnement, la connexion et le verrou PRD.'
+if ($ordersReleasePipelineText -notmatch '(?m)^- name: systemAssignedSqlClientIdDev$' -or
+    $ordersReleasePipelineText -notmatch '(?m)^- name: systemAssignedSqlClientIdPrd$' -or
+    $ordersReleasePipelineText -notmatch 'systemAssignedSqlClientId: \$\{\{ parameters\.systemAssignedSqlClientIdDev \}\}' -or
+    $ordersReleasePipelineText -notmatch 'systemAssignedSqlClientId: \$\{\{ parameters\.systemAssignedSqlClientIdPrd \}\}') {
+    throw 'Les Client IDs SQL d''identité système doivent être générés depuis les accès du plan.'
 }
 
 Remove-Item -LiteralPath $templateSchemaPath -Force

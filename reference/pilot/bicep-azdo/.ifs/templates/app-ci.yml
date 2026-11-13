@@ -1,4 +1,4 @@
-# Généré par InfraFlowSculptor — projet shop. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
+# Généré par InfraFlowSculptor — projet {{PROJECT_CODE}}. Ne pas modifier : les modifications seront signalées puis remplacées à la prochaine publication. Personnalisation : voir README.ifs.md.
 parameters:
 - name: project
   type: string
@@ -12,13 +12,22 @@ parameters:
   type: string
 - name: dockerfile
   type: string
+- name: dependencyCachePath
+  type: string
+  default: ''
+- name: stepsBeforeBuild
+  type: stepList
+  default: []
+- name: stepsAfterBuild
+  type: stepList
+  default: []
 
 stages:
 - stage: Build
-  displayName: Build, scan et publication de l’image
+  displayName: Construire, analyser et publier l’image
   jobs:
   - job: BuildImage
-    displayName: Construire et publier une image immuable
+    displayName: Construire une image immuable après analyse
     pool:
       vmImage: ubuntu-latest
     steps:
@@ -32,25 +41,31 @@ stages:
         IFS_REPOSITORY_ROOT: $(Build.SourcesDirectory)
         IFS_MANIFEST_PATH: $(Build.SourcesDirectory)/.ifs/manifest.json
         IFS_COMPONENT: ${{ parameters.component }}
+    - ${{ each step in parameters.stepsBeforeBuild }}:
+      - ${{ step }}
     - pwsh: |
         $ErrorActionPreference = 'Stop'
-        & "$env:IFS_REPOSITORY_ROOT/.ifs/templates/scripts/Install-IfsTrivy.ps1"
-      displayName: Installer Trivy à la version épinglée
+        & "$env:IFS_REPOSITORY_ROOT/.ifs/templates/scripts/Build-IfsImage.ps1" -RepositoryRoot $env:IFS_REPOSITORY_ROOT -BuildContext $env:IFS_BUILD_CONTEXT -DockerfilePath $env:IFS_DOCKERFILE -ImageName $env:IFS_LOCAL_IMAGE_NAME -CacheDirectory $env:IFS_BUILDX_CACHE_DIR
+      displayName: Construire l’image localement
       env:
         IFS_REPOSITORY_ROOT: $(Build.SourcesDirectory)
+        IFS_BUILD_CONTEXT: ${{ parameters.buildContext }}
+        IFS_DOCKERFILE: ${{ parameters.dockerfile }}
+        IFS_LOCAL_IMAGE_NAME: ifs-app-${{ parameters.application }}-$(Build.BuildId)
+        IFS_BUILDX_CACHE_DIR: ${{ parameters.dependencyCachePath }}
+    - ${{ each step in parameters.stepsAfterBuild }}:
+      - ${{ step }}
     - task: AzureCLI@2
-      displayName: Buildx, analyse des vulnérabilités critiques et push OIDC
+      displayName: Publier l’image contrôlée en OIDC
       inputs:
         azureSubscription: ${{ parameters.registryServiceConnection }}
         scriptType: pscore
         scriptLocation: scriptPath
-        scriptPath: $(Build.SourcesDirectory)/.ifs/templates/scripts/Build-IfsImage.ps1
+        scriptPath: $(Build.SourcesDirectory)/.ifs/templates/scripts/Publish-IfsImage.ps1
         arguments: >
-          -RepositoryRoot "$(Build.SourcesDirectory)"
           -ReleasePath "$(Build.SourcesDirectory)/${{ parameters.component }}/infra/release.dev.json"
-          -BuildContext '${{ parameters.buildContext }}'
-          -DockerfilePath '${{ parameters.dockerfile }}'
-          -Application '${{ parameters.application }}'
+          -LocalImageName "ifs-app-${{ parameters.application }}-$(Build.BuildId)"
+          -Application "${{ parameters.application }}"
           -ImageManifestPath "$(Build.ArtifactStagingDirectory)/app/image.json"
     - pwsh: |
         $ErrorActionPreference = 'Stop'

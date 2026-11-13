@@ -26,5 +26,17 @@
     <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\README.ifs.md">
       <LogicalName>InfraFlowSculptor.Emitters.InstallKit.Resources.README.ifs.md</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\pins.json">
+      <LogicalName>InfraFlowSculptor.Emitters.InstallKit.Resources.pins.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\install\readiness.bicep">
+      <LogicalName>InfraFlowSculptor.Emitters.InstallKit.Resources.readiness.bicep</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\install\scripts\IfsInstall.psm1">
+      <LogicalName>InfraFlowSculptor.Emitters.InstallKit.Resources.scripts.IfsInstall.psm1</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\..\reference\pilot\bicep-azdo\.ifs\install\scripts\Install-Azdo.ps1">
+      <LogicalName>InfraFlowSculptor.Emitters.InstallKit.Resources.scripts.Install-Azdo.ps1</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

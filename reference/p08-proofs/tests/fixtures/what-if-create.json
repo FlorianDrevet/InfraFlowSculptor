@@ -1,0 +1,8 @@
+{
+  "changes": [
+    {
+      "resourceId": "/subscriptions/test/resourceGroups/test/providers/Test/widgets/new",
+      "changeType": "Create"
+    }
+  ]
+}

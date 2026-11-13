@@ -23,6 +23,18 @@ catch {
     exit 1
 }
 
+$containerRuntime = if ([string]::IsNullOrWhiteSpace($env:ASPIRE_CONTAINER_RUNTIME)) {
+    'docker'
+}
+else {
+    $env:ASPIRE_CONTAINER_RUNTIME.Trim().ToLowerInvariant()
+}
+
+if ($containerRuntime -notin @('docker', 'podman')) {
+    Write-Error "ASPIRE_CONTAINER_RUNTIME doit valoir 'docker' ou 'podman' (valeur reçue : '$containerRuntime')."
+    exit 1
+}
+
 function Invoke-ToolOutput {
     param(
         [Parameter(Mandatory)] [string]$Name,
@@ -77,6 +89,11 @@ function Get-ToolVersion {
             $null = Invoke-ToolOutput 'docker' @('info', '--format', '{{.ServerVersion}}')
             return $version
         }
+        'podman' {
+            $version = Get-ReportedVersion -Tool $Tool -Output (Invoke-ToolOutput 'podman' @('--version'))
+            $null = Invoke-ToolOutput 'podman' @('info')
+            return $version
+        }
         'az' {
             $output = Invoke-ToolOutput 'az' @('version', '--output', 'json')
             $info = $output | ConvertFrom-Json -AsHashtable
@@ -105,6 +122,10 @@ function Get-InstallSuggestion {
         'pwsh'   { if ($IsInstalled) { return 'winget upgrade --id Microsoft.PowerShell' }; return 'winget install --id Microsoft.PowerShell' }
         'bicep'  { if ($IsInstalled) { return 'az bicep upgrade' }; return 'az bicep install' }
         'docker' { if ($IsInstalled) { return 'Démarrer Docker Desktop, puis relancer le contrôle.' }; return 'winget install --id Docker.DockerDesktop' }
+        'podman' {
+            if ($IsInstalled) { return 'Démarrer la machine Podman avec « podman machine start », puis relancer le contrôle.' }
+            return 'Installer Podman Desktop depuis sa source officielle, initialiser une machine Podman, puis relancer le contrôle.'
+        }
         'az'     { if ($IsInstalled) { return 'winget upgrade --id Microsoft.AzureCLI' }; return 'winget install --id Microsoft.AzureCLI' }
         'git'    { return 'winget install --id Git.Git' }
         'gh'     { return 'winget install --id GitHub.cli' }
@@ -112,7 +133,7 @@ function Get-InstallSuggestion {
     }
 }
 
-$toolNames = @('dotnet', 'node', 'aspire', 'python', 'pwsh', 'bicep', 'docker', 'az', 'git', 'gh')
+$toolNames = @('dotnet', 'node', 'aspire', 'python', 'pwsh', 'bicep', $containerRuntime, 'az', 'git', 'gh')
 $displayNames = @{
     dotnet = 'SDK .NET'
     node   = 'Node'
@@ -121,6 +142,7 @@ $displayNames = @{
     pwsh   = 'PowerShell 7'
     bicep  = 'Bicep CLI'
     docker = 'Docker'
+    podman = 'Podman'
     az     = 'Azure CLI'
     git    = 'git'
     gh     = 'gh'
@@ -144,9 +166,9 @@ foreach ($tool in $toolNames) {
         }
     }
     catch {
-        if ($tool -eq 'docker' -and (Get-Command -Name 'docker' -ErrorAction SilentlyContinue)) {
+        if ($tool -in @('docker', 'podman') -and (Get-Command -Name $tool -ErrorAction SilentlyContinue)) {
             try {
-                $found = (Get-ReportedVersion -Tool 'docker' -Output (Invoke-ToolOutput 'docker' @('--version'))).ToString()
+                $found = (Get-ReportedVersion -Tool $tool -Output (Invoke-ToolOutput $tool @('--version'))).ToString()
                 $isInstalled = $true
             }
             catch {
