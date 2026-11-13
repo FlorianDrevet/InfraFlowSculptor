@@ -13,6 +13,8 @@ describe('project feature routes', () => {
       'settings',
       'naming',
       'members',
+      'revisions/:revisionId',
+      'revisions',
     ]);
     expect(PROJECT_ROUTES.every((route) => route.loadComponent || route.loadChildren)).toBe(true);
     expect(PROJECT_ROUTES.find((route) => route.path === 'components')?.loadChildren).toBeDefined();

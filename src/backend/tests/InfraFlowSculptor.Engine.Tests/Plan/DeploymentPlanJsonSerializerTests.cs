@@ -37,6 +37,24 @@ public sealed class DeploymentPlanJsonSerializerTests
             < first.IndexOf("\"z-module\"", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void DeserializeRoundTripsCanonicalDeploymentPlan()
+    {
+        var plan = CreatePlan(
+            new Dictionary<string, CatalogModulePin>(StringComparer.Ordinal)
+            {
+                ["module"] = new("br/public:module:1", "1", "source")
+            },
+            new Dictionary<string, string>(StringComparer.Ordinal) { ["SqlServer"] = "22.4.5.1" });
+
+        var restored = DeploymentPlanJsonSerializer.Deserialize(DeploymentPlanJsonSerializer.Serialize(plan));
+
+        Assert.Equal(plan.Project, restored.Project);
+        Assert.Equal(plan.Pins.Version, restored.Pins.Version);
+        Assert.Equal(plan.Pins.Modules["module"], restored.Pins.Modules["module"]);
+        Assert.Equal(plan.Pins.PowerShellModules["SqlServer"], restored.Pins.PowerShellModules["SqlServer"]);
+    }
+
     private static DeploymentPlan CreatePlan(
         IReadOnlyDictionary<string, CatalogModulePin> modules,
         IReadOnlyDictionary<string, string> powerShellModules) => new(

@@ -628,6 +628,7 @@ public static class ProjectsController
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        projects.MapRevisionEndpoints();
         return projects;
     }
 

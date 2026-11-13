@@ -4,6 +4,7 @@ import { RouterLink, RouterOutlet } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import type { ProjectSummaryResponse } from '../../core/api/generated';
+import { FEATURES } from '../../core/features/feature-keys';
 import { NavigationRegistry } from '../../core/layout/navigation.registry';
 import { ProjectsService } from '../../core/projects/projects.service';
 
@@ -94,6 +95,14 @@ export class ProjectWorkspace {
         path: `${base}/members`,
         scope: 'project',
         iconName: 'users',
+      }),
+      this.navigation.register({
+        id: `project-revisions-${projectId}`,
+        labelKey: 'project.revisionsLink',
+        path: `${base}/revisions`,
+        scope: 'project',
+        featureKey: FEATURES.revisions,
+        iconName: 'clock',
       }),
     ];
     onCleanup(() => unregister.forEach((remove) => remove()));

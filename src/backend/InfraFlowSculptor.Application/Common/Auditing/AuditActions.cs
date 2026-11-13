@@ -16,6 +16,7 @@ public static class AuditActions
     public const string ProjectRoleRemoved = "project.role.removed";
     public const string ProjectOwnershipTaken = "project.ownership.taken";
     public const string ProjectNamingUpdated = "project.naming.updated";
+    public const string RevisionGenerationRequested = "revision.generation.requested";
     public const string ComponentCreated = "component.created";
     public const string ComponentUpdated = "component.updated";
     public const string ComponentDeleted = "component.deleted";

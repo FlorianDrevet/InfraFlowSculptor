@@ -5,6 +5,7 @@
 
 ## Faits vérifiés
 
+- J0-24 ajoute `revisions`, `revision_files`, `revision_findings`, `revision_changes` et `revision_inputs` par la migration `20261113155938_J0_24_Revisions`, sans JSONB. `GenerateRevision` sérialise le snapshot `ifs-project/v1` en JSON canonique, calcule SHA-256 et écrit l'entrée figée, la révision Queued et l'outbox dans la transaction du projet verrouillé; le Worker relit uniquement cette entrée. Les blobs privés sont adressés par `sha256/<2 premiers hex>/<sha256>` et les archives déterministes par identifiant de révision. La purge retire les fichiers des révisions générées non publiées après 90 jours, puis supprime les blobs et archives non référencés après leur période d'inactivité. Recette G1–G6 : ZIP comparé à 80/80 fichiers de référence après normalisation des placeholders prévue par les tests; génération inchangée ne crée pas de nouvelle révision. Suite .NET : 774 tests passés, 1 test Bicep opt-in ignoré.
 - `AddIfsDbContext("ifs")` utilise `ConnectionStrings:ifs` en local/Aspire. En Azure, `PostgresDataSourceFactory` lit
   `Azure:ifs:Endpoint`, `Database` et `Username`, impose TLS et renouvelle un jeton Entra PostgreSQL toutes les
   50 minutes; aucun mot de passe n'est configuré.

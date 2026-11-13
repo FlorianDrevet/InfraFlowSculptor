@@ -1,0 +1,9 @@
+.git
+**/bin
+**/obj
+**/TestResults
+**/test-results
+**/playwright-report
+**/node_modules
+**/.angular
+**/coverage

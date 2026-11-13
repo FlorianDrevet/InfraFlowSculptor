@@ -28,6 +28,15 @@ public sealed class OpenApiDocumentTests : IClassFixture<ApiFactory>
         Assert.True(JsonNode.DeepEquals(committedDocument, runtimeDocument), "Régénérez le document avec dotnet build.");
         Assert.Equal("GetVersion", runtimeDocument?["paths"]?["/v1/version"]?["get"]?["operationId"]?.GetValue<string>());
         Assert.Equal("GetMe", runtimeDocument?["paths"]?["/v1/me"]?["get"]?["operationId"]?.GetValue<string>());
+        Assert.Equal(
+            "GenerateRevision",
+            runtimeDocument?["paths"]?["/v1/projects/{projectId}/revisions"]?["post"]?["operationId"]?.GetValue<string>());
+        Assert.Equal(
+            "ListRevisions",
+            runtimeDocument?["paths"]?["/v1/projects/{projectId}/revisions"]?["get"]?["operationId"]?.GetValue<string>());
+        Assert.Equal(
+            "GetRevision",
+            runtimeDocument?["paths"]?["/v1/projects/{projectId}/revisions/{revisionId}"]?["get"]?["operationId"]?.GetValue<string>());
         Assert.NotNull(runtimeDocument?["paths"]?["/v1/naming/preview"]?["post"]?["responses"]?["503"]);
         var resourceResponse = runtimeDocument?["components"]?["schemas"]?["ResourceResponse"];
         Assert.Contains(resourceResponse?["required"]?.AsArray() ?? [],

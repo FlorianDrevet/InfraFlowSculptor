@@ -1,0 +1,227 @@
+<main class="revision-detail">
+  <a class="revision-detail__back" [routerLink]="['../']">{{
+    'revisionDetail.back' | transloco
+  }}</a>
+  @if (loading()) {
+    <p role="status">{{ 'revisionDetail.loading' | transloco }}</p>
+  } @else if (loadError() || !revision()) {
+    <app-ds-banner tone="danger" [title]="'revisionDetail.loadError' | transloco">
+      {{ 'revisionDetail.loadErrorDescription' | transloco }}
+    </app-ds-banner>
+  } @else {
+    <header class="revision-detail__header">
+      <div>
+        <div class="revision-detail__title-row">
+          <h2>{{ 'revisions.revisionNumber' | transloco: { number: revision()!.number } }}</h2>
+          <app-ds-badge [tone]="statusTone()">{{ statusKey() | transloco }}</app-ds-badge>
+          @if (revision()!.isStale) {
+            <app-ds-badge tone="ember">{{ 'revisions.stale' | transloco }}</app-ds-badge>
+          }
+        </div>
+        <p class="revision-detail__metadata">
+          {{ 'revisionDetail.author' | transloco }}
+          <span class="revision-detail__mono">{{ revision()!.authorObjectId }}</span>
+          ·
+          {{ date(revision()!.completedAt ?? revision()!.createdAt) }}
+          · {{ 'revisionDetail.modelVersion' | transloco: { version: revision()!.modelVersion } }} ·
+          {{ 'revisionDetail.catalogVersion' | transloco: { version: revision()!.catalogVersion } }}
+          · {{ revision()!.infrastructureLanguage }} · {{ revision()!.ciPlatform }}
+        </p>
+      </div>
+      @if (revision()!.state === 'Generated' && number(revision()!.filesCount) > 0) {
+        <app-ds-button variant="secondary" icon="download" (click)="downloadArchive()">
+          {{ 'revisionDetail.downloadArchive' | transloco }}
+        </app-ds-button>
+      }
+    </header>
+
+    @if (revision()!.isStale) {
+      <app-ds-banner tone="ember" [title]="'revisionDetail.staleTitle' | transloco">
+        {{ 'revisionDetail.staleDescription' | transloco }}
+      </app-ds-banner>
+    }
+    @if (isPending() && revision()!.queuePosition !== null) {
+      <app-ds-banner tone="signal">
+        {{
+          'revisions.queued'
+            | transloco: { number: revision()!.number, position: revision()!.queuePosition }
+        }}
+      </app-ds-banner>
+    }
+    @if (revision()!.state === 'Failed') {
+      <app-ds-banner tone="danger" [title]="'revisions.incident' | transloco">
+        {{ 'revisionDetail.failureDescription' | transloco }}
+      </app-ds-banner>
+    }
+
+    <app-ds-tabs
+      [items]="tabs()"
+      [active]="activeTab()"
+      (activeChange)="selectTab($event)"
+      [ariaLabel]="'revisionDetail.tabsLabel' | transloco"
+    />
+
+    @if (activeTab() === 'changes') {
+      <section class="revision-detail__section" aria-labelledby="revision-changes-title">
+        <header>
+          <h3 id="revision-changes-title">{{ 'revisionDetail.changesTitle' | transloco }}</h3>
+          <p>{{ 'revisionDetail.changesDescription' | transloco }}</p>
+        </header>
+        @if (detail()!.changes.length === 0) {
+          <p>{{ 'revisionDetail.noChanges' | transloco }}</p>
+        } @else {
+          <ul class="revision-detail__changes">
+            @for (change of detail()!.changes; track $index) {
+              <li>
+                <app-ds-badge
+                  [tone]="
+                    change.category === 'Added' || change.category === 'PlanAdded'
+                      ? 'success'
+                      : change.category === 'Removed' || change.category === 'PlanRemoved'
+                        ? 'ember'
+                        : 'neutral'
+                  "
+                >
+                  {{ change.descriptionFr }}
+                </app-ds-badge>
+                <span class="revision-detail__mono">{{ change.subject }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    } @else if (activeTab() === 'plan') {
+      <section class="revision-detail__section" aria-labelledby="revision-plan-title">
+        <header>
+          <h3 id="revision-plan-title">{{ 'revisionDetail.planTitle' | transloco }}</h3>
+        </header>
+        @if (planLoading()) {
+          <p role="status">{{ 'revisionDetail.planLoading' | transloco }}</p>
+        } @else if (planError()) {
+          <app-ds-banner tone="danger">{{ 'revisionDetail.planError' | transloco }}</app-ds-banner>
+        } @else if (plan(); as deploymentPlan) {
+          <app-code-viewer path="plan.json" [content]="deploymentPlan" />
+        } @else {
+          <p role="status">{{ 'revisionDetail.outputsPending' | transloco }}</p>
+        }
+      </section>
+    } @else if (activeTab() === 'files') {
+      <section class="revision-detail__files" aria-labelledby="revision-files-title">
+        <div class="revision-detail__tree">
+          <header>
+            <h3 id="revision-files-title">{{ 'revisionDetail.filesTitle' | transloco }}</h3>
+            <app-ds-text-field
+              [label]="'revisionDetail.searchFiles' | transloco"
+              [value]="fileSearch()"
+              (valueChange)="searchFiles($event)"
+            />
+          </header>
+          @if (searchingFiles()) {
+            <p role="status">{{ 'revisionDetail.searchingFiles' | transloco }}</p>
+          } @else if (fileSearchError()) {
+            <p role="alert">{{ 'revisionDetail.searchError' | transloco }}</p>
+          }
+          @if (files().length === 0 && revision()!.state === 'Generated') {
+            <p>{{ 'revisionDetail.noFilesAvailable' | transloco }}</p>
+          } @else if (files().length === 0) {
+            <p role="status">{{ 'revisionDetail.outputsPending' | transloco }}</p>
+          } @else if (filteredFiles().length === 0) {
+            <p>{{ 'revisionDetail.noFilesMatch' | transloco }}</p>
+          } @else {
+            <ul
+              class="revision-detail__file-tree"
+              role="tree"
+              [attr.aria-label]="'revisionDetail.fileTreeLabel' | transloco"
+            >
+              @for (node of tree(); track treeTrack(node)) {
+                <ng-container
+                  [ngTemplateOutlet]="treeNode"
+                  [ngTemplateOutletContext]="{ $implicit: node }"
+                />
+              }
+            </ul>
+          }
+        </div>
+        <section
+          class="revision-detail__file-view"
+          aria-label="{{ 'revisionDetail.fileViewerLabel' | transloco }}"
+        >
+          @if (selectedPath(); as path) {
+            <header>
+              <span class="revision-detail__mono">{{ path }}</span>
+              <app-ds-button variant="ghost" icon="download" (click)="downloadSelectedFile()">
+                {{ 'revisionDetail.downloadFile' | transloco }}
+              </app-ds-button>
+            </header>
+          }
+          @if (fileLoading()) {
+            <p role="status">{{ 'revisionDetail.fileLoading' | transloco }}</p>
+          } @else if (fileError()) {
+            <app-ds-banner tone="danger">{{
+              'revisionDetail.fileError' | transloco
+            }}</app-ds-banner>
+          } @else if (fileContent() !== null && selectedPath()) {
+            <app-code-viewer [path]="selectedPath()!" [content]="fileContent()!" />
+          } @else {
+            <p>{{ 'revisionDetail.selectFile' | transloco }}</p>
+          }
+        </section>
+      </section>
+    } @else {
+      <section class="revision-detail__section" aria-labelledby="revision-findings-title">
+        <header>
+          <h3 id="revision-findings-title">{{ 'revisionDetail.findingsTitle' | transloco }}</h3>
+          <p>{{ 'revisionDetail.findingsDescription' | transloco }}</p>
+        </header>
+        @if (detail()!.findings.length === 0) {
+          <p>{{ 'revisionDetail.noFindings' | transloco }}</p>
+        } @else {
+          <ul class="revision-detail__findings">
+            @for (finding of detail()!.findings; track finding.code + finding.subjectId) {
+              <li>
+                <app-ds-badge
+                  [tone]="
+                    finding.severity === 'Warning'
+                      ? 'ember'
+                      : finding.severity === 'Error'
+                        ? 'danger'
+                        : 'neutral'
+                  "
+                  [mono]="true"
+                >
+                  {{ finding.code }}
+                </app-ds-badge>
+                <span>{{ findingMessage(finding) }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    }
+  }
+</main>
+
+<ng-template #treeNode let-node>
+  <li
+    role="treeitem"
+    [attr.aria-selected]="node.file && node.path === selectedPath() ? 'true' : null"
+  >
+    @if (node.file) {
+      <button type="button" class="revision-detail__file-button" (click)="selectFile(node.file)">
+        {{ node.name }}
+      </button>
+    } @else {
+      <details open>
+        <summary>{{ node.name }}</summary>
+        <ul role="group">
+          @for (child of node.children; track treeTrack(child)) {
+            <ng-container
+              [ngTemplateOutlet]="treeNode"
+              [ngTemplateOutletContext]="{ $implicit: child }"
+            />
+          }
+        </ul>
+      </details>
+    }
+  </li>
+</ng-template>

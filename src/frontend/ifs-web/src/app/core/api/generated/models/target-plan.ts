@@ -3,6 +3,7 @@
 
 import { AppSettingPlan } from '../models/app-setting-plan';
 import { DataAccessPlan } from '../models/data-access-plan';
+import { DiagnosticSettingPlan } from '../models/diagnostic-setting-plan';
 import { ExternalReference } from '../models/external-reference';
 import { PipelineSecretPlan } from '../models/pipeline-secret-plan';
 import { ReleaseDataPlan } from '../models/release-data-plan';
@@ -14,6 +15,7 @@ import { TargetInfo } from '../models/target-info';
 export interface TargetPlan {
   appSettings: Array<AppSettingPlan>;
   dataAccess: Array<DataAccessPlan>;
+  diagnosticSettings: Array<DiagnosticSettingPlan>;
   expectedSecrets: Array<PipelineSecretPlan>;
   externalReferences: Array<ExternalReference>;
   release: ReleaseDataPlan;

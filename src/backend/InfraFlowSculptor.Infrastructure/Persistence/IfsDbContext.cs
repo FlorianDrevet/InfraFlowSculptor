@@ -9,6 +9,7 @@ using InfraFlowSculptor.Domain.Invitations;
 using InfraFlowSculptor.Domain.UserProfileAggregate;
 using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
+using InfraFlowSculptor.Domain.RevisionAggregate;
 using InfraFlowSculptor.Infrastructure.Persistence.Common;
 using InfraFlowSculptor.Infrastructure.Persistence.Identity;
 using InfraFlowSculptor.Infrastructure.Persistence.Auditing;
@@ -61,6 +62,10 @@ public class IfsDbContext(
 
     public DbSet<ApplicationAggregate> Applications => Set<ApplicationAggregate>();
 
+    public DbSet<RevisionAggregate> Revisions => Set<RevisionAggregate>();
+
+    public DbSet<RevisionInputEntity> RevisionInputs => Set<RevisionInputEntity>();
+
     public DbSet<ProjectWizardDraft> ProjectWizardDrafts => Set<ProjectWizardDraft>();
 
     public DbSet<InvitationAggregate> Invitations => Set<InvitationAggregate>();
@@ -86,6 +91,25 @@ public class IfsDbContext(
 
         var transaction = await Database.BeginTransactionAsync(cancellationToken);
         return new IfsDbTransaction(transaction, isOwner: true, savepointName: null);
+    }
+
+    public async Task<bool> LockProjectForUpdateAsync(
+        ProjectId projectId,
+        CancellationToken cancellationToken = default)
+    {
+        if (CurrentOrganizationId is not { } organizationId)
+        {
+            return false;
+        }
+
+        var lockedId = await Database.SqlQuery<Guid>($"""
+            SELECT id AS "Value"
+            FROM projects
+            WHERE id = {projectId.Value} AND organization_id = {organizationId.Value}
+            FOR UPDATE
+            """).SingleOrDefaultAsync(cancellationToken);
+
+        return lockedId != Guid.Empty;
     }
 
     public IReadOnlyCollection<IDomainEvent> GetDomainEvents() =>

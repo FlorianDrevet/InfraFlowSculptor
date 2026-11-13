@@ -169,8 +169,10 @@ else
 
 var worker = builder.AddProject<Projects.InfraFlowSculptor_Worker>(ResourceNames.Worker)
     .WithReference(database)
+    .WithReference(blobs)
     .WithReference(serviceBus)
     .WaitFor(postgres)
+    .WaitFor(storage)
     .WaitFor(serviceBus)
     .WithEnvironment("DOTNET_ENVIRONMENT", builder.Environment.EnvironmentName)
     .WithEnvironment("Invitations__BaseUrl", webOrigin)

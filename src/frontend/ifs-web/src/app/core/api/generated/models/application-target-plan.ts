@@ -6,6 +6,7 @@ export interface ApplicationTargetPlan {
   buildRegistryComponent: (string | null);
   buildRegistryName: (string | null);
   buildRegistryResource: (string | null);
+  buildRegistryTarget: (string | null);
   infrastructurePrerequisites: Array<string>;
   promotionRequired: boolean;
   stageSteps: Array<DeploymentStageStepKind>;

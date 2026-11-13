@@ -9,9 +9,12 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Admin;
 
 public sealed class EfDemoProjectSeeder(IfsDbContext dbContext)
 {
-    private static readonly Guid SubscriptionId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    private static readonly Guid DevelopmentSubscriptionId = Guid.Parse("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+    private static readonly Guid ProductionSubscriptionId = Guid.Parse("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb");
     // Keep the reference model's logical target C distinct so J0-20 shows the external-scope finding.
     private static readonly Guid SharedSubscriptionId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+    private static readonly Guid SqlAdminGroupDevelopmentId = Guid.Parse("00000000-0000-4000-8000-000000000001");
+    private static readonly Guid SqlAdminGroupProductionId = Guid.Parse("00000000-0000-4000-8000-000000000002");
     private static readonly IReadOnlyDictionary<string, JsonElement> EmptyProperties =
         new Dictionary<string, JsonElement>(StringComparer.Ordinal);
 
@@ -58,6 +61,18 @@ public sealed class EfDemoProjectSeeder(IfsDbContext dbContext)
 
         if (seedReferenceModel)
         {
+            _ = project.ConfigureNaming(
+                "Compact",
+                "{abbr}-{project}-{name}-{env}",
+                "rg-{project}-{component}-{name}-{env}").Value;
+            _ = project.UpdateSettings(
+                project.Name,
+                project.Code,
+                project.Description,
+                systemTagsEnabled: true,
+                project.CoordinatorUserProfileId,
+                [new KeyValuePair<string, string>("costCenter", "ecommerce")],
+                confirmImpact: true).Value;
             await SeedReferenceModelAsync(project, cancellationToken);
         }
 
@@ -84,11 +99,27 @@ public sealed class EfDemoProjectSeeder(IfsDbContext dbContext)
             return;
         }
 
-        EnsureEnvironment(project, "Development", "dev", 1, isProtected: false, []);
-        EnsureEnvironment(project, "Production", "prd", 2, isProtected: true, ["Shop Release Approvers"]);
+        EnsureEnvironment(
+            project,
+            "Development",
+            "dev",
+            DevelopmentSubscriptionId,
+            1,
+            isProtected: false,
+            []);
+        EnsureEnvironment(
+            project,
+            "Production",
+            "prd",
+            ProductionSubscriptionId,
+            2,
+            isProtected: true,
+            ["Shop Release Approvers"]);
 
         var environments = project.Environments.OrderBy(environment => environment.Position).ToArray();
         var environmentIds = environments.Select(environment => environment.Id).ToArray();
+        var developmentEnvironment = environments.Single(environment => environment.Code == "dev");
+        var productionEnvironment = environments.Single(environment => environment.Code == "prd");
         var coreId = Guid.NewGuid();
         var dataId = Guid.NewGuid();
         var platformId = Guid.NewGuid();
@@ -109,7 +140,7 @@ public sealed class EfDemoProjectSeeder(IfsDbContext dbContext)
             "shared",
             SharedSubscriptionId,
             "francecentral",
-            deploymentConnection: null,
+            deploymentConnection: "shared-connection",
             isProtected: true,
             approvers: ["Shop Release Approvers"],
             runners: [],
@@ -126,16 +157,75 @@ public sealed class EfDemoProjectSeeder(IfsDbContext dbContext)
         var ordersGroup = orders.AddResourceGroup(Guid.NewGuid(), "main").Value;
 
         var workspace = AddResource(core, coreGroup.Id, "LogAnalyticsWorkspace", "main", environmentIds);
+        _ = core.SetResourceOverride(
+            workspace.Id,
+            productionEnvironment.Id,
+            "retentionInDays",
+            JsonSerializer.SerializeToElement(90)).Value;
         var insights = AddResource(core, coreGroup.Id, "ApplicationInsights", "main", environmentIds);
-        _ = AddResource(core, coreGroup.Id, "KeyVault", "main", environmentIds);
-        var sqlServer = AddResource(data, dataGroup.Id, "SqlServer", "orders", environmentIds);
-        var sqlDatabase = AddResource(data, dataGroup.Id, "SqlDatabase", "orders", environmentIds);
+        var vault = AddResource(core, coreGroup.Id, "KeyVault", "main", environmentIds);
+        _ = core.SetResourceOverride(
+            vault.Id,
+            developmentEnvironment.Id,
+            "purgeProtection",
+            JsonSerializer.SerializeToElement(false)).Value;
+        var sqlServer = AddResource(
+            data,
+            dataGroup.Id,
+            "SqlServer",
+            "orders",
+            environmentIds,
+            Properties(
+                ("administratorDisplayName", "sg-shop-sql-admins"),
+                ("administratorObjectId", SqlAdminGroupDevelopmentId.ToString("D"))));
+        _ = data.SetResourceOverride(
+            sqlServer.Id,
+            productionEnvironment.Id,
+            "administratorObjectId",
+            JsonSerializer.SerializeToElement(SqlAdminGroupProductionId.ToString("D"))).Value;
+        var sqlDatabase = AddResource(
+            data,
+            dataGroup.Id,
+            "SqlDatabase",
+            "orders",
+            environmentIds,
+            Properties(("sku", "GP_S_Gen5_1")));
+        _ = data.SetResourceOverride(
+            sqlDatabase.Id,
+            productionEnvironment.Id,
+            "sku",
+            JsonSerializer.SerializeToElement("GP_Gen5_2")).Value;
         var registry = AddResource(platform, platformGroup.Id, "ContainerRegistry", "main", [sharedTarget.Id]);
         var identity = AddResource(orders, ordersGroup.Id, "UserAssignedIdentity", "api", environmentIds);
-        var containerEnvironment = AddResource(orders, ordersGroup.Id, "ContainerAppsEnvironment", "main", environmentIds);
+        var containerEnvironment = AddResource(
+            orders,
+            ordersGroup.Id,
+            "ContainerAppsEnvironment",
+            "main",
+            environmentIds,
+            Properties(("zoneRedundant", false)));
         var applicationResource = orders.AddResource(
             Guid.NewGuid(), ordersGroup.Id, "ContainerApp", "api", "", false, environmentIds,
             EmptyProperties, defaultIdentityResourceId: identity.Id).Value;
+        _ = orders.SetResourceOverride(
+            applicationResource.Id,
+            developmentEnvironment.Id,
+            "maxReplicas",
+            JsonSerializer.SerializeToElement(2)).Value;
+        foreach (var (propertyName, value) in new (string PropertyName, object Value)[]
+        {
+            ("cpu", 1),
+            ("memoryGi", "2Gi"),
+            ("minReplicas", 1),
+            ("maxReplicas", 3)
+        })
+        {
+            _ = orders.SetResourceOverride(
+                applicationResource.Id,
+                productionEnvironment.Id,
+                propertyName,
+                JsonSerializer.SerializeToElement(value)).Value;
+        }
 
         _ = data.SetDefaultLogAnalyticsResource(workspace.Id).Value;
         _ = orders.SetDefaultLogAnalyticsResource(workspace.Id).Value;
@@ -159,19 +249,56 @@ public sealed class EfDemoProjectSeeder(IfsDbContext dbContext)
             Guid.NewGuid(), project.Id, project.OrganizationId, orders.Id, applicationResource.Id,
             new ApplicationDefinition(
                 "api", "src/api", "src/api/Dockerfile", "src/api", "shop/orders/api", null,
-                DeploymentStrategyKind.Direct, null, []));
+                DeploymentStrategyKind.Direct,
+                null,
+                [
+                    new ApplicationStepDefinition(
+                        "DependencyCache",
+                        true,
+                        false,
+                        ApplicationStepPosition.BeforeBuild,
+                        []),
+                    new ApplicationStepDefinition(
+                        "ImageScan",
+                        true,
+                        true,
+                        ApplicationStepPosition.AfterBuild,
+                        [])
+                ]));
         if (application.IsError)
         {
             throw new InvalidOperationException($"Could not seed the demo application: {application.FirstError.Code}.");
         }
 
         dbContext.Applications.Add(application.Value);
+
+        var paymentKey = AppSettingAggregate.Create(
+            Guid.NewGuid(),
+            project.Id,
+            project.OrganizationId,
+            orders.Id.Value,
+            applicationResource.Id,
+            new AppSettingDefinition(
+                "Payments__ApiKey",
+                AppSettingSourceKind.KeyVaultSecret,
+                KeyVaultResourceId: vault.Id,
+                SecretName: "payments-api-key",
+                SecretFeedKind: AppSettingSecretFeedKind.PipelineSecret,
+                PipelineVariableName: "MAIN_PAYMENTS_API_KEY",
+                IdentityResourceId: identity.Id));
+        if (paymentKey.IsError)
+        {
+            throw new InvalidOperationException($"Could not seed the demo application setting: {paymentKey.FirstError.Code}.");
+        }
+
+        dbContext.AppSettings.Add(paymentKey.Value);
     }
 
     private static void EnsureEnvironment(
         ProjectAggregate project,
         string name,
         string code,
+        Guid subscriptionId,
         int position,
         bool isProtected,
         IEnumerable<string> approvers)
@@ -182,8 +309,8 @@ public sealed class EfDemoProjectSeeder(IfsDbContext dbContext)
         }
 
         var created = project.AddEnvironment(
-            Guid.NewGuid(), name, code, SubscriptionId, "francecentral", position,
-            isProtected, approvers, [], name);
+            Guid.NewGuid(), name, code, subscriptionId, "francecentral", position,
+            isProtected, approvers, [], name, deploymentConnection: $"{code}-connection");
         if (created.IsError)
         {
             throw new InvalidOperationException($"Could not seed demo environment '{code}': {created.FirstError.Code}.");
@@ -195,9 +322,16 @@ public sealed class EfDemoProjectSeeder(IfsDbContext dbContext)
         Guid resourceGroupId,
         string type,
         string name,
-        IEnumerable<Guid> targetIds) =>
+        IEnumerable<Guid> targetIds,
+        IReadOnlyDictionary<string, JsonElement>? properties = null) =>
         component.AddResource(
-            Guid.NewGuid(), resourceGroupId, type, name, "", false, targetIds, EmptyProperties).Value;
+            Guid.NewGuid(), resourceGroupId, type, name, "", false, targetIds, properties ?? EmptyProperties).Value;
+
+    private static Dictionary<string, JsonElement> Properties(params (string Name, object? Value)[] properties) =>
+        properties.ToDictionary(
+            property => property.Name,
+            property => JsonSerializer.SerializeToElement(property.Value),
+            StringComparer.Ordinal);
 
     private static LinkAggregate CreateLink(
         ProjectAggregate project,

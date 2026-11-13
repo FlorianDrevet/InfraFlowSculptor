@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -15,14 +14,14 @@ public static class DeploymentPlanJsonSerializer
     public static byte[] SerializeToUtf8Bytes(DeploymentPlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        using var document = JsonDocument.Parse(JsonSerializer.SerializeToUtf8Bytes(plan, Options));
-        var output = new ArrayBufferWriter<byte>();
-        using (var writer = new Utf8JsonWriter(output))
-        {
-            WriteCanonicalElement(document.RootElement, writer);
-        }
+        return CanonicalJsonSerializer.SerializeToUtf8Bytes(plan, Options);
+    }
 
-        return output.WrittenSpan.ToArray();
+    public static DeploymentPlan Deserialize(string json)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
+        return JsonSerializer.Deserialize<DeploymentPlan>(json, Options)
+            ?? throw new InvalidDataException("The deployment plan JSON is empty.");
     }
 
     private static JsonSerializerOptions CreateOptions()
@@ -30,48 +29,5 @@ public static class DeploymentPlanJsonSerializer
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
         options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
         return options;
-    }
-
-    private static void WriteCanonicalElement(JsonElement element, Utf8JsonWriter writer)
-    {
-        switch (element.ValueKind)
-        {
-            case JsonValueKind.Object:
-                writer.WriteStartObject();
-                foreach (var property in element.EnumerateObject().OrderBy(property => property.Name, StringComparer.Ordinal))
-                {
-                    writer.WritePropertyName(property.Name);
-                    WriteCanonicalElement(property.Value, writer);
-                }
-
-                writer.WriteEndObject();
-                break;
-            case JsonValueKind.Array:
-                writer.WriteStartArray();
-                foreach (var item in element.EnumerateArray())
-                {
-                    WriteCanonicalElement(item, writer);
-                }
-
-                writer.WriteEndArray();
-                break;
-            case JsonValueKind.String:
-                writer.WriteStringValue(element.GetString());
-                break;
-            case JsonValueKind.Number:
-                writer.WriteRawValue(element.GetRawText(), skipInputValidation: false);
-                break;
-            case JsonValueKind.True:
-                writer.WriteBooleanValue(true);
-                break;
-            case JsonValueKind.False:
-                writer.WriteBooleanValue(false);
-                break;
-            case JsonValueKind.Null:
-                writer.WriteNullValue();
-                break;
-            default:
-                throw new InvalidOperationException($"Unsupported JSON token in deployment plan: {element.ValueKind}");
-        }
     }
 }

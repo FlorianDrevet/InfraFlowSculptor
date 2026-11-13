@@ -5,6 +5,7 @@
   "python": "3.11",
   "pwsh": "7.5.0",
   "bicep": "0.47.16",
+  "psscriptanalyzer": "1.25.0",
   "docker": "27.0.0",
   "az": "2.90.0"
 }

@@ -17,6 +17,7 @@ using InfraFlowSculptor.Infrastructure.Persistence.Auditing;
 using InfraFlowSculptor.Infrastructure.Persistence.Naming;
 using InfraFlowSculptor.Infrastructure.Dns;
 using InfraFlowSculptor.Application.Common.Auditing;
+using InfraFlowSculptor.Application.Generation;
 using InfraFlowSculptor.Infrastructure.Features;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -54,6 +55,7 @@ public static class DependencyInjection
         services.TryAddScoped<IAuditWriter, EfAuditWriter>();
         services.TryAddScoped<IAuditEventReader, EfAuditEventReader>();
         services.TryAddScoped<IAuditEventPurger, EfAuditEventPurger>();
+        services.TryAddSingleton<IRevisionBlobStore, AzureRevisionBlobStore>();
         services.AddNameAvailabilityInfrastructure();
 
         var credential = new IfsAzureCredential();

@@ -1,0 +1,29 @@
+<section class="project-revision-rail" aria-label="{{ 'project.revisionRailLabel' | transloco }}">
+  @if (loading()) {
+    <p role="status">{{ 'revisions.loading' | transloco }}</p>
+  } @else if (loadError()) {
+    <app-ds-banner tone="danger" [title]="'project.revisionRailError' | transloco">
+      {{ 'project.revisionRailErrorDescription' | transloco }}
+    </app-ds-banner>
+  } @else {
+    <app-ds-golden-path [steps]="steps()" [ariaLabel]="'project.revisionRailLabel' | transloco" />
+    @if (blocked()) {
+      <app-ds-banner tone="danger" [title]="'revisions.blockedTitle' | transloco">
+        {{ 'project.revisionModelBlocked' | transloco }}
+      </app-ds-banner>
+      <a [routerLink]="['../findings']">{{ 'revisions.viewFindings' | transloco }}</a>
+    } @else {
+      <app-ds-button variant="primary" [disabled]="generating()" (click)="generate()">
+        {{ 'revisions.generate' | transloco: { number: nextNumber() } }}
+      </app-ds-button>
+    }
+    @if (notice(); as message) {
+      <app-ds-banner tone="signal">{{ message }}</app-ds-banner>
+    }
+    @if (generationError()) {
+      <app-ds-banner tone="danger">{{
+        'revisions.generationErrorDescription' | transloco
+      }}</app-ds-banner>
+    }
+  }
+</section>

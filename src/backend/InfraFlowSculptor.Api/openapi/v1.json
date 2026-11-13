@@ -3039,6 +3039,541 @@
         ]
       }
     },
+    "/v1/projects/{projectId}/revisions": {
+      "post": {
+        "tags": [
+          "Revisions"
+        ],
+        "summary": "Demander la génération d’une révision immuable.",
+        "operationId": "GenerateRevision",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevisionGenerationResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevisionGenerationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Revisions"
+        ],
+        "summary": "Lister les révisions d’un projet.",
+        "operationId": "ListRevisions",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevisionListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/revisions/{revisionId}": {
+      "get": {
+        "tags": [
+          "Revisions"
+        ],
+        "summary": "Consulter les métadonnées d’une révision.",
+        "operationId": "GetRevision",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revisionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevisionDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/revisions/{revisionId}/plan": {
+      "get": {
+        "tags": [
+          "Revisions"
+        ],
+        "summary": "Consulter le plan figé d’une révision générée.",
+        "operationId": "GetRevisionPlan",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revisionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentPlan"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/revisions/{revisionId}/files": {
+      "get": {
+        "tags": [
+          "Revisions"
+        ],
+        "summary": "Lister les fichiers d’une révision générée.",
+        "operationId": "ListRevisionFiles",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revisionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RevisionFileResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/revisions/{revisionId}/files/{path}": {
+      "get": {
+        "tags": [
+          "Revisions"
+        ],
+        "summary": "Consulter ou télécharger un fichier d’une révision.",
+        "operationId": "GetRevisionFile",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revisionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "download",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/revisions/{revisionId}/archive": {
+      "get": {
+        "tags": [
+          "Revisions"
+        ],
+        "summary": "Télécharger l’archive d’une révision générée.",
+        "operationId": "GetRevisionArchive",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revisionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/projects/{projectId}/components": {
       "get": {
         "tags": [
@@ -13532,6 +14067,316 @@
           }
         }
       },
+      "RevisionChangeResponse": {
+        "required": [
+          "category",
+          "subject",
+          "descriptionFr",
+          "descriptionEn"
+        ],
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "descriptionFr": {
+            "type": "string"
+          },
+          "descriptionEn": {
+            "type": "string"
+          }
+        }
+      },
+      "RevisionDetailResponse": {
+        "required": [
+          "revision",
+          "findings",
+          "files",
+          "changes"
+        ],
+        "type": "object",
+        "properties": {
+          "revision": {
+            "$ref": "#/components/schemas/RevisionSummaryResponse"
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RevisionFindingResponse"
+            }
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RevisionFileResponse"
+            }
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RevisionChangeResponse"
+            }
+          }
+        }
+      },
+      "RevisionFileResponse": {
+        "required": [
+          "relativePath",
+          "sha256",
+          "size"
+        ],
+        "type": "object",
+        "properties": {
+          "relativePath": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "size": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "RevisionFindingResponse": {
+        "required": [
+          "code",
+          "severity",
+          "messageFr",
+          "messageEn",
+          "subjectType",
+          "subjectId",
+          "environmentId"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "messageFr": {
+            "type": "string"
+          },
+          "messageEn": {
+            "type": "string"
+          },
+          "subjectType": {
+            "type": "string"
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "environmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "RevisionGenerationResponse": {
+        "required": [
+          "revisionId",
+          "number",
+          "state",
+          "queuePosition",
+          "isUnchanged"
+        ],
+        "type": "object",
+        "properties": {
+          "revisionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "state": {
+            "type": "string"
+          },
+          "queuePosition": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "isUnchanged": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RevisionListResponse": {
+        "required": [
+          "items",
+          "nextNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RevisionSummaryResponse"
+            }
+          },
+          "nextNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "RevisionSummaryResponse": {
+        "required": [
+          "id",
+          "number",
+          "state",
+          "authorTenantId",
+          "authorObjectId",
+          "modelVersion",
+          "catalogVersion",
+          "infrastructureLanguage",
+          "ciPlatform",
+          "inputSha256",
+          "createdAt",
+          "startedAt",
+          "completedAt",
+          "failureCode",
+          "isStale",
+          "queuePosition",
+          "findingsCount",
+          "filesCount",
+          "changesCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "state": {
+            "type": "string"
+          },
+          "authorTenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authorObjectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "modelVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "catalogVersion": {
+            "type": "string"
+          },
+          "infrastructureLanguage": {
+            "type": "string"
+          },
+          "ciPlatform": {
+            "type": "string"
+          },
+          "inputSha256": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "startedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "failureCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isStale": {
+            "type": "boolean"
+          },
+          "queuePosition": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "findingsCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "filesCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "changesCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "RoleAssignmentOriginPlan": {
         "required": [
           "kind",
@@ -14550,6 +15395,9 @@
     },
     {
       "name": "Project environments"
+    },
+    {
+      "name": "Revisions"
     },
     {
       "name": "Components"

@@ -1,0 +1,13 @@
+.project-revision-rail {
+  display: grid;
+  gap: var(--ifs-space-4);
+  min-width: 0;
+  padding: var(--ifs-space-5);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+}
+
+.project-revision-rail > a {
+  width: fit-content;
+}

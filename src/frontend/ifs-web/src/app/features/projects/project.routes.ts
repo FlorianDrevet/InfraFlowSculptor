@@ -1,4 +1,6 @@
 import type { Routes } from '@angular/router';
+import { featureGuard } from '../../core/features/feature.guard';
+import { FEATURES } from '../../core/features/feature-keys';
 
 export const PROJECT_ROUTES: Routes = [
   {
@@ -40,5 +42,19 @@ export const PROJECT_ROUTES: Routes = [
     path: 'members',
     loadComponent: () => import('./project-members').then((module) => module.ProjectMembers),
     title: 'Membres du projet',
+  },
+  {
+    path: 'revisions/:revisionId',
+    canActivate: [featureGuard(FEATURES.revisions)],
+    loadComponent: () =>
+      import('../revisions/revision-detail').then((module) => module.RevisionDetail),
+    title: 'Détail de la révision',
+  },
+  {
+    path: 'revisions',
+    canActivate: [featureGuard(FEATURES.revisions)],
+    loadComponent: () =>
+      import('../revisions/revisions-page').then((module) => module.RevisionsPage),
+    title: 'Révisions',
   },
 ];

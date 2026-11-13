@@ -76,6 +76,13 @@ public static class EndpointNames
     public const string GetProjectValidation = "GetProjectValidation";
 
     public const string GetProjectDeploymentPlan = "GetProjectDeploymentPlan";
+    public const string GenerateRevision = "GenerateRevision";
+    public const string ListRevisions = "ListRevisions";
+    public const string GetRevision = "GetRevision";
+    public const string GetRevisionPlan = "GetRevisionPlan";
+    public const string ListRevisionFiles = "ListRevisionFiles";
+    public const string GetRevisionFile = "GetRevisionFile";
+    public const string GetRevisionArchive = "GetRevisionArchive";
     public const string AcknowledgeFinding = "AcknowledgeFinding";
     public const string ApplyFindingFix = "ApplyFindingFix";
     public const string SaveResourceApplication = "SaveResourceApplication";

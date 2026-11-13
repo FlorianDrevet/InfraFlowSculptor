@@ -13,7 +13,7 @@ namespace InfraFlowSculptor.Api.Configuration;
 
 public static class DemoDataSeeder
 {
-    private const string DemoCatalogVersion = "2026.10-pilot.3";
+    private const string DemoCatalogVersion = "2026.10-pilot.6";
     private static readonly OrganizationId ContosoId = new(Guid.Parse("33333333-3333-4333-8333-333333333333"));
     private static readonly OrganizationId FabrikamId = new(Guid.Parse("44444444-4444-4444-8444-444444444444"));
     public static readonly ProjectId ShopProjectId = new(Guid.Parse("77777777-7777-4777-8777-777777777777"));

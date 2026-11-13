@@ -4,6 +4,7 @@
   <p class="project-overview__error" role="alert">{{ 'project.loadError' | transloco }}</p>
 } @else {
   <div class="project-overview">
+    <app-project-revision-rail [projectId]="projectId()" />
     <section class="project-overview__section" aria-labelledby="components-heading">
       <header>
         <h2 id="components-heading">

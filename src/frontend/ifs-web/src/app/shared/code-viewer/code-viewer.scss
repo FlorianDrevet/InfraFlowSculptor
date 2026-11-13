@@ -1,0 +1,41 @@
+:host {
+  display: block;
+  min-width: 0;
+  overflow: auto;
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-2);
+}
+
+.code-viewer__highlighted,
+.code-viewer__plain {
+  min-height: 100%;
+  margin: 0;
+  overflow: auto;
+  font-family: var(--ifs-font-mono, monospace);
+  font-size: 0.8125rem;
+  line-height: 1.65;
+}
+
+.code-viewer__plain {
+  padding: var(--ifs-space-4);
+  color: var(--ifs-text);
+  white-space: pre;
+}
+
+:host ::ng-deep .shiki {
+  min-width: max-content;
+  min-height: 100%;
+  margin: 0;
+  padding: var(--ifs-space-4);
+  background: var(--ifs-surface-2) !important;
+  font-family: var(--ifs-font-mono, monospace);
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  tab-size: 2;
+}
+
+:host ::ng-deep .shiki code {
+  display: block;
+  min-width: max-content;
+}

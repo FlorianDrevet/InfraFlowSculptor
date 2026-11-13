@@ -1,0 +1,165 @@
+<main class="revisions-page">
+  <header class="revisions-page__header">
+    <div>
+      <h2>{{ 'revisions.title' | transloco }}</h2>
+      <p>{{ 'revisions.description' | transloco }}</p>
+    </div>
+    @if (!loading() && validation() && !isBlocked()) {
+      <app-ds-button variant="primary" [disabled]="generating()" (click)="generate()">
+        {{ 'revisions.generate' | transloco: { number: nextNumber() } }}
+      </app-ds-button>
+    }
+  </header>
+
+  @if (notice(); as message) {
+    <app-ds-banner tone="signal">{{ message }}</app-ds-banner>
+  }
+  @if (generateError()) {
+    <app-ds-banner tone="danger" [title]="'revisions.generationError' | transloco">
+      {{ 'revisions.generationErrorDescription' | transloco }}
+    </app-ds-banner>
+  }
+
+  @if (isBlocked()) {
+    <div class="revisions-page__blocked-backdrop">
+      <section
+        class="revisions-page__blocked-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="generation-blocked-title"
+        cdkTrapFocus
+        [cdkTrapFocusAutoCapture]="true"
+        (keydown.escape)="closeBlocked()"
+      >
+        <header class="revisions-page__blocked-header">
+          <h2 id="generation-blocked-title">
+            {{ 'revisions.blockedDescription' | transloco: { number: nextNumber() } }}
+          </h2>
+          <p>
+            {{ blockedSummaryKey() | transloco: { count: blockingFindings().length } }}
+            {{ 'revisions.blockedWarningsReported' | transloco }}
+          </p>
+        </header>
+
+        <div class="revisions-page__blocked-content">
+          <ul class="revisions-page__findings revisions-page__findings--blocking">
+            @for (finding of blockingFindings(); track finding.code + finding.subjectId) {
+              <li>
+                <app-ds-badge tone="danger" [mono]="true">{{ finding.code }}</app-ds-badge>
+                <span class="revisions-page__finding-copy">
+                  @if (finding.subjectContext) {
+                    <span class="revisions-page__finding-subject">{{ finding.subjectContext }}</span>
+                  }
+                  <span class="revisions-page__finding-message">{{ findingMessage(finding) }}</span>
+                </span>
+              </li>
+            }
+          </ul>
+
+          @if (nonBlockingFindings().length > 0) {
+            <section class="revisions-page__non-blocking" aria-labelledby="non-blocking-title">
+              <h3 id="non-blocking-title">{{ 'revisions.nonBlockingTitle' | transloco }}</h3>
+              <ul class="revisions-page__findings">
+                @for (finding of nonBlockingFindings(); track finding.code + finding.subjectId) {
+                  <li>
+                    <app-ds-badge
+                      [tone]="finding.severity === 'Warning' ? 'ember' : 'neutral'"
+                      [mono]="true"
+                    >
+                      {{ finding.code }}
+                    </app-ds-badge>
+                    <span class="revisions-page__finding-message">{{ findingMessage(finding) }}</span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+        </div>
+
+        <footer class="revisions-page__blocked-footer">
+          <app-ds-button variant="ghost" (click)="closeBlocked()">
+            {{ 'revisions.closeBlocked' | transloco }}
+          </app-ds-button>
+          <app-ds-button variant="primary" (click)="viewFindings()">
+            {{ 'revisions.viewFindings' | transloco }}
+          </app-ds-button>
+        </footer>
+      </section>
+    </div>
+  }
+
+  @if (loading()) {
+    <p role="status">{{ 'revisions.loading' | transloco }}</p>
+  } @else if (loadError()) {
+    <app-ds-banner tone="danger" [title]="'revisions.loadError' | transloco">
+      {{ 'revisions.loadErrorDescription' | transloco }}
+    </app-ds-banner>
+  } @else {
+    <app-ds-panel
+      [title]="'revisions.listTitle' | transloco"
+      [subtitle]="'revisions.retention' | transloco"
+    >
+      @if (revisions().length === 0) {
+        <p class="revisions-page__empty">{{ 'revisions.empty' | transloco }}</p>
+      } @else {
+        <app-ds-table [ariaLabel]="'revisions.tableLabel' | transloco">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'revisions.columnNumber' | transloco }}</th>
+              <th scope="col">{{ 'revisions.columnGenerated' | transloco }}</th>
+              <th scope="col">{{ 'revisions.columnModel' | transloco }}</th>
+              <th scope="col">{{ 'revisions.columnCatalog' | transloco }}</th>
+              <th scope="col">{{ 'revisions.columnChanges' | transloco }}</th>
+              <th scope="col">{{ 'revisions.columnState' | transloco }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (revision of revisions(); track revision.id) {
+              <tr>
+                <th scope="row">
+                  <a [routerLink]="[revision.id]">
+                    {{ 'revisions.revisionNumber' | transloco: { number: revision.number } }}
+                  </a>
+                </th>
+                <td>
+                  {{ generatedDate(revision) }}
+                  <span class="revisions-page__author">
+                    {{ 'revisions.author' | transloco }}
+                    <span class="revisions-page__mono">{{ revision.authorObjectId }}</span>
+                  </span>
+                </td>
+                <td>
+                  <span class="revisions-page__mono">v{{ revision.modelVersion }}</span>
+                  @if (revision.isStale) {
+                    <app-ds-badge tone="ember">{{ 'revisions.stale' | transloco }}</app-ds-badge>
+                  }
+                </td>
+                <td>
+                  <span class="revisions-page__mono">{{ revision.catalogVersion }}</span>
+                </td>
+                <td>{{ changeCountLabel(revision.changesCount) }}</td>
+                <td>
+                  <app-ds-badge [tone]="stateTone(revision)">{{
+                    stateKey(revision) | transloco
+                  }}</app-ds-badge>
+                  @if (revision.queuePosition !== null) {
+                    <span class="revisions-page__queue">
+                      {{
+                        'revisions.queuePosition' | transloco: { position: revision.queuePosition }
+                      }}
+                    </span>
+                  }
+                  @if (revision.state === 'Failed') {
+                    <span class="revisions-page__failure">{{
+                      'revisions.incident' | transloco
+                    }}</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </app-ds-table>
+      }
+    </app-ds-panel>
+  }
+</main>

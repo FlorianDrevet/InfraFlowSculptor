@@ -1,4 +1,5 @@
 using InfraFlowSculptor.Domain.Common.Models;
+using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Application.Common.Auditing;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,6 +20,8 @@ public interface IIfsDbContext
     IReadOnlyCollection<AuditEntityChange> GetAuditChanges();
 
     Task<IIfsDbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
+
+    Task<bool> LockProjectForUpdateAsync(ProjectId projectId, CancellationToken cancellationToken = default);
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

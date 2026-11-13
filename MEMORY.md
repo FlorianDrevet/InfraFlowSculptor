@@ -5,7 +5,7 @@
 
 ## État
 
-- **2026-11-13** : l'AppHost local fonctionne sous Podman (`ASPIRE_CONTAINER_RUNTIME=podman`) ; check-prereqs, README et guide local reconnaissent le runtime choisi. J0-23 fixe `ImageScan.exceptions` à un chemin relatif vers un `.trivyignore` versionné. Build strict, backend 753 réussis + 1 ignoré, Pester 149/149 et endpoints locaux 200. Détails dans `.github/memory/08-runtime-and-orchestration.md`, `.github/memory/12-engine.md` et `docs/plan/recettes/suivi.md`.
+- **2026-11-13** : AppHost local sous Podman ; J0-24 G1–G6 vérifiés, archive à 80/80 fichiers après normalisation, backend 774 + 1 ignoré, frontend 208+13 et image Worker vérifiés. E2E authentifié limité par l'absence du fixture `shop15`; revalidation visuelle mobile après le correctif du dialogue indisponible. Détails dans les mémoires thématiques et `docs/plan/recettes/suivi.md`.
 - **2026-10-06** : S-01 à S-16 du socle sont implémentés (backend .NET 10, Aspire, PostgreSQL, Worker/outbox, Keycloak, Angular 22, Strata, OpenAPI, CI et observabilité). CI `37460726122` verte ; détails et écarts dans [`NEXT.md`](NEXT.md) et [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md).
 - **S-17 terminé le 2026-10-06** : mémoire, graphe local et guide « Démarrer » ajoutés. Le parcours clone neuf restait en attente dans [`NEXT.md`](NEXT.md), l'AppHost occupant les ports fixes ; R-01 était le verrou courant.
 - **2026-10-27** : preuves P1–P5/P7–P9 prototypées; le crochet `IFS_TEST_ABORT_AFTER` a été retiré de la sortie client. Voir `.github/memory/08-runtime-and-orchestration.md` et la revue R-03.

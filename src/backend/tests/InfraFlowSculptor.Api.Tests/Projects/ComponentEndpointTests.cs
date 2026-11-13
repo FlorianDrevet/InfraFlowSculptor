@@ -1608,8 +1608,8 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         var dailyQuota = Assert.Single(
             logTarget.GetProperty("properties").EnumerateArray(),
             value => value.GetProperty("name").GetString() == "dailyQuotaGb");
-        Assert.Equal(JsonValueKind.Null, dailyQuota.GetProperty("value").ValueKind);
-        Assert.Equal("absent", dailyQuota.GetProperty("provenance").GetString());
+        Assert.Equal(-1, dailyQuota.GetProperty("value").GetInt32());
+        Assert.Equal("catalogDefault", dailyQuota.GetProperty("provenance").GetString());
 
         var existingResourceBody = await CreateResourceAsync(
             componentId,
@@ -1635,13 +1635,8 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
     {
         await PrepareAsync();
         var shouldCleanupReferenceModel = false;
-        Guid? testAppSettingId = null;
         try
         {
-        Guid applicationId;
-        Guid keyVaultId;
-        Guid identityId;
-        Guid ordersId;
         using (var scope = factory.Services.CreateScope())
         {
             scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
@@ -1663,39 +1658,6 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
                 chloe.Id,
                 project.CatalogVersion,
                 seedReferenceModel: true);
-
-            var components = await dbContext.Components
-                .Include(component => component.Resources)
-                .Where(component => component.ProjectId == new ProjectId(ProjectId))
-                .ToArrayAsync();
-            var orders = components.Single(component => component.Code == "orders");
-            var core = components.Single(component => component.Code == "core");
-            var application = orders.Resources.Single(resource => resource.Type == "ContainerApp");
-            var keyVault = core.Resources.Single(resource => resource.Type == "KeyVault");
-            var identity = orders.Resources.Single(resource => resource.Type == "UserAssignedIdentity");
-            applicationId = application.Id;
-            keyVaultId = keyVault.Id;
-            identityId = identity.Id;
-            ordersId = orders.Id.Value;
-
-            var setting = AppSettingAggregate.Create(
-                Guid.NewGuid(),
-                project.Id,
-                new OrganizationId(OrganizationId),
-                ordersId,
-                applicationId,
-                new AppSettingDefinition(
-                    "Payments__ApiKey",
-                    AppSettingSourceKind.KeyVaultSecret,
-                    KeyVaultResourceId: keyVaultId,
-                    SecretName: "payments-api-key",
-                    SecretFeedKind: AppSettingSecretFeedKind.PipelineSecret,
-                    PipelineVariableName: "MAIN_PAYMENTS_API_KEY",
-                    IdentityResourceId: identityId));
-            Assert.False(setting.IsError, setting.IsError ? setting.FirstError.Description : null);
-            dbContext.AppSettings.Add(setting.Value);
-            testAppSettingId = setting.Value.Id;
-            await dbContext.SaveChangesAsync();
         }
 
         using var firstRequest = CreateRequest(
@@ -1832,20 +1794,6 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
                 foreach (var componentId in componentIds)
                 {
                     await CleanupResourceTestComponentAsync(componentId);
-                }
-            }
-            else if (testAppSettingId is { } settingId)
-            {
-                using var cleanupScope = factory.Services.CreateScope();
-                cleanupScope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>()
-                    .Set(new OrganizationId(OrganizationId));
-                var cleanupDbContext = cleanupScope.ServiceProvider.GetRequiredService<IfsDbContext>();
-                var setting = await cleanupDbContext.AppSettings
-                    .SingleOrDefaultAsync(candidate => candidate.Id == settingId);
-                if (setting is not null)
-                {
-                    cleanupDbContext.AppSettings.Remove(setting);
-                    await cleanupDbContext.SaveChangesAsync();
                 }
             }
         }
@@ -3614,9 +3562,10 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
             {
                 new Dictionary<string, object?>
                 {
-                    ["name"] = "D4",
-                    ["limits"] = new Dictionary<string, object?> { ["cpu"] = 1.5m },
-                    ["labels"] = new[] { "api", "worker" }
+                    ["name"] = "api",
+                    ["workloadProfileType"] = "D4",
+                    ["minimumCount"] = 0,
+                    ["maximumCount"] = 1
                 }
             }
         };
@@ -3629,9 +3578,10 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         using (var nested = JsonDocument.Parse(nestedResource))
         {
             var workloadProfile = nested.RootElement.GetProperty("properties").GetProperty("workloadProfiles")[0];
-            Assert.Equal("D4", workloadProfile.GetProperty("name").GetString());
-            Assert.Equal(1.5m, workloadProfile.GetProperty("limits").GetProperty("cpu").GetDecimal());
-            Assert.Equal("worker", workloadProfile.GetProperty("labels")[1].GetString());
+            Assert.Equal("api", workloadProfile.GetProperty("name").GetString());
+            Assert.Equal("D4", workloadProfile.GetProperty("workloadProfileType").GetString());
+            Assert.Equal(0, workloadProfile.GetProperty("minimumCount").GetInt32());
+            Assert.Equal(1, workloadProfile.GetProperty("maximumCount").GetInt32());
         }
 
         var keyVaultProperties = new Dictionary<string, object?> { ["purgeProtection"] = false };

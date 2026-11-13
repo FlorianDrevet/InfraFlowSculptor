@@ -5,6 +5,7 @@
 
 ## Faits vérifiés
 
+- J0-24 : sous `/v1/projects/{projectId}/revisions`, `POST` (permission Generate, membre, débit Generate, idempotence) crée ou retourne la dernière révision inchangée; `GET` liste, `GET /{revisionId}` détaille, `/plan` expose le plan figé, `/files` liste les chemins/empreintes, `/files/{**path}` lit ou télécharge un fichier et `/archive` fournit le ZIP. Les lectures sont membres/`project.read` sous le débit `read`; les fichiers ne sont disponibles qu'à l'état Generated. Contrat OpenAPI et client Angular générés.
 - `GET /alive` : santé liveness fournie par ServiceDefaults en développement.
 - `GET /v1/version` — `GetVersion`, anonyme : version informative de l'assembly et environnement (`VersionResponse`).
 - Développement : OpenAPI `GET /openapi/v1.json`, Scalar `/scalar`, titre « InfraFlowSculptor API v1 ».

@@ -41,6 +41,7 @@
     "@jsverse/transloco": "^8.4.0",
     "angular-auth-oidc-client": "^22.0.1",
     "rxjs": "~7.8.0",
+    "shiki": "4.5.0",
     "tslib": "^2.3.0"
   },
   "devDependencies": {

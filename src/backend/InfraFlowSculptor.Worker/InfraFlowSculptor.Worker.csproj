@@ -10,6 +10,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <ProjectReference Include="..\InfraFlowSculptor.Application\InfraFlowSculptor.Application.csproj" />
+    <ProjectReference Include="..\InfraFlowSculptor.Emitters.Bicep\InfraFlowSculptor.Emitters.Bicep.csproj" />
+    <ProjectReference Include="..\InfraFlowSculptor.Emitters.AzureDevOps\InfraFlowSculptor.Emitters.AzureDevOps.csproj" />
+    <ProjectReference Include="..\InfraFlowSculptor.Emitters.InstallKit\InfraFlowSculptor.Emitters.InstallKit.csproj" />
     <ProjectReference Include="..\InfraFlowSculptor.Infrastructure\InfraFlowSculptor.Infrastructure.csproj" />
     <ProjectReference Include="..\InfraFlowSculptor.ServiceDefaults\InfraFlowSculptor.ServiceDefaults.csproj" />
   </ItemGroup>

@@ -18,10 +18,11 @@ import type {
 } from '../../core/api/generated';
 import { ComponentsService } from '../../core/projects/components.service';
 import { ProjectsService } from '../../core/projects/projects.service';
+import { ProjectRevisionRail } from './project-revision-rail';
 
 @Component({
   selector: 'app-project-overview',
-  imports: [RouterLink, TranslocoPipe],
+  imports: [ProjectRevisionRail, RouterLink, TranslocoPipe],
   templateUrl: './project-overview.html',
   styleUrl: './project-overview.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

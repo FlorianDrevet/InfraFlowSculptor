@@ -3,11 +3,13 @@
 
 import { ExposurePlan } from '../models/exposure-plan';
 import { ResourceChildPlan } from '../models/resource-child-plan';
+import { ResourceDependencyPlan } from '../models/resource-dependency-plan';
 import { ResourceIdentityPlan } from '../models/resource-identity-plan';
 import { ResourcePropertyPlan } from '../models/resource-property-plan';
 export interface ResourcePlan {
   armType: string;
   children: Array<ResourceChildPlan>;
+  dependencies: Array<ResourceDependencyPlan>;
   existingId: (string | null);
   exposure: (null | ExposurePlan);
   fixedValues: Array<ResourcePropertyPlan>;

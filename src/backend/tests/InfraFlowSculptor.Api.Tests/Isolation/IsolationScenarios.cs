@@ -19,6 +19,7 @@ public static class IsolationScenarios
     private const string TestJobId = "55555555-5555-4555-8555-555555555555";
     private const string TestMemberId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
     private const string TestInvitationId = "66666666-6666-4666-8666-666666666666";
+    private const string TestRevisionId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
     private const string TestComponentId = "77777777-7777-4777-8777-777777777777";
     private const string TestResourceGroupId = "88888888-8888-4888-8888-888888888888";
     private const string TestResourceId = "99999999-9999-4999-8999-999999999999";
@@ -285,6 +286,41 @@ public static class IsolationScenarios
                 "GetProjectDeploymentPlan",
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}/deployment-plan?component=orders&target=prd",
+                HttpStatusCode.NotFound),
+            ["GenerateRevision"] = OrganizationScenario(
+                "GenerateRevision",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/revisions",
+                HttpStatusCode.NotFound),
+            ["ListRevisions"] = OrganizationScenario(
+                "ListRevisions",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/revisions",
+                HttpStatusCode.NotFound),
+            ["GetRevision"] = OrganizationScenario(
+                "GetRevision",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/revisions/{TestRevisionId}",
+                HttpStatusCode.NotFound),
+            ["GetRevisionPlan"] = OrganizationScenario(
+                "GetRevisionPlan",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/revisions/{TestRevisionId}/plan",
+                HttpStatusCode.NotFound),
+            ["ListRevisionFiles"] = OrganizationScenario(
+                "ListRevisionFiles",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/revisions/{TestRevisionId}/files",
+                HttpStatusCode.NotFound),
+            ["GetRevisionFile"] = OrganizationScenario(
+                "GetRevisionFile",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/revisions/{TestRevisionId}/files/orders/infra/main.bicep",
+                HttpStatusCode.NotFound),
+            ["GetRevisionArchive"] = OrganizationScenario(
+                "GetRevisionArchive",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/revisions/{TestRevisionId}/archive",
                 HttpStatusCode.NotFound),
             ["AcknowledgeFinding"] = OrganizationScenario(
                 "AcknowledgeFinding",

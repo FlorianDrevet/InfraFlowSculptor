@@ -3,4 +3,5 @@ export const FEATURES = {
   userPreferences: 'user-preferences',
   organizations: 'organizations',
   projectSetup: 'project-setup',
+  revisions: 'revisions',
 } as const;

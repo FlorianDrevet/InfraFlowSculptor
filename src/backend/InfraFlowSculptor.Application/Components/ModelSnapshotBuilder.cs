@@ -112,7 +112,14 @@ public sealed class ModelSnapshotBuilder(
                     otherProject.Id.Value)));
         }
 
-        return snapshot.Value with { OrganizationGlobalNames = reservations };
+        return snapshot.Value with
+        {
+            OrganizationGlobalNames = reservations
+                .OrderBy(reservation => reservation.ResourceType, StringComparer.Ordinal)
+                .ThenBy(reservation => reservation.Name, StringComparer.Ordinal)
+                .ThenBy(reservation => reservation.ProjectId)
+                .ToArray()
+        };
     }
 
     private static string GetExistingResourceName(string resourceId)
@@ -149,6 +156,7 @@ public sealed class ModelSnapshotBuilder(
         };
 
         var environments = project.Environments.OrderBy(environment => environment.Position)
+            .ThenBy(environment => environment.Id)
             .Select(environment => new EnvironmentSnapshot(environment.Code, environment.Region)
             {
                 Id = environment.Id,
@@ -158,13 +166,17 @@ public sealed class ModelSnapshotBuilder(
                 SubscriptionId = environment.SubscriptionId,
                 DeploymentConnection = environment.DeploymentConnection,
                 IsProtected = environment.IsProtected,
-                Approvers = environment.Approvers,
-                Runners = environment.Runners,
+                Approvers = environment.Approvers.Order().ToArray(),
+                Runners = environment.Runners.Order().ToArray(),
                 Tags = environment.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase)
             })
             .ToArray();
-        var componentSnapshots = components.Select(MapComponent).ToArray();
-        var linkSnapshots = links.Select(link => new LinkSnapshot(
+        var componentSnapshots = components
+            .OrderBy(component => component.Code, StringComparer.Ordinal)
+            .ThenBy(component => component.Id.Value)
+            .Select(MapComponent)
+            .ToArray();
+        var linkSnapshots = links.OrderBy(link => link.Id).Select(link => new LinkSnapshot(
             link.Id,
             link.SourceComponentId,
             link.SourceResourceId,
@@ -174,11 +186,14 @@ public sealed class ModelSnapshotBuilder(
             link.Origin,
             link.IdentityKind,
             link.IdentityResourceId,
-            link.Roles.Select(role => role.Name).ToArray(),
+            link.Roles.Select(role => role.Name).Order(StringComparer.Ordinal).ToArray(),
             link.AccessScope,
             link.DataAccessLevel,
             link.Version)).ToArray();
-        var appSettingSnapshots = appSettings.Select(setting => new AppSettingSnapshot(
+        var appSettingSnapshots = appSettings
+            .OrderBy(setting => setting.Name, StringComparer.Ordinal)
+            .ThenBy(setting => setting.Id)
+            .Select(setting => new AppSettingSnapshot(
             setting.Id,
             setting.ComponentId.Value,
             setting.ApplicationResourceId,
@@ -193,7 +208,10 @@ public sealed class ModelSnapshotBuilder(
             setting.SecretFeedKind,
             setting.PipelineVariableName,
             setting.IdentityResourceId) { Version = setting.Version }).ToArray();
-        var applicationSnapshots = applications.Select(application => new ApplicationSnapshot(
+        var applicationSnapshots = applications
+            .OrderBy(application => application.Name, StringComparer.Ordinal)
+            .ThenBy(application => application.Id)
+            .Select(application => new ApplicationSnapshot(
             application.Id,
             application.ComponentId.Value,
             application.ResourceId,
@@ -277,7 +295,7 @@ public sealed class ModelSnapshotBuilder(
         component.Name,
         component.Code,
         component.Mode.ToString(),
-        component.TargetEnvironmentIds,
+        component.TargetEnvironmentIds.Order().ToArray(),
         component.SingleTarget is { } target
             ? new ComponentSingleTargetSnapshot(
                 target.Id,
@@ -286,16 +304,16 @@ public sealed class ModelSnapshotBuilder(
                 target.Region,
                 target.DeploymentConnection,
                 target.IsProtected,
-                target.Approvers,
-                target.Runners)
+                target.Approvers.Order().ToArray(),
+                target.Runners.Order().ToArray())
             : null,
-        component.ResourceGroups.Select(group => new ResourceGroupSnapshot(
+        component.ResourceGroups.OrderBy(group => group.Id).Select(group => new ResourceGroupSnapshot(
             group.Id,
             group.Name,
             group.Region,
             group.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.OrdinalIgnoreCase),
             group.ForcedNames.ToDictionary(value => value.EnvironmentId, value => value.Name)) { Version = group.Version }).ToArray(),
-        component.Resources.Select(resource => new ResourceSnapshot(
+        component.Resources.OrderBy(resource => resource.Id).Select(resource => new ResourceSnapshot(
             resource.Id,
             resource.ResourceGroupId,
             resource.Type,
@@ -308,7 +326,7 @@ public sealed class ModelSnapshotBuilder(
             resource.ExistingIds.ToDictionary(value => value.TargetId, value => value.Value),
             resource.ForcedNames.ToDictionary(value => value.TargetId, value => value.Name),
             resource.Tags.ToDictionary(value => value.Key, value => value.Value, StringComparer.OrdinalIgnoreCase),
-            resource.Children.Select(child => new ResourceChildSnapshot(
+            resource.Children.OrderBy(child => child.Id).Select(child => new ResourceChildSnapshot(
                 child.Id,
                 child.Type,
                 child.Name,
