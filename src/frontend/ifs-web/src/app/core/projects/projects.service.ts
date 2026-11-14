@@ -7,6 +7,7 @@ import {
   applyFindingFix,
   assignProjectRole,
   deleteProject as deleteProjectRequest,
+  exportProject as exportProjectRequest,
   deleteProjectEnvironment,
   getMyProjectPermissions,
   getProject,
@@ -90,6 +91,10 @@ export class ProjectsService {
     return this.api
       .invoke(updateProjectSettings, { id: projectId, body })
       .pipe(tap((project) => this.notifyProjectUpdated(project)));
+  }
+
+  exportProject(projectId: string) {
+    return this.api.invoke(exportProjectRequest, { id: projectId });
   }
 
   notifyProjectUpdated(project: ProjectSummaryResponse): void {

@@ -16,6 +16,7 @@ using InfraFlowSculptor.Infrastructure;
 using InfraFlowSculptor.Infrastructure.Authentication;
 using InfraFlowSculptor.Infrastructure.Configuration;
 using InfraFlowSculptor.Infrastructure.Persistence;
+using OpenTelemetry.Trace;
 
 if (DemoDataSeeder.IsInvocation(args))
 {
@@ -37,6 +38,8 @@ if (isOpenApiBuild)
 }
 
 builder.AddServiceDefaults();
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing.AddProcessor(new ProjectExportTelemetryRedactionProcessor()));
 builder.Services.AddProblemDetails();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));

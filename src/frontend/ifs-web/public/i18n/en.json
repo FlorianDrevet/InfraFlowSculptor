@@ -164,7 +164,8 @@
       "invitationSent": "Invitation sent",
       "invitationResent": "Invitation resent",
       "invitationRevoked": "Invitation revoked",
-      "invitationAccepted": "Invitation accepted"
+      "invitationAccepted": "Invitation accepted",
+      "projectExported": "Project {{ projectCode }} exported"
     },
     "fields": {
       "name": "Name",
@@ -172,12 +173,14 @@
       "allowedEmailDomains": "Allowed domains",
       "allowedTenantIds": "Allowed tenants",
       "status": "Status",
-      "email": "Email address"
+      "email": "Email address",
+      "projectCode": "Project code"
     },
     "objects": {
       "organization": "Organization",
       "member": "Member",
-      "invitation": "Invitation"
+      "invitation": "Invitation",
+      "project": "Project"
     },
     "via": {
       "screen": "Screen",
@@ -326,6 +329,11 @@
     "settingsSave": "Save settings",
     "settingsSaving": "Saving…",
     "settingsSaveError": "Project settings could not be saved.",
+    "exportTitle": "Export",
+    "exportDescription": "The complete model in ifs-project/v1 format, without secrets. The export is logged.",
+    "exportProject": "Export project",
+    "exporting": "Preparing export…",
+    "exportError": "The project export could not be prepared. Try again.",
     "settingsImpactTitle": "Confirm changes",
     "settingsImpactDescription": "The server calculated the affected data and resources.",
     "deleteProject": "Delete project",

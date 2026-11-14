@@ -4,8 +4,9 @@ using InfraFlowSculptor.Api.Errors;
 using InfraFlowSculptor.Application.Common.ModelCommands;
 using InfraFlowSculptor.Application.Components.Commands.AcknowledgeFinding;
 using InfraFlowSculptor.Application.Components.Commands.ApplyFindingFix;
-using InfraFlowSculptor.Application.Components.Queries.GetProjectValidation;
 using InfraFlowSculptor.Application.Components.Queries.GetDeploymentPlan;
+using InfraFlowSculptor.Application.Components.Queries.GetProjectValidation;
+using InfraFlowSculptor.Application.Generation;
 using InfraFlowSculptor.Application.Projects;
 using InfraFlowSculptor.Application.Projects.Commands.AddProjectEnvironment;
 using InfraFlowSculptor.Application.Projects.Commands.AssignProjectRole;
@@ -41,6 +42,29 @@ public static class ProjectsController
             .WithTags("Projects")
             .RequireFeature(Features.Organizations)
             .RequireFeature(Features.ProjectSetup);
+
+        v1.MapGet("/project-exports/{token}", async (
+                string token,
+                [FromServices] IProjectExportStore exportStore,
+                TimeProvider clock,
+                HttpContext httpContext,
+                CancellationToken cancellationToken) =>
+            {
+                var content = await exportStore.OpenAsync(token, clock.GetUtcNow(), cancellationToken);
+                if (content is null)
+                {
+                    return Results.NotFound();
+                }
+
+                httpContext.Response.Headers.CacheControl = "no-store";
+                return Results.File(content, "application/json", "ifs-project.json");
+            })
+            .WithName(EndpointNames.DownloadProjectExport)
+            .WithSummary("Télécharger un export de projet pendant sa durée de validité.")
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces(StatusCodes.Status200OK, contentType: "application/json")
+            .Produces(StatusCodes.Status404NotFound);
 
         projects.MapGet("", async ([FromQuery] bool? includeDeleted, IMediator mediator, CancellationToken cancellationToken) =>
             {
@@ -131,6 +155,34 @@ public static class ProjectsController
             .RequireAuthorization(AuthorizationPolicies.Member)
             .RequireRateLimiting(RateLimitingPolicies.Read)
             .Produces<ProjectSummaryResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        projects.MapPost("/{id:guid}/export", async (
+                Guid id,
+                IMediator mediator,
+                LinkGenerator linkGenerator,
+                HttpContext httpContext,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new ExportProjectCommand(id), cancellationToken);
+                return result.Match<IResult>(value =>
+                {
+                    var downloadUrl = linkGenerator.GetUriByName(
+                        httpContext,
+                        EndpointNames.DownloadProjectExport,
+                        new { token = value.Token });
+                    return downloadUrl is null
+                        ? Results.Problem(statusCode: StatusCodes.Status500InternalServerError)
+                        : Results.Ok(new ProjectExportResponse(downloadUrl, value.ExpiresAt));
+                }, errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.ExportProject)
+            .WithSummary("Exporter le modèle du projet au format ifs-project/v1.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces<ProjectExportResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 

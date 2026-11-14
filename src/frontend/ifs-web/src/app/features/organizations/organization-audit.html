@@ -55,7 +55,7 @@
                   <span class="organization-audit__via">{{ viaKey(event.via) | transloco }}</span>
                 </td>
                 <td class="organization-audit__action" [attr.data-label]="'audit.columns.action' | transloco">
-                  {{ actionKey(event.action) | transloco }}
+                  {{ actionLabel(event) }}
                 </td>
                 <td [attr.data-label]="'audit.columns.objectAndChanges' | transloco">
                   <div class="organization-audit__object">{{ eventObject(event) }}</div>

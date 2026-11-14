@@ -14,6 +14,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { DsButton } from '../../ds/button/button';
+import { DsPanel } from '../../ds/panel/panel';
 import { DsTextField } from '../../ds/text-field/text-field';
 import { DsToggle } from '../../ds/toggle/toggle';
 import type { OrganizationMemberResponse, ProjectSummaryResponse } from '../../core/api/generated';
@@ -70,7 +71,7 @@ function impactLines(value: unknown): string[] {
 
 @Component({
   selector: 'app-project-settings',
-  imports: [DsButton, DsTextField, DsToggle, FormsModule, TranslocoPipe],
+  imports: [DsButton, DsPanel, DsTextField, DsToggle, FormsModule, TranslocoPipe],
   templateUrl: './project-settings.html',
   styleUrl: './project-settings.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -101,6 +102,8 @@ export class ProjectSettings implements OnInit {
   protected readonly saving = signal(false);
   protected readonly deleteError = signal(false);
   protected readonly deleting = signal(false);
+  protected readonly exporting = signal(false);
+  protected readonly exportError = signal(false);
   protected readonly nameConfirmation = signal('');
   protected readonly affectedResources = signal<string[]>([]);
   protected readonly affectedData = signal<string[]>([]);
@@ -166,6 +169,30 @@ export class ProjectSettings implements OnInit {
       }
     } finally {
       this.saving.set(false);
+    }
+  }
+
+  protected async exportProject(): Promise<void> {
+    const project = this.project();
+    if (!project || !this.canAdminister() || this.exporting()) {
+      return;
+    }
+
+    this.exporting.set(true);
+    this.exportError.set(false);
+    try {
+      const exported = await firstValueFrom(this.projects.exportProject(project.id));
+      const link = document.createElement('a');
+      link.href = exported.downloadUrl;
+      link.download = 'ifs-project.json';
+      link.rel = 'noopener';
+      document.body.append(link);
+      link.click();
+      link.remove();
+    } catch {
+      this.exportError.set(true);
+    } finally {
+      this.exporting.set(false);
     }
   }
 

@@ -62,7 +62,11 @@ public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
 
             foreach (var audit in typeof(TMessage).GetCustomAttributes<AuditedAttribute>())
             {
-                await auditWriter.WriteAsync(audit, cancellationToken);
+                await auditWriter.WriteAsync(
+                    audit,
+                    (message as IProjectScopedRequest)?.ProjectId,
+                    organizationId,
+                    cancellationToken);
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);

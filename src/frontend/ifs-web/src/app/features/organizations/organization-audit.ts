@@ -27,6 +27,7 @@ const actionKeys: Readonly<Record<string, string>> = {
   'organization.invitation.resent': 'audit.actions.invitationResent',
   'organization.invitation.revoked': 'audit.actions.invitationRevoked',
   'organization.invitation.accepted': 'audit.actions.invitationAccepted',
+  'project.exported': 'audit.actions.projectExported',
 };
 
 const fieldKeys: Readonly<Record<string, string>> = {
@@ -36,12 +37,14 @@ const fieldKeys: Readonly<Record<string, string>> = {
   allowedTenantIds: 'audit.fields.allowedTenantIds',
   status: 'audit.fields.status',
   email: 'audit.fields.email',
+  code: 'audit.fields.projectCode',
 };
 
 const objectTypeKeys: Readonly<Record<string, string>> = {
   Organization: 'audit.objects.organization',
   OrganizationMember: 'audit.objects.member',
   Invitation: 'audit.objects.invitation',
+  Project: 'audit.objects.project',
 };
 
 const viaKeys: Readonly<Record<string, string>> = {
@@ -116,8 +119,14 @@ export class OrganizationAudit implements OnChanges, OnInit {
     await this.loadPage();
   }
 
-  protected actionKey(action: string): string {
-    return actionKeys[action] ?? action;
+  protected actionLabel(event: AuditEventResponse): string {
+    const key = actionKeys[event.action] ?? event.action;
+    if (event.action !== 'project.exported') {
+      return this.transloco.translate(key);
+    }
+
+    const code = event.diff.changes.find(change => change.name === 'code')?.after;
+    return this.transloco.translate(key, { projectCode: typeof code === 'string' ? code : '' });
   }
 
   protected fieldKey(field: string): string {

@@ -31,6 +31,7 @@ builder.Services.AddApplication();
 builder.Services.AddSingleton<ICatalogProvider>(_ => CatalogLoader.Load(typeof(CatalogLoader).Assembly));
 builder.Services.AddIfsBlobServiceClient("blobs");
 builder.Services.AddSingleton<IRevisionBlobStore, AzureRevisionBlobStore>();
+builder.Services.AddSingleton<IProjectExportStore, AzureProjectExportStore>();
 builder.Services.AddBicepEmitter();
 builder.Services.AddAzureDevOpsEmitters();
 builder.Services.AddInstallKitEmitter();

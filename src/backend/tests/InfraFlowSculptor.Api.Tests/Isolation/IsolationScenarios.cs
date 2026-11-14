@@ -34,6 +34,11 @@ public static class IsolationScenarios
         new Dictionary<string, IsolationScenario>(StringComparer.Ordinal)
         {
             ["GetVersion"] = Scenario("GetVersion", HttpMethod.Get, "/v1/version", HttpStatusCode.OK),
+            ["DownloadProjectExport"] = Scenario(
+                "DownloadProjectExport",
+                HttpMethod.Get,
+                $"/v1/project-exports/{new string('0', 64)}",
+                HttpStatusCode.NotFound),
             ["GetMe"] = AuthenticatedScenario("GetMe", HttpMethod.Get, "/v1/me", HttpStatusCode.OK),
             ["UpdateMePreferences"] = AuthenticatedScenario(
                 "UpdateMePreferences",
@@ -291,6 +296,11 @@ public static class IsolationScenarios
                 "GenerateRevision",
                 HttpMethod.Post,
                 $"/v1/projects/{ShopProjectId}/revisions",
+                HttpStatusCode.NotFound),
+            ["ExportProject"] = OrganizationWriteScenario(
+                "ExportProject",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/export",
                 HttpStatusCode.NotFound),
             ["ListRevisions"] = OrganizationScenario(
                 "ListRevisions",

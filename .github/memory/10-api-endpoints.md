@@ -6,6 +6,7 @@
 ## Faits vérifiés
 
 - J0-24 : sous `/v1/projects/{projectId}/revisions`, `POST` (permission Generate, membre, débit Generate, idempotence) crée ou retourne la dernière révision inchangée; `GET` liste, `GET /{revisionId}` détaille, `/plan` expose le plan figé, `/files` liste les chemins/empreintes, `/files/{**path}` lit ou télécharge un fichier et `/archive` fournit le ZIP. Les lectures sont membres/`project.read` sous le débit `read`; les fichiers ne sont disponibles qu'à l'état Generated. Contrat OpenAPI et client Angular générés.
+- J0-25 : `POST /v1/projects/{projectId}/export` (`ExportProject`) exige `project.administer`, utilise `write` et l'idempotence, puis écrit `project.exported`. `GET /v1/project-exports/{token}` est anonyme sous le débit `read`; il télécharge un JSON avec en-têtes sans cache, renvoie 404 pour un lien inconnu/expiré et masque le jeton dans `url.path` pour la télémétrie.
 - `GET /alive` : santé liveness fournie par ServiceDefaults en développement.
 - `GET /v1/version` — `GetVersion`, anonyme : version informative de l'assembly et environnement (`VersionResponse`).
 - Développement : OpenAPI `GET /openapi/v1.json`, Scalar `/scalar`, titre « InfraFlowSculptor API v1 ».

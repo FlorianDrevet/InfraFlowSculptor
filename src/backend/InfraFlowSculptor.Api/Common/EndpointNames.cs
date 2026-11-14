@@ -35,6 +35,8 @@ public static class EndpointNames
     public const string SetProjectNaming = "SetProjectNaming";
     public const string PreviewProjectNaming = "PreviewProjectNaming";
     public const string GetProject = "GetProject";
+    public const string ExportProject = "ExportProject";
+    public const string DownloadProjectExport = "DownloadProjectExport";
     public const string UpdateProjectSettings = "UpdateProjectSettings";
     public const string SetProjectFavorite = "SetProjectFavorite";
     public const string RemoveProjectFavorite = "RemoveProjectFavorite";

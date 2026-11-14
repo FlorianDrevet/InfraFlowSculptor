@@ -13,6 +13,23 @@
   color: var(--ifs-text-2);
 }
 
+.project-settings__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(19rem, 1fr);
+  align-items: start;
+  gap: var(--ifs-space-6);
+}
+
+.project-settings__layout--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.project-settings__side-column {
+  display: grid;
+  min-width: 0;
+  gap: var(--ifs-space-4);
+}
+
 .project-settings form {
   display: grid;
   gap: var(--ifs-space-4);
@@ -89,6 +106,25 @@
 
 .project-settings__danger-zone h3 {
   margin: 0;
+}
+
+.project-settings__export {
+  width: 100%;
+}
+
+.project-settings__export-body {
+  display: grid;
+  gap: var(--ifs-space-3);
+}
+
+.project-settings__export-body p {
+  margin: 0;
+  color: var(--ifs-text-2);
+  font-size: 0.8125rem;
+}
+
+.project-settings__export app-ds-button {
+  justify-self: start;
 }
 
 .project-settings__dialog {
@@ -171,6 +207,12 @@
   }
 
   .project-settings__conflict-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .project-settings__layout {
     grid-template-columns: minmax(0, 1fr);
   }
 }

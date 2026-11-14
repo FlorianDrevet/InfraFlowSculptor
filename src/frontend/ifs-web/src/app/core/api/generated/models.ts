@@ -112,6 +112,7 @@ export type { PipelineSecretPlan } from './models/pipeline-secret-plan';
 export type { PreviewResourceNameRequest } from './models/preview-resource-name-request';
 export type { ProblemDetails } from './models/problem-details';
 export type { ProjectEnvironmentResponse } from './models/project-environment-response';
+export type { ProjectExportResponse } from './models/project-export-response';
 export type { ProjectInfo } from './models/project-info';
 export type { ProjectNamingIssueResponse } from './models/project-naming-issue-response';
 export type { ProjectNamingPreviewItemResponse } from './models/project-naming-preview-item-response';

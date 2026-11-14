@@ -164,7 +164,8 @@
       "invitationSent": "Invitation envoyée",
       "invitationResent": "Invitation renvoyée",
       "invitationRevoked": "Invitation révoquée",
-      "invitationAccepted": "Invitation acceptée"
+      "invitationAccepted": "Invitation acceptée",
+      "projectExported": "Export du projet {{ projectCode }}"
     },
     "fields": {
       "name": "Nom",
@@ -172,12 +173,14 @@
       "allowedEmailDomains": "Domaines autorisés",
       "allowedTenantIds": "Tenants autorisés",
       "status": "Statut",
-      "email": "Adresse e-mail"
+      "email": "Adresse e-mail",
+      "projectCode": "Code du projet"
     },
     "objects": {
       "organization": "Organisation",
       "member": "Membre",
-      "invitation": "Invitation"
+      "invitation": "Invitation",
+      "project": "Projet"
     },
     "via": {
       "screen": "Écran",
@@ -326,6 +329,11 @@
     "settingsSave": "Enregistrer les paramètres",
     "settingsSaving": "Enregistrement…",
     "settingsSaveError": "Les paramètres du projet n’ont pas pu être enregistrés.",
+    "exportTitle": "Export",
+    "exportDescription": "Le modèle complet au format ifs-project/v1, sans aucun secret. L'export est journalisé.",
+    "exportProject": "Exporter le projet",
+    "exporting": "Préparation de l’export…",
+    "exportError": "L’export du projet n’a pas pu être préparé. Réessayez.",
     "settingsImpactTitle": "Confirmer les changements",
     "settingsImpactDescription": "Le serveur a calculé les données et ressources concernées.",
     "deleteProject": "Supprimer le projet",

@@ -1,0 +1,322 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "InfraFlowSculptor project export v1",
+  "type": "object",
+  "required": ["schema", "snapshot"],
+  "properties": {
+    "schema": { "const": "ifs-project/v1" },
+    "snapshot": { "$ref": "#/$defs/modelSnapshot" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "guid": { "type": "string", "format": "uuid" },
+    "stringMap": { "type": "object", "additionalProperties": { "type": "string" } },
+    "guidStringMap": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$" },
+      "additionalProperties": { "type": "string" }
+    },
+    "guidBooleanMap": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$" },
+      "additionalProperties": { "type": "boolean" }
+    },
+    "jsonObject": { "type": "object", "additionalProperties": true },
+    "projectSnapshot": {
+      "type": "object",
+      "required": ["id", "version", "modelVersion", "catalogVersion", "infrastructureLanguage", "ciPlatform", "moduleSource", "systemTagsEnabled", "publishingPreset", "name", "code", "description"],
+      "properties": {
+        "id": { "$ref": "#/$defs/guid" },
+        "version": { "type": "integer", "minimum": 1 },
+        "modelVersion": { "type": "integer", "minimum": 0 },
+        "catalogVersion": { "type": "string" },
+        "infrastructureLanguage": { "type": "string" },
+        "ciPlatform": { "type": "string" },
+        "moduleSource": { "type": "string" },
+        "systemTagsEnabled": { "type": "boolean" },
+        "publishingPreset": { "type": ["string", "null"] },
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "environmentSnapshot": {
+      "type": "object",
+      "required": ["id", "version", "name", "position", "subscriptionId", "deploymentConnection", "isProtected", "approvers", "runners", "tags", "code", "region"],
+      "properties": {
+        "id": { "$ref": "#/$defs/guid" },
+        "version": { "type": "integer", "minimum": 1 },
+        "name": { "type": "string" },
+        "position": { "type": "integer", "minimum": 0 },
+        "subscriptionId": { "$ref": "#/$defs/guid" },
+        "deploymentConnection": { "type": "string" },
+        "isProtected": { "type": "boolean" },
+        "approvers": { "type": "array", "items": { "type": "string" } },
+        "runners": { "type": "array", "items": { "type": "string" } },
+        "tags": { "$ref": "#/$defs/stringMap" },
+        "code": { "type": "string" },
+        "region": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "namingConvention": {
+      "type": "object",
+      "required": ["preset", "defaultTemplate", "resourceGroupTemplate", "typeTemplates", "typeAbbreviations"],
+      "properties": {
+        "preset": { "type": "string" },
+        "defaultTemplate": { "type": "string" },
+        "resourceGroupTemplate": { "type": "string" },
+        "typeTemplates": { "$ref": "#/$defs/stringMap" },
+        "typeAbbreviations": { "$ref": "#/$defs/stringMap" }
+      },
+      "additionalProperties": false
+    },
+    "componentNaming": {
+      "type": "object",
+      "required": ["defaultTemplate", "typeTemplates", "typeAbbreviations"],
+      "properties": {
+        "defaultTemplate": { "type": ["string", "null"] },
+        "typeTemplates": { "$ref": "#/$defs/stringMap" },
+        "typeAbbreviations": { "$ref": "#/$defs/stringMap" }
+      },
+      "additionalProperties": false
+    },
+    "singleTarget": {
+      "type": "object",
+      "required": ["id", "code", "subscriptionId", "region", "deploymentConnection", "isProtected", "approvers", "runners"],
+      "properties": {
+        "id": { "$ref": "#/$defs/guid" },
+        "code": { "type": "string" },
+        "subscriptionId": { "$ref": "#/$defs/guid" },
+        "region": { "type": "string" },
+        "deploymentConnection": { "type": "string" },
+        "isProtected": { "type": "boolean" },
+        "approvers": { "type": "array", "items": { "type": "string" } },
+        "runners": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "resourceGroup": {
+      "type": "object",
+      "required": ["id", "name", "region", "tags", "forcedNames", "version"],
+      "properties": {
+        "id": { "$ref": "#/$defs/guid" },
+        "name": { "type": "string" },
+        "region": { "type": ["string", "null"] },
+        "tags": { "$ref": "#/$defs/stringMap" },
+        "forcedNames": { "$ref": "#/$defs/guidStringMap" },
+        "version": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "resourceChild": {
+      "type": "object",
+      "required": ["id", "type", "name", "properties"],
+      "properties": {
+        "id": { "$ref": "#/$defs/guid" },
+        "type": { "type": "string" },
+        "name": { "type": "string" },
+        "properties": { "$ref": "#/$defs/jsonObject" }
+      },
+      "additionalProperties": false
+    },
+    "resource": {
+      "type": "object",
+      "required": ["id", "resourceGroupId", "type", "logicalName", "description", "isExisting", "properties", "overrides", "presences", "existingIds", "forcedNames", "tags", "children", "version", "defaultIdentityResourceId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/guid" },
+        "resourceGroupId": { "$ref": "#/$defs/guid" },
+        "type": { "type": "string" },
+        "logicalName": { "type": "string" },
+        "description": { "type": "string" },
+        "isExisting": { "type": "boolean" },
+        "properties": { "$ref": "#/$defs/jsonObject" },
+        "overrides": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$" },
+          "additionalProperties": { "$ref": "#/$defs/jsonObject" }
+        },
+        "presences": { "$ref": "#/$defs/guidBooleanMap" },
+        "existingIds": { "$ref": "#/$defs/guidStringMap" },
+        "forcedNames": { "$ref": "#/$defs/guidStringMap" },
+        "tags": { "$ref": "#/$defs/stringMap" },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/resourceChild" } },
+        "version": { "type": "integer", "minimum": 1 },
+        "defaultIdentityResourceId": { "anyOf": [{ "$ref": "#/$defs/guid" }, { "type": "null" }] }
+      },
+      "additionalProperties": false
+    },
+    "component": {
+      "type": "object",
+      "required": ["id", "name", "code", "mode", "targetEnvironmentIds", "singleTarget", "resourceGroups", "resources", "version", "targetsAllEnvironments", "naming", "defaultLogAnalyticsResourceId", "tags"],
+      "properties": {
+        "id": { "$ref": "#/$defs/guid" },
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "mode": { "type": "string" },
+        "targetEnvironmentIds": { "type": "array", "items": { "$ref": "#/$defs/guid" } },
+        "singleTarget": { "anyOf": [{ "$ref": "#/$defs/singleTarget" }, { "type": "null" }] },
+        "resourceGroups": { "type": "array", "items": { "$ref": "#/$defs/resourceGroup" } },
+        "resources": { "type": "array", "items": { "$ref": "#/$defs/resource" } },
+        "version": { "type": "integer", "minimum": 1 },
+        "targetsAllEnvironments": { "type": "boolean" },
+        "naming": { "anyOf": [{ "$ref": "#/$defs/componentNaming" }, { "type": "null" }] },
+        "defaultLogAnalyticsResourceId": { "anyOf": [{ "$ref": "#/$defs/guid" }, { "type": "null" }] },
+        "tags": { "$ref": "#/$defs/stringMap" }
+      },
+      "additionalProperties": false
+    },
+    "namingRule": {
+      "type": "object",
+      "required": ["abbreviation", "allowedPattern", "case", "separators", "forbidConsecutiveSeparators", "minimumLength", "maximumLength", "firstCharacter", "lastCharacter", "uniqueness", "availabilityDomain"],
+      "properties": {
+        "abbreviation": { "type": "string" },
+        "allowedPattern": { "type": "string" },
+        "case": { "type": "string" },
+        "separators": { "type": "array", "items": { "type": "string" } },
+        "forbidConsecutiveSeparators": { "type": "boolean" },
+        "minimumLength": { "type": "integer", "minimum": 0 },
+        "maximumLength": { "type": "integer", "minimum": 0 },
+        "firstCharacter": { "type": "string" },
+        "lastCharacter": { "type": "string" },
+        "uniqueness": { "type": "string" },
+        "availabilityDomain": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "globalName": {
+      "type": "object",
+      "required": ["resourceType", "name", "projectId"],
+      "properties": {
+        "resourceType": { "type": "string" },
+        "name": { "type": "string" },
+        "projectId": { "$ref": "#/$defs/guid" }
+      },
+      "additionalProperties": false
+    },
+    "linkOriginSource": {
+      "type": "object",
+      "required": ["kind", "id", "name"],
+      "properties": {
+        "kind": { "type": "string" },
+        "id": { "anyOf": [{ "$ref": "#/$defs/guid" }, { "type": "null" }] },
+        "name": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "link": {
+      "type": "object",
+      "required": ["id", "sourceComponentId", "sourceResourceId", "targetComponentId", "targetResourceId", "kind", "origin", "identityKind", "identityResourceId", "roles", "accessScope", "dataAccessLevel", "version", "originSource"],
+      "properties": {
+        "id": { "$ref": "#/$defs/guid" },
+        "sourceComponentId": { "$ref": "#/$defs/guid" },
+        "sourceResourceId": { "$ref": "#/$defs/guid" },
+        "targetComponentId": { "$ref": "#/$defs/guid" },
+        "targetResourceId": { "$ref": "#/$defs/guid" },
+        "kind": { "type": "string" },
+        "origin": { "type": "string" },
+        "identityKind": { "type": "string" },
+        "identityResourceId": { "anyOf": [{ "$ref": "#/$defs/guid" }, { "type": "null" }] },
+        "roles": { "type": "array", "items": { "type": "string" } },
+        "accessScope": { "type": "string" },
+        "dataAccessLevel": { "type": ["string", "null"] },
+        "version": { "type": ["integer", "null"], "minimum": 1 },
+        "originSource": { "anyOf": [{ "$ref": "#/$defs/linkOriginSource" }, { "type": "null" }] }
+      },
+      "additionalProperties": false
+    },
+    "appSetting": {
+      "type": "object",
+      "required": ["id", "componentId", "applicationResourceId", "name", "sourceKind", "literalValue", "literalOverrides", "sourceResourceId", "outputName", "keyVaultResourceId", "secretName", "secretFeedKind", "pipelineVariableName", "identityResourceId", "version"],
+      "properties": {
+        "id": { "$ref": "#/$defs/guid" },
+        "componentId": { "$ref": "#/$defs/guid" },
+        "applicationResourceId": { "$ref": "#/$defs/guid" },
+        "name": { "type": "string" },
+        "sourceKind": { "type": "string" },
+        "literalValue": { "type": ["string", "null"] },
+        "literalOverrides": { "$ref": "#/$defs/guidStringMap" },
+        "sourceResourceId": { "anyOf": [{ "$ref": "#/$defs/guid" }, { "type": "null" }] },
+        "outputName": { "type": ["string", "null"] },
+        "keyVaultResourceId": { "anyOf": [{ "$ref": "#/$defs/guid" }, { "type": "null" }] },
+        "secretName": { "type": ["string", "null"] },
+        "secretFeedKind": { "type": ["string", "null"] },
+        "pipelineVariableName": { "type": ["string", "null"] },
+        "identityResourceId": { "anyOf": [{ "$ref": "#/$defs/guid" }, { "type": "null" }] },
+        "version": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "applicationStepParameter": {
+      "type": "object",
+      "required": ["name", "value"],
+      "properties": {
+        "name": { "type": "string" },
+        "value": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "applicationStep": {
+      "type": "object",
+      "required": ["name", "enabled", "blocking", "position", "parameters"],
+      "properties": {
+        "name": { "type": "string" },
+        "enabled": { "type": "boolean" },
+        "blocking": { "type": "boolean" },
+        "position": { "type": "string" },
+        "parameters": { "type": "array", "items": { "$ref": "#/$defs/applicationStepParameter" } }
+      },
+      "additionalProperties": false
+    },
+    "application": {
+      "type": "object",
+      "required": ["id", "componentId", "resourceId", "name", "codeSourcePath", "dockerfilePath", "buildContextPath", "imageRepository", "healthCheckPath", "deploymentStrategy", "buildRegistryEnvironmentId", "steps", "version"],
+      "properties": {
+        "id": { "$ref": "#/$defs/guid" },
+        "componentId": { "$ref": "#/$defs/guid" },
+        "resourceId": { "$ref": "#/$defs/guid" },
+        "name": { "type": "string" },
+        "codeSourcePath": { "type": "string" },
+        "dockerfilePath": { "type": "string" },
+        "buildContextPath": { "type": "string" },
+        "imageRepository": { "type": "string" },
+        "healthCheckPath": { "type": ["string", "null"] },
+        "deploymentStrategy": { "type": "string" },
+        "buildRegistryEnvironmentId": { "anyOf": [{ "$ref": "#/$defs/guid" }, { "type": "null" }] },
+        "steps": { "type": "array", "items": { "$ref": "#/$defs/applicationStep" } },
+        "version": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "objectVersion": {
+      "type": "object",
+      "required": ["type", "id", "version"],
+      "properties": {
+        "type": { "type": "string" },
+        "id": { "$ref": "#/$defs/guid" },
+        "version": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "modelSnapshot": {
+      "type": "object",
+      "required": ["project", "environments", "naming", "tags", "components", "namingRules", "regionCodes", "organizationGlobalNames", "links", "appSettings", "applications", "objectVersions"],
+      "properties": {
+        "project": { "$ref": "#/$defs/projectSnapshot" },
+        "environments": { "type": "array", "items": { "$ref": "#/$defs/environmentSnapshot" } },
+        "naming": { "$ref": "#/$defs/namingConvention" },
+        "tags": { "$ref": "#/$defs/stringMap" },
+        "components": { "type": "array", "items": { "$ref": "#/$defs/component" } },
+        "namingRules": { "type": "object", "additionalProperties": { "$ref": "#/$defs/namingRule" } },
+        "regionCodes": { "$ref": "#/$defs/stringMap" },
+        "organizationGlobalNames": { "type": "array", "items": { "$ref": "#/$defs/globalName" } },
+        "links": { "type": "array", "items": { "$ref": "#/$defs/link" } },
+        "appSettings": { "type": "array", "items": { "$ref": "#/$defs/appSetting" } },
+        "applications": { "type": "array", "items": { "$ref": "#/$defs/application" } },
+        "objectVersions": { "type": "array", "items": { "$ref": "#/$defs/objectVersion" } }
+      },
+      "additionalProperties": false
+    }
+  }
+}

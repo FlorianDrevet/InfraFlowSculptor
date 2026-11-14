@@ -12,7 +12,7 @@ export interface GetRevisionFile$Params {
   projectId: string;
   revisionId: string;
   path: string;
-  download: boolean;
+  download?: boolean;
 }
 
 export function getRevisionFile(http: HttpClient, rootUrl: string, params: GetRevisionFile$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {

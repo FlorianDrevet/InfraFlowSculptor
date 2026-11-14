@@ -2,7 +2,11 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Mvc.Testing;
 using InfraFlowSculptor.Api.Tests.Common;
+using InfraFlowSculptor.Application.Generation;
 using Testcontainers.PostgreSql;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace InfraFlowSculptor.Api.Tests;
 
@@ -43,6 +47,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 ["Auth:Authority"] = LocalAuthAuthority,
                 ["ConnectionStrings:ifs"] = database.GetConnectionString()
             }));
+        builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IProjectExportStore>();
+            services.AddSingleton<IProjectExportStore, InMemoryProjectExportStore>();
+        });
         if (UseTestSigningKey)
         {
             builder.UseSetting("Auth:TestSigningKey", TestTokens.SigningKey);

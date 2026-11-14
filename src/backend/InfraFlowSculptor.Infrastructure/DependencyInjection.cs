@@ -56,6 +56,8 @@ public static class DependencyInjection
         services.TryAddScoped<IAuditEventReader, EfAuditEventReader>();
         services.TryAddScoped<IAuditEventPurger, EfAuditEventPurger>();
         services.TryAddSingleton<IRevisionBlobStore, AzureRevisionBlobStore>();
+        services.TryAddSingleton<IProjectExportStore, AzureProjectExportStore>();
+        services.AddHostedService<ProjectExportCleanupService>();
         services.AddNameAvailabilityInfrastructure();
 
         var credential = new IfsAzureCredential();

@@ -8,4 +8,6 @@ public sealed class AuditedAttribute(string action, ObjectType objectType) : Att
     public string Action { get; } = action;
 
     public ObjectType ObjectType { get; } = objectType;
+
+    public bool IncludeUnchanged { get; set; }
 }

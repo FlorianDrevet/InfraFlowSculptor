@@ -4,6 +4,7 @@ using InfraFlowSculptor.Application.Common.Auditing;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Domain.Common.Identifiers;
+using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Domain.UserProfileAggregate;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,13 +19,22 @@ public sealed class EfAuditWriter(
     private const string EmailFieldPrefix = "email.";
     private const string LikeEscapeCharacter = "\\";
 
-    public async Task WriteAsync(AuditedAttribute audit, CancellationToken cancellationToken)
+    public async Task WriteAsync(
+        AuditedAttribute audit,
+        Guid? projectId,
+        OrganizationId? organizationId,
+        CancellationToken cancellationToken)
     {
         var changes = dbContext.GetAuditChanges()
             .Where(candidate => candidate.ObjectType == audit.ObjectType)
             .ToArray();
         if (changes.Length == 0)
         {
+            if (audit.IncludeUnchanged)
+            {
+                await WriteUnchangedProjectEventAsync(audit, projectId, organizationId, cancellationToken);
+            }
+
             return;
         }
 
@@ -86,6 +96,67 @@ public sealed class EfAuditWriter(
                         cancellationToken);
             }
         }
+    }
+
+    private async Task WriteUnchangedProjectEventAsync(
+        AuditedAttribute audit,
+        Guid? projectId,
+        OrganizationId? organizationId,
+        CancellationToken cancellationToken)
+    {
+        if (projectId is null || organizationId is null)
+        {
+            throw new InvalidOperationException("An unchanged project audit event requires project and organization identifiers.");
+        }
+
+        if (!currentUser.IsAuthenticated)
+        {
+            throw new InvalidOperationException("An audited user action requires an authenticated actor.");
+        }
+
+        var actor = await dbContext.Query<UserProfile>()
+            .SingleOrDefaultAsync(profile => profile.TenantId == currentUser.Key.TenantId
+                && profile.ObjectId == currentUser.Key.ObjectId,
+                cancellationToken);
+        if (actor is null)
+        {
+            throw new InvalidOperationException("An audited user action requires a persisted user profile.");
+        }
+
+        var occurredAt = clock.GetUtcNow();
+        var project = await dbContext.Query<ProjectAggregate>()
+            .SingleOrDefaultAsync(candidate => candidate.Id == new ProjectId(projectId.Value), cancellationToken);
+        if (project is null)
+        {
+            throw new InvalidOperationException("An unchanged project audit event requires an existing project.");
+        }
+
+        var eventId = Guid.CreateVersion7(occurredAt);
+        var via = currentUser.AuthenticationKind == AuthenticationKind.ApiToken
+            ? AuditVia.Api
+            : AuditVia.Screen;
+        var auditEvent = new AuditEventEntity(
+            eventId,
+            organizationId.Value,
+            occurredAt,
+            currentUser.AuthenticationKind == AuthenticationKind.ApiToken
+                ? AuditActorKinds.ApiToken
+                : AuditActorKinds.User,
+            actor.Id.Value.ToString("D"),
+            via,
+            audit.Action,
+            audit.ObjectType,
+            projectId.Value,
+            new JsonObject
+            {
+                ["code"] = new JsonObject
+                {
+                    ["before"] = null,
+                    ["after"] = project.Code
+                }
+            }.ToJsonString(),
+            projectId);
+        dbContext.Query<AuditEventEntity>().Add(auditEvent);
     }
 
     private async Task AddPersonalDataAsync(

@@ -71,6 +71,58 @@ public sealed class CatalogSchemaTests
     }
 
     [Fact]
+    public void ProjectExportSchemaAcceptsVersionedSnapshotAndRejectsMemberData()
+    {
+        var schema = JsonSchema.FromText(File.ReadAllText(Path.Combine(CatalogRoot, "schema", "ifs-project-v1.schema.json")));
+        using var candidate = JsonDocument.Parse("""
+            {
+              "schema": "ifs-project/v1",
+              "snapshot": {
+                "project": {
+                  "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                  "version": 1,
+                  "name": "Boutique en ligne",
+                  "code": "shop",
+                  "description": "",
+                  "modelVersion": 1,
+                  "catalogVersion": "2026.10-pilot.5",
+                  "infrastructureLanguage": "Bicep",
+                  "ciPlatform": "AzureDevOps",
+                  "moduleSource": "AVM registre public",
+                  "systemTagsEnabled": true,
+                  "publishingPreset": null
+                },
+                "environments": [],
+                "naming": {
+                  "preset": "Azure resource abbreviations",
+                  "defaultTemplate": "{project}-{environment}-{resource}",
+                  "resourceGroupTemplate": "rg-{project}-{environment}",
+                  "typeTemplates": {},
+                  "typeAbbreviations": {}
+                },
+                "tags": {},
+                "components": [],
+                "namingRules": {},
+                "regionCodes": {},
+                "organizationGlobalNames": [],
+                "links": [],
+                "appSettings": [],
+                "applications": [],
+                "objectVersions": []
+              }
+            }
+            """);
+
+        var validResult = schema.Evaluate(candidate.RootElement);
+        Assert.True(validResult.IsValid, validResult.ToString());
+
+        var withMemberData = JsonNode.Parse(candidate.RootElement.GetRawText())!;
+        withMemberData["snapshot"]!["members"] = new JsonArray();
+        var invalidResult = schema.Evaluate(withMemberData);
+        Assert.False(invalidResult.IsValid);
+    }
+
+    [Fact]
     public void CatalogVersionDirectoryWithoutMetadataFailsDiscovery()
     {
         var catalogRoot = Path.Combine(Path.GetTempPath(), $"ifs-catalog-schema-{Guid.NewGuid():N}");

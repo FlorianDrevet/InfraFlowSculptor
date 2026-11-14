@@ -44,94 +44,125 @@
       </section>
     }
 
-    <form (ngSubmit)="save()">
-      <app-ds-text-field
-        [label]="'project.projectName' | transloco"
-        name="projectName"
-        [value]="form().name"
-        [required]="true"
-        (valueChange)="updateField('name', $event ?? '')"
-      />
-      <app-ds-text-field
-        [label]="'project.projectCode' | transloco"
-        name="projectCode"
-        [value]="form().code"
-        [required]="true"
-        [disabled]="codeLocked()"
-        (valueChange)="updateField('code', $event ?? '')"
-      />
-      @if (codeLocked()) {
-        <p class="project-settings__hint">{{ 'project.projectCodeLocked' | transloco }}</p>
-      }
-      <p class="project-settings__tenant">
-        <span>{{ 'project.tenantId' | transloco }}</span>
-        <code>{{ project()?.tenantId }}</code>
-      </p>
-      <label class="project-settings__textarea-label" for="project-description">
-        {{ 'project.projectDescription' | transloco }}
-        <textarea
-          id="project-description"
-          name="projectDescription"
-          rows="3"
-          [value]="form().description"
-          (input)="updateField('description', $any($event.target).value)"
-        ></textarea>
-      </label>
-      <label class="project-settings__textarea-label" for="project-tags">
-        {{ 'project.projectTags' | transloco }}
-        <span>{{ 'project.tagsHint' | transloco }}</span>
-        <textarea
-          id="project-tags"
-          name="projectTags"
-          rows="4"
-          [value]="form().tags"
-          (input)="updateField('tags', $any($event.target).value)"
-        ></textarea>
-      </label>
-      <app-ds-toggle
-        [label]="'project.systemTagsEnabled' | transloco"
-        [checked]="form().systemTagsEnabled"
-        (checkedChange)="updateField('systemTagsEnabled', $event)"
-      />
-      <label class="project-settings__select-label" for="project-coordinator">
-        {{ 'project.coordinator' | transloco }}
-        <select
-          id="project-coordinator"
-          name="projectCoordinator"
-          [value]="form().coordinatorUserProfileId"
-          (change)="updateField('coordinatorUserProfileId', $any($event.target).value)"
-        >
-          <option value="">{{ 'project.noCoordinator' | transloco }}</option>
-          @for (member of members(); track member.id) {
-            <option [value]="member.id">
-              {{ member.displayName }}{{ member.email ? ' · ' + member.email : '' }}
-            </option>
-          }
-        </select>
-      </label>
-
-      @if (saveError()) {
-        <p class="project-settings__error" role="alert">
-          {{ 'project.settingsSaveError' | transloco }}
+    <div class="project-settings__layout" [class.project-settings__layout--single]="!canAdminister()">
+      <form (ngSubmit)="save()">
+        <app-ds-text-field
+          [label]="'project.projectName' | transloco"
+          name="projectName"
+          [value]="form().name"
+          [required]="true"
+          (valueChange)="updateField('name', $event ?? '')"
+        />
+        <app-ds-text-field
+          [label]="'project.projectCode' | transloco"
+          name="projectCode"
+          [value]="form().code"
+          [required]="true"
+          [disabled]="codeLocked()"
+          (valueChange)="updateField('code', $event ?? '')"
+        />
+        @if (codeLocked()) {
+          <p class="project-settings__hint">{{ 'project.projectCodeLocked' | transloco }}</p>
+        }
+        <p class="project-settings__tenant">
+          <span>{{ 'project.tenantId' | transloco }}</span>
+          <code>{{ project()?.tenantId }}</code>
         </p>
-      }
-      @if (canAdminister()) {
-        <app-ds-button variant="primary" type="submit" [disabled]="saving()">
-          {{ (saving() ? 'project.settingsSaving' : 'project.settingsSave') | transloco }}
-        </app-ds-button>
-      } @else {
-        <p>{{ 'project.permissionRequired' | transloco }}</p>
-      }
-    </form>
+        <label class="project-settings__textarea-label" for="project-description">
+          {{ 'project.projectDescription' | transloco }}
+          <textarea
+            id="project-description"
+            name="projectDescription"
+            rows="3"
+            [value]="form().description"
+            (input)="updateField('description', $any($event.target).value)"
+          ></textarea>
+        </label>
+        <label class="project-settings__textarea-label" for="project-tags">
+          {{ 'project.projectTags' | transloco }}
+          <span>{{ 'project.tagsHint' | transloco }}</span>
+          <textarea
+            id="project-tags"
+            name="projectTags"
+            rows="4"
+            [value]="form().tags"
+            (input)="updateField('tags', $any($event.target).value)"
+          ></textarea>
+        </label>
+        <app-ds-toggle
+          [label]="'project.systemTagsEnabled' | transloco"
+          [checked]="form().systemTagsEnabled"
+          (checkedChange)="updateField('systemTagsEnabled', $event)"
+        />
+        <label class="project-settings__select-label" for="project-coordinator">
+          {{ 'project.coordinator' | transloco }}
+          <select
+            id="project-coordinator"
+            name="projectCoordinator"
+            [value]="form().coordinatorUserProfileId"
+            (change)="updateField('coordinatorUserProfileId', $any($event.target).value)"
+          >
+            <option value="">{{ 'project.noCoordinator' | transloco }}</option>
+            @for (member of members(); track member.id) {
+              <option [value]="member.id">
+                {{ member.displayName }}{{ member.email ? ' · ' + member.email : '' }}
+              </option>
+            }
+          </select>
+        </label>
 
-    @if (canAdminister()) {
-      <section class="project-settings__danger-zone">
-        <h3>{{ 'project.deleteProject' | transloco }}</h3>
-        <app-ds-button variant="danger" (click)="requestDelete()">
-          {{ 'project.deleteProject' | transloco }}
-        </app-ds-button>
-      </section>
-    }
+        @if (saveError()) {
+          <p class="project-settings__error" role="alert">
+            {{ 'project.settingsSaveError' | transloco }}
+          </p>
+        }
+        @if (canAdminister()) {
+          <app-ds-button variant="primary" type="submit" [disabled]="saving()">
+            {{ (saving() ? 'project.settingsSaving' : 'project.settingsSave') | transloco }}
+          </app-ds-button>
+        } @else {
+          <p>{{ 'project.permissionRequired' | transloco }}</p>
+        }
+      </form>
+
+      @if (canAdminister()) {
+        <div class="project-settings__side-column">
+          <app-ds-panel class="project-settings__export" [title]="'project.exportTitle' | transloco">
+            <div class="project-settings__export-body">
+              <p>{{ 'project.exportDescription' | transloco }}</p>
+              @if (exportError()) {
+                <p class="project-settings__error" role="alert">
+                  {{ 'project.exportError' | transloco }}
+                </p>
+              }
+              <app-ds-button variant="secondary" [disabled]="exporting()" (click)="exportProject()">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path>
+                </svg>
+                {{ (exporting() ? 'project.exporting' : 'project.exportProject') | transloco }}
+              </app-ds-button>
+            </div>
+          </app-ds-panel>
+
+          <section class="project-settings__danger-zone">
+            <h3>{{ 'project.deleteProject' | transloco }}</h3>
+            <app-ds-button variant="danger" (click)="requestDelete()">
+              {{ 'project.deleteProject' | transloco }}
+            </app-ds-button>
+          </section>
+        </div>
+      }
+    </div>
   }
 </section>
 

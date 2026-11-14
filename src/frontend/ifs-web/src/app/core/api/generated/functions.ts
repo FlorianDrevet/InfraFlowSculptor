@@ -11,6 +11,8 @@ export type { GetInvitationPreview$Params as GetInvitationPreview$Params } from 
 export { getInvitationPreview as getInvitationPreview } from './fn/infra-flow-sculptor-api/get-invitation-preview';
 export type { AcceptInvitation$Params as AcceptInvitation$Params } from './fn/infra-flow-sculptor-api/accept-invitation';
 export { acceptInvitation as acceptInvitation } from './fn/infra-flow-sculptor-api/accept-invitation';
+export type { DownloadProjectExport$Params as DownloadProjectExport$Params } from './fn/infra-flow-sculptor-api/download-project-export';
+export { downloadProjectExport as downloadProjectExport } from './fn/infra-flow-sculptor-api/download-project-export';
 export type { GetFeatures$Params as GetFeatures$Params } from './fn/infra-flow-sculptor-api/get-features';
 export { getFeatures as getFeatures } from './fn/infra-flow-sculptor-api/get-features';
 export type { ListMyOrganizations$Params as ListMyOrganizations$Params } from './fn/organizations/list-my-organizations';
@@ -51,6 +53,8 @@ export type { UpdateProjectSettings$Params as UpdateProjectSettings$Params } fro
 export { updateProjectSettings as updateProjectSettings } from './fn/projects/update-project-settings';
 export type { DeleteProject$Params as DeleteProject$Params } from './fn/projects/delete-project';
 export { deleteProject as deleteProject } from './fn/projects/delete-project';
+export type { ExportProject$Params as ExportProject$Params } from './fn/projects/export-project';
+export { exportProject as exportProject } from './fn/projects/export-project';
 export type { GetProjectValidation$Params as GetProjectValidation$Params } from './fn/projects/get-project-validation';
 export { getProjectValidation as getProjectValidation } from './fn/projects/get-project-validation';
 export type { GetProjectDeploymentPlan$Params as GetProjectDeploymentPlan$Params } from './fn/projects/get-project-deployment-plan';

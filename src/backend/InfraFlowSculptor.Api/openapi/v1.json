@@ -244,6 +244,33 @@
         ]
       }
     },
+    "/v1/project-exports/{token}": {
+      "get": {
+        "tags": [
+          "InfraFlowSculptor.Api"
+        ],
+        "summary": "Télécharger un export de projet pendant sa durée de validité.",
+        "operationId": "DownloadProjectExport",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
     "/v1/features": {
       "get": {
         "tags": [
@@ -1584,6 +1611,67 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{id}/export": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Exporter le modèle du projet au format ifs-project/v1.",
+        "operationId": "ExportProject",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectExportResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11985,6 +12073,22 @@
               "null",
               "string"
             ],
+            "format": "date-time"
+          }
+        }
+      },
+      "ProjectExportResponse": {
+        "required": [
+          "downloadUrl",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "downloadUrl": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
             "format": "date-time"
           }
         }
