@@ -138,3 +138,6 @@
 | 2026-11-14 07:35 | Codex | `R-06` recette autonome à exécuter |  |
 | 2026-11-14 09:11 | Codex | `R-06` reprise après recette autonome vérifiée |  |
 | 2026-11-14 09:12 | Codex | `R-06` auto-validée | R-06-autovalidation.md |
+| 2026-11-14 11:10 | Codex | `J0-26` recette autonome à exécuter |  |
+| 2026-11-14 12:07 | Codex | `J0-26` reprise après recette autonome vérifiée |  |
+| 2026-11-14 12:09 | Codex | `J0-26` terminée | commit `531812f` |
