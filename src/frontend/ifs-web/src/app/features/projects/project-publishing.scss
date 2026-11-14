@@ -1,0 +1,178 @@
+.project-publishing {
+  display: grid;
+  gap: var(--ifs-space-4);
+  min-width: 0;
+}
+
+.project-publishing__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ifs-space-4);
+}
+
+.project-publishing__header h1,
+.project-publishing__header p {
+  margin: 0;
+}
+
+.project-publishing__header h1 {
+  font-size: 1.75rem;
+  line-height: 2.125rem;
+  font-weight: 600;
+}
+
+.project-publishing__header p {
+  max-width: 76ch;
+  margin-top: var(--ifs-space-1);
+  color: var(--ifs-text-2);
+}
+
+.project-publishing__preset {
+  display: grid;
+  grid-template-columns: max-content max-content minmax(220px, 1fr) minmax(200px, 0.9fr) minmax(170px, 0.7fr);
+  align-items: center;
+  gap: var(--ifs-space-3);
+  color: var(--ifs-text-2);
+  font-size: 0.8125rem;
+}
+
+.project-publishing__preset-value {
+  padding: var(--ifs-space-1) var(--ifs-space-3);
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-2);
+  color: var(--ifs-text);
+  font-weight: 600;
+}
+
+.project-publishing__preset-rule {
+  color: var(--ifs-text-3);
+  font-size: 0.75rem;
+}
+
+.project-publishing__default {
+  display: grid;
+  gap: var(--ifs-space-2);
+  color: var(--ifs-text-2);
+  font-size: 0.875rem;
+}
+
+.project-publishing__default select,
+.project-publishing__select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: var(--ifs-space-2) var(--ifs-space-3);
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-1);
+  color: var(--ifs-text);
+  font: inherit;
+}
+
+.project-publishing__default select:focus-visible,
+.project-publishing__select:focus-visible,
+.project-publishing__path:focus-visible {
+  border-color: var(--ifs-signal);
+  outline: 2px solid color-mix(in srgb, var(--ifs-signal) 35%, transparent);
+  outline-offset: 1px;
+}
+
+.project-publishing__table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+}
+
+.project-publishing__table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.project-publishing__table th {
+  padding: var(--ifs-space-2) var(--ifs-space-4);
+  background: var(--ifs-surface-2);
+  color: var(--ifs-text-3);
+  font-family: var(--ifs-font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.project-publishing__table td {
+  padding: var(--ifs-space-2) var(--ifs-space-4);
+  border-top: 1px solid var(--ifs-line-subtle);
+  color: var(--ifs-text-2);
+  font-size: 0.8125rem;
+  vertical-align: middle;
+}
+
+.project-publishing__mono,
+.project-publishing__effective {
+  font-family: var(--ifs-font-mono);
+  font-size: 0.75rem !important;
+}
+
+.project-publishing__path {
+  width: 100%;
+  min-width: 0;
+  padding: var(--ifs-space-1) var(--ifs-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--ifs-radius-sm);
+  background: transparent;
+  color: var(--ifs-text);
+  font-family: var(--ifs-font-mono);
+  font-size: 0.75rem;
+}
+
+.project-publishing__effective {
+  color: var(--ifs-text-3) !important;
+}
+
+.project-publishing__error,
+.project-publishing__empty {
+  margin: 0;
+  color: var(--ifs-danger-text);
+}
+
+.project-publishing__empty {
+  padding-top: var(--ifs-space-3);
+  color: var(--ifs-text-2);
+}
+
+.project-publishing__saved {
+  margin: 0;
+  color: var(--ifs-text-2);
+}
+
+.project-publishing__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+@media (max-width: 760px) {
+  .project-publishing__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .project-publishing__preset {
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+
+  .project-publishing__preset-rule,
+  .project-publishing__default,
+  .project-publishing__preset app-ds-text-field {
+    grid-column: 1 / -1;
+  }
+}

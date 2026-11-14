@@ -39,6 +39,12 @@ export const PROJECT_ROUTES: Routes = [
     title: 'Nommage du projet',
   },
   {
+    path: 'publishing',
+    loadComponent: () =>
+      import('./project-publishing').then((module) => module.ProjectPublishing),
+    title: 'Plan de publication',
+  },
+  {
     path: 'members',
     loadComponent: () => import('./project-members').then((module) => module.ProjectMembers),
     title: 'Membres du projet',

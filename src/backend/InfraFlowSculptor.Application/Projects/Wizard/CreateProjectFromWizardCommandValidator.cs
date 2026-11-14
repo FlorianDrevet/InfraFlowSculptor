@@ -30,5 +30,11 @@ public sealed class CreateProjectFromWizardCommandValidator : AbstractValidator<
                 .When(item => item.IsProtected);
         });
         RuleFor(command => command.Tags).NotNull();
+        When(command => command.PublishingDestination is not null, () =>
+        {
+            RuleFor(command => command.PublishingDestination!.GitConnectionId).NotEmpty();
+            RuleFor(command => command.PublishingDestination!.ProviderRepositoryId).NotEmpty().MaximumLength(300);
+            RuleFor(command => command.PublishingDestination!.BasePath).MaximumLength(200);
+        });
     }
 }

@@ -48,6 +48,7 @@ export type { ComponentResponse } from './models/component-response';
 export type { ComponentSingleTargetResponse } from './models/component-single-target-response';
 export type { CreateGitConnectionRequest } from './models/create-git-connection-request';
 export type { CreateOrganizationRequest } from './models/create-organization-request';
+export type { CreateProjectFromWizardDestinationRequest } from './models/create-project-from-wizard-destination-request';
 export type { CreateProjectFromWizardRequest } from './models/create-project-from-wizard-request';
 export type { CreateProjectFromWizardResponse } from './models/create-project-from-wizard-response';
 export type { CreateProjectRequest } from './models/create-project-request';
@@ -126,6 +127,7 @@ export type { ProjectNamingPreviewRequest } from './models/project-naming-previe
 export type { ProjectNamingPreviewResponse } from './models/project-naming-preview-response';
 export type { ProjectNamingSettingsRequest } from './models/project-naming-settings-request';
 export type { ProjectNamingSettingsResponse } from './models/project-naming-settings-response';
+export type { ProjectPublishPlanResponse } from './models/project-publish-plan-response';
 export type { ProjectRole } from './models/project-role';
 export type { ProjectRoleAssignmentResponse } from './models/project-role-assignment-response';
 export type { ProjectRoleScope } from './models/project-role-scope';
@@ -136,6 +138,14 @@ export type { ProjectValidationReadinessResponse } from './models/project-valida
 export type { ProjectValidationResponse } from './models/project-validation-response';
 export type { ProjectWizardDraftResponse } from './models/project-wizard-draft-response';
 export type { ProjectWizardEnvironmentRequest } from './models/project-wizard-environment-request';
+export type { PublishPlanAssignmentRequest } from './models/publish-plan-assignment-request';
+export type { PublishPlanAssignmentResponse } from './models/publish-plan-assignment-response';
+export type { PublishPlanAvailableDestinationResponse } from './models/publish-plan-available-destination-response';
+export type { PublishPlanComponentResponse } from './models/publish-plan-component-response';
+export type { PublishPlanDestinationRequest } from './models/publish-plan-destination-request';
+export type { PublishPlanDestinationResponse } from './models/publish-plan-destination-response';
+export type { PublishPlanIssueResponse } from './models/publish-plan-issue-response';
+export type { PublishPlanRowResponse } from './models/publish-plan-row-response';
 export type { ReleaseAppOwnedStatePlan } from './models/release-app-owned-state-plan';
 export type { ReleaseDataAccessPlan } from './models/release-data-access-plan';
 export type { ReleaseDataAccessPrincipalPlan } from './models/release-data-access-principal-plan';
@@ -192,6 +202,7 @@ export type { SaveWizardDraftRequest } from './models/save-wizard-draft-request'
 export type { SetComponentDefaultLogAnalyticsRequest } from './models/set-component-default-log-analytics-request';
 export type { SetExistingResourceIdRequest } from './models/set-existing-resource-id-request';
 export type { SetGitConnectionRepositoryAccessRequest } from './models/set-git-connection-repository-access-request';
+export type { SetProjectPublishPlanRequest } from './models/set-project-publish-plan-request';
 export type { SetProjectTagsRequest } from './models/set-project-tags-request';
 export type { SetResourceDefaultIdentityRequest } from './models/set-resource-default-identity-request';
 export type { SetResourceForcedNameRequest } from './models/set-resource-forced-name-request';

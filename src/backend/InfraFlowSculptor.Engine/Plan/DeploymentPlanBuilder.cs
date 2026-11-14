@@ -75,8 +75,7 @@ public sealed class DeploymentPlanBuilder(
                 snapshot.Project.Description,
                 snapshot.Project.InfrastructureLanguage,
                 snapshot.Project.CiPlatform,
-                snapshot.Project.ModuleSource,
-                snapshot.Project.PublishingPreset),
+                snapshot.Project.ModuleSource),
             plans,
             CreatePins(catalog));
     }

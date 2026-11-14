@@ -3197,6 +3197,139 @@
         ]
       }
     },
+    "/v1/projects/{id}/publish-plan": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Consulter le plan de publication et les dépôts accessibles au projet.",
+        "operationId": "GetProjectPublishPlan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectPublishPlanResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Enregistrer le plan de publication du projet.",
+        "operationId": "SetProjectPublishPlan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetProjectPublishPlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/projects/{id}/environments": {
       "get": {
         "tags": [
@@ -10723,6 +10856,26 @@
           }
         }
       },
+      "CreateProjectFromWizardDestinationRequest": {
+        "required": [
+          "gitConnectionId",
+          "providerRepositoryId",
+          "basePath"
+        ],
+        "type": "object",
+        "properties": {
+          "gitConnectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "providerRepositoryId": {
+            "type": "string"
+          },
+          "basePath": {
+            "type": "string"
+          }
+        }
+      },
       "CreateProjectFromWizardRequest": {
         "required": [
           "name",
@@ -10783,6 +10936,16 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "publishingDestination": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CreateProjectFromWizardDestinationRequest"
+              }
             ]
           }
         }
@@ -12761,8 +12924,7 @@
           "description",
           "infrastructureLanguage",
           "ciPlatform",
-          "moduleSource",
-          "publishingPreset"
+          "moduleSource"
         ],
         "type": "object",
         "properties": {
@@ -12783,12 +12945,6 @@
           },
           "moduleSource": {
             "type": "string"
-          },
-          "publishingPreset": {
-            "type": [
-              "null",
-              "string"
-            ]
           }
         }
       },
@@ -13084,6 +13240,97 @@
           },
           "isPublished": {
             "type": "boolean"
+          }
+        }
+      },
+      "ProjectPublishPlanResponse": {
+        "required": [
+          "projectId",
+          "projectVersion",
+          "preset",
+          "defaultInfrastructureDestinationId",
+          "defaultApplicationsDestinationId",
+          "defaultSourceCodeDestinationId",
+          "destinations",
+          "assignments",
+          "components",
+          "rows",
+          "availableDestinations",
+          "issues"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "preset": {
+            "type": "string"
+          },
+          "defaultInfrastructureDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "defaultApplicationsDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "defaultSourceCodeDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "destinations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanDestinationResponse"
+            }
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanAssignmentResponse"
+            }
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanComponentResponse"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanRowResponse"
+            }
+          },
+          "availableDestinations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanAvailableDestinationResponse"
+            }
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanIssueResponse"
+            }
           }
         }
       },
@@ -13595,6 +13842,280 @@
           "description": {
             "type": "string",
             "default": ""
+          }
+        }
+      },
+      "PublishPlanAssignmentRequest": {
+        "required": [
+          "componentId",
+          "part",
+          "destinationId"
+        ],
+        "type": "object",
+        "properties": {
+          "componentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "part": {
+            "type": "string"
+          },
+          "destinationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "PublishPlanAssignmentResponse": {
+        "required": [
+          "componentId",
+          "part",
+          "destinationId"
+        ],
+        "type": "object",
+        "properties": {
+          "componentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "part": {
+            "type": "string"
+          },
+          "destinationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "PublishPlanAvailableDestinationResponse": {
+        "required": [
+          "gitConnectionId",
+          "connectionName",
+          "provider",
+          "providerRepositoryId",
+          "repositoryName",
+          "defaultBranch"
+        ],
+        "type": "object",
+        "properties": {
+          "gitConnectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "connectionName": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "providerRepositoryId": {
+            "type": "string"
+          },
+          "repositoryName": {
+            "type": "string"
+          },
+          "defaultBranch": {
+            "type": "string"
+          }
+        }
+      },
+      "PublishPlanComponentResponse": {
+        "required": [
+          "id",
+          "name",
+          "code",
+          "hasApplications",
+          "infrastructureDestinationId",
+          "applicationsDestinationId",
+          "sourceCodeDestinationId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "hasApplications": {
+            "type": "boolean"
+          },
+          "infrastructureDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "applicationsDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "sourceCodeDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "PublishPlanDestinationRequest": {
+        "required": [
+          "id",
+          "gitConnectionId",
+          "providerRepositoryId",
+          "basePath"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "gitConnectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "providerRepositoryId": {
+            "type": "string"
+          },
+          "basePath": {
+            "type": "string"
+          }
+        }
+      },
+      "PublishPlanDestinationResponse": {
+        "required": [
+          "id",
+          "gitConnectionId",
+          "connectionName",
+          "provider",
+          "providerRepositoryId",
+          "repositoryName",
+          "defaultBranch",
+          "basePath",
+          "isAccessible"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "gitConnectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "connectionName": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "providerRepositoryId": {
+            "type": "string"
+          },
+          "repositoryName": {
+            "type": "string"
+          },
+          "defaultBranch": {
+            "type": "string"
+          },
+          "basePath": {
+            "type": "string"
+          },
+          "isAccessible": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PublishPlanIssueResponse": {
+        "required": [
+          "code",
+          "message",
+          "componentId",
+          "part",
+          "destinationId"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "componentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "part": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "destinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "PublishPlanRowResponse": {
+        "required": [
+          "componentId",
+          "componentName",
+          "componentCode",
+          "part",
+          "destinationId",
+          "destinationName",
+          "basePath",
+          "effectiveFolder"
+        ],
+        "type": "object",
+        "properties": {
+          "componentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "componentName": {
+            "type": "string"
+          },
+          "componentCode": {
+            "type": "string"
+          },
+          "part": {
+            "type": "string"
+          },
+          "destinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "destinationName": {
+            "type": "string"
+          },
+          "basePath": {
+            "type": "string"
+          },
+          "effectiveFolder": {
+            "type": "string"
           }
         }
       },
@@ -15568,6 +16089,64 @@
               "type": "string",
               "format": "uuid"
             }
+          }
+        }
+      },
+      "SetProjectPublishPlanRequest": {
+        "required": [
+          "preset",
+          "destinations",
+          "assignments",
+          "defaultInfrastructureDestinationId",
+          "defaultApplicationsDestinationId",
+          "defaultSourceCodeDestinationId",
+          "expectedVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": "string"
+          },
+          "destinations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanDestinationRequest"
+            }
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanAssignmentRequest"
+            }
+          },
+          "defaultInfrastructureDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "defaultApplicationsDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "defaultSourceCodeDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "expectedVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },

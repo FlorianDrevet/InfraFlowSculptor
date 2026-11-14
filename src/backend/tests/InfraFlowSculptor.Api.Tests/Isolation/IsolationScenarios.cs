@@ -341,6 +341,26 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}",
                 HttpStatusCode.NotFound),
+            ["GetProjectPublishPlan"] = OrganizationScenario(
+                "GetProjectPublishPlan",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/publish-plan",
+                HttpStatusCode.NotFound),
+            ["SetProjectPublishPlan"] = OrganizationWriteScenario(
+                "SetProjectPublishPlan",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/publish-plan",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    preset = "MonoRepo",
+                    destinations = Array.Empty<object>(),
+                    assignments = Array.Empty<object>(),
+                    defaultInfrastructureDestinationId = (Guid?)null,
+                    defaultApplicationsDestinationId = (Guid?)null,
+                    defaultSourceCodeDestinationId = (Guid?)null,
+                    expectedVersion = 1
+                }),
             ["GetProjectValidation"] = OrganizationScenario(
                 "GetProjectValidation",
                 HttpMethod.Get,

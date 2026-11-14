@@ -1,6 +1,7 @@
 using InfraFlowSculptor.Api.Common;
 using InfraFlowSculptor.Api.Common.Idempotency;
 using InfraFlowSculptor.Api.Errors;
+using ErrorOr;
 using InfraFlowSculptor.Application.Common.ModelCommands;
 using InfraFlowSculptor.Application.Components.Commands.AcknowledgeFinding;
 using InfraFlowSculptor.Application.Components.Commands.ApplyFindingFix;
@@ -25,10 +26,12 @@ using InfraFlowSculptor.Application.Projects.Queries.GetEffectivePermissions;
 using InfraFlowSculptor.Application.Projects.Queries.GetProject;
 using InfraFlowSculptor.Application.Projects.Queries.ListProjects;
 using InfraFlowSculptor.Application.Projects.Queries.ListProjectEnvironments;
+using InfraFlowSculptor.Application.Projects.Publication;
 using InfraFlowSculptor.Catalog;
 using InfraFlowSculptor.Contracts.Projects;
 using InfraFlowSculptor.Domain.Common.Features;
 using InfraFlowSculptor.Domain.OrganizationAggregate;
+using InfraFlowSculptor.Domain.ProjectAggregate;
 using Mediator;
 using Microsoft.AspNetCore.Mvc;
 
@@ -680,6 +683,78 @@ public static class ProjectsController
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        projects.MapGet("/{id:guid}/publish-plan", async (
+                Guid id,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new GetProjectPublishPlanQuery(id), cancellationToken);
+                return result.Match<IResult>(
+                    value => Results.Ok(Map(value)),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.GetProjectPublishPlan)
+            .WithSummary("Consulter le plan de publication et les dépôts accessibles au projet.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces<ProjectPublishPlanResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        projects.MapPut("/{id:guid}/publish-plan", async (
+                Guid id,
+                SetProjectPublishPlanRequest request,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                if (!Enum.TryParse<PublishPreset>(request.Preset, ignoreCase: false, out var preset)
+                    || !Enum.IsDefined(preset))
+                {
+                    return new List<Error> { Error.Validation(PublishValidationCodes.PresetInvalid, "Le préréglage de publication n'est pas reconnu.") }.ToProblem();
+                }
+
+                var assignments = new List<PublishPlanAssignmentInput>(request.Assignments.Count);
+                foreach (var assignment in request.Assignments)
+                {
+                    if (!Enum.TryParse<PublishPart>(assignment.Part, ignoreCase: false, out var part)
+                        || !Enum.IsDefined(part))
+                    {
+                        return new List<Error> { Error.Validation(PublishValidationCodes.Destination, "La partie du plan de publication n'est pas reconnue.") }.ToProblem();
+                    }
+
+                    assignments.Add(new PublishPlanAssignmentInput(
+                        assignment.ComponentId,
+                        part,
+                        assignment.DestinationId));
+                }
+
+                var result = await mediator.Send(new SetProjectPublishPlanCommand(
+                    id,
+                    preset,
+                    request.Destinations.Select(destination => new PublishPlanDestinationInput(
+                        destination.Id,
+                        destination.GitConnectionId,
+                        destination.ProviderRepositoryId,
+                        destination.BasePath)).ToArray(),
+                    assignments,
+                    request.DefaultInfrastructureDestinationId,
+                    request.DefaultApplicationsDestinationId,
+                    request.DefaultSourceCodeDestinationId,
+                    request.ExpectedVersion), cancellationToken);
+                return result.Match<IResult>(
+                    _ => Results.NoContent(),
+                    errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.SetProjectPublishPlan)
+            .WithSummary("Enregistrer le plan de publication du projet.")
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
         projects.MapRevisionEndpoints();
         return projects;
     }
@@ -690,6 +765,59 @@ public static class ProjectsController
             permissions.Version,
             permissions.Permissions,
             permissions.Assignments.Select(Map).ToArray());
+
+    private static ProjectPublishPlanResponse Map(ProjectPublishPlanView plan) =>
+        new(
+            plan.ProjectId,
+            plan.ProjectVersion,
+            plan.Preset,
+            plan.DefaultInfrastructureDestinationId,
+            plan.DefaultApplicationsDestinationId,
+            plan.DefaultSourceCodeDestinationId,
+            plan.Destinations.Select(destination => new PublishPlanDestinationResponse(
+                destination.Id,
+                destination.GitConnectionId,
+                destination.ConnectionName,
+                destination.Provider,
+                destination.ProviderRepositoryId,
+                destination.RepositoryName,
+                destination.DefaultBranch,
+                destination.BasePath,
+                destination.IsAccessible)).ToArray(),
+            plan.Assignments.Select(assignment => new PublishPlanAssignmentResponse(
+                assignment.ComponentId,
+                assignment.Part,
+                assignment.DestinationId)).ToArray(),
+            plan.Components.Select(component => new PublishPlanComponentResponse(
+                component.Id,
+                component.Name,
+                component.Code,
+                component.HasApplications,
+                component.InfrastructureDestinationId,
+                component.ApplicationsDestinationId,
+                component.SourceCodeDestinationId)).ToArray(),
+            plan.Rows.Select(row => new PublishPlanRowResponse(
+                row.ComponentId,
+                row.ComponentName,
+                row.ComponentCode,
+                row.Part,
+                row.DestinationId,
+                row.DestinationName,
+                row.BasePath,
+                row.EffectiveFolder)).ToArray(),
+            plan.AvailableDestinations.Select(destination => new PublishPlanAvailableDestinationResponse(
+                destination.GitConnectionId,
+                destination.ConnectionName,
+                destination.Provider,
+                destination.ProviderRepositoryId,
+                destination.RepositoryName,
+                destination.DefaultBranch)).ToArray(),
+            plan.Issues.Select(issue => new PublishPlanIssueResponse(
+                issue.Code,
+                issue.Message,
+                issue.ComponentId,
+                issue.Part,
+                issue.DestinationId)).ToArray());
 
     private static ProjectValidationResponse Map(ProjectValidationSummary validation) =>
         new(

@@ -69,6 +69,13 @@ export class ProjectWorkspace {
         iconName: 'list',
       }),
       this.navigation.register({
+        id: `project-publishing-${projectId}`,
+        labelKey: 'project.publicationLink',
+        path: `${base}/publishing`,
+        scope: 'project',
+        iconName: 'folder',
+      }),
+      this.navigation.register({
         id: `project-components-${projectId}`,
         labelKey: 'project.componentsHeading',
         path: `${base}/components`,

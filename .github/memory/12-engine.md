@@ -1,6 +1,8 @@
 # 12 — Moteur, catalogue et émetteurs
 
 > Au 2026-11-14, R-06 valide le plan de déploiement, les émetteurs Bicep/Azure DevOps, les révisions, l'export et le scanner ImageScan. La suite backend passe 847/847 et la recette G1–G7 est exécutée; les limites E2E sont dans docs/plan/recettes/suivi.md.
+
+- J0-27 introduit `PublishLayoutBuilder` : il répartit l'arborescence logique par dépôt et chemin racine, puis signale notamment `VAL-PUB-DESTINATION` et `VAL-PIP-COMPATIBILITE`. Gitea est volontairement déclaré incompatible avec Azure DevOps Pipelines (RG-PUB-19); un plan sauvegardé peut donc afficher cet avertissement sans masquer les destinations. Les tests Engine couvrent la sortie pilote complète vers une destination, les règles de chemins et les incompatibilités.
 > Cible : `docs/technique/03-moteur-et-generation.md`, DT-14 à DT-16. Étapes J0-06, J0-12 à J0-24.
 
 ## Faits vérifiés

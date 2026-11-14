@@ -20,6 +20,7 @@ public sealed partial class ProjectAggregate : AggregateRoot<ProjectId>, IOrgani
     private readonly List<ProjectEnvironment> environments = [];
     private readonly List<ProjectTag> tags = [];
     private readonly List<ResourceTypeNamingOverride> namingOverrides = [];
+    private PublishPlan publicationPlan = PublishPlan.CreateDefault();
 
     public OrganizationId OrganizationId { get; private set; }
 
@@ -49,7 +50,9 @@ public sealed partial class ProjectAggregate : AggregateRoot<ProjectId>, IOrgani
 
     public string ResourceGroupNameTemplate { get; private set; } = ProjectNamingPresets.CompactResourceGroupTemplate;
 
-    public string? PublishingPreset { get; private set; }
+    public PublishPlan PublicationPlan => publicationPlan;
+
+    public string PublishingPreset => publicationPlan.Preset.ToString();
 
     public bool SystemTagsEnabled { get; private set; } = true;
 
@@ -501,14 +504,18 @@ public sealed partial class ProjectAggregate : AggregateRoot<ProjectId>, IOrgani
 
     public ErrorOr<Success> ConfigurePublishing(string? preset)
     {
-        var normalizedPreset = preset?.Trim();
-        if (normalizedPreset is not null
-            && !string.Equals(normalizedPreset, "MonoRepo", StringComparison.Ordinal))
+        return publicationPlan.ConfigurePreset(preset);
+    }
+
+    public ErrorOr<Success> ConfigurePublicationPlan(PublishPlanConfiguration configuration)
+    {
+        var result = publicationPlan.Configure(configuration);
+        if (result.IsError)
         {
-            return Error.Validation("PROJECT_PUBLISHING_PRESET_INVALID", "Only the MonoRepo publishing preset is available in this plan step.");
+            return result.Errors;
         }
 
-        PublishingPreset = normalizedPreset;
+        Version = checked(Version + 1);
         return Result.Success;
     }
 

@@ -4,6 +4,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/angular/zon
 import { Observable, of, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { OrganizationsService } from '../../core/organizations/organizations.service';
+import { GitConnectionsService } from '../../core/git-connections/git-connections.service';
 import { ProjectWizardService } from '../../core/projects/project-wizard.service';
 import { ProjectWizard } from './project-wizard';
 
@@ -51,6 +52,9 @@ class StaticTranslationLoader implements TranslocoLoader {
         monoRepoPreset: 'Mono-dépôt',
         monoRepoDetails: 'Un dépôt pour tous les composants.',
         repositoriesUnavailable: 'Les dépôts ne sont pas encore disponibles.',
+        repository: 'Dépôt',
+        chooseRepository: 'Choisir un dépôt',
+        basePath: 'Chemin de base',
         back: 'Retour',
         continueTools: 'Continuer : outils',
         continueEnvironments: 'Continuer : environnements',
@@ -73,7 +77,7 @@ class StaticTranslationLoader implements TranslocoLoader {
   }
 }
 
-function renderWizard(draft: unknown = null, saveFails = false) {
+function renderWizard(draft: unknown = null, saveFails = false, gitConnections: unknown[] = []) {
   const service = {
     loadDraft: vi.fn().mockReturnValue(of(draft)),
     loadMetadata: vi.fn().mockReturnValue(
@@ -101,12 +105,14 @@ function renderWizard(draft: unknown = null, saveFails = false) {
   const organizations = {
     get: vi.fn().mockReturnValue(of({ id: organizationId, name: 'Contoso' })),
   };
+  const connections = { list: vi.fn().mockReturnValue(of(gitConnections)) };
   const router = { navigateByUrl: vi.fn(), navigate: vi.fn() };
 
   return render(ProjectWizard, {
     providers: [
       { provide: ProjectWizardService, useValue: service },
       { provide: OrganizationsService, useValue: organizations },
+      { provide: GitConnectionsService, useValue: connections },
       {
         provide: ActivatedRoute,
         useValue: { snapshot: { paramMap: { get: () => organizationId } } },
@@ -127,6 +133,39 @@ function renderWizard(draft: unknown = null, saveFails = false) {
 }
 
 describe('ProjectWizard', () => {
+  it('offers only repositories open to all projects at publishing step five', async () => {
+    await renderWizard({
+      content: { step: 5, publishingPreset: 'MonoRepo' },
+      expiresAt: '2026-11-26T12:00:00Z',
+    }, false, [{
+      id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      name: 'Gitea',
+      providerKind: 'Gitea',
+      repositories: [
+        {
+          providerRepositoryId: 'contoso/shop',
+          name: 'shop',
+          defaultBranch: 'main',
+          openToAllProjects: true,
+          allowedProjectIds: [],
+        },
+        {
+          providerRepositoryId: 'contoso/private',
+          name: 'private',
+          defaultBranch: 'main',
+          openToAllProjects: false,
+          allowedProjectIds: [],
+        },
+      ],
+    }]);
+
+    expect(await screen.findByRole('heading', { name: 'Où publier les fichiers' })).toBeTruthy();
+    expect(screen.getByRole('option', { name: 'Gitea/shop' })).toBeTruthy();
+    expect(screen.queryByRole('option', { name: 'Gitea/private' })).toBeNull();
+    const repositorySelect = screen.getByLabelText<HTMLSelectElement>('Dépôt');
+    expect(repositorySelect.selectedOptions[0]?.textContent).toBe('Gitea/shop');
+  });
+
   it('offers only the Bicep and Azure DevOps tools for the pilot', async () => {
     const { service } = await renderWizard();
     fireEvent.input(await screen.findByLabelText('Nom'), { target: { value: 'Mon projet' } });

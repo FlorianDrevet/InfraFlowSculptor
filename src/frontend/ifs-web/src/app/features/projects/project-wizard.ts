@@ -18,6 +18,8 @@ import type {
   JsonElement,
   NamingPreviewResponse,
 } from '../../core/api/generated';
+import { GitConnectionsService } from '../../core/git-connections/git-connections.service';
+import type { GitConnectionResponse } from '../../core/api/generated';
 import { OrganizationsService } from '../../core/organizations/organizations.service';
 import type { ProjectWizardMetadata } from '../../core/projects/project-wizard-metadata';
 import { ProjectWizardService } from '../../core/projects/project-wizard.service';
@@ -33,6 +35,19 @@ type WizardEnvironment = {
   approvers: string;
   description: string;
 };
+type WizardPublishingDestination = {
+  gitConnectionId: string;
+  providerRepositoryId: string;
+  basePath: string;
+};
+type WizardPublishingOption = {
+  key: string;
+  gitConnectionId: string;
+  providerRepositoryId: string;
+  connectionName: string;
+  repositoryName: string;
+  provider: string;
+};
 type WizardState = {
   step: WizardStep;
   name: string;
@@ -44,6 +59,7 @@ type WizardState = {
   defaultNameTemplate: string;
   resourceGroupNameTemplate: string;
   publishingPreset: 'MonoRepo' | null;
+  publishingDestination: WizardPublishingDestination | null;
 };
 
 const COMPACT_DEFAULT_TEMPLATE = '{abbr}-{project}-{name}-{env}';
@@ -123,6 +139,7 @@ function createInitialState(): WizardState {
     defaultNameTemplate: COMPACT_DEFAULT_TEMPLATE,
     resourceGroupNameTemplate: COMPACT_RESOURCE_GROUP_TEMPLATE,
     publishingPreset: null,
+    publishingDestination: null,
   };
 }
 
@@ -172,6 +189,14 @@ function parseSavedState(content: JsonElement): WizardState {
   const namingPreset: NamingPreset =
     savedPreset === 'CAF' || savedPreset === 'Custom' ? savedPreset : 'Compact';
   const publishingPreset = content['publishingPreset'] === 'MonoRepo' ? 'MonoRepo' : null;
+  const destinationValue = content['publishingDestination'];
+  const publishingDestination = isJsonRecord(destinationValue)
+    ? {
+        gitConnectionId: stringValue(destinationValue['gitConnectionId'], ''),
+        providerRepositoryId: stringValue(destinationValue['providerRepositoryId'], ''),
+        basePath: stringValue(destinationValue['basePath'], ''),
+      }
+    : null;
 
   return {
     step: Math.min(6, Math.max(1, savedStep)) as WizardStep,
@@ -187,6 +212,7 @@ function parseSavedState(content: JsonElement): WizardState {
       initial.resourceGroupNameTemplate,
     ),
     publishingPreset,
+    publishingDestination,
   };
 }
 
@@ -201,6 +227,7 @@ export class ProjectWizard implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly organizations = inject(OrganizationsService);
+  private readonly gitConnections = inject(GitConnectionsService);
   private readonly wizard = inject(ProjectWizardService);
   private saveTimer?: ReturnType<typeof setTimeout>;
   private previewTimer?: ReturnType<typeof setTimeout>;
@@ -226,6 +253,7 @@ export class ProjectWizard implements OnInit, OnDestroy {
   protected readonly organizationName = signal('');
   protected readonly catalogVersion = signal('');
   protected readonly regions = signal<CatalogRegion[]>([]);
+  protected readonly publishingOptions = signal<WizardPublishingOption[]>([]);
   protected readonly draftSaved = signal(false);
 
   ngOnInit(): void {
@@ -253,16 +281,35 @@ export class ProjectWizard implements OnInit, OnDestroy {
     }
 
     try {
-      const [draft, metadata, organization] = await Promise.all([
+      const [draft, metadata, organization, gitConnections] = await Promise.all([
         firstValueFrom(this.wizard.loadDraft()),
         firstValueFrom(this.wizard.loadMetadata()),
         firstValueFrom(this.organizations.get(this.organizationId)),
+        firstValueFrom(this.gitConnections.list(this.organizationId)).catch(() => [] as GitConnectionResponse[]),
       ]);
       this.metadata = metadata;
       this.organizationName.set(organization.name);
       this.catalogVersion.set(metadata.catalogVersion);
       this.regions.set(metadata.regions);
-      this.state.set(draft ? parseSavedState(draft.content) : createInitialState());
+      const options = this.openRepositories(gitConnections);
+      this.publishingOptions.set(options);
+      const draftState = draft ? parseSavedState(draft.content) : createInitialState();
+      const savedDestination = draftState.publishingDestination;
+      const savedOptionExists = savedDestination && options.some(option =>
+        option.gitConnectionId === savedDestination.gitConnectionId
+          && option.providerRepositoryId === savedDestination.providerRepositoryId);
+      this.state.set({
+        ...draftState,
+        publishingDestination: savedOptionExists
+          ? savedDestination
+          : draftState.publishingPreset === 'MonoRepo' && options[0]
+            ? {
+                gitConnectionId: options[0].gitConnectionId,
+                providerRepositoryId: options[0].providerRepositoryId,
+                basePath: '',
+              }
+            : null,
+      });
       this.draftSaved.set(draft !== null);
       this.ready.set(true);
       this.loading.set(false);
@@ -399,15 +446,56 @@ export class ProjectWizard implements OnInit, OnDestroy {
   }
 
   protected async skipPublishing(): Promise<void> {
-    const nextState = { ...this.state(), publishingPreset: null, step: 6 as const };
+    const nextState = { ...this.state(), publishingPreset: null, publishingDestination: null, step: 6 as const };
     if (await this.persistDraft(nextState)) {
       this.state.set(nextState);
     }
   }
 
   protected async selectPublishingPreset(): Promise<void> {
-    this.setState({ ...this.state(), publishingPreset: 'MonoRepo' });
+    const state = this.state();
+    const option = this.publishingOptions()[0];
+    this.setState({
+      ...state,
+      publishingPreset: 'MonoRepo',
+      publishingDestination: state.publishingDestination ?? (option
+        ? { gitConnectionId: option.gitConnectionId, providerRepositoryId: option.providerRepositoryId, basePath: '' }
+        : null),
+    });
     await this.persistDraft();
+  }
+
+  protected publishingRepositoryKey(): string {
+    const destination = this.state().publishingDestination;
+    return destination
+      ? `${destination.gitConnectionId}\u001f${destination.providerRepositoryId}`
+      : '';
+  }
+
+  protected updatePublishingRepository(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) return;
+    const option = this.publishingOptions().find(candidate => candidate.key === target.value);
+    const current = this.state();
+    this.setState({
+      ...current,
+      publishingDestination: option
+        ? {
+            gitConnectionId: option.gitConnectionId,
+            providerRepositoryId: option.providerRepositoryId,
+            basePath: current.publishingDestination?.basePath ?? '',
+          }
+        : null,
+    });
+  }
+
+  protected updatePublishingBasePath(value: string | undefined): void {
+    const current = this.state();
+    if (!current.publishingDestination) return;
+    this.setState({
+      ...current,
+      publishingDestination: { ...current.publishingDestination, basePath: value ?? '' },
+    });
   }
 
   protected async exitAssistant(): Promise<void> {
@@ -469,6 +557,9 @@ export class ProjectWizard implements OnInit, OnDestroy {
           })),
           tags: {},
           publishingPreset: state.publishingPreset,
+          publishingDestination: state.publishingPreset && state.publishingDestination
+            ? state.publishingDestination
+            : null,
         }),
       );
       this.createdProject.set(result);
@@ -609,7 +700,22 @@ export class ProjectWizard implements OnInit, OnDestroy {
       defaultNameTemplate: state.defaultNameTemplate,
       resourceGroupNameTemplate: state.resourceGroupNameTemplate,
       publishingPreset: state.publishingPreset,
+      publishingDestination: state.publishingDestination,
     };
+  }
+
+  private openRepositories(connections: GitConnectionResponse[]): WizardPublishingOption[] {
+    return connections.flatMap(connection => connection.repositories
+      .filter(repository => repository.openToAllProjects)
+      .map(repository => ({
+        key: `${connection.id}\u001f${repository.providerRepositoryId}`,
+        gitConnectionId: connection.id,
+        providerRepositoryId: repository.providerRepositoryId,
+        connectionName: connection.name,
+        repositoryName: repository.name,
+        provider: connection.providerKind,
+      })))
+      .sort((first, second) => `${first.connectionName}/${first.repositoryName}`.localeCompare(`${second.connectionName}/${second.repositoryName}`));
   }
 
   private async refreshPreview(): Promise<NamingPreviewResponse | null> {

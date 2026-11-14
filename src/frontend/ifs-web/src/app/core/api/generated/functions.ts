@@ -95,6 +95,10 @@ export type { RemoveProjectRole$Params as RemoveProjectRole$Params } from './fn/
 export { removeProjectRole as removeProjectRole } from './fn/projects/remove-project-role';
 export type { TakeProjectOwnership$Params as TakeProjectOwnership$Params } from './fn/projects/take-project-ownership';
 export { takeProjectOwnership as takeProjectOwnership } from './fn/projects/take-project-ownership';
+export type { GetProjectPublishPlan$Params as GetProjectPublishPlan$Params } from './fn/projects/get-project-publish-plan';
+export { getProjectPublishPlan as getProjectPublishPlan } from './fn/projects/get-project-publish-plan';
+export type { SetProjectPublishPlan$Params as SetProjectPublishPlan$Params } from './fn/projects/set-project-publish-plan';
+export { setProjectPublishPlan as setProjectPublishPlan } from './fn/projects/set-project-publish-plan';
 export type { GetWizardDraft$Params as GetWizardDraft$Params } from './fn/projects/get-wizard-draft';
 export { getWizardDraft as getWizardDraft } from './fn/projects/get-wizard-draft';
 export type { SaveWizardDraft$Params as SaveWizardDraft$Params } from './fn/projects/save-wizard-draft';

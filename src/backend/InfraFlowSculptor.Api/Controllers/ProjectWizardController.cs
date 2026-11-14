@@ -111,7 +111,13 @@ public static class ProjectWizardController
                     request.ResourceGroupNameTemplate,
                     environments,
                     request.Tags ?? new Dictionary<string, string>(),
-                    request.PublishingPreset);
+                    request.PublishingPreset,
+                    request.PublishingDestination is null
+                        ? null
+                        : new CreateProjectFromWizardDestination(
+                            request.PublishingDestination.GitConnectionId,
+                            request.PublishingDestination.ProviderRepositoryId,
+                            request.PublishingDestination.BasePath));
                 var result = await executor.ExecuteAsync([command], ModelCommandMode.Apply, cancellationToken);
                 return result.Match<IResult>(
                     _ => Results.Created(

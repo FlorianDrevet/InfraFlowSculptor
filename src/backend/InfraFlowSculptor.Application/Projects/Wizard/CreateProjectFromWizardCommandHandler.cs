@@ -8,6 +8,7 @@ using InfraFlowSculptor.Catalog;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.OrganizationAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
+using InfraFlowSculptor.Domain.GitConnectionAggregate;
 using InfraFlowSculptor.Domain.UserProfileAggregate;
 using InfraFlowSculptor.Engine.Model;
 using InfraFlowSculptor.Engine.Links;
@@ -117,6 +118,38 @@ public sealed class CreateProjectFromWizardCommandHandler(
         if (publishing.IsError)
         {
             return publishing.Errors;
+        }
+
+        if (command.PublishingDestination is { } selectedDestination)
+        {
+            var connection = await dbContext.Query<GitConnectionAggregate>()
+                .Include(candidate => candidate.Repositories)
+                .SingleOrDefaultAsync(candidate => candidate.Id == new GitConnectionId(selectedDestination.GitConnectionId), cancellationToken);
+            var repository = connection?.Repositories.SingleOrDefault(candidate =>
+                string.Equals(candidate.ProviderRepositoryId, selectedDestination.ProviderRepositoryId, StringComparison.OrdinalIgnoreCase));
+            if (repository is null || !repository.OpenToAllProjects)
+            {
+                return Error.Validation(
+                    PublishValidationCodes.Destination,
+                    "L’assistant ne peut proposer que les dépôts ouverts à tous les projets de l’organisation.");
+            }
+
+            var destinationId = Guid.CreateVersion7();
+            var publicationPlan = project.ConfigurePublicationPlan(new PublishPlanConfiguration(
+                PublishPreset.MonoRepo,
+                [new PublishPlanDestinationInput(
+                    destinationId,
+                    selectedDestination.GitConnectionId,
+                    selectedDestination.ProviderRepositoryId,
+                    selectedDestination.BasePath)],
+                [],
+                destinationId,
+                destinationId,
+                destinationId));
+            if (publicationPlan.IsError)
+            {
+                return publicationPlan.Errors;
+            }
         }
 
         var tags = project.SetTags(command.Tags);

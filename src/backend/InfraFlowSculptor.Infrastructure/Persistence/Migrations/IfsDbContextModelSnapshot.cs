@@ -827,11 +827,6 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
 
-                    b.Property<string>("PublishingPreset")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("publishing_preset");
-
                     b.Property<string>("ResourceGroupNameTemplate")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -2505,6 +2500,124 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_projects_organizations_organization_id");
 
+                    b.OwnsOne("InfraFlowSculptor.Domain.ProjectAggregate.PublishPlan", "PublicationPlan", b1 =>
+                        {
+                            b1.Property<Guid>("ProjectAggregateId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<Guid?>("DefaultApplicationsDestinationId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("publish_default_applications_destination_id");
+
+                            b1.Property<Guid?>("DefaultInfrastructureDestinationId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("publish_default_infrastructure_destination_id");
+
+                            b1.Property<Guid?>("DefaultSourceCodeDestinationId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("publish_default_source_code_destination_id");
+
+                            b1.Property<string>("Preset")
+                                .IsRequired()
+                                .ValueGeneratedOnAdd()
+                                .HasMaxLength(32)
+                                .HasColumnType("character varying(32)")
+                                .HasDefaultValue("MonoRepo")
+                                .HasColumnName("publishing_preset");
+
+                            b1.HasKey("ProjectAggregateId");
+
+                            b1.ToTable("projects");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProjectAggregateId")
+                                .HasConstraintName("fk_projects_projects_id");
+
+                            b1.OwnsMany("InfraFlowSculptor.Domain.ProjectAggregate.PublishPlanAssignment", "Assignments", b2 =>
+                                {
+                                    b2.Property<Guid>("ProjectId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("project_id");
+
+                                    b2.Property<Guid>("ComponentId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("component_id");
+
+                                    b2.Property<string>("Part")
+                                        .HasMaxLength(32)
+                                        .HasColumnType("character varying(32)")
+                                        .HasColumnName("part");
+
+                                    b2.Property<Guid>("DestinationId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("destination_id");
+
+                                    b2.HasKey("ProjectId", "ComponentId", "Part")
+                                        .HasName("pk_publish_plan_assignments");
+
+                                    b2.ToTable("publish_plan_assignments", (string)null);
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ProjectId")
+                                        .HasConstraintName("fk_publish_plan_assignments_projects_project_id");
+                                });
+
+                            b1.OwnsMany("InfraFlowSculptor.Domain.ProjectAggregate.PublishPlanDestination", "Destinations", b2 =>
+                                {
+                                    b2.Property<Guid>("ProjectId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("project_id");
+
+                                    b2.Property<Guid>("Id")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("destination_id");
+
+                                    b2.Property<string>("BasePath")
+                                        .IsRequired()
+                                        .HasMaxLength(200)
+                                        .HasColumnType("character varying(200)")
+                                        .HasColumnName("base_path");
+
+                                    b2.Property<Guid>("GitConnectionId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("git_connection_id");
+
+                                    b2.Property<string>("ProviderRepositoryId")
+                                        .IsRequired()
+                                        .HasMaxLength(300)
+                                        .HasColumnType("character varying(300)")
+                                        .HasColumnName("provider_repository_id");
+
+                                    b2.HasKey("ProjectId", "Id")
+                                        .HasName("pk_publish_plan_destinations");
+
+                                    b2.HasIndex("GitConnectionId")
+                                        .HasDatabaseName("ix_publish_plan_destinations_git_connection_id");
+
+                                    b2.HasIndex("ProjectId", "GitConnectionId", "ProviderRepositoryId", "BasePath")
+                                        .IsUnique()
+                                        .HasDatabaseName("ux_publish_plan_destinations_repository_path");
+
+                                    b2.ToTable("publish_plan_destinations", (string)null);
+
+                                    b2.HasOne("InfraFlowSculptor.Domain.GitConnectionAggregate.GitConnectionAggregate", null)
+                                        .WithMany()
+                                        .HasForeignKey("GitConnectionId")
+                                        .OnDelete(DeleteBehavior.Restrict)
+                                        .IsRequired()
+                                        .HasConstraintName("fk_publish_plan_destinations_git_connections_git_connection_id");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ProjectId")
+                                        .HasConstraintName("fk_publish_plan_destinations_projects_project_id");
+                                });
+
+                            b1.Navigation("Assignments");
+
+                            b1.Navigation("Destinations");
+                        });
+
                     b.OwnsMany("InfraFlowSculptor.Domain.OrganizationAggregate.ProjectRoleAssignment", "RoleAssignments", b1 =>
                         {
                             b1.Property<Guid>("ProjectId")
@@ -2718,6 +2831,9 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.Navigation("Environments");
 
                     b.Navigation("NamingOverrides");
+
+                    b.Navigation("PublicationPlan")
+                        .IsRequired();
 
                     b.Navigation("RoleAssignments");
 

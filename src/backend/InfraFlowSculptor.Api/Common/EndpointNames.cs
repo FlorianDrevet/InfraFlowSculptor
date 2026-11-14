@@ -37,6 +37,8 @@ public static class EndpointNames
     public const string SaveWizardDraft = "SaveWizardDraft";
     public const string DiscardWizardDraft = "DiscardWizardDraft";
     public const string CreateProjectFromWizard = "CreateProjectFromWizard";
+    public const string GetProjectPublishPlan = "GetProjectPublishPlan";
+    public const string SetProjectPublishPlan = "SetProjectPublishPlan";
     public const string PreviewNaming = "PreviewNaming";
     public const string GetProjectNaming = "GetProjectNaming";
     public const string SetProjectNaming = "SetProjectNaming";

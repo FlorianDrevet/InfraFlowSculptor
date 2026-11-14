@@ -1,6 +1,7 @@
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.Common.Security;
 using InfraFlowSculptor.Domain.OrganizationAggregate;
+using InfraFlowSculptor.Domain.ProjectAggregate;
 using Project = InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate;
 using Xunit;
 
@@ -16,6 +17,27 @@ public sealed class ProjectAggregateTests
 
         Assert.True(project.HasRole(creatorId, ProjectRole.Owner));
         Assert.Contains(Permission.ProjectAdminister, project.EffectivePermissions(creatorId));
+    }
+
+    [Fact]
+    public void ConfigurePublicationPlanAdvancesProjectVersionWithoutChangingModelVersion()
+    {
+        var project = CreateProject(new UserProfileId(Guid.NewGuid()));
+        var initialVersion = project.Version;
+        var initialModelVersion = project.ModelVersion;
+        var destinationId = Guid.NewGuid();
+
+        var result = project.ConfigurePublicationPlan(new PublishPlanConfiguration(
+            PublishPreset.MonoRepo,
+            [new PublishPlanDestinationInput(destinationId, Guid.NewGuid(), "contoso/shop", string.Empty)],
+            [],
+            destinationId,
+            destinationId,
+            destinationId));
+
+        Assert.False(result.IsError);
+        Assert.Equal(initialVersion + 1, project.Version);
+        Assert.Equal(initialModelVersion, project.ModelVersion);
     }
 
     [Theory]
@@ -224,7 +246,7 @@ public sealed class ProjectAggregateTests
         Assert.Equal("Compact", project.NamingPreset);
         Assert.Equal("{abbr}-{project}-{name}-{env}", project.DefaultNameTemplate);
         Assert.Equal("rg-{project}-{component}-{name}-{env}", project.ResourceGroupNameTemplate);
-        Assert.Null(project.PublishingPreset);
+        Assert.Equal("MonoRepo", project.PublishingPreset);
     }
 
     [Fact]
@@ -241,6 +263,20 @@ public sealed class ProjectAggregateTests
         Assert.Equal("{name}-{region}", project.DefaultNameTemplate);
         Assert.Equal("rg-{name}-{region}", project.ResourceGroupNameTemplate);
         Assert.Equal("MonoRepo", project.PublishingPreset);
+    }
+
+    [Theory]
+    [InlineData("MonoRepo")]
+    [InlineData("InfrastructureAndCodeSeparated")]
+    [InlineData("OneRepositoryPerComponent")]
+    public void ConfigurePublishingAcceptsEveryPresetRepresentedByThePlan(string preset)
+    {
+        var project = CreateProject(new UserProfileId(Guid.NewGuid()));
+
+        var result = project.ConfigurePublishing(preset);
+
+        Assert.False(result.IsError);
+        Assert.Equal(preset, project.PublishingPreset);
     }
 
     [Fact]
