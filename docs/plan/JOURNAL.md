@@ -132,3 +132,6 @@
 | 2026-11-13 23:36 | Codex | `J0-24` recette autonome à exécuter |  |
 | 2026-11-13 23:36 | Codex | `J0-24` reprise après recette autonome vérifiée |  |
 | 2026-11-13 23:37 | Codex | `J0-24` terminée | commit `d061225` |
+| 2026-11-14 01:36 | Codex | `J0-25` recette autonome à exécuter |  |
+| 2026-11-14 03:25 | Codex | `J0-25` reprise après recette autonome vérifiée |  |
+| 2026-11-14 03:28 | Codex | `J0-25` terminée | commit `25dde93` |

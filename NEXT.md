@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-25`](docs/plan/02-jalon-0-pilote.md#j0-25--export-du-modèle-et-sortie-autonome) — Export du modèle et sortie autonome |
-| **Statut** | `EN_COURS` |
-| **Dernière étape terminée** | [`J0-24`](docs/plan/02-jalon-0-pilote.md#j0-24--révisions--génération-asynchrone-contrôles-de-sortie-consultation) — Révisions : génération asynchrone, contrôles de sortie, consultation (commit `d061225`) |
-| **Étape suivante** | `R-06` — Revue de la génération |
+| **Étape courante** | [`R-06`](docs/plan/02-jalon-0-pilote.md#-r-06--revue-de-la-génération) — Revue de la génération |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`J0-25`](docs/plan/02-jalon-0-pilote.md#j0-25--export-du-modèle-et-sortie-autonome) — Export du modèle et sortie autonome (commit `25dde93`) |
+| **Étape suivante** | `J0-26` — Connexions git |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-generation` (créée depuis `origin/impl/j0-modele`, segment empilé après R-05) |
 | **Dernière mise à jour** | 2026-11-14 — Codex |
