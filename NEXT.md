@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-27`](docs/plan/02-jalon-0-pilote.md#j0-27--plan-de-publication) — Plan de publication |
+| **Étape courante** | [`J0-28`](docs/plan/02-jalon-0-pilote.md#j0-28--publication-par-pull-request) — Publication par pull request |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-26`](docs/plan/02-jalon-0-pilote.md#j0-26--connexions-git) — Connexions git (commit `531812f`) |
-| **Étape suivante** | `J0-28` — Publication par pull request |
+| **Dernière étape terminée** | [`J0-27`](docs/plan/02-jalon-0-pilote.md#j0-27--plan-de-publication) — Plan de publication (commit `8f74b63`) |
+| **Étape suivante** | `R-07` — Revue de la publication |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-publication` (créée depuis `origin/impl/j0-generation`, segment empilé après R-06) |
 | **Dernière mise à jour** | 2026-11-14 — Codex |
@@ -47,6 +47,10 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 | Bicep CLI | `0.47.16` | Oui (`0.47.16`) |
 | Git / GitHub CLI | présence | Oui (`2.45.1` / `2.92.0`) |
 
+## Reprise J0-27 — 2026-11-14
+
+J0-27 est livrée dans le commit `8f74b63` : agrégat relationnel du plan, endpoints GET/PUT, moteur de répartition `PublishLayout`, écran Publication et suggestion du dépôt à l'étape 5 de l'assistant. Recette locale ciblée passée 2/2 (1440×900 et 390×844) : le plan Gitea `shop` à la racine est relu, l'accès reste limité au projet `shop` et l'incompatibilité Gitea/Azure Pipelines affiche `VAL-PIP-COMPATIBILITE` comme prévu par RG-PUB-19. Backend Release strict sans avertissement/erreur; suite .NET hors Acceptance 876 réussis/4 ignorés. Le testhost Acceptance a été interrompu après plusieurs minutes au démarrage Aspire. Frontend : 214 tests Angular + 13 auxiliaires, lint/i18n 992 clés, OpenAPI 219 modèles/10 services et build réussis avec budgets existants. E2E global : 31/40 (7 échecs, 2 ignorés); après correction du scénario Publication mobile dépendant d'un brouillon partagé, le ciblé repasse 2/2, mais la suite complète n'a pas été relancée. Les autres limites (`shop15`, données de constats, GET `/delete-impact`) sont détaillées avec les résultats dans `docs/plan/recettes/suivi.md`. Captures et comparaison `ProjectPublishPlan` dans `docs/plan/revues/captures/R-07/`; Graphify actualisé. AppHost Aspire/Podman laissé actif, volumes conservés; aucun coût Azure.
+
 ## Reprise J0-26 — 2026-11-14
 
 Recette locale validée : Alice teste Gitea, voit `shop`, `shop-infra` et `shop-app`, puis ouvre le seul dépôt `shop` au projet `shop`. La connexion Azure DevOps PAT de lecture est testée, son échéance à dix jours est visible et le contrôle d'expiration remet une alerte dans MailPit. E2E ciblé 2/2 en 1440×900 et 390×844; captures comparées à OrgConnections. Backend Release strict sans avertissement, suite .NET 853 réussis/4 ignorés; frontend 224, lint/i18n 967 clés, OpenAPI 208 modèles/10 services et build réussis avec budgets existants. La suite E2E complète fait 32/38 : `links` ne trouve pas `shop15`, `project-findings` diverge de la fixture, `resources` expire sur GET `/delete-impact`; détails dans `docs/plan/recettes/suivi.md`. Aucun coût Azure. L'AppHost Aspire/Podman reste lancé.
@@ -63,6 +67,7 @@ La recette manuelle G1–G6 est exécutée et consignée dans `docs/plan/recette
 
 | Élément | État | Depuis |
 |---|---|---|
+| Recette locale J0-27 | Plan du projet `shop` sauvegardé vers le dépôt Gitea `shop`, à la racine; l'accès dépôt est limité au projet `shop`. Les comptes Keycloak locaux Alice, Chloé, David et Nina ont été réinitialisés avec le même mot de passe aléatoire pour l'E2E; sa valeur n'est conservée ni dans le dépôt ni dans les journaux. | 2026-11-14 |
 | Image Worker locale sous Podman | `ifs-worker:j0-24` construite depuis l'arbre de travail avec le contexte racine; UID non privilégié et Bicep 0.47.16, PowerShell 7.5.0, PSScriptAnalyzer 1.25.0, powershell-yaml 0.4.12 vérifiés. Image locale non publiée, distincte du Worker .NET lancé par l'AppHost. | 2026-11-13 |
 | AppHost local IFS sous Podman | L'AppHost `InfraFlowSculptor.AppHost.csproj` est lancé par Aspire; API et Web sont sains, Worker est en exécution après rebuild. Les volumes persistants existants sont conservés. | 2026-11-14 |
 | Recette J0-26 locale | Une connexion Gitea et la connexion Azure DevOps de test sont conservées dans la base locale; le PAT de test, `vso.code` en lecture seule limité à l'organisation, est stocké par l'application et expire le 2026-11-24. Sa valeur est absente du dépôt et des journaux. Le dépôt `shop` est affecté au seul projet `shop`. Aucun service Azure facturable créé. | 2026-11-14 |
