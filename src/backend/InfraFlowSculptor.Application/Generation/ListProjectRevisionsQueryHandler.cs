@@ -27,18 +27,22 @@ public sealed class ListProjectRevisionsQueryHandler(IIfsDbContext dbContext)
             .Where(revision => revision.ProjectId == projectId)
             .OrderByDescending(revision => revision.Number)
             .ToArrayAsync(cancellationToken);
-        var queuedRevisions = revisions
-            .Where(revision => revision.State == RevisionState.Queued)
+        var queuedPositions = await dbContext.Query<RevisionAggregate>()
+            .Where(revision => revision.OrganizationId == project.OrganizationId
+                && revision.State == RevisionState.Queued)
             .OrderBy(revision => revision.CreatedAt)
             .ThenBy(revision => revision.Number)
-            .Select((revision, index) => (revision.Id, Position: index + 1))
-            .ToDictionary(entry => entry.Id, entry => entry.Position);
+            .Select(revision => revision.Id)
+            .ToArrayAsync(cancellationToken);
+        var queuePositionById = queuedPositions
+            .Select((revisionId, index) => (RevisionId: revisionId, Position: index + 1))
+            .ToDictionary(entry => entry.RevisionId, entry => entry.Position);
 
         var items = revisions.Select(revision => new RevisionView(
                 revision,
                 IsStale(revision, project),
                 revision.State == RevisionState.Queued
-                    ? queuedRevisions[revision.Id]
+                    ? GetQueuePosition(revision.Id, queuePositionById)
                     : null))
             .ToArray();
 
@@ -50,4 +54,7 @@ public sealed class ListProjectRevisionsQueryHandler(IIfsDbContext dbContext)
         || !string.Equals(revision.CatalogVersion, project.CatalogVersion, StringComparison.Ordinal)
         || !string.Equals(revision.InfrastructureLanguage, project.InfrastructureLanguage, StringComparison.Ordinal)
         || !string.Equals(revision.CiPlatform, project.CiPlatform, StringComparison.Ordinal);
+
+    internal static int? GetQueuePosition(RevisionId revisionId, IReadOnlyDictionary<RevisionId, int> queuePositionById) =>
+        queuePositionById.TryGetValue(revisionId, out var position) ? position : null;
 }

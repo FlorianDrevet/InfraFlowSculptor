@@ -48,6 +48,23 @@ public sealed class RevisionAggregateTests
         Assert.Throws<InvalidOperationException>(() => revision.MarkPublished(DateTimeOffset.UtcNow));
     }
 
+    [Fact]
+    public void QueueRejectsHashWithTrailingLineFeed()
+    {
+        Assert.Throws<ArgumentException>(() => Revision.Queue(
+            new RevisionId(Guid.NewGuid()),
+            new OrganizationId(Guid.NewGuid()),
+            new ProjectId(Guid.NewGuid()),
+            1,
+            new UserKey(Guid.NewGuid(), Guid.NewGuid()),
+            DateTimeOffset.UtcNow,
+            1,
+            "2026.10-pilot.6",
+            "Bicep",
+            "AzureDevOps",
+            new string('a', 64) + "\n"));
+    }
+
     private static Revision CreateRevision() => Revision.Queue(
         new RevisionId(Guid.NewGuid()),
         new OrganizationId(Guid.NewGuid()),

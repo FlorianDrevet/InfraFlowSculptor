@@ -154,7 +154,9 @@ public sealed class AzureDevOpsPipelineEmitter(StepTranslatorRegistry stepTransl
         writer.WriteLine($"    - {DefaultBranch}");
         writer.WriteLine("  paths:");
         writer.WriteLine("    include:");
-        writer.WriteLine($"    - {application.CodeSourcePath}/**");
+        var codeSourcePath = application.CodeSourcePath + "/**";
+        var serializedCodeSourcePath = QuoteYamlScalarIfNeeded(codeSourcePath);
+        writer.WriteLine($"    - {serializedCodeSourcePath}");
         writer.WriteLine($"    - {component.ComponentCode}/apps/{application.Name}/**");
         writer.WriteLine("    - .ifs/templates/**");
         writer.WriteLine("    - .ifs/pins.json");
@@ -387,5 +389,23 @@ public sealed class AzureDevOpsPipelineEmitter(StepTranslatorRegistry stepTransl
     }
 
     private static string Quote(string value) => $"'{value.Replace("'", "''", StringComparison.Ordinal)}'";
+
+    private static string QuoteYamlScalarIfNeeded(string value)
+    {
+        if (value.Length == 0
+            || char.IsWhiteSpace(value[0])
+            || char.IsWhiteSpace(value[^1])
+            || value.Contains('#', StringComparison.Ordinal)
+            || value.Contains(": ", StringComparison.Ordinal)
+            || value.EndsWith(':')
+            || value[0] is '[' or '{' or '&' or '*' or '!' or '|' or '>' or '\'' or '"' or '%' or '@' or '`'
+            || ((value[0] is '-' or '?' or ':') && (value.Length == 1 || char.IsWhiteSpace(value[1])))
+        )
+        {
+            return Quote(value);
+        }
+
+        return value;
+    }
 
 }

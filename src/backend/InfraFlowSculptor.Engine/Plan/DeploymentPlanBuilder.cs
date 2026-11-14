@@ -531,7 +531,8 @@ public sealed class DeploymentPlanBuilder(
         {
             var attached = identity.AttachedIdentityResourceId is { } attachedId
                 && resourcesById.TryGetValue(attachedId, out var attachedEntry)
-                    ? GetName(naming, attachedEntry.Resource.Id, target.Id)
+                    ? GetName(naming, attachedEntry.Resource.Id,
+                        FindTargetId(snapshot, attachedEntry.Component, target.Code) ?? target.Id)
                     : null;
             identities.Add(new ResourceIdentityPlan(
                 identity.Kind == LinkIdentityKind.System ? "systemAssigned" : "userAssigned",
@@ -551,7 +552,8 @@ public sealed class DeploymentPlanBuilder(
         {
             identities.Add(new ResourceIdentityPlan(
                 "userAssigned",
-                GetName(naming, defaultIdentityId, target.Id) is { Length: > 0 } identityName
+                GetName(naming, defaultIdentityId,
+                    FindTargetId(snapshot, defaultIdentity.Component, target.Code) ?? target.Id) is { Length: > 0 } identityName
                     ? identityName
                     : defaultIdentity.Resource.LogicalName,
                 BuildResourceIdForReference(defaultIdentityId, target.Code, snapshot, resourcesById, descriptors, naming),
@@ -840,8 +842,14 @@ public sealed class DeploymentPlanBuilder(
             }
 
             var serverDescriptor = descriptors[serverEntry.Resource.Type];
-            var serverName = GetName(naming, serverEntry.Resource.Id, serverTarget.Target.Id);
-        var serverSuffix = serverDescriptor.Definition.GetProperty("naming").GetProperty("availabilityDomain").GetString()
+            var serverName = serverEntry.Resource.IsExisting
+                ? ExtractName(serverEntry.Resource.ExistingIds.GetValueOrDefault(serverTarget.Target.Id))
+                    ?? GetName(naming, serverEntry.Resource.Id, serverTarget.Target.Id)
+                : GetName(naming, serverEntry.Resource.Id, serverTarget.Target.Id);
+            var databaseName = databaseEntry.Resource.IsExisting
+                ? ExtractName(databaseEntry.Resource.ExistingIds.GetValueOrDefault(databaseTarget.Target.Id))
+                : GetName(naming, databaseEntry.Resource.Id, databaseTarget.Target.Id);
+            var serverSuffix = serverDescriptor.Definition.GetProperty("naming").GetProperty("availabilityDomain").GetString()
                 ?? AzureSqlDnsSuffix;
             var principalResource = request.IdentityKind == LinkIdentityKind.UserAssigned && request.IdentityResourceId is { } userIdentityId
                 ? userIdentityId
@@ -857,7 +865,7 @@ public sealed class DeploymentPlanBuilder(
 
             var plan = new DataAccessPlan(
                 $"{serverName}.{serverSuffix}",
-                GetName(naming, databaseEntry.Resource.Id, databaseTarget.Target.Id) is { Length: > 0 } databaseName
+                databaseName is { Length: > 0 }
                     ? databaseName
                     : databaseEntry.Resource.LogicalName,
                 request.IdentityKind == LinkIdentityKind.System ? "systemAssigned" : "userAssigned",

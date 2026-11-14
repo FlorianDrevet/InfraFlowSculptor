@@ -10,7 +10,7 @@
 | | |
 |---|---|
 | **Étape courante** | [`R-06`](docs/plan/02-jalon-0-pilote.md#-r-06--revue-de-la-génération) — Revue de la génération |
-| **Statut** | `A_FAIRE` |
+| **Statut** | `EN_COURS` |
 | **Dernière étape terminée** | [`J0-25`](docs/plan/02-jalon-0-pilote.md#j0-25--export-du-modèle-et-sortie-autonome) — Export du modèle et sortie autonome (commit `25dde93`) |
 | **Étape suivante** | `J0-26` — Connexions git |
 | **Verrou** | aucun |

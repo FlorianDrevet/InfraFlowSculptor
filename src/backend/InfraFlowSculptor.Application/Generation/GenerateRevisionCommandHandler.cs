@@ -1,7 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
 using ErrorOr;
-using InfraFlowSculptor.Application.Common.Auditing;
 using InfraFlowSculptor.Application.Common.Jobs;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
@@ -18,7 +17,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InfraFlowSculptor.Application.Generation;
 
-[Audited(AuditActions.RevisionGenerationRequested, ObjectType.Revision)]
 public sealed class GenerateRevisionCommandHandler(
     IIfsDbContext dbContext,
     ModelSnapshotBuilder snapshotBuilder,

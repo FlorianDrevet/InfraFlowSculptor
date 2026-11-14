@@ -1,9 +1,10 @@
 # Généré par InfraFlowSculptor — projet {{PROJECT_CODE}}. Ne pas modifier : la prochaine publication remplacera ce fichier. Personnalisation : voir README.ifs.md.
+#requires -Version 7
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)] [string] $RepositoryRoot,
-    [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [string] $Application,
-    [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [string] $BuildId,
+    [Parameter(Mandatory)] [ValidatePattern('(?-i)\A[a-z][a-z0-9-]{1,39}\z')] [string] $Application,
+    [Parameter(Mandatory)] [ValidatePattern('\A[0-9]+\z')] [string] $BuildId,
     [Parameter(Mandatory)] [ValidateSet('CRITICAL', 'HIGH', 'MEDIUM', 'LOW')] [string] $MinimumSeverity,
     [AllowNull()] [AllowEmptyString()] [string] $Exceptions = ''
 )
@@ -12,7 +13,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $arguments = @('image', '--scanners', 'vuln')
-if (-not [string]::IsNullOrWhiteSpace($Exceptions)) {
+if ($null -ne $Exceptions -and $Exceptions -cne '') {
     if ($Exceptions -ne $Exceptions.Trim()) {
         throw 'Le chemin du fichier exceptions ne peut pas commencer ou finir par un espace.'
     }
@@ -60,7 +61,53 @@ if (-not [string]::IsNullOrWhiteSpace($Exceptions)) {
     $arguments += @('--ignorefile', $ignoreFile)
 }
 
-$arguments += @('--severity', $MinimumSeverity, '--exit-code', '1', '--format', 'table')
+$severitiesByMinimum = @{
+    CRITICAL = 'CRITICAL'
+    HIGH = 'CRITICAL,HIGH'
+    MEDIUM = 'CRITICAL,HIGH,MEDIUM'
+    LOW = 'CRITICAL,HIGH,MEDIUM,LOW'
+}
+$arguments += @('--image-src', 'docker', '--severity', $severitiesByMinimum[$MinimumSeverity], '--exit-code', '1', '--format', 'table')
 $image = 'ifs-app-{0}-{1}' -f $Application, $BuildId
-$output = @(& trivy @arguments $image 2>&1)
-if ($LASTEXITCODE -ne 0) { throw "Trivy a échoué pour $image : $($output -join ' ')" }
+$temporaryDirectory = Join-Path ([IO.Path]::GetTempPath()) ("ifs-image-scan-{0}" -f [guid]::NewGuid().ToString('N'))
+$previousTrivyConfig = [Environment]::GetEnvironmentVariable('TRIVY_CONFIG', 'Process')
+$previousTrivyIgnoreFile = [Environment]::GetEnvironmentVariable('TRIVY_IGNOREFILE', 'Process')
+[void][IO.Directory]::CreateDirectory($temporaryDirectory)
+$scanFailure = $null
+try {
+    [Environment]::SetEnvironmentVariable('TRIVY_CONFIG', $null, 'Process')
+    [Environment]::SetEnvironmentVariable('TRIVY_IGNOREFILE', $null, 'Process')
+    Push-Location -LiteralPath $temporaryDirectory
+    try {
+        $output = @(& trivy @arguments $image 2>&1)
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        Pop-Location
+    }
+
+    if ($exitCode -ne 0) { throw "Trivy a échoué pour $image :`n$($output -join [Environment]::NewLine)" }
+    $output | Write-Output
+}
+catch {
+    $scanFailure = $_.Exception
+    throw
+}
+finally {
+    try {
+        if ([IO.Directory]::Exists($temporaryDirectory)) {
+            Remove-Item -LiteralPath $temporaryDirectory -Recurse -Force
+        }
+    }
+    catch {
+        if ($null -eq $scanFailure) {
+            throw
+        }
+
+        $scanFailure.Data['TemporaryDirectoryCleanupFailure'] = $_.Exception
+    }
+    finally {
+        [Environment]::SetEnvironmentVariable('TRIVY_CONFIG', $previousTrivyConfig, 'Process')
+        [Environment]::SetEnvironmentVariable('TRIVY_IGNOREFILE', $previousTrivyIgnoreFile, 'Process')
+    }
+}

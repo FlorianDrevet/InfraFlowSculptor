@@ -210,6 +210,6 @@ public sealed partial class RevisionAggregate : AggregateRoot<RevisionId>, IOrga
         files.Clear();
     }
 
-    [GeneratedRegex("^[0-9a-f]{64}$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("\\A[0-9a-f]{64}\\z", RegexOptions.CultureInvariant)]
     private static partial Regex Sha256Pattern();
 }

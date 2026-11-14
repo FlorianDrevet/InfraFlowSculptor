@@ -2,10 +2,9 @@
 
 > Index léger (< 80 lignes). Le détail vit dans `.github/memory/`. Règles : [`memory-management`](.github/skills/memory-management/SKILL.md).
 > La mémoire décrit **ce qui existe** dans le dépôt ; la cible est dans `docs/technique/`, l'ordre dans `docs/plan/`.
-
 ## État
 
-- **2026-11-14** : J0-25 exporte `ifs-project/v1` avec lien privé temporaire et audit; build backend Release strict sans avertissement, suite .NET 781 réussis + 1 test CLI Bicep ignoré, frontend/lint/OpenAPI/build passent avec avertissements de budgets. G7 Alice desktop/mobile vérifie le JSON, l'absence de membres/secrets et l'audit; le test E2E du gap corrigé passe 2/2. Suite E2E complète : 30/36; `shop15` manque et le test ressources a expiré sur `/delete-impact`, détails dans `04-frontend.md` et `docs/plan/recettes/suivi.md`. L'AppHost Podman reste sain. Voir `.github/memory/03-domain-model.md`, `05-data-and-storage.md`, `08-runtime-and-orchestration.md`, `10-api-endpoints.md`.
+- **2026-11-14** : R-06 clôture J0-21 à J0-25. Backend Release strict 0/0 et suite .NET 847/847; ImageScan 26/26, pipelines YAML 26/26, Bicep 4 composants, déterminisme 80 fichiers. Recette G1–G7 et auto-revue validées; E2E 30/36 avec limites shop15 et /delete-impact. AppHost Podman sain, volumes conservés. Voir .github/memory/07-code-graph.md, 08-runtime-and-orchestration.md, 09-auth-and-build.md, 12-engine.md et docs/plan/recettes/suivi.md.
 - **2026-10-06** : S-01 à S-16 du socle sont implémentés (backend .NET 10, Aspire, PostgreSQL, Worker/outbox, Keycloak, Angular 22, Strata, OpenAPI, CI et observabilité). CI `37460726122` verte ; détails et écarts dans [`NEXT.md`](NEXT.md) et [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md).
 - **S-17 terminé le 2026-10-06** : mémoire, graphe local et guide « Démarrer » ajoutés. Le parcours clone neuf restait en attente dans [`NEXT.md`](NEXT.md), l'AppHost occupant les ports fixes ; R-01 était le verrou courant.
 - **2026-10-27** : preuves P1–P5/P7–P9 prototypées; le crochet `IFS_TEST_ABORT_AFTER` a été retiré de la sortie client. Voir `.github/memory/08-runtime-and-orchestration.md` et la revue R-03.
@@ -20,9 +19,7 @@
 - **2026-10-28** : J0-11 stocke les ressources et leurs valeurs imbriquées relationnellement, migre les anciennes colonnes JSONB vers `text` et interdit leur réintroduction. Détails et preuves dans `.github/memory/03-domain-model.md`, `05-data-and-storage.md` et `docs/plan/recettes/suivi.md`.
 - **2026-10-28** : J0-12 ajoute les résolveurs de cibles, présences, tags et valeurs effectives et leur route API. La suite Release passe 335/335; la recette Scalar locale confirme `dev=false` par surcharge et `prd=true` par valeur de ressource, puis supprime le projet de recette. Voir `.github/memory/12-engine.md`, `10-api-endpoints.md` et `docs/plan/recettes/suivi.md`.
 - **2026-10-28–29** : J0-13 ajoute le moteur de nommage; J0-14 livre l'interface des ressources, les métadonnées et la suppression à impact partiel; 376 tests .NET, 91 Angular et E2E desktop/mobile validés. RG-NOM-10 reste verrouillée jusqu'à J0-28. Voir `.github/memory/03-domain-model.md`, `04-frontend.md`, `10-api-endpoints.md`, `12-engine.md` et `docs/plan/recettes/suivi.md`.
-
 - **2026-10-29** : J0-15 termine les liaisons, le câblage moteur et les impacts. Claude a recommandé un catalogue correctif `2026.10-pilot.1` pour le seul projet temporaire `shop15`; `shop` reste sur `2026.10-pilot`. Recette Scalar locale passée, projet temporaire archivé de façon réversible, aucun changement Azure. Voir le déblocage J0-15 et les mémoires modèle, API et moteur.
-
 - **2026-10-29** : J0-16/17 terminent les paramètres applicatifs, puis l’exposition publique/restreinte, les plages CIDR et la projection typée par environnement. Le catalogue immuable `2026.10-pilot.2` conserve le correctif Access de `.1`; `shop15` est gardé comme fixture PostgreSQL locale sans coût Azure. Les validations J0-17 passent, et l’écran réseau sera vérifié dans J0-18. Voir `.github/memory/12-engine.md` et `docs/plan/recettes/suivi.md`.
 - **2026-10-29** : J0-20 implémente l'ordre, les constats, corrections et acquittements relationnels. Suite .NET 588/588; CI [40957874902](https://github.com/FlorianDrevet/InfraFlowSculptor/actions/runs/40957874902) verte, 32/32 E2E et captures desktop/mobile comparées. Aucun changement ni coût Azure. Voir les mémoires thématiques et `docs/plan/recettes/suivi.md`.
 - **2026-10-29** : préparation R-05 : AppHost et Keycloak locaux sains, connexion Alice confirmée; correction des dépendances DI du Worker vérifiée (Infrastructure.Tests 81/81, build Release strict). La recette manuelle M1–M13 reste à valider; un test de langue et une fixture locale persistante ont des écarts consignés dans `docs/plan/recettes/suivi.md`.
@@ -32,7 +29,6 @@
 - **2026-11-01** : J0-21 ajoute le plan de déploiement neutre, sa route API et les pins du catalogue; suite .NET Release 691/691 et validations frontend réussies. Recette Scalar partielle faute de fixture projet exploitable dans l'organisation active. Voir `.github/memory/12-engine.md` et `docs/plan/recettes/suivi.md`.
 - **2026-11-01** : correctif J0-21b transporte les diagnostics résolus dans `TargetPlan`; destinations locales/externes, valeurs standards pilote et limite `excludedCategories` documentées. Engine 221/221, test API ciblé 1/1. Voir `.github/memory/12-engine.md` et `docs/plan/revues/J0-21b-correctif-diagnostics-20261101.md`.
 - **2026-11-01** : J0-22 ajoute le catalogue immuable `.6`, les relations neutres dans le plan et l'émetteur Bicep déclaratif; parité exacte, suite backend 741 + 1 test CLI opt-in passé, build strict et recette Bicep réussis. Revue Sonnet finale après deux corrections TDD à reprendre après le renouvellement du quota CLI. Voir `.github/memory/12-engine.md` et la preuve J0-22.
-
 ## Fichiers thématiques
 
 - **2026-10-06** : S-08 ajoute le worker/outbox avec 57 tests verts et des conteneurs locaux persistants. S-09 ajoute Angular 22; connexion Keycloak Bob, `/v1/me`, déconnexion, session après rechargement et configuration runtime vérifiés. 57 tests .NET, 4 Python et 3 Angular passent; OIDC limite le bearer token à `/v1/`.
@@ -55,7 +51,6 @@
 | `.github/memory/13-integrations.md` | Entra, Azure DevOps, GitHub, e-mail |
 | `.github/memory/changelog.md` | Une ligne par mise à jour non triviale |
 | `.github/memory/dream-state.md` | État de consolidation de la mémoire |
-
 ## Repères
 
 1. Lire `NEXT.md` avant tout ; `python tools/plan/gate.py check` avant une étape. Codex exécute les recettes et auto-valide les verrous.

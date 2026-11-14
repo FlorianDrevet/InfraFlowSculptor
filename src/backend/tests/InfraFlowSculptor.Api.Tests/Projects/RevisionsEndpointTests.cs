@@ -4,11 +4,13 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using InfraFlowSculptor.Api.Configuration;
 using InfraFlowSculptor.Api.Tests.Common;
+using InfraFlowSculptor.Application.Common.Auditing;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Generation;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Domain.RevisionAggregate;
+using InfraFlowSculptor.Infrastructure.Authentication;
 using InfraFlowSculptor.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,6 +37,16 @@ public sealed class RevisionsEndpointTests(ApiFactory factory) : IClassFixture<A
         var first = await firstResponse.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(1, first.GetProperty("number").GetInt32());
         Assert.False(first.GetProperty("isUnchanged").GetBoolean());
+
+        using (var auditScope = factory.Services.CreateScope())
+        {
+            auditScope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>()
+                .Set(new OrganizationId(OrganizationId));
+            var audit = await auditScope.ServiceProvider.GetRequiredService<IfsDbContext>().AuditEvents
+                .SingleAsync(entry => entry.Action == AuditActions.RevisionGenerationRequested
+                    && entry.ProjectId == DemoDataSeeder.ShopProjectId.Value);
+            Assert.Equal("Revision", audit.ObjectType.ToString());
+        }
 
         using var listRequest = CreateRequest(HttpMethod.Get, path);
         using var listResponse = await client.SendAsync(listRequest);
@@ -87,6 +99,70 @@ public sealed class RevisionsEndpointTests(ApiFactory factory) : IClassFixture<A
         Assert.Equal("shop", frozenSnapshot.Project.Code);
         Assert.Equal("shop11", currentProject.Code);
         Assert.True(currentProject.ModelVersion > frozenInput.ModelVersion);
+    }
+
+    [Fact]
+    public async Task ListedQueuePositionIncludesEarlierRevisionsFromOtherProjectsInTheOrganization()
+    {
+        await SeedAsync(includeProjects: true, seedReferenceModel: false);
+        var now = DateTimeOffset.UtcNow;
+        using (var scope = factory.Services.CreateScope())
+        {
+            scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>()
+                .Set(new OrganizationId(OrganizationId));
+            var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+            var shop = await dbContext.Projects.IgnoreQueryFilters()
+                .SingleAsync(project => project.Id == DemoDataSeeder.ShopProjectId);
+            var owner = await dbContext.UserProfiles.SingleAsync(profile => profile.ObjectId == Guid.Parse(AliceObjectId));
+            var otherProject = ProjectAggregate.Create(
+                new ProjectId(Guid.NewGuid()),
+                new OrganizationId(OrganizationId),
+                "Queue Position Project",
+                "queuepos",
+                Guid.Parse(TenantId),
+                string.Empty,
+                shop.CatalogVersion,
+                owner.Id).Value;
+            dbContext.Projects.Add(otherProject);
+
+            var author = new UserKey(Guid.Parse(TenantId), Guid.Parse(AliceObjectId));
+            var earlierRevision = RevisionAggregate.Queue(
+                RevisionId.New(TimeProvider.System),
+                new OrganizationId(OrganizationId),
+                otherProject.Id,
+                1,
+                author,
+                now,
+                otherProject.ModelVersion,
+                otherProject.CatalogVersion,
+                otherProject.InfrastructureLanguage,
+                otherProject.CiPlatform,
+                new string('a', 64));
+            var listedRevision = RevisionAggregate.Queue(
+                RevisionId.New(TimeProvider.System),
+                new OrganizationId(OrganizationId),
+                shop.Id,
+                1,
+                author,
+                now.AddSeconds(1),
+                shop.ModelVersion,
+                shop.CatalogVersion,
+                shop.InfrastructureLanguage,
+                shop.CiPlatform,
+                new string('b', 64));
+            dbContext.Set<RevisionAggregate>().AddRange(earlierRevision, listedRevision);
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var request = CreateRequest(
+            HttpMethod.Get,
+            $"/v1/projects/{DemoDataSeeder.ShopProjectId.Value:D}/revisions");
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var listed = Assert.Single(body.GetProperty("items").EnumerateArray());
+        Assert.Equal(2, listed.GetProperty("queuePosition").GetInt32());
     }
 
     [Fact]

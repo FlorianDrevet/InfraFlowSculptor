@@ -56,10 +56,11 @@ public sealed class AzureDevOpsStepTranslator : IStepTranslator
     private static PipelineStepParameterTranslation? TranslateParameter(
         string stepName,
         CatalogPipelineStepDescriptor.ParameterDescriptor descriptor,
-        IReadOnlyDictionary<string, string> configuredParameters)
+        Dictionary<string, string> configuredParameters)
     {
-        var configured = configuredParameters.GetValueOrDefault(descriptor.Name);
-        var value = string.IsNullOrWhiteSpace(configured) ? descriptor.DefaultValue : configured;
+        var value = configuredParameters.TryGetValue(descriptor.Name, out var configured)
+            ? configured
+            : descriptor.DefaultValue;
         if (value is null)
         {
             throw new InvalidOperationException($"Catalog step '{stepName}' requires parameter '{descriptor.Name}'.");

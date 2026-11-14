@@ -256,7 +256,7 @@ public sealed class ApplicationPipelineTests
     }
 
     [Fact]
-    public void WhitespaceStepValueUsesTheCatalogDefault()
+    public void WhitespaceStepValueProducesFindingInsteadOfUsingCatalogDefault()
     {
         using var document = JsonDocument.Parse("""
             {
@@ -270,6 +270,57 @@ public sealed class ApplicationPipelineTests
             """);
         var configured = new ApplicationStepDefinition("CustomStep", true, true, ApplicationStepPosition.BeforeBuild,
         [new ApplicationStepParameter("command", "   ")]);
+
+        var findings = ApplicationStepValidator.Validate(
+            [configured],
+            [new InfraFlowSculptor.Catalog.CatalogPipelineStepDescriptor(document.RootElement)]);
+
+        Assert.Equal("VAL-APP-ETAPE", Assert.Single(findings).Code);
+    }
+
+    [Theory]
+    [InlineData("minimumSeverity", "")]
+    [InlineData("exceptions", " ")]
+    public void ExplicitEmptyOrWhitespaceValuesAreNotReplacedByCatalogDefaults(string parameterName, string value)
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "name": "ImageScan",
+              "labels": { "fr": "Scan de l’image", "en": "Image scan" },
+              "description": "Étape de test.",
+              "defaults": { "enabled": true, "blocking": true, "position": "afterBuild" },
+              "parameters": [
+                { "name": "minimumSeverity", "kind": "enum", "default": "CRITICAL", "values": ["CRITICAL", "HIGH"] },
+                { "name": "exceptions", "kind": "string", "default": "" }
+              ],
+              "pipeline": { "provider": "AzurePipelines", "template": ".ifs/templates/steps/ImageScan.yml" }
+            }
+            """);
+        var configured = new ApplicationStepDefinition("ImageScan", true, true, ApplicationStepPosition.AfterBuild,
+            [new ApplicationStepParameter(parameterName, value)]);
+
+        var finding = Assert.Single(ApplicationStepValidator.Validate(
+            [configured],
+            [new InfraFlowSculptor.Catalog.CatalogPipelineStepDescriptor(document.RootElement)]));
+
+        Assert.Equal("VAL-APP-ETAPE", finding.Code);
+    }
+
+    [Fact]
+    public void EmptyExceptionsValueRemainsValidForDisablingExceptions()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "name": "ImageScan",
+              "labels": { "fr": "Scan de l’image", "en": "Image scan" },
+              "description": "Étape de test.",
+              "defaults": { "enabled": true, "blocking": true, "position": "afterBuild" },
+              "parameters": [{ "name": "exceptions", "kind": "string", "default": "" }],
+              "pipeline": { "provider": "AzurePipelines", "template": ".ifs/templates/steps/ImageScan.yml" }
+            }
+            """);
+        var configured = new ApplicationStepDefinition("ImageScan", true, true, ApplicationStepPosition.AfterBuild,
+            [new ApplicationStepParameter("exceptions", string.Empty)]);
 
         var findings = ApplicationStepValidator.Validate(
             [configured],

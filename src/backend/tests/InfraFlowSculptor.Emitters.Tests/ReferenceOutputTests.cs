@@ -51,6 +51,26 @@ public sealed class ReferenceOutputTests
         Assert.Equal(["", "HIGH", "Trivy"], translated.Parameters.Select(parameter => parameter.Value));
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void AzureDevOpsStepTranslatorPreservesConfiguredEmptyAndWhitespaceExceptions(string exceptions)
+    {
+        var catalog = CatalogLoader.Load().GetVersion("2026.10-pilot.6");
+        Assert.NotNull(catalog);
+        var descriptor = Assert.Single(catalog!.PipelineSteps, candidate => candidate.Name == "ImageScan");
+        var step = new ApplicationStepPlan(
+            "ImageScan",
+            true,
+            true,
+            ApplicationStepPosition.AfterBuild,
+            [new ApplicationStepParameterPlan("exceptions", exceptions)]);
+
+        var translated = new AzureDevOpsStepTranslator().Translate(descriptor, step);
+
+        Assert.Equal(exceptions, Assert.Single(translated.Parameters, parameter => parameter.Name == "exceptions").Value);
+    }
+
     [Fact]
     public void ApplicationPipelinesEmitEnabledCatalogStepsInTheirConfiguredPositions()
     {
@@ -115,6 +135,23 @@ public sealed class ReferenceOutputTests
         var ci = Assert.Single(Emit(plan), file => file.RelativePath == "orders/apps/api/pipelines/ci.yml").Content;
 
         Assert.Contains("exceptions: 'security/.trivyignore'", ci, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("src/source # generated", "'src/source # generated/**'")]
+    [InlineData("[legacy]/src", "'[legacy]/src/**'")]
+    [InlineData("*legacy/src", "'*legacy/src/**'")]
+    [InlineData("!custom/src", "'!custom/src/**'")]
+    public void ApplicationCiQuotesCodeSourcePathsThatCouldBeMisreadByYaml(string codeSourcePath, string expectedScalar)
+    {
+        var plan = WithApplication(LoadPilotPlan(), application => application with
+        {
+            CodeSourcePath = codeSourcePath
+        });
+
+        var ci = Assert.Single(Emit(plan), file => file.RelativePath == "orders/apps/api/pipelines/ci.yml").Content;
+
+        Assert.Contains($"    - {expectedScalar}", ci, StringComparison.Ordinal);
     }
 
     [Fact]

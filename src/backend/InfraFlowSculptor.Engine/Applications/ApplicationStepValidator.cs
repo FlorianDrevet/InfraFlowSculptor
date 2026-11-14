@@ -100,7 +100,20 @@ public static class ApplicationStepValidator
                     continue;
                 }
 
-                var configuredValue = matchingValues.FirstOrDefault()?.Value;
+                var configuredParameter = matchingValues.FirstOrDefault();
+                var configuredValue = configuredParameter?.Value;
+                if (configuredParameter is not null
+                    && configuredValue is { Length: > 0 }
+                    && string.IsNullOrWhiteSpace(configuredValue))
+                {
+                    findings.Add(new ApplicationStepFinding(
+                        "VAL-APP-ETAPE",
+                        step.Name,
+                        parameter.Name,
+                        $"Le paramètre « {parameter.Name} » ne peut pas contenir uniquement des espaces pour l’étape « {descriptor.LabelFr} »."));
+                    continue;
+                }
+
                 if (step.Enabled && parameter.DefaultValue is null && string.IsNullOrWhiteSpace(configuredValue))
                 {
                     findings.Add(new ApplicationStepFinding(
@@ -111,7 +124,7 @@ public static class ApplicationStepValidator
                     continue;
                 }
 
-                var value = string.IsNullOrWhiteSpace(configuredValue) ? parameter.DefaultValue : configuredValue;
+                var value = configuredParameter is null ? parameter.DefaultValue : configuredValue;
                 if (parameter.Values.Length > 0 && value is not null
                     && !parameter.Values.Contains(value, StringComparer.Ordinal))
                 {

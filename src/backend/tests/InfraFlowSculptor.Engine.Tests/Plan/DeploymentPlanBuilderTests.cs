@@ -111,6 +111,140 @@ public sealed class DeploymentPlanBuilderTests
     }
 
     [Fact]
+    public void DataAccessUsesNamesFromExistingSqlResourceIds()
+    {
+        var ordersId = Guid.NewGuid();
+        var dataId = Guid.NewGuid();
+        var applicationId = Guid.NewGuid();
+        var serverId = Guid.NewGuid();
+        var databaseId = Guid.NewGuid();
+        var dataGroupId = Guid.NewGuid();
+        var server = CreateResource(serverId, dataGroupId, "SqlServer") with
+        {
+            IsExisting = true,
+            ExistingIds = new Dictionary<Guid, string>
+            {
+                [DevId] = $"/subscriptions/{SubscriptionId:D}/resourceGroups/existing/providers/Microsoft.Sql/servers/existing-server"
+            }
+        };
+        var database = CreateResource(databaseId, dataGroupId, "SqlDatabase");
+        var orders = CreateComponent(ordersId, "orders", [DevId],
+            CreateResource(applicationId, Guid.NewGuid(), "ContainerApp"));
+        var data = CreateComponent(dataId, "data", [DevId], server, database);
+        var snapshot = CreateSnapshot([DevId], [orders, data], [
+            CreateLink(dataId, databaseId, dataId, serverId, LinkKind.Hosting),
+            CreateLink(ordersId, applicationId, dataId, databaseId, LinkKind.DataAccess,
+                LinkIdentityKind.System, DataAccessLevel.LectureEcriture)
+        ]);
+        var plan = BuildPlan(snapshot);
+
+        var target = Assert.Single(Assert.Single(plan.Components, component => component.ComponentCode == "orders").Targets);
+        var access = Assert.Single(target.DataAccess);
+        Assert.Equal("existing-server.database.windows.net", access.Server);
+        var dataTarget = Assert.Single(Assert.Single(plan.Components, component => component.ComponentCode == "data").Targets);
+        Assert.Equal(Assert.Single(dataTarget.Resources, resource => resource.LogicalName == database.LogicalName).Name, access.Database);
+    }
+
+    [Fact]
+    public void DataAccessUsesResolvedNameWhenExistingSqlResourceIdIsEmpty()
+    {
+        var ordersId = Guid.NewGuid();
+        var dataId = Guid.NewGuid();
+        var applicationId = Guid.NewGuid();
+        var serverId = Guid.NewGuid();
+        var databaseId = Guid.NewGuid();
+        var dataGroupId = Guid.NewGuid();
+        var server = CreateResource(serverId, dataGroupId, "SqlServer") with
+        {
+            IsExisting = true,
+            ExistingIds = new Dictionary<Guid, string> { [DevId] = string.Empty }
+        };
+        var database = CreateResource(databaseId, dataGroupId, "SqlDatabase");
+        var orders = CreateComponent(ordersId, "orders", [DevId],
+            CreateResource(applicationId, Guid.NewGuid(), "ContainerApp"));
+        var data = CreateComponent(dataId, "data", [DevId], server, database);
+        var snapshot = CreateSnapshot([DevId], [orders, data], [
+            CreateLink(dataId, databaseId, dataId, serverId, LinkKind.Hosting),
+            CreateLink(ordersId, applicationId, dataId, databaseId, LinkKind.DataAccess,
+                LinkIdentityKind.System, DataAccessLevel.LectureEcriture)
+        ]);
+        const string expectedServerName = "resolved-existing-server";
+        var namingPreview = NamingEngine.Preview(snapshot, CreateLinkKinds());
+        var naming = namingPreview with
+        {
+            Items = namingPreview.Items.Append(new NamingPreviewItem("dev", expectedServerName, "existing-rg")
+            {
+                ResourceId = serverId,
+                TargetId = DevId
+            }).ToArray()
+        };
+
+        var plan = BuildPlan(snapshot, naming: naming);
+
+        var ordersTarget = Assert.Single(Assert.Single(plan.Components, component => component.ComponentCode == "orders").Targets);
+        var access = Assert.Single(ordersTarget.DataAccess);
+        Assert.Equal($"{expectedServerName}.database.windows.net", access.Server);
+    }
+
+    [Fact]
+    public void ReleaseDependenciesOmitResourcesAbsentFromTheTarget()
+    {
+        var ordersId = Guid.NewGuid();
+        var dataId = Guid.NewGuid();
+        var applicationId = Guid.NewGuid();
+        var serverId = Guid.NewGuid();
+        var databaseId = Guid.NewGuid();
+        var dataGroupId = Guid.NewGuid();
+        var orders = CreateComponent(ordersId, "orders", [DevId],
+            CreateResource(applicationId, Guid.NewGuid(), "ContainerApp"));
+        var server = CreateResource(serverId, dataGroupId, "SqlServer");
+        var database = CreateResource(databaseId, dataGroupId, "SqlDatabase",
+            new Dictionary<Guid, bool> { [DevId] = false });
+        var data = CreateComponent(dataId, "data", [DevId], server, database);
+        var snapshot = CreateSnapshot([DevId], [orders, data], [
+            CreateLink(dataId, databaseId, dataId, serverId, LinkKind.Hosting),
+            CreateLink(ordersId, applicationId, dataId, databaseId, LinkKind.DataAccess,
+                LinkIdentityKind.System, DataAccessLevel.LectureEcriture)
+        ]);
+
+        var plan = BuildPlan(snapshot);
+
+        var target = Assert.Single(Assert.Single(plan.Components, component => component.ComponentCode == "orders").Targets);
+        var dependencies = Assert.Single(target.Release.Dependencies, dependency => dependency.Component == "data");
+        Assert.DoesNotContain(dependencies.Resources, resource => resource.Id.Contains("/databases/", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ResourceIdentityUsesTheResolvedNameOfASingleTargetComponent()
+    {
+        var ordersId = Guid.NewGuid();
+        var platformId = Guid.NewGuid();
+        var applicationId = Guid.NewGuid();
+        var identityId = Guid.NewGuid();
+        var application = CreateResource(applicationId, Guid.NewGuid(), "ContainerApp") with
+        {
+            LogicalName = "api",
+            DefaultIdentityResourceId = identityId
+        };
+        var identity = CreateResource(identityId, Guid.NewGuid(), "UserAssignedIdentity") with
+        {
+            LogicalName = "shared"
+        };
+        var orders = CreateComponent(ordersId, "orders", [DevId], application);
+        var platform = CreateSingleComponent(platformId, identity);
+        var snapshot = CreateSnapshot([DevId, SharedId], [orders, platform]);
+
+        var plan = BuildPlan(snapshot);
+
+        var ordersTarget = Assert.Single(Assert.Single(plan.Components, component => component.ComponentCode == "orders").Targets);
+        var applicationPlan = Assert.Single(ordersTarget.Resources, resource => resource.LogicalName == "api");
+        var identityPlan = Assert.Single(applicationPlan.Identities);
+        var platformTarget = Assert.Single(Assert.Single(plan.Components, component => component.ComponentCode == "data").Targets);
+        var expectedName = Assert.Single(platformTarget.Resources, resource => resource.LogicalName == "shared").Name;
+        Assert.Equal(expectedName, identityPlan.ResourceName);
+    }
+
+    [Fact]
     public void SharedIdentityReceivesTheMostPermissiveDataAccessRequestedForDatabase()
     {
         var ordersId = Guid.Parse("10000000-0000-4000-8000-000000000001");

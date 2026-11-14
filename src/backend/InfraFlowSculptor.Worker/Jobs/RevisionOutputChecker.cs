@@ -8,14 +8,25 @@ namespace InfraFlowSculptor.Worker.Jobs;
 
 public sealed class RevisionOutputChecker
 {
+    internal const string TemporaryDirectoryCleanupFailureDataKey = "TemporaryDirectoryCleanupFailure";
     private const string PowerShellYamlModule = "powershell-yaml";
     private const string SchemaResourcePrefix = "IFS-Catalog/catalog/";
     private readonly OutputCheckerRegistry outputCheckers;
+    private readonly Func<string, Task> deleteTemporaryDirectory;
 
     public RevisionOutputChecker(OutputCheckerRegistry outputCheckers)
+        : this(outputCheckers, DeleteTemporaryDirectoryAsync)
+    {
+    }
+
+    internal RevisionOutputChecker(
+        OutputCheckerRegistry outputCheckers,
+        Func<string, Task> deleteTemporaryDirectory)
     {
         ArgumentNullException.ThrowIfNull(outputCheckers);
+        ArgumentNullException.ThrowIfNull(deleteTemporaryDirectory);
         this.outputCheckers = outputCheckers;
+        this.deleteTemporaryDirectory = deleteTemporaryDirectory;
     }
 
     public async Task CheckAsync(
@@ -42,22 +53,25 @@ public sealed class RevisionOutputChecker
             throw new InvalidOperationException("The catalog does not pin the powershell-yaml module.");
         }
 
-        var root = CreateTemporaryDirectory();
+        var temporaryDirectory = CreateTemporaryDirectory();
+        Exception? validationFailure = null;
         try
         {
-            WriteGeneratedFiles(root, files, cancellationToken);
+            var outputRoot = Path.Combine(temporaryDirectory, "output");
+            Directory.CreateDirectory(outputRoot);
+            WriteGeneratedFiles(outputRoot, files, cancellationToken);
             string? schemaPath = null;
             if (hasYaml)
             {
-                schemaPath = Path.Combine(root, "azure-pipelines.schema.json");
+                schemaPath = Path.Combine(temporaryDirectory, "azure-pipelines.schema.json");
                 var schema = ReadPinnedPipelineSchema(pins);
                 await File.WriteAllBytesAsync(schemaPath, schema, cancellationToken);
             }
 
-            var scriptPath = Path.Combine(root, "check-output.ps1");
+            var scriptPath = Path.Combine(temporaryDirectory, "check-output.ps1");
             await File.WriteAllTextAsync(scriptPath, CreateCheckScript(), new UTF8Encoding(false), cancellationToken);
             var command = await PowerShellCommandRunner.RunAsync(
-                root,
+                temporaryDirectory,
                 [
                     "-NoLogo",
                     "-NoProfile",
@@ -66,7 +80,7 @@ public sealed class RevisionOutputChecker
                     "Bypass",
                     "-File",
                     scriptPath,
-                    root,
+                    outputRoot,
                     schemaPath ?? string.Empty,
                     yamlModuleVersion ?? string.Empty,
                     WorkerToolVersions.PowerShellScriptAnalyzer,
@@ -80,9 +94,21 @@ public sealed class RevisionOutputChecker
                 throw new InvalidOperationException("The YAML schema or PowerShell script check failed.");
             }
         }
+        catch (Exception exception)
+        {
+            validationFailure = exception;
+            throw;
+        }
         finally
         {
-            DeleteTemporaryDirectory(root);
+            try
+            {
+                await deleteTemporaryDirectory(temporaryDirectory);
+            }
+            catch (Exception cleanupException) when (validationFailure is not null)
+            {
+                validationFailure.Data[TemporaryDirectoryCleanupFailureDataKey] = cleanupException;
+            }
         }
     }
 
@@ -119,10 +145,16 @@ public sealed class RevisionOutputChecker
         IReadOnlyList<GeneratedFile> files,
         CancellationToken cancellationToken)
     {
+        var destinations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in files)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var destination = GetSafeOutputPath(root, file.RelativePath);
+            if (!destinations.Add(destination))
+            {
+                throw new InvalidOperationException($"Generated output path '{file.RelativePath}' is duplicated.");
+            }
+
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             File.WriteAllText(destination, file.Content, new UTF8Encoding(false));
         }
@@ -134,6 +166,11 @@ public sealed class RevisionOutputChecker
         if (Path.IsPathRooted(relativePath))
         {
             throw new InvalidOperationException("A generated output path must be relative.");
+        }
+
+        if (relativePath.Contains('\\'))
+        {
+            throw new InvalidOperationException("A generated output path must use forward slash separators.");
         }
 
         var fullPath = Path.GetFullPath(Path.Combine(root, relativePath.Replace('/', Path.DirectorySeparatorChar)));
@@ -160,8 +197,8 @@ public sealed class RevisionOutputChecker
         $ErrorActionPreference = 'Stop'
         if ([bool]::Parse($CheckYaml)) {
             Import-Module powershell-yaml -RequiredVersion $YamlModuleVersion -ErrorAction Stop
-            $yamlFiles = @(Get-ChildItem -LiteralPath $Root -Recurse -File | Where-Object {
-                $_.Extension -in @('.yml', '.yaml') -and $_.Name -ne 'check-output.ps1'
+            $yamlFiles = @(Get-ChildItem -LiteralPath $Root -Recurse -File -Force | Where-Object {
+                $_.Extension -in @('.yml', '.yaml')
             })
             foreach ($file in $yamlFiles) {
                 $document = ConvertFrom-Yaml -Yaml (Get-Content -LiteralPath $file.FullName -Raw) -ErrorAction Stop
@@ -176,8 +213,8 @@ public sealed class RevisionOutputChecker
         }
         if ([bool]::Parse($CheckPowerShell)) {
             Import-Module PSScriptAnalyzer -RequiredVersion $AnalyzerVersion -ErrorAction Stop
-            $scriptFiles = @(Get-ChildItem -LiteralPath $Root -Recurse -File | Where-Object {
-                $_.Extension -in @('.ps1', '.psm1') -and $_.Name -ne 'check-output.ps1'
+            $scriptFiles = @(Get-ChildItem -LiteralPath $Root -Recurse -File -Force | Where-Object {
+                $_.Extension -in @('.ps1', '.psm1')
             })
             $findings = @()
             foreach ($file in $scriptFiles) {
@@ -229,5 +266,11 @@ public sealed class RevisionOutputChecker
         }
 
         Directory.Delete(fullPath, recursive: true);
+    }
+
+    private static Task DeleteTemporaryDirectoryAsync(string root)
+    {
+        DeleteTemporaryDirectory(root);
+        return Task.CompletedTask;
     }
 }

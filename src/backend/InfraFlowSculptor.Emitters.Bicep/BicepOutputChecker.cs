@@ -7,19 +7,30 @@ namespace InfraFlowSculptor.Emitters.Bicep;
 
 public sealed class BicepOutputChecker : IOutputChecker
 {
+    internal const string TemporaryDirectoryCleanupFailureDataKey = "TemporaryDirectoryCleanupFailure";
+    private const int TemporaryDirectoryCleanupAttempts = 10;
+    private static readonly TimeSpan TemporaryDirectoryCleanupRetryInterval = TimeSpan.FromMilliseconds(100);
     private static readonly Regex WarningPattern = new(
         @"(?im)(^|\s)warning\b|BCP\d{3}",
         RegexOptions.CultureInvariant | RegexOptions.Compiled);
     private readonly IBicepCommandRunner runner;
+    private readonly Func<string, Task> deleteTemporaryDirectory;
 
-    public BicepOutputChecker() : this(new BicepCommandRunner())
+    public BicepOutputChecker() : this(new BicepCommandRunner(), DeleteTemporaryDirectoryAsync)
     {
     }
 
     internal BicepOutputChecker(IBicepCommandRunner runner)
+        : this(runner, DeleteTemporaryDirectoryAsync)
+    {
+    }
+
+    internal BicepOutputChecker(IBicepCommandRunner runner, Func<string, Task> deleteTemporaryDirectory)
     {
         ArgumentNullException.ThrowIfNull(runner);
+        ArgumentNullException.ThrowIfNull(deleteTemporaryDirectory);
         this.runner = runner;
+        this.deleteTemporaryDirectory = deleteTemporaryDirectory;
     }
 
     public IacLanguage Key => IacLanguage.Bicep;
@@ -33,6 +44,7 @@ public sealed class BicepOutputChecker : IOutputChecker
         ArgumentNullException.ThrowIfNull(pins);
 
         var root = CreateTemporaryDirectory();
+        Exception? validationFailure = null;
         try
         {
             var generatedPaths = WriteGeneratedFiles(root, files, cancellationToken);
@@ -58,7 +70,7 @@ public sealed class BicepOutputChecker : IOutputChecker
             var version = await runner.RunAsync(root, ["--version"], cancellationToken);
             EnsureSuccess(version, "Bicep CLI version check");
             var versionOutput = version.StandardOutput + Environment.NewLine + version.StandardError;
-            if (!versionOutput.Contains(pins.BicepCliVersion, StringComparison.Ordinal))
+            if (!ContainsExactVersion(versionOutput, pins.BicepCliVersion))
             {
                 throw new InvalidOperationException(
                     $"Bicep CLI version '{versionOutput.Trim()}' does not match the pinned version '{pins.BicepCliVersion}'.");
@@ -102,9 +114,21 @@ public sealed class BicepOutputChecker : IOutputChecker
                 }
             }
         }
+        catch (Exception exception)
+        {
+            validationFailure = exception;
+            throw;
+        }
         finally
         {
-            DeleteTemporaryDirectory(root);
+            try
+            {
+                await deleteTemporaryDirectory(root);
+            }
+            catch (Exception cleanupException) when (validationFailure is not null)
+            {
+                validationFailure.Data[TemporaryDirectoryCleanupFailureDataKey] = cleanupException;
+            }
         }
     }
 
@@ -116,11 +140,17 @@ public sealed class BicepOutputChecker : IOutputChecker
     {
         var result = await runner.RunAsync(workingDirectory, arguments, cancellationToken);
         EnsureSuccess(result, description);
-        var output = result.StandardOutput + Environment.NewLine + result.StandardError;
+        var output = result.StandardError;
         if (WarningPattern.IsMatch(output))
         {
             throw new InvalidOperationException($"{description} produced a warning: {output.Trim()}");
         }
+    }
+
+    private static bool ContainsExactVersion(string output, string pinnedVersion)
+    {
+        var versionPattern = $@"(?<![A-Za-z0-9_.+-]){Regex.Escape(pinnedVersion)}(?![A-Za-z0-9_.+-])";
+        return Regex.IsMatch(output, versionPattern, RegexOptions.CultureInvariant);
     }
 
     private static void EnsureSuccess(BicepCommandResult result, string description)
@@ -139,10 +169,16 @@ public sealed class BicepOutputChecker : IOutputChecker
         CancellationToken cancellationToken)
     {
         var paths = new List<string>(files.Count);
+        var destinations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in files)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var destination = GetSafeOutputPath(root, file.RelativePath);
+            if (!destinations.Add(destination))
+            {
+                throw new InvalidOperationException($"Generated output path '{file.RelativePath}' is duplicated.");
+            }
+
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             File.WriteAllText(destination, file.Content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
             paths.Add(destination);
@@ -159,6 +195,11 @@ public sealed class BicepOutputChecker : IOutputChecker
             throw new InvalidOperationException($"Generated output path '{relativePath}' must be relative.");
         }
 
+        if (relativePath.Contains('\\'))
+        {
+            throw new InvalidOperationException($"Generated output path '{relativePath}' must use forward slash separators.");
+        }
+
         var normalizedPath = relativePath.Replace('/', Path.DirectorySeparatorChar);
         var fullPath = Path.GetFullPath(Path.Combine(root, normalizedPath));
         var relativeToRoot = Path.GetRelativePath(root, fullPath);
@@ -167,6 +208,18 @@ public sealed class BicepOutputChecker : IOutputChecker
             || relativeToRoot.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
         {
             throw new InvalidOperationException($"Generated output path '{relativePath}' escapes its validation directory.");
+        }
+
+        var normalizedRelativePath = relativeToRoot.Replace('\\', '/');
+        if (normalizedRelativePath == ".")
+        {
+            throw new InvalidOperationException($"Generated output path '{relativePath}' must identify a file.");
+        }
+
+        if (normalizedRelativePath.Equals(".format-check", StringComparison.OrdinalIgnoreCase)
+            || normalizedRelativePath.StartsWith(".format-check/", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException($"Generated output path '{relativePath}' uses a reserved directory.");
         }
 
         return fullPath;
@@ -180,8 +233,12 @@ public sealed class BicepOutputChecker : IOutputChecker
         return root;
     }
 
-    private static void DeleteTemporaryDirectory(string root)
+    private static Task DeleteTemporaryDirectoryAsync(string root) =>
+        DeleteTemporaryDirectoryAsync(root, static (path, recursive) => Directory.Delete(path, recursive));
+
+    internal static async Task DeleteTemporaryDirectoryAsync(string root, Action<string, bool> deleteDirectory)
     {
+        ArgumentNullException.ThrowIfNull(deleteDirectory);
         var temporaryRoot = Path.GetFullPath(Path.GetTempPath())
             .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
             + Path.DirectorySeparatorChar;
@@ -193,7 +250,27 @@ public sealed class BicepOutputChecker : IOutputChecker
             return;
         }
 
-        Directory.Delete(fullPath, recursive: true);
+        for (var attempt = 1; attempt <= TemporaryDirectoryCleanupAttempts; attempt++)
+        {
+            try
+            {
+                deleteDirectory(fullPath, true);
+                return;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return;
+            }
+            catch (IOException) when (attempt < TemporaryDirectoryCleanupAttempts)
+            {
+                await Task.Delay(TemporaryDirectoryCleanupRetryInterval);
+            }
+            catch (UnauthorizedAccessException) when (attempt < TemporaryDirectoryCleanupAttempts)
+            {
+                await Task.Delay(TemporaryDirectoryCleanupRetryInterval);
+            }
+        }
+
     }
 
     private static string GetCliPath(string root, string path) =>
