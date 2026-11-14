@@ -5,6 +5,28 @@
     <p class="intro">Valeurs générées depuis <code>docs/design/strata/tokens.json</code>.</p>
   </header>
 
+  <section class="component-card" aria-labelledby="git-expiry-alerts-title">
+    <div class="component-card-heading">
+      <h2 id="git-expiry-alerts-title">{{ 'dev.gitExpiryAlerts.title' | transloco }}</h2>
+      <p>{{ 'dev.gitExpiryAlerts.description' | transloco }}</p>
+    </div>
+    <div class="component-samples">
+      <app-ds-button
+        variant="secondary"
+        [disabled]="gitExpiryJobRunning()"
+        (click)="triggerGitExpiryAlerts()"
+      >
+        {{
+          (gitExpiryJobRunning() ? 'dev.gitExpiryAlerts.running' : 'dev.gitExpiryAlerts.action')
+            | transloco
+        }}
+      </app-ds-button>
+      @if (gitExpiryJobMessage()) {
+        <p role="status">{{ gitExpiryJobMessage() | transloco }}</p>
+      }
+    </div>
+  </section>
+
   <section aria-labelledby="colors-title">
     <h2 id="colors-title">Couleurs</h2>
     <div class="color-grid">

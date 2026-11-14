@@ -24,6 +24,7 @@ public static class IsolationScenarios
     private const string TestResourceGroupId = "88888888-8888-4888-8888-888888888888";
     private const string TestResourceId = "99999999-9999-4999-8999-999999999999";
     private const string TestResourceChildId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    private const string TestGitConnectionId = "dddddddd-2222-4222-8222-222222222222";
     private const string TestInvitationToken = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
     private static readonly string ShopProjectId = DemoDataSeeder.ShopProjectId.Value.ToString("D");
     private static readonly string[] MemberRoles = ["Member"];
@@ -77,6 +78,64 @@ public static class IsolationScenarios
                 "ListOrganizationAuditEvents",
                 HttpMethod.Get,
                 $"/v1/organizations/{ContosoOrganizationId}/audit",
+                HttpStatusCode.NotFound),
+            ["ListGitProviders"] = OrganizationScenario(
+                "ListGitProviders",
+                HttpMethod.Get,
+                $"/v1/organizations/{ContosoOrganizationId}/git-connections/providers",
+                HttpStatusCode.NotFound),
+            ["ListGitConnections"] = OrganizationScenario(
+                "ListGitConnections",
+                HttpMethod.Get,
+                $"/v1/organizations/{ContosoOrganizationId}/git-connections/",
+                HttpStatusCode.NotFound),
+            ["CreateGitConnection"] = OrganizationWriteScenario(
+                "CreateGitConnection",
+                HttpMethod.Post,
+                $"/v1/organizations/{ContosoOrganizationId}/git-connections/",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    providerKind = "AzureRepos",
+                    name = "Isolation",
+                    organization = "isolation",
+                    authenticationMode = "PersonalAccessToken",
+                    personalAccessTokenExpiresAt = DateTimeOffset.UtcNow.AddDays(10),
+                    personalAccessToken = "isolated-test-token"
+                }),
+            ["TestGitConnection"] = OrganizationWriteScenario(
+                "TestGitConnection",
+                HttpMethod.Post,
+                $"/v1/organizations/{ContosoOrganizationId}/git-connections/{TestGitConnectionId}/test",
+                HttpStatusCode.NotFound),
+            ["UpdateGitConnection"] = OrganizationWriteScenario(
+                "UpdateGitConnection",
+                HttpMethod.Put,
+                $"/v1/organizations/{ContosoOrganizationId}/git-connections/{TestGitConnectionId}",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    expectedVersion = 1,
+                    name = "Isolation",
+                    organization = "isolation",
+                    personalAccessTokenExpiresAt = DateTimeOffset.UtcNow.AddDays(10)
+                }),
+            ["SetGitConnectionRepositoryAccess"] = OrganizationWriteScenario(
+                "SetGitConnectionRepositoryAccess",
+                HttpMethod.Put,
+                $"/v1/organizations/{ContosoOrganizationId}/git-connections/{TestGitConnectionId}/repositories/access",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    expectedVersion = 1,
+                    providerRepositoryId = "repo-1",
+                    openToAllProjects = false,
+                    projectIds = new[] { Guid.NewGuid() }
+                }),
+            ["DeleteGitConnection"] = OrganizationWriteScenario(
+                "DeleteGitConnection",
+                HttpMethod.Delete,
+                $"/v1/organizations/{ContosoOrganizationId}/git-connections/{TestGitConnectionId}",
                 HttpStatusCode.NotFound),
             ["ChangeOrganizationMemberRoles"] = OrganizationScenario(
                 "ChangeOrganizationMemberRoles",
@@ -798,6 +857,16 @@ public static class IsolationScenarios
                 "GetDevelopmentPingJobStatus",
                 HttpMethod.Get,
                 $"/v1/dev/ping-job/{TestJobId}",
+                HttpStatusCode.NotFound),
+            ["EnqueueDevelopmentGitConnectionExpiryAlerts"] = OrganizationWriteScenario(
+                "EnqueueDevelopmentGitConnectionExpiryAlerts",
+                HttpMethod.Post,
+                "/v1/dev/git-connections/expiry-alerts",
+                HttpStatusCode.NotFound),
+            ["GetDevelopmentGitConnectionExpiryAlertsStatus"] = OrganizationScenario(
+                "GetDevelopmentGitConnectionExpiryAlertsStatus",
+                HttpMethod.Get,
+                $"/v1/dev/git-connections/expiry-alerts/{TestJobId}",
                 HttpStatusCode.NotFound)
         };
 

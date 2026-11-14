@@ -15,6 +15,7 @@ using InfraFlowSculptor.Catalog;
 using InfraFlowSculptor.Infrastructure;
 using InfraFlowSculptor.Infrastructure.Authentication;
 using InfraFlowSculptor.Infrastructure.Configuration;
+using InfraFlowSculptor.Infrastructure.GitConnections;
 using InfraFlowSculptor.Infrastructure.Persistence;
 using OpenTelemetry.Trace;
 
@@ -87,6 +88,7 @@ else
 {
     builder.Services
         .AddInfrastructure(builder.Configuration)
+        .AddGitConnectionInfrastructure(builder.Configuration, builder.Environment)
         .AddPresentation(builder.Configuration, builder.Environment);
     builder.AddIfsDbContext("ifs");
 }
@@ -134,6 +136,7 @@ var v1 = app.MapGroup("/v1");
 v1.MapSystemEndpoints();
 v1.MapMeEndpoints();
 v1.MapOrganizationEndpoints();
+v1.MapGitConnectionEndpoints();
 v1.MapInvitationEndpoints();
 v1.MapProjectEndpoints();
 v1.MapComponentEndpoints();

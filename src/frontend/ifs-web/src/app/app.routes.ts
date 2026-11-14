@@ -70,6 +70,15 @@ export const routes: Routes = [
               ),
             title: 'Journal d’audit',
           },
+          {
+            path: 'connections',
+            canActivate: [featureGuard(FEATURES.organizations)],
+            loadComponent: () =>
+              import('./features/organizations/organization-connections').then(
+                (m) => m.OrganizationConnections,
+              ),
+            title: 'Connexions git',
+          },
         ],
       },
       {

@@ -7,6 +7,11 @@ param(
 $ErrorActionPreference = "Stop"
 $giteaUrl = "http://localhost:3000"
 $containerName = "ifs-gitea"
+$configuredRuntime = [Environment]::GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME", "Process")
+if ([string]::IsNullOrWhiteSpace($configuredRuntime)) {
+    $configuredRuntime = [Environment]::GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME", "User")
+}
+$containerCli = if ($configuredRuntime -eq "podman") { "podman" } else { "docker" }
 $username = "ifs-dev"
 $email = "ifs-dev@contoso.example"
 $projectPath = Join-Path $PSScriptRoot "../../src/backend/InfraFlowSculptor.AppHost/InfraFlowSculptor.AppHost.csproj"
@@ -98,7 +103,11 @@ if ([string]::IsNullOrWhiteSpace($password)) {
 $previousErrorActionPreference = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
 try {
-    $adminCreateOutput = & docker exec --user git $containerName gitea admin user create `
+    if (-not (Get-Command $containerCli -ErrorAction SilentlyContinue)) {
+        throw "Le moteur de conteneurs '$containerCli' n'est pas disponible."
+    }
+
+    $adminCreateOutput = & $containerCli exec --user git $containerName gitea admin user create `
         --admin `
         --username $username `
         --password $password `

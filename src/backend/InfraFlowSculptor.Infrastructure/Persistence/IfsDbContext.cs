@@ -10,6 +10,7 @@ using InfraFlowSculptor.Domain.UserProfileAggregate;
 using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Domain.RevisionAggregate;
+using InfraFlowSculptor.Domain.GitConnectionAggregate;
 using InfraFlowSculptor.Infrastructure.Persistence.Common;
 using InfraFlowSculptor.Infrastructure.Persistence.Identity;
 using InfraFlowSculptor.Infrastructure.Persistence.Auditing;
@@ -63,6 +64,10 @@ public class IfsDbContext(
     public DbSet<ApplicationAggregate> Applications => Set<ApplicationAggregate>();
 
     public DbSet<RevisionAggregate> Revisions => Set<RevisionAggregate>();
+
+    public DbSet<GitConnectionAggregate> GitConnections => Set<GitConnectionAggregate>();
+
+    public DbSet<GitConnectionPublicationUse> GitConnectionPublicationUses => Set<GitConnectionPublicationUse>();
 
     public DbSet<RevisionInputEntity> RevisionInputs => Set<RevisionInputEntity>();
 

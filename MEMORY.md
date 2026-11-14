@@ -4,7 +4,7 @@
 > La mémoire décrit **ce qui existe** dans le dépôt ; la cible est dans `docs/technique/`, l'ordre dans `docs/plan/`.
 ## État
 
-- **2026-11-14** : R-06 clôture J0-21 à J0-25. Backend Release strict 0/0 et suite .NET 847/847; ImageScan 26/26, pipelines YAML 26/26, Bicep 4 composants, déterminisme 80 fichiers. Recette G1–G7 et auto-revue validées; E2E 30/36 avec limites shop15 et /delete-impact. AppHost Podman sain, volumes conservés. Voir .github/memory/07-code-graph.md, 08-runtime-and-orchestration.md, 09-auth-and-build.md, 12-engine.md et docs/plan/recettes/suivi.md.
+- **2026-11-14** : R-06 clôture J0-21 à J0-25; J0-26 ajoute Azure Repos/Gitea, accès par projet et alertes PAT. Backend Release strict 0/0, suite .NET 853 réussis/4 ignorés; frontend 224, lint 967 clés, OpenAPI 208 modèles/10 services. Recette manuelle et E2E ciblé 2/2; E2E complet 32/38 avec limites consignées. AppHost Podman sain, volumes conservés. Voir `.github/memory/13-integrations.md`, `05-data-and-storage.md` et `docs/plan/recettes/suivi.md`.
 - **2026-10-06** : S-01 à S-16 du socle sont implémentés (backend .NET 10, Aspire, PostgreSQL, Worker/outbox, Keycloak, Angular 22, Strata, OpenAPI, CI et observabilité). CI `37460726122` verte ; détails et écarts dans [`NEXT.md`](NEXT.md) et [`docs/plan/recettes/suivi.md`](docs/plan/recettes/suivi.md).
 - **S-17 terminé le 2026-10-06** : mémoire, graphe local et guide « Démarrer » ajoutés. Le parcours clone neuf restait en attente dans [`NEXT.md`](NEXT.md), l'AppHost occupant les ports fixes ; R-01 était le verrou courant.
 - **2026-10-27** : preuves P1–P5/P7–P9 prototypées; le crochet `IFS_TEST_ABORT_AFTER` a été retiré de la sortie client. Voir `.github/memory/08-runtime-and-orchestration.md` et la revue R-03.

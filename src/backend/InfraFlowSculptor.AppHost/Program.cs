@@ -86,6 +86,12 @@ if (enableDevelopmentExtras)
 var mailpit = enableDevelopmentExtras || isTesting
     ? builder.AddMailPit(ResourceNames.MailPit).WithLifetime(containerLifetime)
     : null;
+var keyVault = enableDevelopmentExtras && !isTesting
+    ? builder.AddAzureKeyVaultEmulator(ResourceNames.KeyVault)
+    : null;
+var giteaToken = string.IsNullOrWhiteSpace(builder.Configuration["Gitea:Token"])
+    ? null
+    : builder.AddParameter("gitea-token", () => builder.Configuration["Gitea:Token"]!, secret: true);
 
 var api = builder
     .AddProject<Projects.InfraFlowSculptor_Api>(ResourceNames.Api)
@@ -130,11 +136,6 @@ else
 
     if (enableDevelopmentExtras)
     {
-        builder.AddAzureKeyVaultEmulator(ResourceNames.KeyVault);
-    }
-
-    if (enableDevelopmentExtras)
-    {
         var giteaBuilder = builder
             .AddContainer(ResourceNames.Gitea, "gitea/gitea", "1.24")
             .WithHttpEndpoint(
@@ -167,6 +168,19 @@ else
         .WaitFor(keycloak);
 }
 
+if (keyVault is not null)
+{
+    api = api
+        .WithAzureKeyVaultEmulatorCredentials(keyVault)
+        .WithReference(keyVault)
+        .WaitFor(keyVault);
+}
+
+if (giteaToken is not null)
+{
+    api = api.WithEnvironment("Gitea__Token", giteaToken);
+}
+
 var worker = builder.AddProject<Projects.InfraFlowSculptor_Worker>(ResourceNames.Worker)
     .WithReference(database)
     .WithReference(blobs)
@@ -177,6 +191,13 @@ var worker = builder.AddProject<Projects.InfraFlowSculptor_Worker>(ResourceNames
     .WithEnvironment("DOTNET_ENVIRONMENT", builder.Environment.EnvironmentName)
     .WithEnvironment("Invitations__BaseUrl", webOrigin)
     .WithEnvironment("Ifs__ServiceBus__IsEmulator", "true");
+if (keyVault is not null)
+{
+    worker = worker
+        .WithAzureKeyVaultEmulatorCredentials(keyVault)
+        .WithReference(keyVault)
+        .WaitFor(keyVault);
+}
 if (mailpit is not null)
 {
     worker = worker

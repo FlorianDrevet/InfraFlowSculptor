@@ -22,6 +22,13 @@ public static class EndpointNames
     public const string AcceptInvitation = "AcceptInvitation";
     public const string GetInvitationPreview = "GetInvitationPreview";
     public const string GetFeatures = "GetFeatures";
+    public const string ListGitProviders = "ListGitProviders";
+    public const string ListGitConnections = "ListGitConnections";
+    public const string CreateGitConnection = "CreateGitConnection";
+    public const string TestGitConnection = "TestGitConnection";
+    public const string UpdateGitConnection = "UpdateGitConnection";
+    public const string SetGitConnectionRepositoryAccess = "SetGitConnectionRepositoryAccess";
+    public const string DeleteGitConnection = "DeleteGitConnection";
     public const string GetMyProjectPermissions = "GetMyProjectPermissions";
     public const string GetProjectMemberPermissions = "GetProjectMemberPermissions";
     public const string ListProjects = "ListProjects";

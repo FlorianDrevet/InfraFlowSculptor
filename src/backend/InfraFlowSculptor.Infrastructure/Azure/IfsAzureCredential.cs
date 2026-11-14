@@ -38,7 +38,8 @@ public sealed class IfsAzureCredential : TokenCredential
 
         return new DefaultAzureCredential(new DefaultAzureCredentialOptions
         {
-            ExcludeInteractiveBrowserCredential = true
+            ExcludeInteractiveBrowserCredential = true,
+            DisableInstanceDiscovery = true
         });
     }
 }
