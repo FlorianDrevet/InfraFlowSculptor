@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`R-06`](docs/plan/02-jalon-0-pilote.md#-r-06--revue-de-la-génération) — Revue de la génération |
-| **Statut** | `EN_COURS` |
-| **Dernière étape terminée** | [`J0-25`](docs/plan/02-jalon-0-pilote.md#j0-25--export-du-modèle-et-sortie-autonome) — Export du modèle et sortie autonome (commit `25dde93`) |
-| **Étape suivante** | `J0-26` — Connexions git |
+| **Étape courante** | [`J0-26`](docs/plan/02-jalon-0-pilote.md#j0-26--connexions-git) — Connexions git |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`R-06`](docs/plan/02-jalon-0-pilote.md#-r-06--revue-de-la-génération) — Revue de la génération (auto-validée) |
+| **Étape suivante** | `J0-27` — Plan de publication |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-generation` (créée depuis `origin/impl/j0-modele`, segment empilé après R-05) |
-| **Dernière mise à jour** | 2026-11-14 — Codex |
+| **Dernière mise à jour** | 2026-11-14 — Codex (auto-validation R-06) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 

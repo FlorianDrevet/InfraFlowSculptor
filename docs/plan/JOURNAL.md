@@ -137,3 +137,4 @@
 | 2026-11-14 03:28 | Codex | `J0-25` terminée | commit `25dde93` |
 | 2026-11-14 07:35 | Codex | `R-06` recette autonome à exécuter |  |
 | 2026-11-14 09:11 | Codex | `R-06` reprise après recette autonome vérifiée |  |
+| 2026-11-14 09:12 | Codex | `R-06` auto-validée | R-06-autovalidation.md |
