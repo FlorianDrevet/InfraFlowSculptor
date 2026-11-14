@@ -20,6 +20,8 @@ public static class IsolationScenarios
     private const string TestMemberId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
     private const string TestInvitationId = "66666666-6666-4666-8666-666666666666";
     private const string TestRevisionId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+    private const string TestPublicationId = "dddddddd-dddd-4ddd-8ddd-eeeeeeeeeeee";
+    private const string TestPublicationTargetId = "eeeeeeee-eeee-4eee-8eee-ffffffffffff";
     private const string TestComponentId = "77777777-7777-4777-8777-777777777777";
     private const string TestResourceGroupId = "88888888-8888-4888-8888-888888888888";
     private const string TestResourceId = "99999999-9999-4999-8999-999999999999";
@@ -361,6 +363,32 @@ public static class IsolationScenarios
                     defaultSourceCodeDestinationId = (Guid?)null,
                     expectedVersion = 1
                 }),
+            ["StartRevisionPublication"] = OrganizationWriteScenario(
+                "StartRevisionPublication",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/revisions/{TestRevisionId}/publications",
+                HttpStatusCode.NotFound,
+                new { message = "Isolation scenario", acceptStaleRevision = false, destinationIds = Array.Empty<Guid>() }),
+            ["ListProjectPublications"] = OrganizationScenario(
+                "ListProjectPublications",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/publications",
+                HttpStatusCode.NotFound),
+            ["GetPublication"] = OrganizationScenario(
+                "GetPublication",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/publications/{TestPublicationId}",
+                HttpStatusCode.NotFound),
+            ["ConfirmPublicationOwnership"] = OrganizationWriteScenario(
+                "ConfirmPublicationOwnership",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/publications/{TestPublicationId}/targets/{TestPublicationTargetId}/confirm-ownership",
+                HttpStatusCode.NotFound),
+            ["StartPublicationWrite"] = OrganizationWriteScenario(
+                "StartPublicationWrite",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/publications/{TestPublicationId}/publish",
+                HttpStatusCode.NotFound),
             ["GetProjectValidation"] = OrganizationScenario(
                 "GetProjectValidation",
                 HttpMethod.Get,

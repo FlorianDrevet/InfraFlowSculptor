@@ -155,6 +155,226 @@
   min-width: 0;
 }
 
+.revision-detail__publication-header,
+.revision-detail__publication-target-heading,
+.revision-detail__publication-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--ifs-space-3);
+  min-width: 0;
+}
+
+.revision-detail__publication-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  box-sizing: border-box;
+  width: min(900px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-xl);
+  background: var(--ifs-surface-1);
+  box-shadow: var(--ifs-shadow-overlay);
+  color: var(--ifs-text);
+}
+
+.revision-detail__publication-dialog::backdrop {
+  background: var(--ifs-overlay-scrim);
+}
+
+.revision-detail__publication-dialog:not([open]) {
+  display: none;
+}
+
+.revision-detail__publication-dialog-header {
+  display: grid;
+  gap: var(--ifs-space-1);
+  padding: var(--ifs-space-5) var(--ifs-space-6);
+  border-block-end: 1px solid var(--ifs-line-subtle);
+}
+
+.revision-detail__publication-dialog-header h2,
+.revision-detail__publication-dialog-header p {
+  margin: 0;
+}
+
+.revision-detail__publication-dialog-header h2 {
+  font-size: var(--ifs-text-dialog-title, 1.125rem);
+}
+
+.revision-detail__publication-dialog-header p {
+  color: var(--ifs-text-2);
+  font-size: 0.8125rem;
+}
+
+.revision-detail__publication-dialog-content {
+  display: grid;
+  gap: var(--ifs-space-4);
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: var(--ifs-space-5) var(--ifs-space-6);
+}
+
+.revision-detail__publication-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--ifs-space-2);
+  min-width: 0;
+  padding: var(--ifs-space-4) var(--ifs-space-6);
+  border-block-start: 1px solid var(--ifs-line-subtle);
+}
+
+.revision-detail__publication-header > div {
+  min-width: 0;
+}
+
+.revision-detail__publication-header p,
+.revision-detail__publication-branch,
+.revision-detail__publication-summary {
+  margin: var(--ifs-space-1) 0 0;
+  color: var(--ifs-text-2);
+  font-size: 0.8125rem;
+}
+
+.revision-detail__publication-form {
+  display: grid;
+  gap: var(--ifs-space-3);
+}
+
+.revision-detail__publication-result {
+  margin: 0;
+}
+
+.revision-detail__publication-summary-targets {
+  display: grid;
+  min-width: 0;
+  border: 1px solid var(--ifs-line-subtle);
+  border-radius: var(--ifs-radius-lg);
+  overflow: hidden;
+}
+
+.revision-detail__publication-summary-target {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ifs-space-2) var(--ifs-space-3);
+  min-width: 0;
+  padding: var(--ifs-space-3) var(--ifs-space-4);
+}
+
+.revision-detail__publication-summary-target + .revision-detail__publication-summary-target {
+  border-block-start: 1px solid var(--ifs-line-subtle);
+}
+
+.revision-detail__publication-summary-target a {
+  grid-column: 1 / -1;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.revision-detail__stale-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ifs-space-2);
+  min-width: 0;
+  color: var(--ifs-text);
+  font-size: 0.875rem;
+}
+
+.revision-detail__stale-confirmation input,
+.revision-detail__ownership-confirmation input {
+  flex: 0 0 auto;
+  margin-block-start: 0.2em;
+  accent-color: var(--ifs-signal);
+}
+
+.revision-detail__ownership-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ifs-space-2);
+  min-width: 0;
+  padding: var(--ifs-space-2) var(--ifs-space-3);
+  border: 1px solid var(--ifs-line-subtle);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-2);
+  color: var(--ifs-text);
+  font-size: 0.8125rem;
+}
+
+.revision-detail__publication-targets {
+  display: grid;
+  gap: var(--ifs-space-4);
+  min-width: 0;
+}
+
+.revision-detail__publication-target {
+  display: grid;
+  gap: var(--ifs-space-3);
+  min-width: 0;
+  padding: var(--ifs-space-4);
+  border: 1px solid var(--ifs-line-subtle);
+  border-radius: var(--ifs-radius-lg);
+}
+
+.revision-detail__publication-target--confirmation {
+  border-color: var(--ifs-ember);
+}
+
+.revision-detail__publication-target-heading > :first-child,
+.revision-detail__publication-links > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.revision-detail__publication-branch {
+  margin: calc(-1 * var(--ifs-space-2)) 0 0;
+  font-family: var(--ifs-font-mono, monospace);
+  overflow-wrap: anywhere;
+}
+
+.revision-detail__publication-files {
+  display: grid;
+  gap: var(--ifs-space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.revision-detail__publication-files li {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--ifs-space-2);
+  min-width: 0;
+}
+
+.revision-detail__publication-links {
+  justify-content: flex-start;
+  font-size: 0.8125rem;
+}
+
+.revision-detail__publication-summary-target a,
+.revision-detail__publication-links a {
+  color: var(--ifs-signal-text);
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.revision-detail__publication-links a:focus-visible,
+.revision-detail__publication-links a:hover {
+  color: var(--ifs-signal);
+}
+
 @media (max-width: 760px) {
   .revision-detail__header {
     flex-direction: column;
@@ -168,5 +388,30 @@
   .revision-detail__file-view > header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .revision-detail__publication-header,
+  .revision-detail__publication-target-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .revision-detail__publication-dialog-header,
+  .revision-detail__publication-dialog-content,
+  .revision-detail__publication-dialog-actions {
+    padding-inline: var(--ifs-space-4);
+  }
+
+  .revision-detail__publication-dialog-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .revision-detail__publication-summary-target {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .revision-detail__publication-summary-target a {
+    grid-column: auto;
   }
 }

@@ -890,6 +890,80 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.ToTable("project_wizard_drafts", (string)null);
                 });
 
+            modelBuilder.Entity("InfraFlowSculptor.Domain.PublicationAggregate.PublicationAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AuthorObjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("author_object_id");
+
+                    b.Property<Guid>("AuthorTenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("author_tenant_id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("message");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateTimeOffset?>("PreparedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("prepared_at");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<DateTimeOffset>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
+                    b.Property<Guid>("RevisionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("revision_id");
+
+                    b.Property<int>("RevisionNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("revision_number");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("state");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_publications");
+
+                    b.HasIndex("RevisionId")
+                        .HasDatabaseName("ix_publications_revision_id");
+
+                    b.HasIndex("ProjectId", "State")
+                        .HasDatabaseName("ix_publications_project_state");
+
+                    b.HasIndex("OrganizationId", "ProjectId", "RequestedAt")
+                        .HasDatabaseName("ix_publications_organization_project_requested_at");
+
+                    b.ToTable("publications", (string)null);
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Domain.RevisionAggregate.RevisionAggregate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2855,6 +2929,236 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_project_wizard_drafts_user_profiles_user_profile_id");
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.PublicationAggregate.PublicationAggregate", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_publications_projects_project_id");
+
+                    b.HasOne("InfraFlowSculptor.Domain.RevisionAggregate.RevisionAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("RevisionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_publications_revisions_revision_id");
+
+                    b.OwnsMany("InfraFlowSculptor.Domain.PublicationAggregate.PublicationTarget", "Targets", b1 =>
+                        {
+                            b1.Property<Guid>("PublicationId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("publication_id");
+
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("BaseCommitSha")
+                                .IsRequired()
+                                .HasMaxLength(40)
+                                .HasColumnType("character varying(40)")
+                                .HasColumnName("base_commit_sha");
+
+                            b1.Property<string>("CommitSha")
+                                .HasMaxLength(40)
+                                .HasColumnType("character varying(40)")
+                                .HasColumnName("commit_sha");
+
+                            b1.Property<DateTimeOffset?>("CompletedAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("completed_at");
+
+                            b1.Property<string>("DefaultBranch")
+                                .IsRequired()
+                                .HasMaxLength(240)
+                                .HasColumnType("character varying(240)")
+                                .HasColumnName("default_branch");
+
+                            b1.Property<string>("FailureCode")
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("failure_code");
+
+                            b1.Property<Guid>("GitConnectionId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("git_connection_id");
+
+                            b1.Property<DateTimeOffset?>("LastTrackedAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("last_tracked_at");
+
+                            b1.Property<string>("MergeCommitSha")
+                                .HasMaxLength(40)
+                                .HasColumnType("character varying(40)")
+                                .HasColumnName("merge_commit_sha");
+
+                            b1.Property<bool>("OwnershipConfirmed")
+                                .HasColumnType("boolean")
+                                .HasColumnName("ownership_confirmed");
+
+                            b1.Property<DateTimeOffset?>("PreparedAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("prepared_at");
+
+                            b1.Property<string>("ProviderRepositoryId")
+                                .IsRequired()
+                                .HasMaxLength(300)
+                                .HasColumnType("character varying(300)")
+                                .HasColumnName("provider_repository_id");
+
+                            b1.Property<string>("PullRequestId")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("pull_request_id");
+
+                            b1.Property<string>("PullRequestState")
+                                .IsRequired()
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("pull_request_state");
+
+                            b1.Property<string>("PullRequestUrl")
+                                .HasMaxLength(2000)
+                                .HasColumnType("character varying(2000)")
+                                .HasColumnName("pull_request_url");
+
+                            b1.Property<string>("RepositoryName")
+                                .IsRequired()
+                                .HasMaxLength(300)
+                                .HasColumnType("character varying(300)")
+                                .HasColumnName("repository_name");
+
+                            b1.Property<bool>("RequiresConfirmation")
+                                .HasColumnType("boolean")
+                                .HasColumnName("requires_confirmation");
+
+                            b1.Property<string>("SourceBranch")
+                                .IsRequired()
+                                .HasMaxLength(240)
+                                .HasColumnType("character varying(240)")
+                                .HasColumnName("source_branch");
+
+                            b1.Property<string>("State")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("character varying(32)")
+                                .HasColumnName("state");
+
+                            b1.Property<string>("TargetBranch")
+                                .IsRequired()
+                                .HasMaxLength(240)
+                                .HasColumnType("character varying(240)")
+                                .HasColumnName("target_branch");
+
+                            b1.HasKey("PublicationId", "Id")
+                                .HasName("pk_publication_targets");
+
+                            b1.HasIndex("GitConnectionId")
+                                .HasDatabaseName("ix_publication_targets_git_connection_id");
+
+                            b1.ToTable("publication_targets", (string)null);
+
+                            b1.HasOne("InfraFlowSculptor.Domain.GitConnectionAggregate.GitConnectionAggregate", null)
+                                .WithMany()
+                                .HasForeignKey("GitConnectionId")
+                                .OnDelete(DeleteBehavior.Restrict)
+                                .IsRequired()
+                                .HasConstraintName("fk_publication_targets_git_connections_git_connection_id");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PublicationId")
+                                .HasConstraintName("fk_publication_targets_publications_publication_id");
+
+                            b1.OwnsMany("InfraFlowSculptor.Domain.PublicationAggregate.PublicationTargetDestination", "Destinations", b2 =>
+                                {
+                                    b2.Property<Guid>("PublicationId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("publication_id");
+
+                                    b2.Property<Guid>("TargetId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("target_id");
+
+                                    b2.Property<Guid>("DestinationId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("destination_id");
+
+                                    b2.Property<string>("BasePath")
+                                        .IsRequired()
+                                        .HasMaxLength(200)
+                                        .HasColumnType("character varying(200)")
+                                        .HasColumnName("base_path");
+
+                                    b2.HasKey("PublicationId", "TargetId", "DestinationId")
+                                        .HasName("pk_publication_target_destinations");
+
+                                    b2.ToTable("publication_target_destinations", (string)null);
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("PublicationId", "TargetId")
+                                        .HasConstraintName("fk_publication_target_destinations_publication_targets_publica");
+                                });
+
+                            b1.OwnsMany("InfraFlowSculptor.Domain.PublicationAggregate.PublicationTargetFile", "Files", b2 =>
+                                {
+                                    b2.Property<Guid>("PublicationId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("publication_id");
+
+                                    b2.Property<Guid>("TargetId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("target_id");
+
+                                    b2.Property<Guid>("Id")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("id");
+
+                                    b2.Property<string>("Action")
+                                        .IsRequired()
+                                        .HasMaxLength(16)
+                                        .HasColumnType("character varying(16)")
+                                        .HasColumnName("action");
+
+                                    b2.Property<Guid>("DestinationId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("destination_id");
+
+                                    b2.Property<string>("ExistingSha256")
+                                        .HasMaxLength(64)
+                                        .HasColumnType("character varying(64)")
+                                        .HasColumnName("existing_sha256");
+
+                                    b2.Property<string>("RepositoryPath")
+                                        .IsRequired()
+                                        .HasMaxLength(1024)
+                                        .HasColumnType("character varying(1024)")
+                                        .HasColumnName("repository_path");
+
+                                    b2.Property<string>("Sha256")
+                                        .HasMaxLength(64)
+                                        .HasColumnType("character varying(64)")
+                                        .HasColumnName("sha256");
+
+                                    b2.HasKey("PublicationId", "TargetId", "Id")
+                                        .HasName("pk_publication_target_files");
+
+                                    b2.ToTable("publication_target_files", (string)null);
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("PublicationId", "TargetId")
+                                        .HasConstraintName("fk_publication_target_files_publication_targets_publication_id");
+                                });
+
+                            b1.Navigation("Destinations");
+
+                            b1.Navigation("Files");
+                        });
+
+                    b.Navigation("Targets");
                 });
 
             modelBuilder.Entity("InfraFlowSculptor.Domain.RevisionAggregate.RevisionAggregate", b =>

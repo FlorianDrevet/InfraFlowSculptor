@@ -29,6 +29,9 @@
         </p>
       </div>
       @if (revision()!.state === 'Generated' && number(revision()!.filesCount) > 0) {
+        <app-ds-button variant="primary" icon="upload" (click)="openPublication()">
+          {{ 'revisionDetail.publish' | transloco }}
+        </app-ds-button>
         <app-ds-button variant="secondary" icon="download" (click)="downloadArchive()">
           {{ 'revisionDetail.downloadArchive' | transloco }}
         </app-ds-button>
@@ -167,6 +170,79 @@
           }
         </section>
       </section>
+    } @else if (activeTab() === 'publications') {
+      <section class="revision-detail__section" aria-labelledby="revision-publications-title">
+        <header class="revision-detail__publication-header">
+          <div>
+            <h3 id="revision-publications-title">
+              {{ 'revisionDetail.publicationsTitle' | transloco }}
+            </h3>
+            <p>{{ 'revisionDetail.publicationsDescription' | transloco }}</p>
+          </div>
+        </header>
+        @if (publicationLoading()) {
+          <p role="status">{{ 'revisionDetail.publicationsLoading' | transloco }}</p>
+        } @else if (publicationLoadError()) {
+          <app-ds-banner tone="danger">
+            {{ 'revisionDetail.publicationsLoadError' | transloco }}
+          </app-ds-banner>
+        } @else if (publication(); as currentPublication) {
+          @if (
+            currentPublication.state === 'Completed' ||
+            currentPublication.state === 'PartiallyPublished'
+          ) {
+            <h4 class="revision-detail__publication-result">
+              {{
+                'revisionDetail.publicationResult'
+                  | transloco
+                    : { completed: publicationCounts().completed, total: publicationCounts().total }
+              }}
+            </h4>
+          }
+          <p>
+            {{
+              'revisionDetail.publicationTargets'
+                | transloco: { count: currentPublication.targets.length }
+            }}
+          </p>
+          @if (publicationActionError()) {
+            <app-ds-banner tone="danger">
+              {{ 'revisionDetail.publicationWriteError' | transloco }}
+            </app-ds-banner>
+          }
+          <div class="revision-detail__publication-summary-targets">
+            @for (target of currentPublication.targets; track target.id) {
+              <article class="revision-detail__publication-summary-target">
+                <span class="revision-detail__mono">{{ target.repositoryName }}</span>
+                <app-ds-badge
+                  [tone]="
+                    target.state === 'Completed'
+                      ? 'success'
+                      : target.state === 'Failed'
+                        ? 'danger'
+                        : target.state === 'NeedsConfirmation'
+                          ? 'ember'
+                          : 'signal'
+                  "
+                >
+                  {{ publicationTargetStatus(target) }}
+                </app-ds-badge>
+                @if (target.pullRequestUrl) {
+                  <a [href]="target.pullRequestUrl" target="_blank" rel="noopener noreferrer">
+                    {{ 'revisionDetail.publicationPullRequest' | transloco }}
+                    {{ target.pullRequestId }}
+                  </a>
+                }
+              </article>
+            }
+          </div>
+          <app-ds-button variant="secondary" (click)="openPublicationReview()">
+            {{ 'revisionDetail.publicationReview' | transloco }}
+          </app-ds-button>
+        } @else {
+          <p>{{ 'revisionDetail.publicationsEmpty' | transloco }}</p>
+        }
+      </section>
     } @else {
       <section class="revision-detail__section" aria-labelledby="revision-findings-title">
         <header>
@@ -200,6 +276,266 @@
     }
   }
 </main>
+<dialog
+  #publicationDialog
+  class="revision-detail__publication-dialog"
+  aria-labelledby="revision-publication-dialog-title"
+  aria-describedby="revision-publication-dialog-description"
+  (close)="onPublicationDialogClosed()"
+  (cancel)="onPublicationDialogCancel($event)"
+>
+  <header class="revision-detail__publication-dialog-header">
+    <h2 id="revision-publication-dialog-title">
+      {{ 'revisionDetail.publishTitle' | transloco: { number: revision()?.number ?? 0 } }}
+    </h2>
+    @if (publication(); as currentPublication) {
+      <p id="revision-publication-dialog-description">
+        {{
+          'revisionDetail.publicationTargets'
+            | transloco: { count: currentPublication.targets.length }
+        }}
+      </p>
+    } @else {
+      <p id="revision-publication-dialog-description">
+        {{ 'revisionDetail.publishDescription' | transloco }}
+      </p>
+    }
+  </header>
+
+  <div class="revision-detail__publication-dialog-content">
+    @if (publicationLoading()) {
+      <p role="status">{{ 'revisionDetail.publicationsLoading' | transloco }}</p>
+    } @else if (publicationLoadError()) {
+      <app-ds-banner tone="danger">
+        {{ 'revisionDetail.publicationsLoadError' | transloco }}
+      </app-ds-banner>
+    } @else if (showPublicationForm() && !publication()) {
+      <div class="revision-detail__publication-form">
+        <app-ds-text-field
+          [label]="'revisionDetail.publishMessage' | transloco"
+          [hint]="'revisionDetail.publishMessageLimit' | transloco"
+          [error]="
+            publicationMessageTooLong()
+              ? ('revisionDetail.publishMessageTooLong' | transloco)
+              : undefined
+          "
+          [value]="publicationMessage()"
+          (valueChange)="setPublicationMessage($event)"
+        />
+        @if (revision()!.isStale) {
+          <label class="revision-detail__stale-confirmation">
+            <input
+              type="checkbox"
+              [checked]="acceptStalePublication()"
+              (change)="setAcceptStalePublication($event)"
+            />
+            {{ 'revisionDetail.publicationStaleConfirmation' | transloco }}
+          </label>
+        }
+        @if (publicationActionError()) {
+          <app-ds-banner tone="danger">
+            {{ 'revisionDetail.publicationStartError' | transloco }}
+          </app-ds-banner>
+        }
+      </div>
+    } @else if (publication(); as currentPublication) {
+      @if (
+        currentPublication.state === 'Completed' ||
+        currentPublication.state === 'PartiallyPublished'
+      ) {
+        <h3 class="revision-detail__publication-result">
+          {{
+            'revisionDetail.publicationResult'
+              | transloco
+                : { completed: publicationCounts().completed, total: publicationCounts().total }
+          }}
+        </h3>
+      }
+
+      @if (publicationActionError()) {
+        <app-ds-banner tone="danger">
+          {{ 'revisionDetail.publicationWriteError' | transloco }}
+        </app-ds-banner>
+      }
+
+      <div class="revision-detail__publication-targets" aria-live="polite">
+        @for (target of currentPublication.targets; track target.id) {
+          <article
+            class="revision-detail__publication-target"
+            [class.revision-detail__publication-target--confirmation]="
+              target.state === 'NeedsConfirmation'
+            "
+          >
+            <div class="revision-detail__publication-target-heading">
+              <span class="revision-detail__mono">{{ target.repositoryName }}</span>
+              <app-ds-badge
+                [tone]="
+                  target.state === 'Completed'
+                    ? 'success'
+                    : target.state === 'Failed'
+                      ? 'danger'
+                      : target.state === 'NeedsConfirmation'
+                        ? 'ember'
+                        : 'signal'
+                "
+              >
+                {{ publicationTargetStatus(target) }}
+              </app-ds-badge>
+            </div>
+            <p class="revision-detail__publication-branch">
+              {{ target.destinations.length }} · {{ target.sourceBranch }}
+            </p>
+
+            @if (target.state === 'Preparing') {
+              <p role="status">{{ 'revisionDetail.publicationPreparing' | transloco }}</p>
+            } @else if (target.state === 'Failed') {
+              <app-ds-banner tone="danger">
+                {{ 'revisionDetail.publicationFailure' | transloco: { code: target.failureCode } }}
+              </app-ds-banner>
+              @if (
+                currentPublication.state === 'Failed' ||
+                currentPublication.state === 'PartiallyPublished'
+              ) {
+                <app-ds-button
+                  variant="secondary"
+                  [disabled]="publicationWorking()"
+                  (click)="retryFailedTarget(target)"
+                >
+                  {{
+                    'revisionDetail.publicationRetryTarget'
+                      | transloco: { repository: target.repositoryName }
+                  }}
+                </app-ds-button>
+              }
+            } @else {
+              <p class="revision-detail__publication-summary">
+                {{ 'revisionDetail.publicationActionAdd' | transloco }}
+                {{ publicationActionCount(target, 'Add') }} ·
+                {{ 'revisionDetail.publicationActionUpdate' | transloco }}
+                {{ publicationActionCount(target, 'Update') }} ·
+                {{ 'revisionDetail.publicationActionDelete' | transloco }}
+                {{ publicationActionCount(target, 'Delete') }} ·
+                {{ 'revisionDetail.publicationActionUnchanged' | transloco }}
+                {{ publicationActionCount(target, 'Unchanged') }}
+              </p>
+              @if (target.files.length === 0) {
+                <p>{{ 'revisionDetail.publicationNoFiles' | transloco }}</p>
+              } @else {
+                <ul class="revision-detail__publication-files">
+                  @for (file of target.files; track file.destinationId + file.path) {
+                    <li>
+                      <app-ds-badge
+                        [tone]="
+                          file.action === 'Add'
+                            ? 'success'
+                            : file.action === 'Delete'
+                              ? 'ember'
+                              : 'neutral'
+                        "
+                      >
+                        {{ publicationFileAction(file.action) }}
+                      </app-ds-badge>
+                      <span class="revision-detail__mono">{{ file.path }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+            }
+
+            @if (target.state === 'NeedsConfirmation' && target.requiresConfirmation) {
+              <app-ds-banner
+                tone="ember"
+                [title]="'revisionDetail.publicationConfirmationRequired' | transloco"
+              >
+                {{ 'revisionDetail.publicationOwnershipDescription' | transloco }}
+              </app-ds-banner>
+              <label class="revision-detail__ownership-confirmation">
+                <input
+                  type="checkbox"
+                  [checked]="target.ownershipConfirmed"
+                  [disabled]="ownershipConfirmationTargetId() === target.id"
+                  (change)="confirmPublicationOwnership(target, $event)"
+                />
+                {{ 'revisionDetail.publicationOwnershipReplace' | transloco }}
+              </label>
+            } @else if (
+              target.ownershipConfirmed &&
+              target.requiresConfirmation &&
+              target.state === 'Prepared'
+            ) {
+              <p>{{ 'revisionDetail.publicationOwnershipConfirmed' | transloco }}</p>
+            }
+
+            @if (target.pullRequestUrl) {
+              <div class="revision-detail__publication-links">
+                <a [href]="target.pullRequestUrl" target="_blank" rel="noopener noreferrer">
+                  {{ 'revisionDetail.publicationPullRequest' | transloco }}
+                  {{ target.pullRequestId }}
+                </a>
+                @if (target.commitSha) {
+                  <span
+                    >{{ 'revisionDetail.publicationCommit' | transloco }}
+                    {{ target.commitSha.slice(0, 7) }}</span
+                  >
+                }
+              </div>
+            }
+          </article>
+        }
+      </div>
+    }
+  </div>
+
+  <footer class="revision-detail__publication-dialog-actions">
+    <app-ds-button
+      variant="ghost"
+      [disabled]="
+        publicationWorking() || (publication() !== null && isPublicationActive(publication()!))
+      "
+      (click)="closePublicationDialog()"
+    >
+      {{ 'revisionDetail.cancelPublication' | transloco }}
+    </app-ds-button>
+    @if (showPublicationForm() && !publication()) {
+      <app-ds-button
+        variant="primary"
+        icon="upload"
+        [disabled]="
+          publicationWorking() ||
+          publicationMessageTooLong() ||
+          (revision()!.isStale && !acceptStalePublication())
+        "
+        (click)="startPublication()"
+      >
+        {{ 'revisionDetail.preparePublication' | transloco }}
+      </app-ds-button>
+    } @else if (publication(); as currentPublication) {
+      @if (canWritePublication(currentPublication)) {
+        <app-ds-button
+          variant="primary"
+          icon="upload"
+          [disabled]="publicationWorking() || hasPendingOwnershipConfirmation(currentPublication)"
+          (click)="publishPreparedTargets()"
+        >
+          {{
+            'revisionDetail.publicationWrite'
+              | transloco: { count: preparedTargetCount(currentPublication) }
+          }}
+        </app-ds-button>
+      } @else if (
+        currentPublication.state === 'Preparing' || currentPublication.state === 'Publishing'
+      ) {
+        <p role="status">
+          {{
+            currentPublication.state === 'Preparing'
+              ? ('revisionDetail.publicationPreparing' | transloco)
+              : ('revisionDetail.publicationWriting' | transloco)
+          }}
+        </p>
+      }
+    }
+  </footer>
+</dialog>
 
 <ng-template #treeNode let-node>
   <li

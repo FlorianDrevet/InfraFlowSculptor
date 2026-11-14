@@ -38,6 +38,7 @@ builder.Services.AddBicepEmitter();
 builder.Services.AddAzureDevOpsEmitters();
 builder.Services.AddInstallKitEmitter();
 builder.Services.AddScoped<RevisionOutputChecker>();
+builder.Services.AddScoped<PublicationOperationProcessor>();
 builder.Services.AddNameAvailabilityInfrastructure();
 builder.Services.AddWorkerSecurityContext();
 builder.Services.AddScoped<WorkerOrganizationContext>();

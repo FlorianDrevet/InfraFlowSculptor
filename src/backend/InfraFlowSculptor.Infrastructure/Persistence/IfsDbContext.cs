@@ -11,6 +11,7 @@ using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Domain.RevisionAggregate;
 using InfraFlowSculptor.Domain.GitConnectionAggregate;
+using InfraFlowSculptor.Domain.PublicationAggregate;
 using InfraFlowSculptor.Infrastructure.Persistence.Common;
 using InfraFlowSculptor.Infrastructure.Persistence.Identity;
 using InfraFlowSculptor.Infrastructure.Persistence.Auditing;
@@ -66,6 +67,8 @@ public class IfsDbContext(
     public DbSet<RevisionAggregate> Revisions => Set<RevisionAggregate>();
 
     public DbSet<GitConnectionAggregate> GitConnections => Set<GitConnectionAggregate>();
+
+    public DbSet<PublicationAggregate> Publications => Set<PublicationAggregate>();
 
     public DbSet<GitConnectionPublicationUse> GitConnectionPublicationUses => Set<GitConnectionPublicationUse>();
 

@@ -3,6 +3,7 @@
 > S-14 implémenté le 2026-10-06 ; J0-01/J0-02 ajoutent le choix d’organisation, la page des membres et les restrictions d’accès.
 
 - J0-27 ajoute l'écran `/organizations/:organizationId/projects/:projectId/publication` et relie `ProjectWizard` à la suggestion de dépôts Git accessibles à tous à l'étape 5. Le test `publication.spec.ts` vérifie desktop/mobile, l'enregistrement et la relecture du plan Gitea `shop`, l'avertissement de compatibilité attendu et la portée d'accès; il restaure la portée à la fin. Les sélecteurs d'options asynchrones utilisent `[selected]` pour garder l'option persistée sélectionnée après chargement. Captures dans `docs/plan/revues/captures/R-07/`.
+- J0-28 ajoute l'onglet Publications au détail d'une révision : le formulaire et la comparaison préparée s'ouvrent dans un dialogue Strata, avec contenu défilant, actions persistantes en pied et confirmation de prise en charge explicite. Le résultat du dépôt reste consultable dans l'onglet; une relance de l'API conserve la même opération. Recettes Gitea/Azure Repos passées; relecture du dialogue vérifiée sur 1440×900 et 390×844 avec Axe, captures `PublishDialog-*`, `PublicationPrepared-*` et `PublishResult-*` dans `docs/plan/revues/captures/R-07/`.
 > Cible : `docs/technique/04-frontend.md`. Étapes S-09 à S-14, puis chaque étape UI.
 
 ## Faits vérifiés

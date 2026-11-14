@@ -138,6 +138,10 @@ export type { ProjectValidationReadinessResponse } from './models/project-valida
 export type { ProjectValidationResponse } from './models/project-validation-response';
 export type { ProjectWizardDraftResponse } from './models/project-wizard-draft-response';
 export type { ProjectWizardEnvironmentRequest } from './models/project-wizard-environment-request';
+export type { PublicationResponse } from './models/publication-response';
+export type { PublicationTargetDestinationResponse } from './models/publication-target-destination-response';
+export type { PublicationTargetFileResponse } from './models/publication-target-file-response';
+export type { PublicationTargetResponse } from './models/publication-target-response';
 export type { PublishPlanAssignmentRequest } from './models/publish-plan-assignment-request';
 export type { PublishPlanAssignmentResponse } from './models/publish-plan-assignment-response';
 export type { PublishPlanAvailableDestinationResponse } from './models/publish-plan-available-destination-response';
@@ -209,6 +213,7 @@ export type { SetResourceForcedNameRequest } from './models/set-resource-forced-
 export type { SetResourceOverrideRequest } from './models/set-resource-override-request';
 export type { SetResourcePresenceRequest } from './models/set-resource-presence-request';
 export type { SingleComponentTargetRequest } from './models/single-component-target-request';
+export type { StartRevisionPublicationRequest } from './models/start-revision-publication-request';
 export type { TakeProjectOwnershipRequest } from './models/take-project-ownership-request';
 export type { TargetInfo } from './models/target-info';
 export type { TargetPlan } from './models/target-plan';

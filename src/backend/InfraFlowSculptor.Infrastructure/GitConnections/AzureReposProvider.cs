@@ -12,7 +12,7 @@ using GitConnection = InfraFlowSculptor.Domain.GitConnectionAggregate.GitConnect
 
 namespace InfraFlowSculptor.Infrastructure.GitConnections;
 
-public sealed class AzureReposProvider(
+public sealed partial class AzureReposProvider(
     IHttpClientFactory httpClientFactory,
     IfsAzureCredential ifsAzureCredential,
     IConfiguration configuration) : IGitProvider

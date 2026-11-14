@@ -94,6 +94,11 @@ public static class EndpointNames
     public const string ListRevisionFiles = "ListRevisionFiles";
     public const string GetRevisionFile = "GetRevisionFile";
     public const string GetRevisionArchive = "GetRevisionArchive";
+    public const string StartRevisionPublication = "StartRevisionPublication";
+    public const string ListProjectPublications = "ListProjectPublications";
+    public const string GetPublication = "GetPublication";
+    public const string ConfirmPublicationOwnership = "ConfirmPublicationOwnership";
+    public const string StartPublicationWrite = "StartPublicationWrite";
     public const string AcknowledgeFinding = "AcknowledgeFinding";
     public const string ApplyFindingFix = "ApplyFindingFix";
     public const string SaveResourceApplication = "SaveResourceApplication";

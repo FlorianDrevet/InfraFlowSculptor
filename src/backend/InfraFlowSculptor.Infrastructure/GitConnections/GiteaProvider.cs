@@ -8,7 +8,7 @@ using GitConnection = InfraFlowSculptor.Domain.GitConnectionAggregate.GitConnect
 
 namespace InfraFlowSculptor.Infrastructure.GitConnections;
 
-public sealed class GiteaProvider(IHttpClientFactory httpClientFactory, IConfiguration configuration) : IGitProvider
+public sealed partial class GiteaProvider(IHttpClientFactory httpClientFactory, IConfiguration configuration) : IGitProvider
 {
     private const int PageSize = 50;
     private const string EndpointConfigurationKey = "Ifs:Development:Gitea:Endpoint";

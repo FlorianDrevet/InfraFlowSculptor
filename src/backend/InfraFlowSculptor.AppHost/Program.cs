@@ -1,5 +1,6 @@
 using AzureKeyVaultEmulator.Aspire.Hosting;
 using Aspire.Hosting;
+using Aspire.Hosting.ApplicationModel;
 using InfraFlowSculptor.AppHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -92,6 +93,7 @@ var keyVault = enableDevelopmentExtras && !isTesting
 var giteaToken = string.IsNullOrWhiteSpace(builder.Configuration["Gitea:Token"])
     ? null
     : builder.AddParameter("gitea-token", () => builder.Configuration["Gitea:Token"]!, secret: true);
+IResourceBuilder<ContainerResource>? gitea = null;
 
 var api = builder
     .AddProject<Projects.InfraFlowSculptor_Api>(ResourceNames.Api)
@@ -152,7 +154,7 @@ else
                 .WithVolume("ifs-gitea-data", "/data");
         }
 
-        _ = giteaBuilder.WithLifetime(containerLifetime);
+        gitea = giteaBuilder.WithLifetime(containerLifetime);
     }
 
     builder.AddJavaScriptApp(ResourceNames.Web, "../../frontend/ifs-web")
@@ -180,6 +182,12 @@ if (giteaToken is not null)
 {
     api = api.WithEnvironment("Gitea__Token", giteaToken);
 }
+if (gitea is not null)
+{
+    api = api
+        .WithEnvironment("Ifs__Development__Gitea__Endpoint", gitea.GetEndpoint("http"))
+        .WaitFor(gitea);
+}
 
 var worker = builder.AddProject<Projects.InfraFlowSculptor_Worker>(ResourceNames.Worker)
     .WithReference(database)
@@ -197,6 +205,17 @@ if (keyVault is not null)
         .WithAzureKeyVaultEmulatorCredentials(keyVault)
         .WithReference(keyVault)
         .WaitFor(keyVault);
+}
+if (gitea is not null)
+{
+    worker = worker
+        .WithEnvironment("Ifs__Development__EnableGitea", "true")
+        .WithEnvironment("Ifs__Development__Gitea__Endpoint", gitea.GetEndpoint("http"))
+        .WaitFor(gitea);
+}
+if (giteaToken is not null)
+{
+    worker = worker.WithEnvironment("Gitea__Token", giteaToken);
 }
 if (mailpit is not null)
 {

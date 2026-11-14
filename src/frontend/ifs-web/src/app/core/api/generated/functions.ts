@@ -131,6 +131,16 @@ export type { GetRevisionFile$Params as GetRevisionFile$Params } from './fn/revi
 export { getRevisionFile as getRevisionFile } from './fn/revisions/get-revision-file';
 export type { GetRevisionArchive$Params as GetRevisionArchive$Params } from './fn/revisions/get-revision-archive';
 export { getRevisionArchive as getRevisionArchive } from './fn/revisions/get-revision-archive';
+export type { StartRevisionPublication$Params as StartRevisionPublication$Params } from './fn/publications/start-revision-publication';
+export { startRevisionPublication as startRevisionPublication } from './fn/publications/start-revision-publication';
+export type { ListProjectPublications$Params as ListProjectPublications$Params } from './fn/publications/list-project-publications';
+export { listProjectPublications as listProjectPublications } from './fn/publications/list-project-publications';
+export type { GetPublication$Params as GetPublication$Params } from './fn/publications/get-publication';
+export { getPublication as getPublication } from './fn/publications/get-publication';
+export type { ConfirmPublicationOwnership$Params as ConfirmPublicationOwnership$Params } from './fn/publications/confirm-publication-ownership';
+export { confirmPublicationOwnership as confirmPublicationOwnership } from './fn/publications/confirm-publication-ownership';
+export type { StartPublicationWrite$Params as StartPublicationWrite$Params } from './fn/publications/start-publication-write';
+export { startPublicationWrite as startPublicationWrite } from './fn/publications/start-publication-write';
 export type { ListProjectComponents$Params as ListProjectComponents$Params } from './fn/components/list-project-components';
 export { listProjectComponents as listProjectComponents } from './fn/components/list-project-components';
 export type { CreateProjectComponent$Params as CreateProjectComponent$Params } from './fn/components/create-project-component';

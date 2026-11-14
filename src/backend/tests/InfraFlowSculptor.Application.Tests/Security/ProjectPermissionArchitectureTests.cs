@@ -7,6 +7,21 @@ namespace InfraFlowSculptor.Application.Tests.Security;
 public sealed class ProjectPermissionArchitectureTests
 {
     [Fact]
+    public void EveryPermissionProtectedProjectMessageImplementsTheProjectScopedContract()
+    {
+        var missingContracts = typeof(IProjectScopedRequest).Assembly
+            .GetTypes()
+            .Where(type => !type.IsAbstract && !type.IsInterface && typeof(IMessage).IsAssignableFrom(type))
+            .Where(type => type.GetProperty(nameof(IProjectScopedRequest.ProjectId))?.PropertyType == typeof(Guid))
+            .Where(type => type.GetCustomAttribute<RequiresPermissionAttribute>() is not null)
+            .Where(type => !typeof(IProjectScopedRequest).IsAssignableFrom(type))
+            .Select(type => type.FullName)
+            .ToArray();
+
+        Assert.Empty(missingContracts);
+    }
+
+    [Fact]
     public void EveryProjectScopedCommandAndQueryDeclaresARequiredPermission()
     {
         var missingRequirements = typeof(IProjectScopedRequest).Assembly

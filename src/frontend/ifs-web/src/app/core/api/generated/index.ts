@@ -144,6 +144,10 @@ export type { ProjectValidationReadinessResponse } from './models/project-valida
 export type { ProjectValidationResponse } from './models/project-validation-response';
 export type { ProjectWizardDraftResponse } from './models/project-wizard-draft-response';
 export type { ProjectWizardEnvironmentRequest } from './models/project-wizard-environment-request';
+export type { PublicationResponse } from './models/publication-response';
+export type { PublicationTargetDestinationResponse } from './models/publication-target-destination-response';
+export type { PublicationTargetFileResponse } from './models/publication-target-file-response';
+export type { PublicationTargetResponse } from './models/publication-target-response';
 export type { PublishPlanAssignmentRequest } from './models/publish-plan-assignment-request';
 export type { PublishPlanAssignmentResponse } from './models/publish-plan-assignment-response';
 export type { PublishPlanAvailableDestinationResponse } from './models/publish-plan-available-destination-response';
@@ -215,6 +219,7 @@ export type { SetResourceForcedNameRequest } from './models/set-resource-forced-
 export type { SetResourceOverrideRequest } from './models/set-resource-override-request';
 export type { SetResourcePresenceRequest } from './models/set-resource-presence-request';
 export type { SingleComponentTargetRequest } from './models/single-component-target-request';
+export type { StartRevisionPublicationRequest } from './models/start-revision-publication-request';
 export type { TakeProjectOwnershipRequest } from './models/take-project-ownership-request';
 export type { TargetInfo } from './models/target-info';
 export type { TargetPlan } from './models/target-plan';
@@ -357,6 +362,16 @@ export type { GetRevisionFile$Params as GetRevisionFile$Params } from './fn/revi
 export { getRevisionFile as getRevisionFile } from './fn/revisions/get-revision-file';
 export type { GetRevisionArchive$Params as GetRevisionArchive$Params } from './fn/revisions/get-revision-archive';
 export { getRevisionArchive as getRevisionArchive } from './fn/revisions/get-revision-archive';
+export type { StartRevisionPublication$Params as StartRevisionPublication$Params } from './fn/publications/start-revision-publication';
+export { startRevisionPublication as startRevisionPublication } from './fn/publications/start-revision-publication';
+export type { ListProjectPublications$Params as ListProjectPublications$Params } from './fn/publications/list-project-publications';
+export { listProjectPublications as listProjectPublications } from './fn/publications/list-project-publications';
+export type { GetPublication$Params as GetPublication$Params } from './fn/publications/get-publication';
+export { getPublication as getPublication } from './fn/publications/get-publication';
+export type { ConfirmPublicationOwnership$Params as ConfirmPublicationOwnership$Params } from './fn/publications/confirm-publication-ownership';
+export { confirmPublicationOwnership as confirmPublicationOwnership } from './fn/publications/confirm-publication-ownership';
+export type { StartPublicationWrite$Params as StartPublicationWrite$Params } from './fn/publications/start-publication-write';
+export { startPublicationWrite as startPublicationWrite } from './fn/publications/start-publication-write';
 export type { ListProjectComponents$Params as ListProjectComponents$Params } from './fn/components/list-project-components';
 export { listProjectComponents as listProjectComponents } from './fn/components/list-project-components';
 export type { CreateProjectComponent$Params as CreateProjectComponent$Params } from './fn/components/create-project-component';

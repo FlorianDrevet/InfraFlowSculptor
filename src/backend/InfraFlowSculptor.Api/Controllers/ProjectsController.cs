@@ -756,6 +756,7 @@ public static class ProjectsController
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         projects.MapRevisionEndpoints();
+        projects.MapPublicationEndpoints();
         return projects;
     }
 
