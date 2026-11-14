@@ -144,3 +144,4 @@
 | 2026-11-14 15:09 | Codex | `J0-27` terminée | commit `8f74b63` |
 | 2026-11-14 21:44 | Codex | `J0-28` recette autonome à exécuter |  |
 | 2026-11-14 23:29 | Codex | `J0-28` reprise après recette autonome vérifiée |  |
+| 2026-11-14 23:30 | Codex | `J0-28` terminée | commit `01e9215` |

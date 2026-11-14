@@ -9,10 +9,10 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-28`](docs/plan/02-jalon-0-pilote.md#j0-28--publication-par-pull-request) — Publication par pull request |
-| **Statut** | `EN_COURS` |
-| **Dernière étape terminée** | [`J0-27`](docs/plan/02-jalon-0-pilote.md#j0-27--plan-de-publication) — Plan de publication (commit `8f74b63`) |
-| **Étape suivante** | `R-07` — Revue de la publication |
+| **Étape courante** | [`R-07`](docs/plan/02-jalon-0-pilote.md#-r-07--revue-de-la-publication) — Revue de la publication |
+| **Statut** | `A_FAIRE` |
+| **Dernière étape terminée** | [`J0-28`](docs/plan/02-jalon-0-pilote.md#j0-28--publication-par-pull-request) — Publication par pull request (commit `01e9215`) |
+| **Étape suivante** | `J0-29` — Liste de contrôle d'installation |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-publication` (créée depuis `origin/impl/j0-generation`, segment empilé après R-06) |
 | **Dernière mise à jour** | 2026-11-14 — Codex |
