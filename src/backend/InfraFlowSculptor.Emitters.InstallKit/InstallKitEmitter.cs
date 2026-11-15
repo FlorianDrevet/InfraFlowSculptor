@@ -9,6 +9,11 @@ public sealed class InstallKitEmitter
     {
         ArgumentNullException.ThrowIfNull(plan);
 
-        return ReferenceInstallResources.ReadAll(plan.Project.Code, plan.Project.Name);
+        var checklist = plan.InstallationChecklist ?? InstallationChecklistBuilder.Build(plan);
+        return ReferenceInstallResources.ReadAll(plan.Project.Code, plan.Project.Name)
+            .Select(file => file.RelativePath == ".ifs/install/SETUP.md"
+                ? file with { Content = InstallationChecklistMarkdownRenderer.Append(file.Content, checklist) }
+                : file)
+            .ToArray();
     }
 }

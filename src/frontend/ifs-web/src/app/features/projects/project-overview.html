@@ -5,6 +5,78 @@
 } @else {
   <div class="project-overview">
     <app-project-revision-rail [projectId]="projectId()" />
+    @if (showInstallationCard()) {
+      <section
+        class="project-overview__section project-overview__installation"
+        aria-labelledby="installation-heading"
+      >
+        <header>
+          <h2 id="installation-heading">{{ 'project.installationLink' | transloco }}</h2>
+          <a [routerLink]="['installation']">{{
+            'project.installationOpenChecklist' | transloco
+          }}</a>
+        </header>
+        @if (installationChecklist()) {
+          <p>
+            {{
+              'project.installationProgressSummary'
+                | transloco
+                  : {
+                      completed: installationSummary().completed,
+                      total: installationSummary().total,
+                    }
+            }}
+          </p>
+          @if (installationSummary().remaining.length > 0) {
+            <div class="project-overview__installation-remaining">
+              <p>{{ 'project.installationRemainingHeading' | transloco }}</p>
+              <ul>
+                @for (item of installationSummary().remaining; track item.key) {
+                  <li>{{ item.text }}</li>
+                }
+              </ul>
+              @if (installationSummary().remainingCount > installationSummary().remaining.length) {
+                <p>
+                  {{
+                    'project.installationMoreRemaining'
+                      | transloco
+                        : {
+                            count:
+                              installationSummary().remainingCount -
+                              installationSummary().remaining.length,
+                          }
+                  }}
+                </p>
+              }
+            </div>
+          }
+          <div
+            class="project-overview__installation-progress"
+            role="progressbar"
+            [attr.aria-valuenow]="installationSummary().completed"
+            [attr.aria-valuemin]="0"
+            [attr.aria-valuemax]="installationSummary().total"
+            [attr.aria-label]="'project.installationProgress' | transloco"
+          >
+            <span
+              [style.width.%]="
+                installationSummary().total === 0
+                  ? 0
+                  : (installationSummary().completed / installationSummary().total) * 100
+              "
+            ></span>
+          </div>
+        } @else if (installationUnavailable()) {
+          <p class="project-overview__error" role="alert">
+            {{ 'project.installationOverviewError' | transloco }}
+          </p>
+        } @else {
+          <p class="project-overview__empty" role="status">
+            {{ 'project.installationOverviewLoading' | transloco }}
+          </p>
+        }
+      </section>
+    }
     <section class="project-overview__section" aria-labelledby="components-heading">
       <header>
         <h2 id="components-heading">

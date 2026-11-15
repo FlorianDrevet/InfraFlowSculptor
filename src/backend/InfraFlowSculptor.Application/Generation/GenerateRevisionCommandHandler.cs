@@ -67,6 +67,8 @@ public sealed class GenerateRevisionCommandHandler(
             return Error.NotFound("PROJECT_NOT_FOUND", "The project was not found.");
         }
 
+        var snapshotJson = RevisionInputJsonSerializer.Serialize(snapshot);
+        var snapshotHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(snapshotJson))).ToLowerInvariant();
         var lastRevision = await dbContext.Query<RevisionAggregate>()
             .Where(revision => revision.ProjectId == projectId)
             .OrderByDescending(revision => revision.Number)
@@ -75,7 +77,8 @@ public sealed class GenerateRevisionCommandHandler(
             && lastRevision.ModelVersion == snapshot.Project.ModelVersion
             && string.Equals(lastRevision.CatalogVersion, snapshot.Project.CatalogVersion, StringComparison.Ordinal)
             && string.Equals(lastRevision.InfrastructureLanguage, snapshot.Project.InfrastructureLanguage, StringComparison.Ordinal)
-            && string.Equals(lastRevision.CiPlatform, snapshot.Project.CiPlatform, StringComparison.Ordinal))
+            && string.Equals(lastRevision.CiPlatform, snapshot.Project.CiPlatform, StringComparison.Ordinal)
+            && string.Equals(lastRevision.InputSha256, snapshotHash, StringComparison.Ordinal))
         {
             int? queuePosition = lastRevision.State == RevisionState.Queued
                 ? await GetQueuePositionAsync(lastRevision, organizationId, cancellationToken)
@@ -88,8 +91,6 @@ public sealed class GenerateRevisionCommandHandler(
                 IsUnchanged: true);
         }
 
-        var snapshotJson = RevisionInputJsonSerializer.Serialize(snapshot);
-        var snapshotHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(snapshotJson))).ToLowerInvariant();
         var createdAt = clock.GetUtcNow();
         var revisionId = RevisionId.New(clock);
         var number = (lastRevision?.Number ?? 0) + 1;

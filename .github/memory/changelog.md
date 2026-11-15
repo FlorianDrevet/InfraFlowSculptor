@@ -1,6 +1,7 @@
 # Changelog de la mémoire
 
 | Date | Auteur | Changement |
+| 2026-11-15 | Codex | J0-29 — checklist issue du moteur, progression relationnelle et audit; recette authentifiée desktop/mobile et limites de validation consignées. |
 | 2026-11-14 | Codex | J0-28 — publication idempotente Gitea/Azure Repos, dialogue de relecture conforme à la maquette, confirmation de propriété, recette P1–P8 et captures desktop/mobile consignées. |
 | 2026-11-14 | Codex | J0-27 — plan de publication mono-dépôt, API, moteur de répartition, assistant et recette locale consignés. |
 |---|---|---|

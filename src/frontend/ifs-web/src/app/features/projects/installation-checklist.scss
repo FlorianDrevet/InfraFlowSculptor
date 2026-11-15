@@ -1,0 +1,216 @@
+.installation-checklist {
+  display: grid;
+  gap: var(--ifs-space-4);
+  min-width: 0;
+}
+
+.installation-checklist__header,
+.installation-checklist__summary-heading,
+.installation-checklist__item-main {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ifs-space-4);
+  min-width: 0;
+}
+
+.installation-checklist__header {
+  align-items: flex-end;
+}
+
+.installation-checklist__heading {
+  display: grid;
+  gap: var(--ifs-space-2);
+  min-width: 0;
+}
+
+.installation-checklist__breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ifs-space-2);
+  color: var(--ifs-text-3);
+  font-size: 0.8125rem;
+}
+
+.installation-checklist__breadcrumb a {
+  color: var(--ifs-signal-text);
+}
+
+.installation-checklist__file {
+  width: fit-content;
+  padding: var(--ifs-space-1) var(--ifs-space-2);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-sm);
+  color: var(--ifs-text-2);
+}
+
+.installation-checklist__file,
+.installation-checklist__item pre {
+  font-family: var(--ifs-font-mono, monospace);
+  font-size: 0.75rem;
+}
+
+.installation-checklist__header h1,
+.installation-checklist__header p,
+.installation-checklist__summary h2,
+.installation-checklist__section h2,
+.installation-checklist__section header p,
+.installation-checklist__item p {
+  margin: 0;
+}
+
+.installation-checklist__header h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 2.125rem;
+}
+
+.installation-checklist__header > .installation-checklist__heading > p,
+.installation-checklist__section header p,
+.installation-checklist__read-only {
+  color: var(--ifs-text-2);
+}
+
+.installation-checklist__revision,
+.installation-checklist__read-only {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.installation-checklist__revision,
+.installation-checklist__counts,
+.installation-checklist__new,
+.installation-checklist__date {
+  color: var(--ifs-text-3);
+}
+
+.installation-checklist__summary,
+.installation-checklist__section {
+  display: grid;
+  gap: var(--ifs-space-3);
+  min-width: 0;
+  padding: var(--ifs-space-4);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+}
+
+.installation-checklist__summary h2,
+.installation-checklist__section h2 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.installation-checklist__counts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--ifs-space-2) var(--ifs-space-4);
+  font-size: 0.8125rem;
+}
+
+.installation-checklist__progress {
+  display: flex;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--ifs-radius-full);
+  background: var(--ifs-surface-3);
+}
+
+.installation-checklist__progress span {
+  background: var(--ifs-success);
+}
+
+.installation-checklist__sections,
+.installation-checklist__section ul {
+  display: grid;
+  gap: var(--ifs-space-3);
+  min-width: 0;
+}
+
+.installation-checklist__section > header {
+  display: grid;
+  gap: var(--ifs-space-1);
+}
+
+.installation-checklist__section ul {
+  gap: var(--ifs-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.installation-checklist__item {
+  display: grid;
+  gap: var(--ifs-space-2);
+  min-width: 0;
+  padding: var(--ifs-space-3);
+  border: 1px solid var(--ifs-line-subtle);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-2);
+}
+
+.installation-checklist__item-main {
+  align-items: center;
+}
+
+.installation-checklist__item-label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ifs-space-3);
+  min-width: 0;
+}
+
+.installation-checklist__item-label input {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--ifs-success);
+}
+
+.installation-checklist__item-label input:focus-visible {
+  outline: 2px solid var(--ifs-signal);
+  outline-offset: 2px;
+}
+
+.installation-checklist__item-text {
+  min-width: 0;
+}
+
+.installation-checklist__item pre {
+  margin: 0;
+  padding: var(--ifs-space-3);
+  border: 1px solid var(--ifs-line);
+  border-radius: var(--ifs-radius-sm);
+  background: var(--ifs-surface-3);
+  color: var(--ifs-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.installation-checklist__error,
+.installation-checklist__saved {
+  margin: 0;
+}
+
+.installation-checklist__error {
+  color: var(--ifs-danger-text);
+}
+
+.installation-checklist__saved {
+  color: var(--ifs-success-text);
+}
+
+@media (max-width: 760px) {
+  .installation-checklist__header,
+  .installation-checklist__summary-heading,
+  .installation-checklist__item-main {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .installation-checklist__counts {
+    justify-content: flex-start;
+  }
+
+}

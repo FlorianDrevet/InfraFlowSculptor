@@ -123,6 +123,25 @@
   color: var(--ifs-danger);
 }
 
+.project-overview__installation > p {
+  margin: 0;
+  color: var(--ifs-text-2);
+}
+
+.project-overview__installation-progress {
+  display: flex;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--ifs-radius-full);
+  background: var(--ifs-surface-3);
+}
+
+.project-overview__installation-progress span {
+  display: block;
+  border-radius: inherit;
+  background: var(--ifs-success);
+}
+
 @media (max-width: 760px) {
   .project-overview__section header,
   .project-overview__components li,

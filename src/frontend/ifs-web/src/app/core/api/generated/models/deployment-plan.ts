@@ -3,9 +3,11 @@
 
 import { CatalogPins } from '../models/catalog-pins';
 import { ComponentPlan } from '../models/component-plan';
+import { InstallationChecklist } from '../models/installation-checklist';
 import { ProjectInfo } from '../models/project-info';
 export interface DeploymentPlan {
   components: Array<ComponentPlan>;
+  installationChecklist?: (null | InstallationChecklist);
   pins: CatalogPins;
   project: ProjectInfo;
 }

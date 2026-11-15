@@ -22,6 +22,96 @@ public sealed class DeploymentPlanBuilderTests
     private static readonly Guid SubscriptionId = Guid.Parse("44444444-4444-4444-8444-444444444444");
 
     [Fact]
+    public void DeploymentPlanContainsNineInstallationChecklistSectionsInSpecificationOrder()
+    {
+        var component = CreateComponent(Guid.NewGuid(), "core", [DevId]);
+        var plan = BuildPlan(CreateSnapshot([DevId], [component]));
+        using var document = JsonDocument.Parse(DeploymentPlanJsonSerializer.Serialize(plan));
+
+        Assert.True(document.RootElement.TryGetProperty("installationChecklist", out var checklist),
+            "The generated deployment plan must include its installation checklist.");
+        var sections = checklist.GetProperty("sections").EnumerateArray()
+            .Select(section => section.GetProperty("code").GetString() ?? string.Empty)
+            .ToArray();
+
+        Assert.Equal(
+            ["platformPrerequisites", "azureScript", "scriptFollowUp", "platformSetup", "pipelineSecrets",
+                "externalSecrets", "firstDeployment", "missingExtensions", "migrationCutover"],
+            sections);
+    }
+
+    [Fact]
+    public void InstallationChecklistHighlightsNewPipelineSecretSincePreviousRevision()
+    {
+        var component = CreateComponent(Guid.NewGuid(), "core", [DevId]);
+        var sourcePlan = BuildPlan(CreateSnapshot([DevId], [component]));
+        var secret = new PipelineSecretPlan("PAYMENTS_API_KEY", "kv-shop-dev", "payments-api-key", "core");
+        var setting = new AppSettingPlan(
+            "Payments__ApiKey", "environmentVariable", "keyVaultSecret", null, null, null,
+            "kv-shop-dev", "payments-api-key", "identity", "pipelineSecret", "PAYMENTS_API_KEY", false, true);
+        var currentPlan = sourcePlan with
+        {
+            Components = sourcePlan.Components.Select(current => current with
+            {
+                Targets = current.Targets.Select(target => target with
+                {
+                    ExpectedSecrets = [secret],
+                    AppSettings = [setting]
+                }).ToArray()
+            }).ToArray()
+        };
+
+        var checklist = InstallationChecklistBuilder.Build(currentPlan, sourcePlan);
+        var pipelineSecret = Assert.Single(checklist.Sections
+            .Single(section => section.Code == InstallationChecklistBuilder.PipelineSecretsSection).Items);
+
+        Assert.True(pipelineSecret.IsNewSincePrevious);
+        Assert.Equal("dev · ifs-shop-dev · PAYMENTS_API_KEY → paramètre Payments__ApiKey", pipelineSecret.Text);
+    }
+
+    [Fact]
+    public void InstallationChecklistHighlightsNewExternallyManagedSecretSincePreviousRevision()
+    {
+        var component = CreateComponent(Guid.NewGuid(), "core", [DevId]);
+        var previousPlan = BuildPlan(CreateSnapshot([DevId], [component]));
+        var externalSecret = new AppSettingPlan(
+            "Payments__ApiKey", "environmentVariable", "keyVaultSecret", null, null, null,
+            "kv-shop-dev", "payments-api-key", "identity", "managedOutsideIfs", null, false, true);
+        var currentPlan = previousPlan with
+        {
+            Components = previousPlan.Components.Select(current => current with
+            {
+                Targets = current.Targets.Select(target => target with { AppSettings = [externalSecret] }).ToArray()
+            }).ToArray()
+        };
+
+        var checklist = InstallationChecklistBuilder.Build(currentPlan, previousPlan);
+        var secret = Assert.Single(
+            checklist.Sections.Single(section => section.Code == InstallationChecklistBuilder.ExternalSecretsSection).Items,
+            item => item.Text.Contains("payments-api-key", StringComparison.Ordinal));
+
+        Assert.True(secret.IsNewSincePrevious);
+    }
+
+    [Fact]
+    public void InstallationChecklistHighlightsNewPublicationRepositorySincePreviousRevision()
+    {
+        var component = CreateComponent(Guid.NewGuid(), "core", [DevId]);
+        var previousPlan = BuildPlan(CreateSnapshot([DevId], [component]));
+        var currentPlan = previousPlan with
+        {
+            Project = previousPlan.Project with { Repositories = ["org/shop-infra"] }
+        };
+
+        var checklist = InstallationChecklistBuilder.Build(currentPlan, previousPlan);
+        var repository = Assert.Single(
+            checklist.Sections.Single(section => section.Code == InstallationChecklistBuilder.PlatformSetupSection).Items,
+            item => item.Text.Contains("org/shop-infra", StringComparison.Ordinal));
+
+        Assert.True(repository.IsNewSincePrevious);
+    }
+
+    [Fact]
     public void DataAccessDoesNotUseAnotherEnvironmentWhenTargetCodeIsMissing()
     {
         var ordersId = Guid.NewGuid();

@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, inject, input, OnChanges, OnInit, signal, SimpleChanges } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  input,
+  OnChanges,
+  OnInit,
+  signal,
+  SimpleChanges,
+} from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import type {
@@ -28,6 +37,7 @@ const actionKeys: Readonly<Record<string, string>> = {
   'organization.invitation.revoked': 'audit.actions.invitationRevoked',
   'organization.invitation.accepted': 'audit.actions.invitationAccepted',
   'project.exported': 'audit.actions.projectExported',
+  'installation.checklist.item_updated': 'audit.actions.installationChecklistItemUpdated',
 };
 
 const fieldKeys: Readonly<Record<string, string>> = {
@@ -38,6 +48,7 @@ const fieldKeys: Readonly<Record<string, string>> = {
   status: 'audit.fields.status',
   email: 'audit.fields.email',
   code: 'audit.fields.projectCode',
+  completedAt: 'audit.fields.completedAt',
 };
 
 const objectTypeKeys: Readonly<Record<string, string>> = {
@@ -45,6 +56,7 @@ const objectTypeKeys: Readonly<Record<string, string>> = {
   OrganizationMember: 'audit.objects.member',
   Invitation: 'audit.objects.invitation',
   Project: 'audit.objects.project',
+  InstallationChecklistItem: 'audit.objects.installationChecklistItem',
 };
 
 const viaKeys: Readonly<Record<string, string>> = {
@@ -102,7 +114,7 @@ export class OrganizationAudit implements OnChanges, OnInit {
       return;
     }
 
-    this.page.update(page => page - 1);
+    this.page.update((page) => page - 1);
     await this.loadPage();
   }
 
@@ -111,7 +123,7 @@ export class OrganizationAudit implements OnChanges, OnInit {
       return;
     }
 
-    this.page.update(page => page + 1);
+    this.page.update((page) => page + 1);
     await this.loadPage();
   }
 
@@ -125,7 +137,7 @@ export class OrganizationAudit implements OnChanges, OnInit {
       return this.transloco.translate(key);
     }
 
-    const code = event.diff.changes.find(change => change.name === 'code')?.after;
+    const code = event.diff.changes.find((change) => change.name === 'code')?.after;
     return this.transloco.translate(key, { projectCode: typeof code === 'string' ? code : '' });
   }
 
@@ -138,8 +150,10 @@ export class OrganizationAudit implements OnChanges, OnInit {
   }
 
   protected organizationContext(): string {
-    return this.organizations.organizations().find(organization => organization.id === this.id())?.name
-      ?? this.transloco.translate('audit.objects.organization');
+    return (
+      this.organizations.organizations().find((organization) => organization.id === this.id())
+        ?.name ?? this.transloco.translate('audit.objects.organization')
+    );
   }
 
   protected viaKey(via: string): string {
@@ -198,7 +212,9 @@ export class OrganizationAudit implements OnChanges, OnInit {
         return;
       }
       this.audit.set(result);
-      this.pageCount.set(Math.max(1, Math.ceil(Number(result.totalCount) / Number(result.pageSize))));
+      this.pageCount.set(
+        Math.max(1, Math.ceil(Number(result.totalCount) / Number(result.pageSize))),
+      );
     } catch (error) {
       if (requestVersion !== this.requestVersion) {
         return;

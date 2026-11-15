@@ -19,5 +19,6 @@ public enum ObjectType
     ProjectRoleAssignment,
     AuditEvent,
     ResourceGroup,
-    FindingAcknowledgment
+    FindingAcknowledgment,
+    InstallationChecklistItem
 }

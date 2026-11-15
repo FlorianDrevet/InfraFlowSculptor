@@ -111,6 +111,14 @@ export class ProjectWorkspace {
         featureKey: FEATURES.revisions,
         iconName: 'clock',
       }),
+      this.navigation.register({
+        id: `project-installation-${projectId}`,
+        labelKey: 'project.installationLink',
+        path: `${base}/installation`,
+        scope: 'project',
+        featureKey: FEATURES.installationKit,
+        iconName: 'check',
+      }),
     ];
     onCleanup(() => unregister.forEach((remove) => remove()));
   });

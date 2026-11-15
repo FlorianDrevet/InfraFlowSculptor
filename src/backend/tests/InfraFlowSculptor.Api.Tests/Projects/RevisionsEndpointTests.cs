@@ -100,6 +100,36 @@ public sealed class RevisionsEndpointTests(ApiFactory factory) : IClassFixture<A
         Assert.Equal("shop", frozenSnapshot.Project.Code);
         Assert.Equal("shop11", currentProject.Code);
         Assert.True(currentProject.ModelVersion > frozenInput.ModelVersion);
+
+        var destinationId = Guid.NewGuid();
+        var connectionId = Guid.NewGuid();
+        var publicationPlan = currentProject.ConfigurePublicationPlan(new PublishPlanConfiguration(
+            PublishPreset.MonoRepo,
+            [new PublishPlanDestinationInput(destinationId, connectionId, "org/shop-infra", string.Empty)],
+            [],
+            destinationId,
+            destinationId,
+            destinationId));
+        Assert.False(publicationPlan.IsError);
+        dbContext.GitConnections.Add(GitConnectionAggregate.Create(
+            new GitConnectionId(connectionId),
+            new OrganizationId(OrganizationId),
+            GitProviderKind.Gitea,
+            "Gitea checklist",
+            "http://localhost:3000",
+            null,
+            GitConnectionAuthenticationMode.DevelopmentToken,
+            null,
+            null,
+            TimeProvider.System.GetUtcNow()).Value);
+        await dbContext.SaveChangesAsync();
+
+        using var changedRepositoryRequest = CreateRequest(HttpMethod.Post, path, Guid.NewGuid().ToString("N"));
+        using var changedRepositoryResponse = await client.SendAsync(changedRepositoryRequest);
+        Assert.Equal(HttpStatusCode.Accepted, changedRepositoryResponse.StatusCode);
+        var changedRepository = await changedRepositoryResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(3, changedRepository.GetProperty("number").GetInt32());
+        Assert.False(changedRepository.GetProperty("isUnchanged").GetBoolean());
     }
 
     [Fact]

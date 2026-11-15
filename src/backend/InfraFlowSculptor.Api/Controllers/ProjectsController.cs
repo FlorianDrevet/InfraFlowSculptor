@@ -27,6 +27,7 @@ using InfraFlowSculptor.Application.Projects.Queries.GetProject;
 using InfraFlowSculptor.Application.Projects.Queries.ListProjects;
 using InfraFlowSculptor.Application.Projects.Queries.ListProjectEnvironments;
 using InfraFlowSculptor.Application.Projects.Publication;
+using InfraFlowSculptor.Application.Projects.Installation;
 using InfraFlowSculptor.Catalog;
 using InfraFlowSculptor.Contracts.Projects;
 using InfraFlowSculptor.Domain.Common.Features;
@@ -220,6 +221,47 @@ public static class ProjectsController
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesValidationProblem();
+
+        projects.MapGet("/{id:guid}/installation-checklist", async (
+                Guid id,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(new GetInstallationChecklistQuery(id), cancellationToken);
+                return result.Match<IResult>(value => Results.Ok(Map(value)), errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.GetInstallationChecklist)
+            .WithSummary("Consulter la liste de contrôle d’installation de la révision courante.")
+            .RequireFeature(Features.InstallationKit)
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Read)
+            .Produces<InstallationChecklistResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        projects.MapPut("/{id:guid}/installation-checklist/{itemKey}", async (
+                Guid id,
+                string itemKey,
+                SetInstallationChecklistItemRequest request,
+                IMediator mediator,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await mediator.Send(
+                    new SetInstallationChecklistItemCommand(id, itemKey, request.IsCompleted),
+                    cancellationToken);
+                return result.Match<IResult>(_ => Results.NoContent(), errors => errors.ToProblem());
+            })
+            .WithName(EndpointNames.SetInstallationChecklistItem)
+            .WithSummary("Cocher ou décocher une étape manuelle d’installation avec audit.")
+            .RequireFeature(Features.InstallationKit)
+            .RequireAuthorization(AuthorizationPolicies.Member)
+            .RequireRateLimiting(RateLimitingPolicies.Write)
+            .WithIdempotency()
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         projects.MapPost("/{id:guid}/validation/findings/{code}/acknowledgment", async (
                 Guid id,
@@ -766,6 +808,22 @@ public static class ProjectsController
             permissions.Version,
             permissions.Permissions,
             permissions.Assignments.Select(Map).ToArray());
+
+    private static InstallationChecklistResponse Map(InstallationChecklistView checklist) =>
+        new(
+            checklist.RevisionNumber,
+            checklist.Sections.Select(section => new InstallationChecklistSectionResponse(
+                section.Code,
+                section.Title,
+                section.Subtitle,
+                section.Items.Select(item => new InstallationChecklistItemResponse(
+                    item.Key,
+                    item.Text,
+                    item.State,
+                    item.IsUserActionable,
+                    item.Command,
+                    item.IsNewSincePrevious,
+                    item.CompletedAt)).ToArray())).ToArray());
 
     private static ProjectPublishPlanResponse Map(ProjectPublishPlanView plan) =>
         new(

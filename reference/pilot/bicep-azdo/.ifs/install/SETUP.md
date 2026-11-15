@@ -79,3 +79,67 @@ Téléchargez ifs-install-report depuis le run du pipeline :
 - a confirmer : un administrateur Entra vérifie l'adhésion de l'identité au groupe SQL ; la personne autorisée sur la Library vérifie qu'une valeur a été saisie pour le secret.
 
 Azure DevOps masque les valeurs des variables secrètes dans son API. Le rapport peut confirmer les noms attendus, mais la vérification qu'une valeur secrète a bien été saisie reste humaine.
+
+
+## Liste de contrôle d’installation
+
+### 1. Prérequis Azure DevOps
+> Permissions du compte de build
+
+- [ ] À faire — Vérifier les droits du compte de build sur la cible dev.
+- [ ] À faire — Vérifier les droits du compte de build sur la cible prd.
+- [ ] À faire — Vérifier les droits du compte de build sur la cible shared.
+
+### 2. Script Azure
+> Prévisualiser les opérations avant de créer les ressources
+
+- [ ] À faire — Prévisualiser puis exécuter le script Azure.
+
+    ```powershell
+    ./.ifs/install/azure-setup.ps1 -AzureDevOpsOrganization https://dev.azure.com/<organisation> -AzureDevOpsProject shop -TenantId <tenant-id> -WhatIf
+    ```
+
+
+### 3. Étapes laissées par le script
+> Actions qui nécessitent un administrateur
+
+- [ ] À faire — Effectuer les étapes laissées à faire par le script, si le rapport en signale.
+
+### 4. Pipeline d’installation Azure DevOps
+> Les environnements et pipelines sont créés par le kit
+
+- [ ] À faire — Créer puis exécuter le pipeline .ifs/install/install.pipeline.yml dans Azure DevOps.
+
+### 5. Secrets de pipeline
+> IFS ne voit jamais leur valeur
+
+- [ ] À faire — dev · ifs-shop-dev · MAIN_PAYMENTS_API_KEY → paramètre Payments__ApiKey
+- [ ] À faire — prd · ifs-shop-prd · MAIN_PAYMENTS_API_KEY → paramètre Payments__ApiKey
+
+### 6. Secrets gérés hors IFS
+> Vérifier leur présence dans les coffres de clés
+
+- [x] Automatique — Aucun secret géré hors IFS n’est attendu.
+
+### 7. Premier déploiement
+> Coché automatiquement après le premier succès
+
+- À faire — dev · core
+- À faire — prd · core
+- À faire — dev · core → data
+- À faire — prd · core → data
+- À faire — shared · platform
+- À faire — dev · core → data → platform → orders
+- À faire — dev · application api
+- À faire — prd · core → data → platform → orders
+- À faire — prd · application api
+
+### 8. Points d’extension
+> Vérifier les extensions référencées mais absentes
+
+- [ ] À faire — Installer ou remplacer les points d’extension manquants.
+
+### 9. Bascule après une migration
+> Langage d’infrastructure ou plateforme de CI
+
+- [x] Automatique — Aucune migration de langage ou de plateforme n’est prévue pour cette révision.

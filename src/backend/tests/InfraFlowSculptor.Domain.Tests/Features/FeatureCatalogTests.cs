@@ -19,6 +19,7 @@ public sealed class FeatureCatalogTests
     {
         Assert.Equal(FeatureStatus.Released, FeatureCatalog.Find(global::InfraFlowSculptor.Domain.Common.Features.Features.Organizations)?.Status);
         Assert.Equal(FeatureStatus.Released, FeatureCatalog.Find(global::InfraFlowSculptor.Domain.Common.Features.Features.UserPreferences)?.Status);
+        Assert.Equal(FeatureStatus.Released, FeatureCatalog.Find(global::InfraFlowSculptor.Domain.Common.Features.Features.InstallationKit)?.Status);
         Assert.Equal(FeatureStatus.NotReleased, FeatureCatalog.Find(global::InfraFlowSculptor.Domain.Common.Features.Features.TerraformEmitter)?.Status);
         Assert.Equal(FeatureStatus.NotReleased, FeatureCatalog.Find(global::InfraFlowSculptor.Domain.Common.Features.Features.Drafts)?.Status);
     }

@@ -71,12 +71,15 @@ class StaticTranslationLoader implements TranslocoLoader {
         personalDataErased: 'Donnée personnelle effacée',
         actions: {
           memberRolesChanged: 'Rôles du membre modifiés',
+          installationChecklistItemUpdated: 'Étape de la checklist mise à jour',
         },
         fields: {
           roles: 'Rôles',
+          completedAt: 'État de la coche',
         },
         objects: {
           member: 'Membre',
+          installationChecklistItem: 'Étape de la checklist',
         },
         via: {
           screen: 'Écran',
@@ -128,6 +131,38 @@ describe('OrganizationAudit', () => {
     );
   });
 
+  it('shows installation checklist check changes with readable audit labels', async () => {
+    const completedAt = '2026-11-15T04:00:00Z';
+    const checklistEvent: AuditEventPageResponse = {
+      ...auditPage,
+      items: [
+        {
+          ...auditPage.items[0],
+          action: 'installation.checklist.item_updated',
+          objectType: 'InstallationChecklistItem',
+          objectId: 'run-azure-script',
+          projectId: '77777777-7777-4777-8777-777777777777',
+          diff: {
+            changes: [
+              {
+                name: 'completedAt',
+                before: null,
+                after: completedAt,
+                isPersonalData: false,
+              },
+            ],
+          },
+        },
+      ],
+    };
+    await renderPage(vi.fn().mockReturnValue(of(checklistEvent)));
+
+    expect(await screen.findByText('Étape de la checklist mise à jour')).toBeDefined();
+    expect(screen.getByText('Étape de la checklist · run-azure-script')).toBeDefined();
+    expect(screen.getByText('État de la coche')).toBeDefined();
+    expect(screen.getByText(`— → ${completedAt}`)).toBeDefined();
+  });
+
   it('shows the active organization as the audit context', async () => {
     const listAuditEvents = vi.fn().mockReturnValue(of(auditPage));
     await renderPage(listAuditEvents);
@@ -137,9 +172,11 @@ describe('OrganizationAudit', () => {
   });
 
   it('states the required permission when a member cannot read the audit log', async () => {
-    const listAuditEvents = vi.fn().mockReturnValue(
-      throwError(() => new ApiError(403, 'ORG_ROLE_REQUIRED', 'Permission required')),
-    );
+    const listAuditEvents = vi
+      .fn()
+      .mockReturnValue(
+        throwError(() => new ApiError(403, 'ORG_ROLE_REQUIRED', 'Permission required')),
+      );
     await renderPage(listAuditEvents);
 
     const alert = await screen.findByRole('alert');
@@ -154,7 +191,10 @@ describe('OrganizationAudit', () => {
     fireEvent.change(screen.getByLabelText('Période'), { target: { value: '7' } });
 
     await waitFor(() => expect(listAuditEvents).toHaveBeenCalledTimes(2));
-    const [, parameters] = listAuditEvents.mock.calls[1] as [string, { from: string; page: number }];
+    const [, parameters] = listAuditEvents.mock.calls[1] as [
+      string,
+      { from: string; page: number },
+    ];
     const days = (Date.now() - new Date(parameters.from).getTime()) / 86_400_000;
     expect(days).toBeGreaterThanOrEqual(6.99);
     expect(days).toBeLessThan(7.01);

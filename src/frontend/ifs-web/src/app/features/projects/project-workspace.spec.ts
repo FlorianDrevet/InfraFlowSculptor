@@ -40,7 +40,7 @@ describe('ProjectWorkspace', () => {
       providers: [
         provideRouter([]),
         { provide: ProjectsService, useValue: projects },
-      { provide: NavigationRegistry, useValue: { register: registerNavigation } },
+        { provide: NavigationRegistry, useValue: { register: registerNavigation } },
         provideTransloco({
           config: {
             availableLangs: ['fr'],
@@ -68,6 +68,13 @@ describe('ProjectWorkspace', () => {
       expect.objectContaining({
         labelKey: 'project.findingsLink',
         path: `/o/33333333-3333-4333-8333-333333333333/projects/${initialProject.id}/findings`,
+      }),
+    );
+    expect(registerNavigation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        labelKey: 'project.installationLink',
+        path: `/o/33333333-3333-4333-8333-333333333333/projects/${initialProject.id}/installation`,
+        featureKey: 'installation-kit',
       }),
     );
     projectUpdates.next(updatedProject);

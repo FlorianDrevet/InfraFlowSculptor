@@ -40,4 +40,5 @@ public static class AuditActions
     public const string LinkUpdated = "component.link.updated";
     public const string LinkDeleted = "component.link.deleted";
     public const string FindingAcknowledged = "project.finding.acknowledged";
+    public const string InstallationChecklistItemUpdated = "installation.checklist.item_updated";
 }

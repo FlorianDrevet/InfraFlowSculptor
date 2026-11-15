@@ -1,0 +1,151 @@
+@if (loading()) {
+  <p role="status">{{ 'project.loading' | transloco }}</p>
+} @else if (loadError()) {
+  <div class="installation-checklist__error" role="alert">
+    <p>{{ 'project.installationLoadError' | transloco }}</p>
+    <app-ds-button variant="secondary" (click)="retry()">
+      {{ 'project.retry' | transloco }}
+    </app-ds-button>
+  </div>
+} @else if (checklist(); as checklist) {
+  <section class="installation-checklist" aria-labelledby="installation-checklist-title">
+    <header class="installation-checklist__header">
+      <div class="installation-checklist__heading">
+        <nav class="installation-checklist__breadcrumb" aria-label="Breadcrumb">
+          <a [routerLink]="['../']">{{ project()?.code }}</a>
+          <span aria-hidden="true">/</span>
+          <span>{{ 'project.installationLink' | transloco }}</span>
+        </nav>
+        <div class="installation-checklist__file">
+          {{ 'project.installationSetupFile' | transloco }}
+        </div>
+        <h1 id="installation-checklist-title">{{ 'project.installationTitle' | transloco }}</h1>
+        <p>{{ 'project.installationDescription' | transloco }}</p>
+      </div>
+      <app-ds-button
+        variant="secondary"
+        size="sm"
+        icon="copy"
+        [disabled]="!command()"
+        (click)="copyCommand()"
+      >
+        {{ 'project.installationCopyCommand' | transloco }}
+      </app-ds-button>
+    </header>
+
+    @if (checklist.revisionNumber !== null) {
+      <p class="installation-checklist__revision">
+        {{ 'project.installationRevision' | transloco: { number: checklist.revisionNumber } }}
+      </p>
+    }
+
+    <section class="installation-checklist__summary" aria-labelledby="installation-summary-title">
+      <div class="installation-checklist__summary-heading">
+        <h2 id="installation-summary-title">
+          {{ 'project.installationChecklistTitle' | transloco }}
+        </h2>
+        <div class="installation-checklist__counts" aria-live="polite">
+          <span>{{ counts().done }} {{ 'project.installationDone' | transloco }}</span>
+          <span>{{ counts().verified }} {{ 'project.installationVerified' | transloco }}</span>
+          <span>{{ counts().automatic }} {{ 'project.installationAutomatic' | transloco }}</span>
+          <span>{{ counts().toDo }} {{ 'project.installationToDo' | transloco }}</span>
+        </div>
+      </div>
+      <div
+        class="installation-checklist__progress"
+        role="progressbar"
+        [attr.aria-valuenow]="completedCount()"
+        [attr.aria-valuemin]="0"
+        [attr.aria-valuemax]="counts().total"
+        [attr.aria-label]="'project.installationProgress' | transloco"
+      >
+        <span
+          [style.width.%]="counts().total === 0 ? 0 : (completedCount() / counts().total) * 100"
+        ></span>
+      </div>
+      @if (!canManage()) {
+        <p class="installation-checklist__read-only">
+          {{ 'project.installationReadOnly' | transloco }}
+        </p>
+      }
+    </section>
+
+    <div class="installation-checklist__sections">
+      @for (section of checklist.sections; track section.code) {
+        <section
+          class="installation-checklist__section"
+          [attr.aria-labelledby]="'installation-' + section.code"
+        >
+          <header>
+            <div>
+              <h2 [id]="'installation-' + section.code">{{ section.title }}</h2>
+              <p>{{ section.subtitle }}</p>
+            </div>
+          </header>
+          <ul>
+            @for (item of section.items; track item.key) {
+              <li class="installation-checklist__item">
+                <div class="installation-checklist__item-main">
+                  @if (item.isUserActionable) {
+                    <label class="installation-checklist__item-label">
+                      <input
+                        type="checkbox"
+                        [checked]="isChecked(item)"
+                        [disabled]="!canManage() || savingItemKey() === item.key"
+                        [attr.aria-label]="item.text"
+                        (change)="setCompleted(item, $event)"
+                      />
+                      <span>{{ item.text }}</span>
+                    </label>
+                  } @else {
+                    <p class="installation-checklist__item-text">{{ item.text }}</p>
+                  }
+                  <app-ds-badge [tone]="statusTone(item.state)">
+                    {{ statusLabel(item.state) | transloco }}
+                  </app-ds-badge>
+                </div>
+                @if (item.isNewSincePrevious) {
+                  <p class="installation-checklist__new">
+                    {{ 'project.installationNewSincePrevious' | transloco }}
+                  </p>
+                }
+                @if (item.completedAt) {
+                  <p class="installation-checklist__date">
+                    {{
+                      'project.installationCompletedAt'
+                        | transloco: { date: (item.completedAt | date: 'short') }
+                    }}
+                  </p>
+                }
+                @if (item.command) {
+                  <pre><code>{{ item.command }}</code></pre>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    </div>
+
+    @if (saveError()) {
+      <p class="installation-checklist__error" role="alert">
+        {{ 'project.installationSaveError' | transloco }}
+      </p>
+    }
+    @if (actionSaved()) {
+      <p class="installation-checklist__saved" role="status">
+        {{ 'project.installationSaved' | transloco }}
+      </p>
+    }
+    @if (copied()) {
+      <p class="installation-checklist__saved" role="status">
+        {{ 'project.installationCopied' | transloco }}
+      </p>
+    }
+    @if (copyError()) {
+      <p class="installation-checklist__error" role="alert">
+        {{ 'project.installationCopyError' | transloco }}
+      </p>
+    }
+  </section>
+}

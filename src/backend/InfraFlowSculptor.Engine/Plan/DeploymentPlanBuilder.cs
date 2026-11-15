@@ -68,16 +68,19 @@ public sealed class DeploymentPlanBuilder(
                 componentOrder))
             .ToArray();
 
-        return new DeploymentPlan(
+        var plan = new DeploymentPlan(
             new ProjectInfo(
                 snapshot.Project.Name,
                 snapshot.Project.Code,
                 snapshot.Project.Description,
                 snapshot.Project.InfrastructureLanguage,
                 snapshot.Project.CiPlatform,
-                snapshot.Project.ModuleSource),
+                snapshot.Project.ModuleSource,
+                snapshot.Project.Repositories),
             plans,
             CreatePins(catalog));
+
+        return plan with { InstallationChecklist = InstallationChecklistBuilder.Build(plan) };
     }
 
     private ComponentPlan BuildComponent(

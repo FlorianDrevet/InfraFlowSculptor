@@ -64,6 +64,10 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
         RunSerialAsync(DeploymentPlanExposesThePilotOrdersProductionPlanDeterministicallyCore);
 
     [Fact]
+    public Task InstallationChecklistCanBeReadCheckedAuditedAndRequiresItsPermission() =>
+        RunSerialAsync(InstallationChecklistCanBeReadCheckedAuditedAndRequiresItsPermissionCore);
+
+    [Fact]
     public Task ResourceDeletionImpactPreviewIsServerCalculatedAndReportsPartialCoverage() =>
         RunSerialAsync(ResourceDeletionImpactPreviewIsServerCalculatedAndReportsPartialCoverageCore);
 
@@ -4201,6 +4205,71 @@ public sealed class ComponentEndpointTests(ApiFactory factory) : IClassFixture<A
                 await dbContext.SaveChangesAsync();
             }
         }
+    }
+
+    private async Task InstallationChecklistCanBeReadCheckedAuditedAndRequiresItsPermissionCore()
+    {
+        await PrepareAsync();
+        using var get = CreateRequest(HttpMethod.Get, $"/v1/projects/{ProjectId:D}/installation-checklist");
+        using var getResponse = await client.SendAsync(get);
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        using var initial = await JsonDocument.ParseAsync(await getResponse.Content.ReadAsStreamAsync());
+        var sections = initial.RootElement.GetProperty("sections").EnumerateArray().ToArray();
+        Assert.Equal(9, sections.Length);
+        var azureScriptItem = Assert.Single(
+            sections.Single(section => section.GetProperty("code").GetString() == "azureScript")
+                .GetProperty("items").EnumerateArray());
+        var itemKey = azureScriptItem.GetProperty("key").GetString();
+
+        using var check = CreateRequest(
+            HttpMethod.Put,
+            $"/v1/projects/{ProjectId:D}/installation-checklist/{itemKey}",
+            new { isCompleted = true });
+        check.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var checkResponse = await client.SendAsync(check);
+        Assert.Equal(HttpStatusCode.NoContent, checkResponse.StatusCode);
+
+        using var readBack = CreateRequest(HttpMethod.Get, $"/v1/projects/{ProjectId:D}/installation-checklist");
+        using var readBackResponse = await client.SendAsync(readBack);
+        Assert.Equal(HttpStatusCode.OK, readBackResponse.StatusCode);
+        using var updated = await JsonDocument.ParseAsync(await readBackResponse.Content.ReadAsStreamAsync());
+        var updatedItem = Assert.Single(
+            updated.RootElement.GetProperty("sections").EnumerateArray()
+                .Single(section => section.GetProperty("code").GetString() == "azureScript")
+                .GetProperty("items").EnumerateArray(),
+            item => item.GetProperty("key").GetString() == itemKey);
+        Assert.Equal("Done", updatedItem.GetProperty("state").GetString());
+        Assert.NotEqual(JsonValueKind.Null, updatedItem.GetProperty("completedAt").ValueKind);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>().Set(new OrganizationId(OrganizationId));
+            var audit = await scope.ServiceProvider.GetRequiredService<IfsDbContext>().AuditEvents
+                .Where(candidate => candidate.ProjectId == ProjectId
+                    && candidate.Action == "installation.checklist.item_updated")
+                .OrderByDescending(candidate => candidate.OccurredAt)
+                .FirstOrDefaultAsync();
+            Assert.NotNull(audit);
+            Assert.Contains(itemKey!, audit.Diff, StringComparison.Ordinal);
+            Assert.Contains("completedAt", audit.Diff, StringComparison.Ordinal);
+        }
+
+        var chloeToken = TestTokens.CreateAccessToken(
+            objectId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+            displayName: "Chloé Petit",
+            email: "chloe@contoso.example");
+        using var forbidden = new HttpRequestMessage(
+            HttpMethod.Put,
+            $"/v1/projects/{ProjectId:D}/installation-checklist/{itemKey}")
+        {
+            Content = JsonContent.Create(new { isCompleted = false })
+        };
+        forbidden.Headers.Authorization = new AuthenticationHeaderValue("Bearer", chloeToken);
+        forbidden.Headers.Add("X-Ifs-Organization", OrganizationId.ToString("D"));
+        forbidden.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var forbiddenResponse = await client.SendAsync(forbidden);
+        Assert.Equal(HttpStatusCode.Forbidden, forbiddenResponse.StatusCode);
+        Assert.Equal("PROJECT_PERMISSION_REQUIRED", await GetProblemCodeAsync(forbiddenResponse));
     }
 
     private async Task<ProjectId> SeedAcknowledgmentProjectAsync()

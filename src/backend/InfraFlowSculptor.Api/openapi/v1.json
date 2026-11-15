@@ -2325,6 +2325,159 @@
         ]
       }
     },
+    "/v1/projects/{id}/installation-checklist": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Consulter la liste de contrôle d’installation de la révision courante.",
+        "operationId": "GetInstallationChecklist",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallationChecklistResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{id}/installation-checklist/{itemKey}": {
+      "put": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Cocher ou décocher une étape manuelle d’installation avec audit.",
+        "operationId": "SetInstallationChecklistItem",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "itemKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetInstallationChecklistItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/projects/{id}/validation/findings/{code}/acknowledgment": {
       "post": {
         "tags": [
@@ -11568,6 +11721,16 @@
           },
           "pins": {
             "$ref": "#/components/schemas/CatalogPins"
+          },
+          "installationChecklist": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/InstallationChecklist"
+              }
+            ]
           }
         }
       },
@@ -12092,6 +12255,180 @@
               "items": {
                 "type": "string"
               }
+            }
+          }
+        }
+      },
+      "InstallationChecklist": {
+        "required": [
+          "sections"
+        ],
+        "type": "object",
+        "properties": {
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstallationChecklistSection"
+            }
+          }
+        }
+      },
+      "InstallationChecklistItem": {
+        "required": [
+          "key",
+          "text",
+          "state",
+          "isUserActionable"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/InstallationChecklistItemState"
+          },
+          "isUserActionable": {
+            "type": "boolean"
+          },
+          "command": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isNewSincePrevious": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "InstallationChecklistItemResponse": {
+        "required": [
+          "key",
+          "text",
+          "state",
+          "isUserActionable",
+          "command",
+          "isNewSincePrevious",
+          "completedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/InstallationChecklistItemState"
+          },
+          "isUserActionable": {
+            "type": "boolean"
+          },
+          "command": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isNewSincePrevious": {
+            "type": "boolean"
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "InstallationChecklistItemState": {
+        "enum": [
+          "Automatic",
+          "ToDo",
+          "Done",
+          "Verified",
+          "NeedsReverification"
+        ]
+      },
+      "InstallationChecklistResponse": {
+        "required": [
+          "revisionNumber",
+          "sections"
+        ],
+        "type": "object",
+        "properties": {
+          "revisionNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstallationChecklistSectionResponse"
+            }
+          }
+        }
+      },
+      "InstallationChecklistSection": {
+        "required": [
+          "code",
+          "title",
+          "subtitle",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "subtitle": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstallationChecklistItem"
+            }
+          }
+        }
+      },
+      "InstallationChecklistSectionResponse": {
+        "required": [
+          "code",
+          "title",
+          "subtitle",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "subtitle": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstallationChecklistItemResponse"
             }
           }
         }
@@ -13057,7 +13394,8 @@
           "ProjectRoleAssignment",
           "AuditEvent",
           "ResourceGroup",
-          "FindingAcknowledgment"
+          "FindingAcknowledgment",
+          "InstallationChecklistItem"
         ]
       },
       "OrganizationMemberResponse": {
@@ -13360,6 +13698,15 @@
           },
           "moduleSource": {
             "type": "string"
+          },
+          "repositories": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -16719,6 +17066,17 @@
               "type": "string",
               "format": "uuid"
             }
+          }
+        }
+      },
+      "SetInstallationChecklistItemRequest": {
+        "required": [
+          "isCompleted"
+        ],
+        "type": "object",
+        "properties": {
+          "isCompleted": {
+            "type": "boolean"
           }
         }
       },

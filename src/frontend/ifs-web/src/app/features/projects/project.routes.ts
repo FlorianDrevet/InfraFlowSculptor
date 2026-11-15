@@ -40,14 +40,20 @@ export const PROJECT_ROUTES: Routes = [
   },
   {
     path: 'publishing',
-    loadComponent: () =>
-      import('./project-publishing').then((module) => module.ProjectPublishing),
+    loadComponent: () => import('./project-publishing').then((module) => module.ProjectPublishing),
     title: 'Plan de publication',
   },
   {
     path: 'members',
     loadComponent: () => import('./project-members').then((module) => module.ProjectMembers),
     title: 'Membres du projet',
+  },
+  {
+    path: 'installation',
+    canActivate: [featureGuard(FEATURES.installationKit)],
+    loadComponent: () =>
+      import('./installation-checklist').then((module) => module.InstallationChecklist),
+    title: 'Liste de contrôle d’installation',
   },
   {
     path: 'revisions/:revisionId',

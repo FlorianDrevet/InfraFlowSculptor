@@ -87,6 +87,8 @@ public static class EndpointNames
     public const string GetProjectValidation = "GetProjectValidation";
 
     public const string GetProjectDeploymentPlan = "GetProjectDeploymentPlan";
+    public const string GetInstallationChecklist = "GetInstallationChecklist";
+    public const string SetInstallationChecklistItem = "SetInstallationChecklistItem";
     public const string GenerateRevision = "GenerateRevision";
     public const string ListRevisions = "ListRevisions";
     public const string GetRevision = "GetRevision";

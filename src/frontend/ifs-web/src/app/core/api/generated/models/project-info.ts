@@ -8,4 +8,5 @@ export interface ProjectInfo {
   infrastructureLanguage: string;
   moduleSource: string;
   name: string;
+  repositories?: (Array<string> | null);
 }

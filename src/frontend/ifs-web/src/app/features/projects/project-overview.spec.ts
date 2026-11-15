@@ -4,7 +4,8 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { provideTransloco, TranslocoLoader, Translation } from '@jsverse/transloco';
 import { Observable, of, Subject, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
-import type { ComponentResponse } from '../../core/api/generated';
+import type { ComponentResponse, InstallationChecklistResponse } from '../../core/api/generated';
+import { FeatureAvailabilityService } from '../../core/features/feature-availability.service';
 import { ComponentsService } from '../../core/projects/components.service';
 import { ProjectsService } from '../../core/projects/projects.service';
 import { ProjectOverview } from './project-overview';
@@ -23,6 +24,14 @@ class StaticTranslationLoader implements TranslocoLoader {
         environmentsHeading: 'Environnements',
         viewAllEnvironments: 'Gérer les environnements',
         noEnvironments: 'Aucun environnement dans ce projet.',
+        installationLink: 'Installation',
+        installationOpenChecklist: 'Ouvrir la liste de contrôle',
+        installationProgressSummary: '{{ completed }} sur {{ total }} étapes terminées',
+        installationProgress: 'Avancement de la liste de contrôle',
+        installationRemainingHeading: 'Reste à faire',
+        installationMoreRemaining: '{{ count }} autres étapes',
+        installationOverviewLoading: 'Chargement de la liste de contrôle…',
+        installationOverviewError: 'La liste de contrôle n’a pas pu être chargée.',
       },
       component: {
         modePerEnvironment: 'Par environnement',
@@ -32,6 +41,11 @@ class StaticTranslationLoader implements TranslocoLoader {
     });
   }
 }
+
+const disabledInstallationFeatures = () => ({
+  ensureLoaded: vi.fn().mockResolvedValue(undefined),
+  isEnabled: vi.fn().mockReturnValue(false),
+});
 
 describe('ProjectOverview', () => {
   it('loads components and links each one to its component screen', async () => {
@@ -97,6 +111,7 @@ describe('ProjectOverview', () => {
         ),
         { provide: ProjectsService, useValue: service },
         { provide: ComponentsService, useValue: componentsService },
+        { provide: FeatureAvailabilityService, useValue: disabledInstallationFeatures() },
         provideTransloco({
           config: {
             availableLangs: ['fr'],
@@ -239,6 +254,7 @@ describe('ProjectOverview', () => {
         ),
         { provide: ProjectsService, useValue: service },
         { provide: ComponentsService, useValue: componentsService },
+        { provide: FeatureAvailabilityService, useValue: disabledInstallationFeatures() },
         provideTransloco({
           config: {
             availableLangs: ['fr'],
@@ -329,6 +345,7 @@ describe('ProjectOverview', () => {
         ),
         { provide: ProjectsService, useValue: service },
         { provide: ComponentsService, useValue: { list: vi.fn(() => of([component])) } },
+        { provide: FeatureAvailabilityService, useValue: disabledInstallationFeatures() },
         provideTransloco({
           config: {
             availableLangs: ['fr'],
@@ -416,6 +433,7 @@ describe('ProjectOverview', () => {
         ),
         { provide: ProjectsService, useValue: service },
         { provide: ComponentsService, useValue: { list: vi.fn(() => of([data, core])) } },
+        { provide: FeatureAvailabilityService, useValue: disabledInstallationFeatures() },
         provideTransloco({
           config: {
             availableLangs: ['fr'],
@@ -464,5 +482,95 @@ describe('ProjectOverview', () => {
         ) ?? []),
       ].map((row) => row.querySelector('.project-overview__code')?.textContent?.trim()),
     ).toEqual(['data', 'core']);
+  });
+
+  it('shows the installation checklist card when the feature is enabled', async () => {
+    const projectId = '77777777-7777-4777-8777-777777777777';
+    const checklist: InstallationChecklistResponse = {
+      revisionNumber: 1,
+      sections: [
+        {
+          code: 'secrets',
+          title: '5. Secrets de pipeline',
+          subtitle: '',
+          items: [
+            {
+              key: 'done',
+              text: 'Secret dev',
+              state: 'Done',
+              isUserActionable: true,
+              command: null,
+              isNewSincePrevious: false,
+              completedAt: null,
+            },
+            {
+              key: 'todo',
+              text: 'Secret prd',
+              state: 'ToDo',
+              isUserActionable: true,
+              command: null,
+              isNewSincePrevious: false,
+              completedAt: null,
+            },
+          ],
+        },
+      ],
+    };
+    const projects = {
+      get: vi
+        .fn()
+        .mockReturnValue(
+          of({ id: projectId, version: 1, name: 'Shop', code: 'shop', componentCount: 0 }),
+        ),
+      environments: vi.fn().mockReturnValue(of([])),
+      myPermissions: vi.fn().mockReturnValue(of({ permissions: [] })),
+      installationChecklist: vi.fn().mockReturnValue(of(checklist)),
+      validation: vi.fn().mockReturnValue(of({ orderedComponents: [] })),
+    };
+    const features = {
+      ensureLoaded: vi.fn().mockResolvedValue(undefined),
+      isEnabled: vi.fn().mockReturnValue(true),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [ProjectOverview],
+      providers: [
+        provideRouter(
+          [{ path: 'o/:orgId/projects/:projectId', component: ProjectOverview }],
+          withComponentInputBinding(),
+        ),
+        { provide: ProjectsService, useValue: projects },
+        { provide: ComponentsService, useValue: { list: vi.fn().mockReturnValue(of([])) } },
+        { provide: FeatureAvailabilityService, useValue: features },
+        provideTransloco({
+          config: {
+            availableLangs: ['fr'],
+            defaultLang: 'fr',
+            fallbackLang: 'fr',
+            reRenderOnLangChange: false,
+            prodMode: true,
+          },
+          loader: StaticTranslationLoader,
+        }),
+      ],
+    }).compileComponents();
+
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(
+      `/o/33333333-3333-4333-8333-333333333333/projects/${projectId}`,
+      ProjectOverview,
+    );
+    await vi.waitFor(() => expect(projects.installationChecklist).toHaveBeenCalledWith(projectId));
+
+    const card = harness.routeNativeElement?.querySelector<HTMLElement>(
+      '.project-overview__installation',
+    );
+    const link = card?.querySelector<HTMLAnchorElement>('a');
+    expect(card?.textContent).toContain('Installation');
+    expect(card?.textContent).toContain('Ouvrir la liste de contrôle');
+    expect(card?.textContent).toContain('1 sur 2 étapes terminées');
+    expect(link?.getAttribute('href')).toBe(
+      `/o/33333333-3333-4333-8333-333333333333/projects/${projectId}/installation`,
+    );
   });
 });

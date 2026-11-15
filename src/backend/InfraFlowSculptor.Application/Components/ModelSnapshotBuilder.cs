@@ -34,6 +34,7 @@ public sealed class ModelSnapshotBuilder(
         var project = await dbContext.Query<ProjectAggregate>()
             .Include(candidate => candidate.Environments)
             .Include(candidate => candidate.NamingOverrides)
+            .Include(candidate => candidate.PublicationPlan.Destinations)
             .SingleOrDefaultAsync(candidate => candidate.Id == new ProjectId(projectId), cancellationToken);
         if (project is null)
         {
@@ -224,6 +225,11 @@ public sealed class ModelSnapshotBuilder(
             application.DeploymentStrategy,
             application.BuildRegistryEnvironmentId,
             application.Steps.ToArray()) { Version = application.Version }).ToArray();
+        var publicationRepositories = project.PublicationPlan.Destinations
+            .Select(destination => destination.ProviderRepositoryId)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
         var snapshot = new ModelSnapshot(
             new ProjectSnapshot(project.Name, project.Code, project.Description)
             {
@@ -235,7 +241,8 @@ public sealed class ModelSnapshotBuilder(
                 CiPlatform = project.CiPlatform,
                 ModuleSource = project.ModuleSource,
                 SystemTagsEnabled = project.SystemTagsEnabled,
-                PublishingPreset = project.PublishingPreset
+                PublishingPreset = project.PublishingPreset,
+                Repositories = publicationRepositories.Length == 0 ? null : publicationRepositories
             },
             environments,
             naming,

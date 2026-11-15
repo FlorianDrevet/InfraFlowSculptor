@@ -399,6 +399,17 @@ public static class IsolationScenarios
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}/deployment-plan?component=orders&target=prd",
                 HttpStatusCode.NotFound),
+            ["GetInstallationChecklist"] = OrganizationScenario(
+                "GetInstallationChecklist",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/installation-checklist",
+                HttpStatusCode.NotFound),
+            ["SetInstallationChecklistItem"] = OrganizationWriteScenario(
+                "SetInstallationChecklistItem",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/installation-checklist/run-azure-script",
+                HttpStatusCode.NotFound,
+                new { isCompleted = true }),
             ["GenerateRevision"] = OrganizationScenario(
                 "GenerateRevision",
                 HttpMethod.Post,

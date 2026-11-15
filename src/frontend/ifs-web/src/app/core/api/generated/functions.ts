@@ -73,6 +73,10 @@ export type { GetProjectValidation$Params as GetProjectValidation$Params } from 
 export { getProjectValidation as getProjectValidation } from './fn/projects/get-project-validation';
 export type { GetProjectDeploymentPlan$Params as GetProjectDeploymentPlan$Params } from './fn/projects/get-project-deployment-plan';
 export { getProjectDeploymentPlan as getProjectDeploymentPlan } from './fn/projects/get-project-deployment-plan';
+export type { GetInstallationChecklist$Params as GetInstallationChecklist$Params } from './fn/projects/get-installation-checklist';
+export { getInstallationChecklist as getInstallationChecklist } from './fn/projects/get-installation-checklist';
+export type { SetInstallationChecklistItem$Params as SetInstallationChecklistItem$Params } from './fn/projects/set-installation-checklist-item';
+export { setInstallationChecklistItem as setInstallationChecklistItem } from './fn/projects/set-installation-checklist-item';
 export type { AcknowledgeFinding$Params as AcknowledgeFinding$Params } from './fn/projects/acknowledge-finding';
 export { acknowledgeFinding as acknowledgeFinding } from './fn/projects/acknowledge-finding';
 export type { ApplyFindingFix$Params as ApplyFindingFix$Params } from './fn/projects/apply-finding-fix';

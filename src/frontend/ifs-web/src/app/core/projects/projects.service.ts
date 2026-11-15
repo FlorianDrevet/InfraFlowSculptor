@@ -10,6 +10,7 @@ import {
   exportProject as exportProjectRequest,
   deleteProjectEnvironment,
   getMyProjectPermissions,
+  getInstallationChecklist,
   getProject,
   getProjectMemberPermissions,
   getProjectNaming,
@@ -25,6 +26,7 @@ import {
   updateProjectEnvironment,
   updateProjectSettings,
   setProjectNaming,
+  setInstallationChecklistItem,
 } from '../api/generated';
 import type {
   AcknowledgeFindingRequest,
@@ -41,6 +43,7 @@ import type {
   ProjectRoleScope,
   ProjectSummaryResponse,
   RestoreProjectRequest,
+  SetInstallationChecklistItemRequest,
   UpdateProjectEnvironmentRequest,
   UpdateProjectSettingsRequest,
 } from '../api/generated';
@@ -65,6 +68,18 @@ export class ProjectsService {
 
   validation(projectId: string) {
     return this.api.invoke(getProjectValidation, { id: projectId });
+  }
+
+  installationChecklist(projectId: string) {
+    return this.api.invoke(getInstallationChecklist, { id: projectId });
+  }
+
+  setInstallationChecklistItem(
+    projectId: string,
+    itemKey: string,
+    body: SetInstallationChecklistItemRequest,
+  ) {
+    return this.api.invoke(setInstallationChecklistItem, { id: projectId, itemKey, body });
   }
 
   acknowledgeFinding(projectId: string, code: string, body: AcknowledgeFindingRequest) {

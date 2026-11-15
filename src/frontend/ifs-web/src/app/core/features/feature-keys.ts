@@ -4,4 +4,5 @@ export const FEATURES = {
   organizations: 'organizations',
   projectSetup: 'project-setup',
   revisions: 'revisions',
+  installationKit: 'installation-kit',
 } as const;

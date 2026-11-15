@@ -641,6 +641,50 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                     b.ToTable("finding_acknowledgments", (string)null);
                 });
 
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.InstallationChecklistProgressAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<Guid?>("CompletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("completed_by");
+
+                    b.Property<string>("ItemKey")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("item_key");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_installation_checklist_progress");
+
+                    b.HasIndex("CompletedBy")
+                        .HasDatabaseName("ix_installation_checklist_progress_completed_by");
+
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_installation_checklist_progress_organization_id");
+
+                    b.HasIndex("ProjectId", "ItemKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_installation_checklist_progress_project_item");
+
+                    b.ToTable("installation_checklist_progress", (string)null);
+                });
+
             modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.LinkAggregate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2530,6 +2574,29 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_finding_acknowledgments_projects_project_id");
+                });
+
+            modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.InstallationChecklistProgressAggregate", b =>
+                {
+                    b.HasOne("InfraFlowSculptor.Domain.UserProfileAggregate.UserProfile", null)
+                        .WithMany()
+                        .HasForeignKey("CompletedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_installation_checklist_progress_user_profiles_completed_by");
+
+                    b.HasOne("InfraFlowSculptor.Domain.OrganizationAggregate.OrganizationAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_installation_checklist_progress_organizations_organization_");
+
+                    b.HasOne("InfraFlowSculptor.Domain.ProjectAggregate.ProjectAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_installation_checklist_progress_projects_project_id");
                 });
 
             modelBuilder.Entity("InfraFlowSculptor.Domain.ProjectAggregate.LinkAggregate", b =>

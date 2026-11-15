@@ -72,6 +72,8 @@ public class IfsDbContext(
 
     public DbSet<PublicationAggregate> Publications => Set<PublicationAggregate>();
 
+    public DbSet<InstallationChecklistProgressAggregate> InstallationChecklistProgress => Set<InstallationChecklistProgressAggregate>();
+
     public DbSet<GitConnectionPublicationUse> GitConnectionPublicationUses => Set<GitConnectionPublicationUse>();
 
     public DbSet<RevisionInputEntity> RevisionInputs => Set<RevisionInputEntity>();

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace InfraFlowSculptor.Engine.Model;
 
 public sealed record ProjectSnapshot(string Name, string Code, string Description)
@@ -19,5 +21,8 @@ public sealed record ProjectSnapshot(string Name, string Code, string Descriptio
     public bool SystemTagsEnabled { get; init; } = true;
 
     public string? PublishingPreset { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? Repositories { get; init; }
 
 }

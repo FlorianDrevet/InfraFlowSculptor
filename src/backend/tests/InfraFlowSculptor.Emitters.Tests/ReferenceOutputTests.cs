@@ -182,10 +182,37 @@ public sealed class ReferenceOutputTests
     }
 
     [Fact]
+    public void SetupChecklistRendersTheSameGeneratedSectionsAndItemsAsTheDeploymentPlan()
+    {
+        var plan = LoadPilotPlan();
+        var setup = Assert.Single(InstallKitEmitter.Emit(plan),
+            file => file.RelativePath == ".ifs/install/SETUP.md").Content;
+
+        Assert.Contains("## Liste de contrôle d’installation", setup, StringComparison.Ordinal);
+        foreach (var section in plan.InstallationChecklist!.Sections)
+        {
+            Assert.Contains(section.Title, setup, StringComparison.Ordinal);
+            foreach (var item in section.Items)
+            {
+                Assert.Contains(item.Text, setup, StringComparison.Ordinal);
+                if (item.Command is not null)
+                {
+                    Assert.Contains(item.Command, setup, StringComparison.Ordinal);
+                }
+            }
+        }
+    }
+
+
+    [Fact]
     public void InstallKitAndReadmeRenderProjectCodeAcrossAllAssets()
     {
         var pilotPlan = LoadPilotPlan();
-        var plan = pilotPlan with { Project = pilotPlan.Project with { Code = "shop42" } };
+        var plan = pilotPlan with
+        {
+            Project = pilotPlan.Project with { Code = "shop42" },
+            InstallationChecklist = null
+        };
         var files = Emit(plan).Where(file => file.RelativePath.StartsWith(".ifs/", StringComparison.Ordinal)
             || string.Equals(file.RelativePath, "README.ifs.md", StringComparison.Ordinal));
         var content = string.Join(Environment.NewLine, files.Select(file => file.Content));

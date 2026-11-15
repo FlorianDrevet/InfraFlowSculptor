@@ -14,6 +14,7 @@ describe('project feature routes', () => {
       'naming',
       'publishing',
       'members',
+      'installation',
       'revisions/:revisionId',
       'revisions',
     ]);

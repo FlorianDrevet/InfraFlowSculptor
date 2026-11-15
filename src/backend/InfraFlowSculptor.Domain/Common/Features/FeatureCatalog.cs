@@ -33,7 +33,7 @@ public static class FeatureCatalog
         new(Features.Revisions, FeatureStatus.Released),
         new(Features.BicepEmitter, FeatureStatus.NotReleased),
         new(Features.AzureDevOpsPipelines, FeatureStatus.NotReleased),
-        new(Features.InstallationKit, FeatureStatus.NotReleased),
+        new(Features.InstallationKit, FeatureStatus.Released),
         new(Features.RepositoryPublishing, FeatureStatus.NotReleased),
         new(Features.DeploymentTracking, FeatureStatus.NotReleased),
         new(Features.DetachedResourceInventory, FeatureStatus.NotReleased),
