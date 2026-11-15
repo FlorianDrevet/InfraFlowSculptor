@@ -1,3 +1,4 @@
+using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -19,14 +20,16 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
 
     internal string ConnectionString => container.GetConnectionString();
 
-    internal IfsDbContext CreatePersistenceDbContext(ICurrentOrganization currentOrganization)
+    internal IfsDbContext CreatePersistenceDbContext(
+        ICurrentOrganization currentOrganization,
+        ITransactionRollbackActions? transactionRollbackActions = null)
     {
         var options = new DbContextOptionsBuilder<IfsDbContext>()
             .UseNpgsql(ConnectionString)
             .UseSnakeCaseNamingConvention()
             .Options;
 
-        return new IfsDbContext(options, currentOrganization);
+        return new IfsDbContext(options, currentOrganization, transactionRollbackActions);
     }
 
     internal TestIfsDbContext CreateDbContext(ICurrentOrganization currentOrganization)

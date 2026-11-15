@@ -5,6 +5,7 @@ using System.Text.Json;
 using InfraFlowSculptor.Api.Configuration;
 using InfraFlowSculptor.Api.Tests.Common;
 using InfraFlowSculptor.Domain.Common.Identifiers;
+using InfraFlowSculptor.Domain.GitConnectionAggregate;
 using InfraFlowSculptor.Domain.OrganizationAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Infrastructure.Authentication;
@@ -196,6 +197,70 @@ public sealed class ProjectWizardEndpointTests(ApiFactory factory) : IClassFixtu
             token);
         using var deletedDraftResponse = await client.SendAsync(deletedDraftRequest);
         Assert.Equal(HttpStatusCode.NoContent, deletedDraftResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task WizardCreationTracksTheSelectedPublicationConnectionAsInUse()
+    {
+        await SeedAsync();
+        var token = CreateToken(AliceObjectId, "Alice Martin");
+        var connectionId = new GitConnectionId(Guid.NewGuid());
+        var projectCode = $"wiz{Guid.NewGuid():N}"[..9];
+        using (var scope = factory.Services.CreateScope())
+        {
+            var currentOrganization = scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>();
+            currentOrganization.Set(new OrganizationId(OrganizationId));
+            var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+            var connection = GitConnectionAggregate.Create(
+                connectionId,
+                new OrganizationId(OrganizationId),
+                GitProviderKind.Gitea,
+                "Gitea local",
+                "contoso",
+                null,
+                GitConnectionAuthenticationMode.DevelopmentToken,
+                null,
+                null,
+                DateTimeOffset.UtcNow).Value;
+            Assert.False(connection.ReplaceRepositories([
+                GitConnectionRepository.Create("contoso/shop", "shop", "main")]).IsError);
+            Assert.False(connection.OpenRepositoryToAllProjects("contoso/shop").IsError);
+            dbContext.GitConnections.Add(connection);
+            await dbContext.SaveChangesAsync();
+        }
+
+        var requestBody = new
+        {
+            name = "Wizard publication tracking",
+            code = projectCode,
+            tenantId = Guid.Parse(TenantId),
+            description = "Created with a publication destination",
+            namingPreset = "Compact",
+            defaultNameTemplate = "{abbr}-{project}-{name}-{env}",
+            resourceGroupNameTemplate = "rg-{project}-{component}-{name}-{env}",
+            environments = new[]
+            {
+                new { name = "Development", code = "dev", subscriptionId = Guid.NewGuid(), region = "francecentral", isProtected = false, approvers = Array.Empty<string>(), description = "" }
+            },
+            tags = new Dictionary<string, string>(),
+            publishingPreset = "MonoRepo",
+            publishingDestination = new { gitConnectionId = connectionId.Value, providerRepositoryId = "contoso/shop", basePath = "" }
+        };
+        using var request = CreateOrganizationRequest(HttpMethod.Post, "/v1/projects/from-wizard", token, requestBody);
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var created = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var projectId = new ProjectId(created.GetProperty("id").GetGuid());
+        using var verificationScope = factory.Services.CreateScope();
+        var verificationOrganization = verificationScope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>();
+        verificationOrganization.Set(new OrganizationId(OrganizationId));
+        var verificationDbContext = verificationScope.ServiceProvider.GetRequiredService<IfsDbContext>();
+        var usage = await verificationDbContext.GitConnectionPublicationUses
+            .SingleAsync(candidate => candidate.ConnectionId == connectionId && candidate.ProjectId == projectId);
+
+        Assert.Equal(new OrganizationId(OrganizationId), usage.OrganizationId);
     }
 
     [Fact]

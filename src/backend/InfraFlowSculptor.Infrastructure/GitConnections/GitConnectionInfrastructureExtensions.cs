@@ -38,7 +38,7 @@ public static class GitConnectionInfrastructureExtensions
             return new SecretClient(
                 vaultUri,
                 provider.GetRequiredService<TokenCredential>(),
-                new SecretClientOptions { DisableChallengeResourceVerification = true });
+                CreateSecretClientOptions(configuration, environment));
         });
         services.TryAddSingleton<ISecretStore, AzureKeyVaultSecretStore>();
 
@@ -55,4 +55,13 @@ public static class GitConnectionInfrastructureExtensions
         services.TryAddScoped<GitProviderRegistry>();
         return services;
     }
+
+    internal static SecretClientOptions CreateSecretClientOptions(
+        IConfiguration configuration,
+        IHostEnvironment environment) =>
+        new()
+        {
+            DisableChallengeResourceVerification = environment.IsDevelopment()
+                && !string.IsNullOrWhiteSpace(configuration.GetConnectionString("keyvault"))
+        };
 }

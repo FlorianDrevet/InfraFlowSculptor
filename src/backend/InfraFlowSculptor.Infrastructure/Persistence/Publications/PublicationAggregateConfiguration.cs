@@ -1,4 +1,3 @@
-using InfraFlowSculptor.Domain.GitConnectionAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Domain.PublicationAggregate;
 using InfraFlowSculptor.Domain.RevisionAggregate;
@@ -46,6 +45,8 @@ public sealed class PublicationAggregateConfiguration : IEntityTypeConfiguration
             targets.HasKey("PublicationId", nameof(PublicationTarget.Id)).HasName("pk_publication_targets");
             targets.Property(target => target.Id).ValueGeneratedNever();
             targets.Property(target => target.GitConnectionId).IsRequired();
+            targets.HasIndex(target => target.GitConnectionId)
+                .HasDatabaseName("ix_publication_targets_git_connection_id");
             targets.Property(target => target.ProviderRepositoryId).HasMaxLength(300).IsRequired();
             targets.Property(target => target.RepositoryName).HasMaxLength(300).IsRequired();
             targets.Property(target => target.DefaultBranch).HasMaxLength(240).IsRequired();
@@ -64,11 +65,6 @@ public sealed class PublicationAggregateConfiguration : IEntityTypeConfiguration
             targets.Property(target => target.PreparedAt);
             targets.Property(target => target.CompletedAt);
             targets.Property(target => target.LastTrackedAt);
-            targets.HasOne<GitConnectionAggregate>()
-                .WithMany()
-                .HasForeignKey(target => target.GitConnectionId)
-                .OnDelete(DeleteBehavior.Restrict);
-
             targets.OwnsMany(target => target.Destinations, destinations =>
             {
                 destinations.ToTable("publication_target_destinations");

@@ -65,6 +65,7 @@ public sealed class GitConnectionAggregate : AggregateRoot<GitConnectionId>, IOr
         string organization,
         Guid? tenantId,
         DateTimeOffset? personalAccessTokenExpiresAt,
+        string? secretName,
         DateTimeOffset now)
     {
         var normalizedName = name?.Trim();
@@ -79,16 +80,21 @@ public sealed class GitConnectionAggregate : AggregateRoot<GitConnectionId>, IOr
             return Error.Validation("VAL-PUB-CONNEXION", "A provider organization or endpoint is required.");
         }
 
-        if (UsesFallbackToken && (personalAccessTokenExpiresAt is null || personalAccessTokenExpiresAt <= now))
-        {
-            return Error.Validation("VAL-PUB-CONNEXION", "A fallback token requires a future expiration date.");
-        }
-
-        if (!UsesFallbackToken && personalAccessTokenExpiresAt is not null)
+        if (UsesFallbackToken
+            && (personalAccessTokenExpiresAt is null
+                || personalAccessTokenExpiresAt <= now
+                || string.IsNullOrWhiteSpace(secretName)))
         {
             return Error.Validation(
                 "VAL-PUB-CONNEXION",
-                "Only fallback-token connections may declare a token expiration date.");
+                "A fallback token requires a secret-store reference and a future expiration date.");
+        }
+
+        if (!UsesFallbackToken && (personalAccessTokenExpiresAt is not null || secretName is not null))
+        {
+            return Error.Validation(
+                "VAL-PUB-CONNEXION",
+                "Only fallback-token connections may declare a secret-store reference or token expiration date.");
         }
 
         if (AuthenticationMode == GitConnectionAuthenticationMode.FederatedServicePrincipal
@@ -109,6 +115,7 @@ public sealed class GitConnectionAggregate : AggregateRoot<GitConnectionId>, IOr
         Organization = normalizedOrganization;
         TenantId = tenantId;
         PersonalAccessTokenExpiresAt = personalAccessTokenExpiresAt;
+        SecretName = secretName?.Trim();
         Version = checked(Version + 1);
         return Result.Success;
     }
@@ -235,6 +242,17 @@ public sealed class GitConnectionAggregate : AggregateRoot<GitConnectionId>, IOr
             }
 
             repositories.Add(repository);
+        }
+
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> RefreshRepositories(IEnumerable<GitConnectionRepository> availableRepositories)
+    {
+        var replaced = ReplaceRepositories(availableRepositories);
+        if (replaced.IsError)
+        {
+            return replaced.Errors;
         }
 
         Version = checked(Version + 1);

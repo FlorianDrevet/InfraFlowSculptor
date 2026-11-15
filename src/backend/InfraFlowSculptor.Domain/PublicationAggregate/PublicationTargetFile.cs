@@ -32,4 +32,6 @@ public sealed class PublicationTargetFile
     public PublicationFileAction Action { get; private set; }
 
     public string? ExistingSha256 { get; private set; }
+
+    internal void ReplaceContentHash(string sha256) => Sha256 = sha256;
 }

@@ -387,6 +387,10 @@ describe('RevisionDetail', () => {
   });
 
   it('retries only the failed repository destinations', async () => {
+    const staleRevision: RevisionDetailResponse = {
+      ...detail,
+      revision: { ...detail.revision, isStale: true },
+    };
     const partial = publicationWithTarget('PartiallyPublished', 'Failed', {
       failureCode: 'PROVIDER_FAILURE',
       pullRequestId: null,
@@ -405,7 +409,7 @@ describe('RevisionDetail', () => {
         {
           provide: RevisionsService,
           useValue: {
-            get: vi.fn().mockReturnValue(of(detail)),
+            get: vi.fn().mockReturnValue(of(staleRevision)),
             plan: vi.fn().mockReturnValue(of({ project: {}, components: [], pins: {} })),
             readFile: vi.fn().mockReturnValue(of('')),
             downloadFile: vi.fn().mockReturnValue(of(new Blob(['file']))),
@@ -432,7 +436,16 @@ describe('RevisionDetail', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Publications' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Revoir la publication' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Republier shop' }));
+    const confirmation = await screen.findByRole('checkbox', {
+      name: 'Je confirme publier cette révision périmée.',
+    });
+    const retry = await screen.findByRole('button', { name: 'Republier shop' });
+    expect((retry as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(retry);
+    expect(publications.start).not.toHaveBeenCalled();
+    fireEvent.click(confirmation);
+    expect((retry as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(retry);
 
     await waitFor(() =>
       expect(publications.start).toHaveBeenCalledWith('project-id', 'revision-id', '', true, [

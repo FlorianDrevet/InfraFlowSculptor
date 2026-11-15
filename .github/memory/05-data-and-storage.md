@@ -19,6 +19,7 @@
   est `20261005144850_S_06_Socle`.
 - `UnitOfWorkBehavior` enveloppe les commandes d'une transaction, sauvegarde une fois et écrit les événements de
   domaine dans l'outbox dans cette transaction. Les conflits sont renvoyés en `CONFLICT_VERSION`.
+- `TransactionRollbackActions` associe des compensations aux transactions racines et savepoints EF; les compensations ne s'exécutent qu'après un rollback SQL confirmé. En cas d'échec du rollback, l'exception métier initiale reste primaire et le secret temporaire est conservé tant que le résultat du commit est incertain, afin de ne pas casser une référence éventuellement commitée.
 - Les écritures idempotentes sont isolées par tenant, utilisateur et clé cliente. Pour `POST /v1/organizations`, exécuté
   avant toute organisation active, `user_idempotency_keys` applique une contrainte sur les trois colonnes de portée ; la
   migration est `20261027170637_R_04_UserIdempotencyKeys`. Dans une organisation, la clé persistée est dérivée de

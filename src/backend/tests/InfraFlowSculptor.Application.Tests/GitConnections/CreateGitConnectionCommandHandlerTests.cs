@@ -27,12 +27,19 @@ public sealed class CreateGitConnectionCommandHandlerTests
                 .Options,
             currentOrganization);
         var secretStore = Substitute.For<ISecretStore>();
+        secretStore.DeleteAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var rollbackActions = Substitute.For<ITransactionRollbackActions>();
+        Func<CancellationToken, Task>? rollbackAction = null;
+        rollbackActions
+            .When(actions => actions.Register(Arg.Any<Func<CancellationToken, Task>>()))
+            .Do(call => rollbackAction = call.Arg<Func<CancellationToken, Task>>());
         var provider = new RecordingGitProvider();
         var handler = new CreateGitConnectionCommandHandler(
             dbContext,
             currentOrganization,
             new GitProviderRegistry([provider]),
             secretStore,
+            rollbackActions,
             TimeProvider.System);
         var command = new CreateGitConnectionCommand(
             organizationId.Value,
@@ -49,16 +56,22 @@ public sealed class CreateGitConnectionCommandHandlerTests
 
         Assert.False(result.IsError);
         var persistedConnection = Assert.Single(dbContext.ChangeTracker.Entries<GitConnection>()).Entity;
-        Assert.Equal($"git-conn-{connectionId:N}", persistedConnection.SecretName);
+        var secretName = Assert.IsType<string>(persistedConnection.SecretName);
+        Assert.StartsWith($"git-conn-{connectionId:N}-", secretName, StringComparison.Ordinal);
         var trackedValues = dbContext.ChangeTracker.Entries()
             .SelectMany(entry => entry.Properties)
             .Select(property => property.CurrentValue?.ToString())
             .ToArray();
         Assert.DoesNotContain(token, trackedValues);
         await secretStore.Received(1).SetAsync(
-            $"git-conn-{connectionId:N}",
+            secretName,
             token,
             Arg.Any<CancellationToken>());
+        Assert.NotNull(rollbackAction);
+
+        await rollbackAction!(CancellationToken.None);
+
+        await secretStore.Received(1).DeleteAsync(secretName, Arg.Any<CancellationToken>());
     }
 
     private sealed class RecordingGitProvider : IGitProvider

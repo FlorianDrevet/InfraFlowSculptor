@@ -1,6 +1,7 @@
 using ErrorOr;
 using InfraFlowSculptor.Application.Common.ModelCommands;
 using InfraFlowSculptor.Application.Common.Persistence;
+using InfraFlowSculptor.Domain.ComponentAggregate;
 using InfraFlowSculptor.Domain.Common.Identifiers;
 using InfraFlowSculptor.Domain.GitConnectionAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
@@ -16,10 +17,17 @@ public sealed class SetProjectPublishPlanCommandHandler(IIfsDbContext dbContext)
         SetProjectPublishPlanCommand command,
         CancellationToken cancellationToken)
     {
+        var projectId = new ProjectId(command.ProjectId);
+        if (!await dbContext.LockProjectForUpdateAsync(projectId, cancellationToken))
+        {
+            return Error.NotFound("NOT_FOUND", "The project was not found.");
+        }
+
+        dbContext.ClearTrackedChanges();
         var project = await dbContext.Query<ProjectAggregate>()
             .Include(candidate => candidate.PublicationPlan.Destinations)
             .Include(candidate => candidate.PublicationPlan.Assignments)
-            .SingleOrDefaultAsync(candidate => candidate.Id == new ProjectId(command.ProjectId), cancellationToken);
+            .SingleOrDefaultAsync(candidate => candidate.Id == projectId, cancellationToken);
         if (project is null)
         {
             return Error.NotFound("NOT_FOUND", "The project was not found.");
@@ -33,10 +41,35 @@ public sealed class SetProjectPublishPlanCommandHandler(IIfsDbContext dbContext)
                 new Dictionary<string, object> { ["currentVersion"] = project.Version });
         }
 
+        var componentIds = (await dbContext.Query<ComponentAggregate>()
+                .AsNoTracking()
+                .Where(component => component.ProjectId == project.Id)
+                .Select(component => component.Id)
+                .ToArrayAsync(cancellationToken))
+            .Select(componentId => componentId.Value)
+            .ToHashSet();
+        if (command.Assignments.Any(assignment => !componentIds.Contains(assignment.ComponentId)))
+        {
+            return Error.Validation(
+                PublishValidationCodes.Destination,
+                "Une affectation référence un composant absent du projet.");
+        }
+
         var connectionIds = command.Destinations
             .Select(destination => new GitConnectionId(destination.GitConnectionId))
             .Distinct()
+            .OrderBy(connectionId => connectionId.Value)
             .ToArray();
+        foreach (var connectionId in connectionIds)
+        {
+            if (!await dbContext.LockGitConnectionForUpdateAsync(connectionId, cancellationToken))
+            {
+                return Error.Validation(
+                    PublishValidationCodes.Destination,
+                    "Le dépôt n’est pas accessible à ce projet.");
+            }
+        }
+
         var connections = await dbContext.Query<GitConnectionAggregate>()
             .Include(connection => connection.Repositories)
             .ThenInclude(repository => repository.AllowedProjects)

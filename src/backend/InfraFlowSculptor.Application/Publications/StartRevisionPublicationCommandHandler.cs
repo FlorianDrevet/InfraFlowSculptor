@@ -57,6 +57,19 @@ public sealed class StartRevisionPublicationCommandHandler(
             return Error.NotFound("PROJECT_NOT_FOUND", "Le projet n'a pas été trouvé.");
         }
 
+        foreach (var connectionId in project.PublicationPlan.Destinations
+                     .Select(destination => destination.GitConnectionId)
+                     .Distinct()
+                     .OrderBy(id => id.Value))
+        {
+            if (!await dbContext.LockGitConnectionForUpdateAsync(connectionId, cancellationToken))
+            {
+                return Error.Validation(
+                    PublishValidationCodes.Destination,
+                    "Une connexion git du plan n'existe plus.");
+            }
+        }
+
         var revision = await dbContext.Query<RevisionAggregate>()
             .Include(candidate => candidate.Files)
             .Include(candidate => candidate.Findings)

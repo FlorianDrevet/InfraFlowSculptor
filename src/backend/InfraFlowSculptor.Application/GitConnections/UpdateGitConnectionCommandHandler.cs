@@ -1,4 +1,5 @@
 using ErrorOr;
+using InfraFlowSculptor.Application.Common.Jobs;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Common.Security;
 using InfraFlowSculptor.Application.Common.Secrets;
@@ -15,6 +16,8 @@ public sealed class UpdateGitConnectionCommandHandler(
     ICurrentOrganization currentOrganization,
     GitProviderRegistry providers,
     ISecretStore secretStore,
+    IJobDispatcher jobDispatcher,
+    ITransactionRollbackActions rollbackActions,
     TimeProvider clock) : ICommandHandler<UpdateGitConnectionCommand, ErrorOr<GitConnectionSummary>>
 {
     public async ValueTask<ErrorOr<GitConnectionSummary>> Handle(
@@ -41,6 +44,13 @@ public sealed class UpdateGitConnectionCommandHandler(
             return Error.Conflict("CONFLICT_VERSION", "The Git connection changed. Reload it and try again.");
         }
 
+        var previousSecretName = connection.SecretName;
+        var replacingPersonalAccessToken = connection.UsesFallbackToken
+            && !string.IsNullOrWhiteSpace(command.PersonalAccessToken);
+        var secretName = replacingPersonalAccessToken
+            ? GitConnectionSecretNames.CreatePersonalAccessTokenName(connection.Id.Value)
+            : connection.SecretName;
+
         var updated = GitConnection.Create(
             connection.Id,
             organizationId,
@@ -50,7 +60,7 @@ public sealed class UpdateGitConnectionCommandHandler(
             command.TenantId,
             connection.AuthenticationMode,
             command.PersonalAccessTokenExpiresAt,
-            connection.SecretName,
+            secretName,
             clock.GetUtcNow());
         if (updated.IsError)
         {
@@ -93,6 +103,7 @@ public sealed class UpdateGitConnectionCommandHandler(
             command.Organization,
             command.TenantId,
             command.PersonalAccessTokenExpiresAt,
+            secretName,
             clock.GetUtcNow());
         if (updatedDetails.IsError)
         {
@@ -109,11 +120,18 @@ public sealed class UpdateGitConnectionCommandHandler(
             return replaced.Errors;
         }
 
-        if (connection.UsesFallbackToken
-            && !string.IsNullOrWhiteSpace(command.PersonalAccessToken)
-            && connection.SecretName is { } secretName)
+        if (replacingPersonalAccessToken && secretName is { } replacementSecretName)
         {
-            await secretStore.SetAsync(secretName, command.PersonalAccessToken, cancellationToken);
+            rollbackActions.Register(
+                rollbackCancellationToken => secretStore.DeleteAsync(replacementSecretName, rollbackCancellationToken));
+            await secretStore.SetAsync(replacementSecretName, command.PersonalAccessToken!, cancellationToken);
+            if (previousSecretName is { } oldSecretName)
+            {
+                jobDispatcher.Enqueue(
+                    JobQueue.Notifications,
+                    organizationId,
+                    new DeleteGitConnectionSecretJob(oldSecretName));
+            }
         }
 
         return GitConnectionSummaryMapper.Map(connection);

@@ -36,10 +36,12 @@ public sealed class IfsAzureCredential : TokenCredential
                 : new ManagedIdentityCredential(ManagedIdentityId.FromUserAssignedClientId(clientId));
         }
 
-        return new DefaultAzureCredential(new DefaultAzureCredentialOptions
-        {
-            ExcludeInteractiveBrowserCredential = true,
-            DisableInstanceDiscovery = true
-        });
+        return new DefaultAzureCredential(CreateDefaultCredentialOptions());
     }
+
+    internal static DefaultAzureCredentialOptions CreateDefaultCredentialOptions() =>
+        new()
+        {
+            ExcludeInteractiveBrowserCredential = true
+        };
 }

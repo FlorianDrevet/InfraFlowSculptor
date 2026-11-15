@@ -252,13 +252,31 @@ public sealed partial class PublicationOperationProcessor(
                     target.SourceBranch,
                     accessToken,
                     cancellationToken);
-                var operationTag = string.Concat("Publication-Id: ", publication.Id.Value.ToString("D"));
-                string commitSha;
-                if (sourceBranch is not null && sourceBranch.CommitMessage.Contains(operationTag, StringComparison.Ordinal))
+                IReadOnlyCollection<PublicationCommitReference> priorCommitReferences = [];
+                if (sourceBranch is not null
+                    && !string.Equals(sourceBranch.CommitSha, target.BaseCommitSha, StringComparison.OrdinalIgnoreCase)
+                    && !PublicationCommitRecovery.HasOperationTag(sourceBranch, publication.Id))
                 {
-                    commitSha = sourceBranch.CommitSha;
+                    priorCommitReferences = await FindPriorCommitReferencesAsync(publication, target, cancellationToken);
                 }
-                else
+
+                var recovery = PublicationCommitRecovery.FindCommit(
+                    sourceBranch,
+                    publication.Id,
+                    target.GitConnectionId,
+                    target.ProviderRepositoryId,
+                    target.SourceBranch,
+                    target.BaseCommitSha,
+                    target.CommitSha,
+                    target.Files.Select(file => new PublicationCommitFileReference(
+                        file.DestinationId,
+                        file.RepositoryPath,
+                        file.Sha256,
+                        file.Action,
+                        file.ExistingSha256)).ToArray(),
+                    priorCommitReferences);
+                var commitSha = recovery?.CommitSha;
+                if (commitSha is null)
                 {
                     if (sourceBranch is not null
                         && !string.Equals(sourceBranch.CommitSha, target.BaseCommitSha, StringComparison.OrdinalIgnoreCase))
@@ -282,6 +300,7 @@ public sealed partial class PublicationOperationProcessor(
                         break;
                     }
 
+                    var operationTag = string.Concat("Publication-Id: ", publication.Id.Value.ToString("D"));
                     var changes = await BuildCommitChangesAsync(target, cancellationToken);
                     var commitMessage = string.Concat(
                         publication.Message,
@@ -298,6 +317,27 @@ public sealed partial class PublicationOperationProcessor(
                         commitMessage,
                         accessToken,
                         cancellationToken);
+                }
+
+                if (recovery?.ReusedFiles is { } reusedFiles)
+                {
+                    var recoveredManifests = reusedFiles
+                        .Where(file => PublicationManifestPaths.IsManifestFilePath(file.RepositoryPath))
+                        .Select(file => new PublicationTargetFileInput(
+                            file.DestinationId,
+                            file.RepositoryPath,
+                            file.Sha256,
+                            file.Action,
+                            file.ExistingSha256))
+                        .ToArray();
+                    var recordedRecoveredCommit = publication.RecordRecoveredCommit(target.Id, commitSha, recoveredManifests);
+                    if (recordedRecoveredCommit.IsError)
+                    {
+                        throw new InvalidOperationException("The recovered commit could not be recorded.");
+                    }
+                }
+                else
+                {
                     var storedCommit = publication.RecordCommit(target.Id, commitSha);
                     if (storedCommit.IsError)
                     {
@@ -381,7 +421,9 @@ public sealed partial class PublicationOperationProcessor(
         var existingPaths = treePaths.ToHashSet(StringComparer.Ordinal);
         var preparedFiles = new List<PublicationTargetFileInput>();
         var requiresConfirmation = false;
-        var plannedFiles = target.Files.ToDictionary(file => file.RepositoryPath, StringComparer.Ordinal);
+        var plannedFiles = target.Files
+            .Where(file => file.Action != PublicationFileAction.Delete)
+            .ToDictionary(file => file.RepositoryPath, StringComparer.Ordinal);
         foreach (var destination in target.Destinations)
         {
             var manifestPath = JoinPath(destination.BasePath, ManifestPath);
@@ -425,14 +467,19 @@ public sealed partial class PublicationOperationProcessor(
                     var priorManifestSha = priorTarget?.Files.SingleOrDefault(file =>
                         file.DestinationId == destination.DestinationId
                         && string.Equals(file.RepositoryPath, manifestPath, StringComparison.Ordinal))?.Sha256;
-                    if (priorManifestSha is not null
-                        && !string.Equals(priorManifestSha, remoteManifestSha, StringComparison.Ordinal))
+                    if (!PublicationManifestTrust.IsTrusted(remoteManifestSha, priorManifestSha))
                     {
                         requiresConfirmation = true;
                     }
 
                     foreach (var file in manifest!.Files ?? [])
                     {
+                        if (PublicationManifestPaths.IsManifestFilePath(file.Path))
+                        {
+                            requiresConfirmation = true;
+                            continue;
+                        }
+
                         if (string.IsNullOrWhiteSpace(file.Path)
                             || file.Sha256 is null
                             || !Sha256Pattern().IsMatch(file.Sha256)
@@ -635,8 +682,49 @@ public sealed partial class PublicationOperationProcessor(
             .Include(candidate => candidate.Targets).ThenInclude(prior => prior.Files)
             .ToArrayAsync(cancellationToken);
         return priorPublications.SelectMany(candidate => candidate.Targets)
-            .FirstOrDefault(prior => prior.GitConnectionId == target.GitConnectionId
+            .FirstOrDefault(prior => prior.State == PublicationTargetState.Completed
+                && prior.GitConnectionId == target.GitConnectionId
                 && string.Equals(prior.ProviderRepositoryId, target.ProviderRepositoryId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async Task<IReadOnlyCollection<PublicationCommitReference>> FindPriorCommitReferencesAsync(
+        Publication publication,
+        PublicationTarget target,
+        CancellationToken cancellationToken)
+    {
+        var priorPublications = await dbContext.Query<Publication>()
+            .Where(candidate => candidate.ProjectId == publication.ProjectId
+                && candidate.RevisionId == publication.RevisionId
+                && candidate.Id != publication.Id
+                && (candidate.State == PublicationState.Failed || candidate.State == PublicationState.PartiallyPublished)
+                && candidate.Targets.Any(prior => prior.State == PublicationTargetState.Failed
+                    && prior.GitConnectionId == target.GitConnectionId
+                    && prior.SourceBranch == target.SourceBranch
+                    && prior.BaseCommitSha == target.BaseCommitSha))
+            .Include(candidate => candidate.Targets.Where(prior => prior.State == PublicationTargetState.Failed
+                && prior.GitConnectionId == target.GitConnectionId
+                && prior.SourceBranch == target.SourceBranch
+                && prior.BaseCommitSha == target.BaseCommitSha))
+            .ThenInclude(prior => prior.Files)
+            .ToArrayAsync(cancellationToken);
+        return priorPublications.SelectMany(candidate => candidate.Targets.Select(prior => new PublicationCommitReference(
+                candidate.Id,
+                prior.GitConnectionId,
+                prior.ProviderRepositoryId,
+                prior.SourceBranch,
+                prior.BaseCommitSha,
+                prior.CommitSha,
+                prior.Files.Select(file => new PublicationCommitFileReference(
+                    file.DestinationId,
+                    file.RepositoryPath,
+                    file.Sha256,
+                    file.Action,
+                    file.ExistingSha256)).ToArray())))
+            .Where(prior => prior.GitConnectionId == target.GitConnectionId
+                && string.Equals(prior.ProviderRepositoryId, target.ProviderRepositoryId, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(prior.SourceBranch, target.SourceBranch, StringComparison.Ordinal)
+                && string.Equals(prior.BaseCommitSha, target.BaseCommitSha, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
     }
 
     private async Task<Publication?> LoadPublicationAsync(

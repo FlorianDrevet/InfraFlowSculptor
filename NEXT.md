@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`R-07`](docs/plan/02-jalon-0-pilote.md#-r-07--revue-de-la-publication) — Revue de la publication |
+| **Étape courante** | [`J0-29`](docs/plan/02-jalon-0-pilote.md#j0-29--liste-de-contrôle-dinstallation) — Liste de contrôle d'installation |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`J0-28`](docs/plan/02-jalon-0-pilote.md#j0-28--publication-par-pull-request) — Publication par pull request (commit `01e9215`) |
-| **Étape suivante** | `J0-29` — Liste de contrôle d'installation |
+| **Dernière étape terminée** | [`R-07`](docs/plan/02-jalon-0-pilote.md#-r-07--revue-de-la-publication) — Revue de la publication (auto-validée) |
+| **Étape suivante** | `J0-30` — Suivi des déploiements et ressources détachées |
 | **Verrou** | aucun |
 | **Branche** | `impl/j0-publication` (créée depuis `origin/impl/j0-generation`, segment empilé après R-06) |
-| **Dernière mise à jour** | 2026-11-14 — Codex |
+| **Dernière mise à jour** | 2026-11-15 — Codex (auto-validation R-07) |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 

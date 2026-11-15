@@ -15,6 +15,7 @@ public sealed class CreateGitConnectionCommandHandler(
     ICurrentOrganization currentOrganization,
     GitProviderRegistry providers,
     ISecretStore secretStore,
+    ITransactionRollbackActions rollbackActions,
     TimeProvider clock) : ICommandHandler<CreateGitConnectionCommand, ErrorOr<GitConnectionSummary>>
 {
     public async ValueTask<ErrorOr<GitConnectionSummary>> Handle(
@@ -28,7 +29,7 @@ public sealed class CreateGitConnectionCommandHandler(
         }
 
         var secretName = command.AuthenticationMode == GitConnectionAuthenticationMode.PersonalAccessToken
-            ? $"git-conn-{command.ConnectionId:N}"
+            ? GitConnectionSecretNames.CreatePersonalAccessTokenName(command.ConnectionId)
             : null;
         var created = GitConnection.Create(
             new GitConnectionId(command.ConnectionId),
@@ -76,6 +77,7 @@ public sealed class CreateGitConnectionCommandHandler(
 
         if (secretName is not null && command.PersonalAccessToken is { } token)
         {
+            rollbackActions.Register(cancellationToken => secretStore.DeleteAsync(secretName, cancellationToken));
             await secretStore.SetAsync(secretName, token, cancellationToken);
         }
 

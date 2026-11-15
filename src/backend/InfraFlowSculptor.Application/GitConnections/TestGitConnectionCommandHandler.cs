@@ -65,7 +65,7 @@ public sealed class TestGitConnectionCommandHandler(
             return ConnectionTestFailed();
         }
 
-        var replaced = connection.ReplaceRepositories(repositories.Select(repository =>
+        var replaced = connection.RefreshRepositories(repositories.Select(repository =>
             GitConnectionRepository.Create(
                 repository.ProviderRepositoryId,
                 repository.Name,

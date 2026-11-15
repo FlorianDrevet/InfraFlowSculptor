@@ -127,4 +127,23 @@ public sealed class PublishPlanTests
         Assert.True(configured.IsError);
         Assert.Equal("VAL-PUB-DESTINATION", Assert.Single(configured.Errors).Code);
     }
+
+    [Fact]
+    public void ConfigureRejectsNestedBasePathsWhenRepositoryIdsDifferOnlyByCase()
+    {
+        var plan = PublishPlan.CreateDefault();
+        var configured = plan.Configure(new PublishPlanConfiguration(
+            PublishPreset.InfrastructureAndCodeSeparated,
+            [
+                new PublishPlanDestinationInput(InfrastructureDestinationId, ConnectionId, "contoso/shop", "services"),
+                new PublishPlanDestinationInput(CodeDestinationId, ConnectionId, "CONTOSO/SHOP", "services/apps")
+            ],
+            [],
+            InfrastructureDestinationId,
+            CodeDestinationId,
+            CodeDestinationId));
+
+        Assert.True(configured.IsError);
+        Assert.Equal("VAL-PUB-DESTINATION", Assert.Single(configured.Errors).Code);
+    }
 }

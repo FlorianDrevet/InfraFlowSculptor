@@ -358,6 +358,17 @@
         </app-ds-banner>
       }
 
+      @if (retryRequiresStaleConfirmation()) {
+        <label class="revision-detail__stale-confirmation">
+          <input
+            type="checkbox"
+            [checked]="acceptStalePublication()"
+            (change)="setAcceptStalePublication($event)"
+          />
+          {{ 'revisionDetail.publicationStaleConfirmation' | transloco }}
+        </label>
+      }
+
       <div class="revision-detail__publication-targets" aria-live="polite">
         @for (target of currentPublication.targets; track target.id) {
           <article
@@ -398,7 +409,7 @@
               ) {
                 <app-ds-button
                   variant="secondary"
-                  [disabled]="publicationWorking()"
+                  [disabled]="publicationWorking() || (retryRequiresStaleConfirmation() && !acceptStalePublication())"
                   (click)="retryFailedTarget(target)"
                 >
                   {{

@@ -3062,13 +3062,6 @@ namespace InfraFlowSculptor.Infrastructure.Persistence.Migrations
 
                             b1.ToTable("publication_targets", (string)null);
 
-                            b1.HasOne("InfraFlowSculptor.Domain.GitConnectionAggregate.GitConnectionAggregate", null)
-                                .WithMany()
-                                .HasForeignKey("GitConnectionId")
-                                .OnDelete(DeleteBehavior.Restrict)
-                                .IsRequired()
-                                .HasConstraintName("fk_publication_targets_git_connections_git_connection_id");
-
                             b1.WithOwner()
                                 .HasForeignKey("PublicationId")
                                 .HasConstraintName("fk_publication_targets_publications_publication_id");

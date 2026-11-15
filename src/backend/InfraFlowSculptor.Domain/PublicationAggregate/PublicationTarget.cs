@@ -184,7 +184,7 @@ public sealed partial class PublicationTarget
 
         DefaultBranch = string.Empty;
         BaseCommitSha = string.Empty;
-        files.Clear();
+        files.RemoveAll(file => file.Action == PublicationFileAction.Delete);
         RequiresConfirmation = false;
         OwnershipConfirmed = false;
         FailureCode = null;
@@ -247,6 +247,52 @@ public sealed partial class PublicationTarget
         return true;
     }
 
+    internal bool RecordRecoveredCommit(
+        string commitSha,
+        IReadOnlyCollection<PublicationTargetFileInput> recoveredManifestFiles)
+    {
+        if (State != PublicationTargetState.Publishing
+            || !GitShaPattern().IsMatch(commitSha)
+            || (CommitSha is not null && !string.Equals(CommitSha, commitSha, StringComparison.OrdinalIgnoreCase))
+            || recoveredManifestFiles is null)
+        {
+            return false;
+        }
+
+        var manifestFiles = files.Where(file => IsManifestFilePath(file.RepositoryPath)).ToArray();
+        var recoveredFiles = recoveredManifestFiles.ToArray();
+        if (manifestFiles.Length == 0
+            || recoveredFiles.Length != manifestFiles.Length
+            || recoveredFiles.Any(file => file is null
+                || !IsManifestFilePath(file.RepositoryPath)
+                || !IsValidFileChange(file)
+                || file.Sha256 is null)
+            || recoveredFiles.Select(file => (file.DestinationId, file.RepositoryPath)).Distinct().Count() != recoveredFiles.Length)
+        {
+            return false;
+        }
+
+        var recoveredByIdentity = recoveredFiles.ToDictionary(
+            file => (file.DestinationId, file.RepositoryPath));
+        foreach (var currentFile in manifestFiles)
+        {
+            if (!recoveredByIdentity.TryGetValue((currentFile.DestinationId, currentFile.RepositoryPath), out var recoveredFile)
+                || recoveredFile.Action != currentFile.Action
+                || !string.Equals(recoveredFile.ExistingSha256, currentFile.ExistingSha256, StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        foreach (var currentFile in manifestFiles)
+        {
+            currentFile.ReplaceContentHash(recoveredByIdentity[(currentFile.DestinationId, currentFile.RepositoryPath)].Sha256!);
+        }
+
+        CommitSha = commitSha;
+        return true;
+    }
+
     internal void MarkFailed(string failureCode, DateTimeOffset failedAt)
     {
         if (State is PublicationTargetState.Completed or PublicationTargetState.Failed
@@ -289,6 +335,10 @@ public sealed partial class PublicationTarget
         && !path.StartsWith('/')
         && !path.Contains('\\')
         && path.Split('/').All(segment => segment.Length > 0 && segment is not ("." or ".."));
+
+    private static bool IsManifestFilePath(string path) =>
+        string.Equals(path, ".ifs/manifest.json", StringComparison.Ordinal)
+        || path.EndsWith("/.ifs/manifest.json", StringComparison.Ordinal);
 
     private static bool IsValidFileChange(PublicationTargetFileInput file) => file.Action switch
     {

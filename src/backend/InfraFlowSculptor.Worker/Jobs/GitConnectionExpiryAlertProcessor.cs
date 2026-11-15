@@ -12,12 +12,13 @@ using GitConnection = InfraFlowSculptor.Domain.GitConnectionAggregate.GitConnect
 
 namespace InfraFlowSculptor.Worker.Jobs;
 
-public sealed class GitConnectionExpiryAlertProcessor(
+public sealed partial class GitConnectionExpiryAlertProcessor(
     IIfsDbContext dbContext,
     WorkerOrganizationContext organizationContext,
     IEmailSender emailSender,
     IConfiguration configuration,
-    TimeProvider clock)
+    TimeProvider clock,
+    ILogger<GitConnectionExpiryAlertProcessor> logger)
 {
     private const string DefaultSenderAddress = "no-reply@infraflowsculptor.local";
 
@@ -63,29 +64,45 @@ public sealed class GitConnectionExpiryAlertProcessor(
                 continue;
             }
 
+            if (daysRemaining <= 3)
+            {
+                if (!connection.Expiry3DayAlertSent)
+                {
+                    if (await SendAlertAsync(connection, administrators, daysRemaining, expiresAt, cancellationToken))
+                    {
+                        _ = connection.MarkExpiryAlertSent(3);
+                    }
+                }
+
+                if (!connection.Expiry15DayAlertSent)
+                {
+                    _ = connection.MarkExpiryAlertSent(15);
+                }
+
+                await dbContext.SaveChangesAsync(cancellationToken);
+                continue;
+            }
+
             if (daysRemaining <= 15 && !connection.Expiry15DayAlertSent)
             {
-                await SendAlertAsync(connection, administrators, daysRemaining, expiresAt, cancellationToken);
-                _ = connection.MarkExpiryAlertSent(15);
+                if (await SendAlertAsync(connection, administrators, daysRemaining, expiresAt, cancellationToken))
+                {
+                    _ = connection.MarkExpiryAlertSent(15);
+                }
             }
 
-            if (daysRemaining <= 3 && !connection.Expiry3DayAlertSent)
-            {
-                await SendAlertAsync(connection, administrators, daysRemaining, expiresAt, cancellationToken);
-                _ = connection.MarkExpiryAlertSent(3);
-            }
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
-
-        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task SendAlertAsync(
+    private async Task<bool> SendAlertAsync(
         GitConnection connection,
         IReadOnlyCollection<AdministratorEmail> administrators,
         int daysRemaining,
         DateTimeOffset expiresAt,
         CancellationToken cancellationToken)
     {
+        var sentToAllAdministrators = true;
         foreach (var administrator in administrators)
         {
             var french = administrator.PreferredLanguage == "fr";
@@ -106,9 +123,36 @@ public sealed class GitConnectionExpiryAlertProcessor(
                 subject,
                 html,
                 text);
-            await emailSender.SendAsync(email, cancellationToken);
+            try
+            {
+                await emailSender.SendAsync(email, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                sentToAllAdministrators = false;
+                AlertSendFailed(
+                    logger,
+                    connection.Id.Value,
+                    connection.OrganizationId.Value,
+                    exception.GetType().Name);
+            }
         }
+
+        return sentToAllAdministrators;
     }
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Git connection expiry alert failed for connection {ConnectionId} in organization {OrganizationId}: {FailureType}")]
+    private static partial void AlertSendFailed(
+        ILogger logger,
+        Guid connectionId,
+        Guid organizationId,
+        string failureType);
 
     private sealed record AdministratorEmail(string Email, string PreferredLanguage);
 }

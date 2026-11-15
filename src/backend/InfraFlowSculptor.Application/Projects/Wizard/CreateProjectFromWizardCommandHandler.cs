@@ -122,9 +122,17 @@ public sealed class CreateProjectFromWizardCommandHandler(
 
         if (command.PublishingDestination is { } selectedDestination)
         {
+            var connectionId = new GitConnectionId(selectedDestination.GitConnectionId);
+            if (!await dbContext.LockGitConnectionForUpdateAsync(connectionId, cancellationToken))
+            {
+                return Error.Validation(
+                    PublishValidationCodes.Destination,
+                    "L’assistant ne peut proposer que les dépôts ouverts à tous les projets de l’organisation.");
+            }
+
             var connection = await dbContext.Query<GitConnectionAggregate>()
                 .Include(candidate => candidate.Repositories)
-                .SingleOrDefaultAsync(candidate => candidate.Id == new GitConnectionId(selectedDestination.GitConnectionId), cancellationToken);
+                .SingleOrDefaultAsync(candidate => candidate.Id == connectionId, cancellationToken);
             var repository = connection?.Repositories.SingleOrDefault(candidate =>
                 string.Equals(candidate.ProviderRepositoryId, selectedDestination.ProviderRepositoryId, StringComparison.OrdinalIgnoreCase));
             if (repository is null || !repository.OpenToAllProjects)
@@ -150,6 +158,11 @@ public sealed class CreateProjectFromWizardCommandHandler(
             {
                 return publicationPlan.Errors;
             }
+
+            dbContext.Query<GitConnectionPublicationUse>().Add(new GitConnectionPublicationUse(
+                organizationId,
+                connection!.Id,
+                project.Id));
         }
 
         var tags = project.SetTags(command.Tags);

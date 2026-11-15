@@ -6,6 +6,7 @@ using Microsoft.Extensions.Caching.Hybrid;
 using InfraFlowSculptor.Application.Common.Behaviors;
 using InfraFlowSculptor.Application.Common.Jobs;
 using InfraFlowSculptor.Application.Common.ModelCommands;
+using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Components;
 using InfraFlowSculptor.Application.Naming.Availability;
 using InfraFlowSculptor.Engine.Applications;
@@ -38,6 +39,7 @@ public static class DependencyInjection
 
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
         services.TryAddScoped<IJobDispatcher, OutboxJobDispatcher>();
+        services.TryAddScoped<ITransactionRollbackActions, TransactionRollbackActions>();
         services.TryAddScoped<IModelCommandExecutor, ModelCommandExecutor>();
         services.TryAddSingleton<ModelCommandSerializer>();
         services.TryAddScoped<ModelSnapshotBuilder>();

@@ -75,7 +75,7 @@ public static class DevelopmentController
                     new EnqueueGitConnectionExpiryAlertsCommand(organizationId.Value),
                     cancellationToken);
                 return result.Match<IResult>(
-                    jobId => Results.Accepted($"/v1/dev/jobs/{jobId:D}", new { jobId }),
+                    CreateExpiryAlertAcceptedResult,
                     errors => errors.ToProblem());
             })
             .RequireAuthorization()
@@ -105,4 +105,7 @@ public static class DevelopmentController
 
         return v1;
     }
+
+    internal static IResult CreateExpiryAlertAcceptedResult(Guid jobId) =>
+        Results.Accepted($"/v1/dev/git-connections/expiry-alerts/{jobId:D}", new { jobId });
 }

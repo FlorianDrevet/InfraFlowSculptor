@@ -5,9 +5,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InfraFlowSculptor.Worker.Jobs;
 
-public sealed class GitConnectionExpiryAlertScheduledJob(
+public sealed partial class GitConnectionExpiryAlertScheduledJob(
     IIfsDbContext dbContext,
-    GitConnectionExpiryAlertProcessor processor) : IScheduledJob
+    GitConnectionExpiryAlertProcessor processor,
+    ILogger<GitConnectionExpiryAlertScheduledJob> logger) : IScheduledJob
 {
     public string Name => "git-connection-expiry-alerts";
 
@@ -17,13 +18,29 @@ public sealed class GitConnectionExpiryAlertScheduledJob(
     {
         var organizationIds = await dbContext.Query<GitConnectionAggregate>()
             .IgnoreQueryFilters()
-            .Where(connection => connection.UsesFallbackToken)
+            .Where(connection => connection.AuthenticationMode == GitConnectionAuthenticationMode.PersonalAccessToken)
             .Select(connection => connection.OrganizationId)
             .Distinct()
             .ToArrayAsync(cancellationToken);
         foreach (var organizationId in organizationIds)
         {
-            await processor.CheckOrganizationAsync(organizationId, cancellationToken);
+            try
+            {
+                await processor.CheckOrganizationAsync(organizationId, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                OrganizationCheckFailed(logger, organizationId.Value, exception.GetType().Name);
+            }
         }
     }
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Git connection expiry alerts failed for organization {OrganizationId}: {FailureType}")]
+    private static partial void OrganizationCheckFailed(ILogger logger, Guid organizationId, string failureType);
 }

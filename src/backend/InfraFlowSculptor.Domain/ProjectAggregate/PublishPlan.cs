@@ -174,7 +174,7 @@ public sealed class PublishPlan
             {
                 var second = configuredDestinations[secondIndex];
                 if (first.GitConnectionId == second.GitConnectionId
-                    && string.Equals(first.ProviderRepositoryId, second.ProviderRepositoryId, StringComparison.Ordinal)
+                    && string.Equals(first.ProviderRepositoryId, second.ProviderRepositoryId, StringComparison.OrdinalIgnoreCase)
                     && BasePathsOverlap(first.BasePath, second.BasePath))
                 {
                     return Error.Validation(

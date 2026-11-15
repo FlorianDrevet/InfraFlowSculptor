@@ -105,6 +105,11 @@ export class RevisionDetail implements OnChanges, OnInit, OnDestroy {
       total: targets.length,
     };
   });
+  protected readonly retryRequiresStaleConfirmation = computed(
+    () =>
+      this.revision()?.isStale === true &&
+      (this.publication()?.targets.some((target) => target.state === 'Failed') ?? false),
+  );
   protected readonly tree = computed(() => buildRevisionFileTree(this.filteredFiles()));
   protected readonly tabs = computed<TabItem[]>(() => [
     { id: 'changes', label: this.transloco.translate('revisionDetail.changesTab') },
@@ -344,7 +349,8 @@ export class RevisionDetail implements OnChanges, OnInit, OnDestroy {
     if (
       !publication ||
       target.state !== 'Failed' ||
-      !['Failed', 'PartiallyPublished'].includes(publication.state)
+      !['Failed', 'PartiallyPublished'].includes(publication.state) ||
+      (this.revision()?.isStale === true && !this.acceptStalePublication())
     ) {
       return;
     }
@@ -357,7 +363,7 @@ export class RevisionDetail implements OnChanges, OnInit, OnDestroy {
           this.projectId(),
           this.revisionId(),
           publication.message,
-          true,
+          this.acceptStalePublication(),
           target.destinations.map((destination) => destination.id),
         ),
       );

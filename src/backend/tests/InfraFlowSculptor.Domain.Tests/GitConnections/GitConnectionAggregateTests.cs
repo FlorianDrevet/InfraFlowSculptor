@@ -76,6 +76,41 @@ public sealed class GitConnectionAggregateTests
     }
 
     [Fact]
+    public void RefreshingRepositoriesAndChangingAccessAdvancesVersionOnceForTheCommand()
+    {
+        var now = DateTimeOffset.Parse("2026-11-14T12:00:00Z");
+        var connection = CreateConnection(now);
+        var initialVersion = connection.Version;
+        const string repositoryId = "contoso/shop";
+
+        Assert.False(connection.ReplaceRepositories([
+            GitConnectionRepository.Create(repositoryId, "shop", "main")]).IsError);
+        Assert.False(connection.OpenRepositoryToAllProjects(repositoryId).IsError);
+
+        Assert.Equal(initialVersion + 1, connection.Version);
+    }
+
+    [Fact]
+    public void RefreshRepositoriesAdvancesVersionAndPreservesProjectAccess()
+    {
+        var now = DateTimeOffset.Parse("2026-11-14T12:00:00Z");
+        var connection = CreateConnection(now);
+        var project = new ProjectId(Guid.NewGuid());
+        const string repositoryId = "contoso/shop";
+        Assert.False(connection.ReplaceRepositories([
+            GitConnectionRepository.Create(repositoryId, "shop", "main")]).IsError);
+        Assert.False(connection.OpenRepositoryToProjects(repositoryId, [project]).IsError);
+        var versionBeforeRefresh = connection.Version;
+
+        var result = connection.RefreshRepositories([
+            GitConnectionRepository.Create(repositoryId, "shop renamed", "main")]);
+
+        Assert.False(result.IsError);
+        Assert.Equal(versionBeforeRefresh + 1, connection.Version);
+        Assert.True(connection.CanAccessRepository(repositoryId, project));
+    }
+
+    [Fact]
     public void ChangingTokenExpiryResetsPreviouslySentAlerts()
     {
         var now = DateTimeOffset.Parse("2026-11-14T12:00:00Z");
@@ -83,11 +118,29 @@ public sealed class GitConnectionAggregateTests
         Assert.False(connection.MarkExpiryAlertSent(15).IsError);
         Assert.False(connection.MarkExpiryAlertSent(3).IsError);
 
-        var result = connection.UpdateDetails("test", "contoso", null, now.AddDays(12), now);
+        var result = connection.UpdateDetails("test", "contoso", null, now.AddDays(12), connection.SecretName, now);
 
         Assert.False(result.IsError);
         Assert.False(connection.Expiry15DayAlertSent);
         Assert.False(connection.Expiry3DayAlertSent);
+    }
+
+    [Fact]
+    public void UpdatingFallbackTokenCanReplaceItsSecretReference()
+    {
+        var now = DateTimeOffset.Parse("2026-11-14T12:00:00Z");
+        var connection = CreateConnection(now);
+
+        var result = connection.UpdateDetails(
+            "test",
+            "contoso",
+            null,
+            now.AddDays(12),
+            "git-conn-replacement-version",
+            now);
+
+        Assert.False(result.IsError);
+        Assert.Equal("git-conn-replacement-version", connection.SecretName);
     }
 
     private static GitConnection CreateConnection(DateTimeOffset now) =>

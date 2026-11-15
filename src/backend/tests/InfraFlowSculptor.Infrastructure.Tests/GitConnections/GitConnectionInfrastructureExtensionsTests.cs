@@ -11,6 +11,33 @@ namespace InfraFlowSculptor.Infrastructure.Tests.GitConnections;
 public sealed class GitConnectionInfrastructureExtensionsTests
 {
     [Fact]
+    public void SecretClientDisablesChallengeVerificationOnlyForDevelopmentEmulator()
+    {
+        var emulatorConfiguration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:keyvault"] = "https://localhost:8443"
+            })
+            .Build();
+        var cloudConfiguration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Azure:keyvault:Endpoint"] = "https://ifs.vault.azure.net"
+            })
+            .Build();
+
+        var emulatorOptions = GitConnectionInfrastructureExtensions.CreateSecretClientOptions(
+            emulatorConfiguration,
+            new TestHostEnvironment("Development"));
+        var cloudOptions = GitConnectionInfrastructureExtensions.CreateSecretClientOptions(
+            cloudConfiguration,
+            new TestHostEnvironment("Production"));
+
+        Assert.True(emulatorOptions.DisableChallengeResourceVerification);
+        Assert.False(cloudOptions.DisableChallengeResourceVerification);
+    }
+
+    [Fact]
     public void RegisteredDevelopmentProvidersResolveFromTheServiceCollection()
     {
         var services = new ServiceCollection();

@@ -29,7 +29,8 @@ namespace InfraFlowSculptor.Infrastructure.Persistence;
 
 public class IfsDbContext(
     DbContextOptions options,
-    ICurrentOrganization currentOrganization)
+    ICurrentOrganization currentOrganization,
+    ITransactionRollbackActions? transactionRollbackActions = null)
     : DbContext(options), IIfsDbContext
 {
     private static readonly JsonSerializerOptions AuditJsonOptions = new()
@@ -38,6 +39,7 @@ public class IfsDbContext(
     };
 
     private readonly ICurrentOrganization currentOrganization = currentOrganization;
+    private readonly ITransactionRollbackActions? transactionRollbackActions = transactionRollbackActions;
     private long savepointSequence;
 
     public DbSet<OutboxMessageEntity> OutboxMessages => Set<OutboxMessageEntity>();
@@ -94,11 +96,21 @@ public class IfsDbContext(
         {
             var savepoint = $"ifs_nested_{Interlocked.Increment(ref savepointSequence)}";
             await currentTransaction.CreateSavepointAsync(savepoint, cancellationToken);
-            return new IfsDbTransaction(currentTransaction, isOwner: false, savepoint);
+            return new IfsDbTransaction(
+                currentTransaction,
+                isOwner: false,
+                savepoint,
+                transactionRollbackActions,
+                transactionRollbackActions?.CaptureCheckpoint() ?? 0);
         }
 
         var transaction = await Database.BeginTransactionAsync(cancellationToken);
-        return new IfsDbTransaction(transaction, isOwner: true, savepointName: null);
+        return new IfsDbTransaction(
+            transaction,
+            isOwner: true,
+            savepointName: null,
+            transactionRollbackActions,
+            transactionRollbackActions?.CaptureCheckpoint() ?? 0);
     }
 
     public async Task<bool> LockProjectForUpdateAsync(
@@ -114,6 +126,25 @@ public class IfsDbContext(
             SELECT id AS "Value"
             FROM projects
             WHERE id = {projectId.Value} AND organization_id = {organizationId.Value}
+            FOR UPDATE
+            """).SingleOrDefaultAsync(cancellationToken);
+
+        return lockedId != Guid.Empty;
+    }
+
+    public async Task<bool> LockGitConnectionForUpdateAsync(
+        GitConnectionId connectionId,
+        CancellationToken cancellationToken = default)
+    {
+        if (CurrentOrganizationId is not { } organizationId)
+        {
+            return false;
+        }
+
+        var lockedId = await Database.SqlQuery<Guid>($"""
+            SELECT id AS "Value"
+            FROM git_connections
+            WHERE id = {connectionId.Value} AND organization_id = {organizationId.Value}
             FOR UPDATE
             """).SingleOrDefaultAsync(cancellationToken);
 

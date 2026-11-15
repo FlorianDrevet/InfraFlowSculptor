@@ -301,6 +301,26 @@ public sealed class PublicationAggregate : AggregateRoot<PublicationId>, IOrgani
         return Result.Success;
     }
 
+    public ErrorOr<Success> RecordRecoveredCommit(
+        Guid targetId,
+        string commitSha,
+        IReadOnlyCollection<PublicationTargetFileInput> recoveredManifestFiles)
+    {
+        var target = targets.SingleOrDefault(candidate => candidate.Id == targetId);
+        if (target is null)
+        {
+            return Error.NotFound(PublicationValidationCodes.InvalidTarget, "La destination n'appartient pas à cette publication.");
+        }
+
+        if (!target.RecordRecoveredCommit(commitSha, recoveredManifestFiles))
+        {
+            return Error.Conflict(PublicationValidationCodes.InvalidRequest, "Le commit repris ou son manifeste ne correspond pas à la préparation.");
+        }
+
+        Touch();
+        return Result.Success;
+    }
+
     public ErrorOr<Success> MarkTargetFailed(Guid targetId, string failureCode, DateTimeOffset failedAt)
     {
         var target = targets.SingleOrDefault(candidate => candidate.Id == targetId);
