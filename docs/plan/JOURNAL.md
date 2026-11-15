@@ -146,3 +146,6 @@
 | 2026-11-14 23:29 | Codex | `J0-28` reprise après recette autonome vérifiée |  |
 | 2026-11-14 23:30 | Codex | `J0-28` terminée | commit `01e9215` |
 | 2026-11-15 03:31 | Codex | `R-07` auto-validée | R-07-autovalidation.md |
+| 2026-11-15 05:07 | Codex | `J0-29` recette autonome à exécuter |  |
+| 2026-11-15 06:21 | Codex | `J0-29` reprise après recette autonome vérifiée |  |
+| 2026-11-15 06:22 | Codex | `J0-29` terminée | commit `0f35944` |

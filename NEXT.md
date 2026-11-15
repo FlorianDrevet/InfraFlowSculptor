@@ -9,13 +9,13 @@
 
 | | |
 |---|---|
-| **Étape courante** | [`J0-29`](docs/plan/02-jalon-0-pilote.md#j0-29--liste-de-contrôle-dinstallation) — Liste de contrôle d'installation |
+| **Étape courante** | [`J0-30`](docs/plan/02-jalon-0-pilote.md#j0-30--suivi-des-déploiements-et-ressources-détachées) — Suivi des déploiements et ressources détachées |
 | **Statut** | `A_FAIRE` |
-| **Dernière étape terminée** | [`R-07`](docs/plan/02-jalon-0-pilote.md#-r-07--revue-de-la-publication) — Revue de la publication (auto-validée) |
-| **Étape suivante** | `J0-30` — Suivi des déploiements et ressources détachées |
+| **Dernière étape terminée** | [`J0-29`](docs/plan/02-jalon-0-pilote.md#j0-29--liste-de-contrôle-dinstallation) — Liste de contrôle d'installation (commit `0f35944`) |
+| **Étape suivante** | `J0-31` — Hébergement d'IFS dans Azure (environnements `dev` et `pilot`) |
 | **Verrou** | aucun |
-| **Branche** | `impl/j0-publication` (créée depuis `origin/impl/j0-generation`, segment empilé après R-06) |
-| **Dernière mise à jour** | 2026-11-15 — Codex (auto-validation R-07) |
+| **Branche** | `impl/j0-livraison` (créée depuis `origin/impl/j0-generation` après la fusion de R-07) |
+| **Dernière mise à jour** | 2026-11-15 — Codex |
 Statuts : `A_FAIRE` · `EN_COURS` · `EN_ATTENTE_DE_REVUE` (auto-revue Codex à exécuter) · `EN_ATTENTE_DE_RECETTE` (recette
 Codex à exécuter) · `CORRECTIONS_DEMANDEES` · `BLOQUE` (condition bloquante à résoudre et consigner).
 
@@ -39,13 +39,17 @@ Toutes confirmées le 2026-10-04. Règle pour les suivantes : Luna ne commence p
 | SDK .NET | `10.0.203` | Oui (`10.0.203`) |
 | Node | `24.15.0` | Oui (`24.15.0`) |
 | Docker | `27.0.0` | Oui (`29.4.3` installé) ; service `com.docker.service` arrêté et moteur injoignable. Docker Desktop échoue à initialiser l’Inference manager (`dockerInference` inaccessible) le 2026-11-11. |
-| Podman (runtime Aspire sélectionné) | version non épinglée | Oui (`6.2.0`, machine WSL2 `podman-machine-default` démarrée ; `ASPIRE_CONTAINER_RUNTIME=podman` défini au niveau utilisateur ; `aspire doctor` confirme ce runtime actif le 2026-11-13). |
+| Podman (runtime Aspire sélectionné) | version non épinglée | Oui (`6.2.0`, machine WSL2 `podman-machine-default` en marche le 2026-11-15 ; `ASPIRE_CONTAINER_RUNTIME=podman` défini au niveau utilisateur ; Aspire utilise ce runtime). |
 | CLI Aspire | `13.5.x` | Oui (`13.6.5`; packages AppHost épinglés à `13.5.3`) |
 | Python | `3.11` | Oui (`3.14.4`) |
 | PowerShell 7 | `7.5.0` | Oui (`7.6.9`) |
 | Azure CLI | `2.90.0` | Oui (`2.91.0`, prérequis vérifiés le 2026-10-27) |
 | Bicep CLI | `0.47.16` | Oui (`0.47.16`) |
 | Git / GitHub CLI | présence | Oui (`2.45.1` / `2.92.0`) |
+
+## Reprise J0-29 — 2026-11-15
+
+La recette ciblée de la checklist passe 2/2 (bureau 1440×900 et mobile 390×844) : neuf étapes dans l’ordre, commande Azure `-WhatIf`, coche de la métadonnée de secret dev persistée et événement visible dans l’audit; Axe ne relève aucune violation et aucun débordement horizontal. Le test force une nouvelle transition pour vérifier l’audit même lors d’une répétition. Les captures finales et la différence avec les maquettes sont consignées dans `docs/plan/recettes/suivi.md` et `docs/plan/revues/captures/R-08/`. La suite complète et l’Acceptance ont des limites locales préexistantes détaillées dans la recette. L’AppHost IFS tourne de nouveau sous Podman, ses volumes sont conservés et les autres AppHosts n’ont pas été touchés; aucune écriture Azure ni aucun coût.
 
 ## Reprise J0-28 — 2026-11-14
 
@@ -71,9 +75,10 @@ La recette manuelle G1–G6 est exécutée et consignée dans `docs/plan/recette
 
 | Élément | État | Depuis |
 |---|---|---|
-| Recette locale J0-27 | Plan du projet `shop` sauvegardé vers le dépôt Gitea `shop`, à la racine; l'accès dépôt est limité au projet `shop`. Les comptes Keycloak locaux Alice, Chloé, David et Nina ont été réinitialisés avec le même mot de passe aléatoire pour l'E2E; sa valeur n'est conservée ni dans le dépôt ni dans les journaux. | 2026-11-14 |
+| Recette locale J0-27 | Plan du projet `shop` sauvegardé vers le dépôt Gitea `shop`, à la racine; l'accès dépôt est limité au projet `shop`. Les comptes Keycloak Alice, Chloé, David et Nina ont été réinitialisés pour l'E2E le 2026-11-14; Alice a été remise à la valeur de sa fixture locale le 2026-11-15, les trois autres conservent le mot de passe aléatoire précédent. Aucune valeur n'est conservée dans les journaux. | 2026-11-14 |
 | Image Worker locale sous Podman | `ifs-worker:j0-24` construite depuis l'arbre de travail avec le contexte racine; UID non privilégié et Bicep 0.47.16, PowerShell 7.5.0, PSScriptAnalyzer 1.25.0, powershell-yaml 0.4.12 vérifiés. Image locale non publiée, distincte du Worker .NET lancé par l'AppHost. | 2026-11-13 |
-| AppHost local IFS sous Podman | L'AppHost `InfraFlowSculptor.AppHost.csproj` est lancé par Aspire; API et Web sont sains, Worker est en exécution après rebuild. Les volumes persistants existants sont conservés. | 2026-11-14 |
+| AppHost local IFS sous Podman | La machine WSL2 s’était arrêtée pendant les recettes; elle a été relancée le 2026-11-15. Les conteneurs IFS PostgreSQL, Keycloak, Service Bus, Redis, stockage, Key Vault, MailPit et Gitea sont en marche; l’E2E authentifié confirme le Web et l’API. Les volumes persistants sont conservés; les deux autres AppHosts n’ont pas été touchés. | 2026-11-15 |
+| Recette locale J0-29 | Le projet local `shop` contient une référence de secret de pipeline pour `MAIN_PAYMENTS_API_KEY`, sans valeur de secret. La coche dev est enregistrée et son événement d’audit a été vérifié. Les seules fixtures `r14desk`/`r14mob` laissées par l’E2E général ont été retirées après vérification de leur nom et de leur état non publié. | 2026-11-15 |
 | Recette J0-26/J0-28 locale | Les connexions Gitea et Azure DevOps de test sont conservées dans la base locale; le PAT `vso.code` en lecture seule est limité à l'organisation et expire le 2026-11-24. Sa valeur est absente du dépôt et des journaux. Le dépôt `shop` est affecté au seul projet `shop`. PR Gitea de recette #1, #2 et #4 fusionnées; PR Azure Repos #97 conservée ouverte comme sortie de recette. Aucun service Azure facturable créé. | 2026-11-14 |
 | PostgreSQL local — recettes J0-15/J0-16 | Lors de l'inspection locale du 2026-11-14, `shop15` était absent des projets actifs et archivés; `links.spec.ts` ne trouve donc pas sa fixture. Sa disparition n'est pas expliquée et le projet n'a pas été recréé. Aucun service ni coût Azure associé. | 2026-11-14 |
 | Abonnements Azure de test (preuves) | Souscription `fc4fa56f-e4e7-41e9-8a0d-559fcd27b827`, tenant `c833b396-517c-465d-bcce-b79702eaf932` ; `francecentral` et les fournisseurs/SKU requis disponibles ; utilisateur connecté Owner au scope souscription et User Access Administrator au scope tenant ; même souscription pour dev/prd/shared | 2026-10-15 |
