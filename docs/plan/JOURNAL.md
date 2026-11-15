@@ -138,3 +138,11 @@
 | 2026-11-14 07:35 | Codex | `R-06` recette autonome à exécuter |  |
 | 2026-11-14 09:11 | Codex | `R-06` reprise après recette autonome vérifiée |  |
 | 2026-11-14 09:12 | Codex | `R-06` auto-validée | R-06-autovalidation.md |
+| 2026-11-14 11:10 | Codex | `J0-26` recette autonome à exécuter |  |
+| 2026-11-14 12:07 | Codex | `J0-26` reprise après recette autonome vérifiée |  |
+| 2026-11-14 12:09 | Codex | `J0-26` terminée | commit `531812f` |
+| 2026-11-14 15:09 | Codex | `J0-27` terminée | commit `8f74b63` |
+| 2026-11-14 21:44 | Codex | `J0-28` recette autonome à exécuter |  |
+| 2026-11-14 23:29 | Codex | `J0-28` reprise après recette autonome vérifiée |  |
+| 2026-11-14 23:30 | Codex | `J0-28` terminée | commit `01e9215` |
+| 2026-11-15 03:31 | Codex | `R-07` auto-validée | R-07-autovalidation.md |

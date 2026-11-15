@@ -8,6 +8,7 @@ using InfraFlowSculptor.Application.Common.Auditing;
 using InfraFlowSculptor.Application.Common.Persistence;
 using InfraFlowSculptor.Application.Generation;
 using InfraFlowSculptor.Domain.Common.Identifiers;
+using InfraFlowSculptor.Domain.GitConnectionAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using InfraFlowSculptor.Domain.RevisionAggregate;
 using InfraFlowSculptor.Infrastructure.Authentication;
@@ -99,6 +100,109 @@ public sealed class RevisionsEndpointTests(ApiFactory factory) : IClassFixture<A
         Assert.Equal("shop", frozenSnapshot.Project.Code);
         Assert.Equal("shop11", currentProject.Code);
         Assert.True(currentProject.ModelVersion > frozenInput.ModelVersion);
+    }
+
+    [Fact]
+    public async Task ListingPublicationsReturnsAnEmptyListForAProjectWithoutPublications()
+    {
+        await SeedAsync(includeProjects: true, seedReferenceModel: false);
+
+        using var request = CreateRequest(
+            HttpMethod.Get,
+            $"/v1/projects/{DemoDataSeeder.ShopProjectId.Value:D}/publications");
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var publications = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Array, publications.ValueKind);
+        Assert.Empty(publications.EnumerateArray());
+    }
+
+    [Fact]
+    public async Task StartingPublicationAllowsCiCompatibilityWarningForConfiguredGiteaDestination()
+    {
+        await SeedAsync(includeProjects: true, seedReferenceModel: true);
+        var now = TimeProvider.System.GetUtcNow();
+        var revisionId = RevisionId.New(TimeProvider.System);
+        var destinationId = Guid.NewGuid();
+        using (var scope = factory.Services.CreateScope())
+        {
+            scope.ServiceProvider.GetRequiredService<HttpCurrentOrganization>()
+                .Set(new OrganizationId(OrganizationId));
+            var dbContext = scope.ServiceProvider.GetRequiredService<IfsDbContext>();
+            var project = await dbContext.Projects.IgnoreQueryFilters()
+                .SingleAsync(candidate => candidate.Id == DemoDataSeeder.ShopProjectId);
+            var projectConfigured = project.ConfigurePublicationPlan(new PublishPlanConfiguration(
+                PublishPreset.MonoRepo,
+                [new PublishPlanDestinationInput(destinationId, Guid.NewGuid(), "org/shop", string.Empty)],
+                [],
+                destinationId,
+                destinationId,
+                destinationId));
+            Assert.False(projectConfigured.IsError);
+
+            var connectionId = project.PublicationPlan.Destinations.Single().GitConnectionId;
+            var connection = GitConnectionAggregate.Create(
+                connectionId,
+                new OrganizationId(OrganizationId),
+                GitProviderKind.Gitea,
+                "Gitea recette",
+                "http://localhost:3000",
+                null,
+                GitConnectionAuthenticationMode.DevelopmentToken,
+                null,
+                null,
+                now).Value;
+            Assert.False(connection.ReplaceRepositories([
+                GitConnectionRepository.Create("org/shop", "shop", "main")
+            ]).IsError);
+            Assert.False(connection.OpenRepositoryToProjects("org/shop", [DemoDataSeeder.ShopProjectId]).IsError);
+            dbContext.GitConnections.Add(connection);
+
+            var revision = RevisionAggregate.Queue(
+                revisionId,
+                new OrganizationId(OrganizationId),
+                project.Id,
+                1,
+                new UserKey(Guid.Parse(TenantId), Guid.Parse(AliceObjectId)),
+                now,
+                project.ModelVersion,
+                project.CatalogVersion,
+                project.InfrastructureLanguage,
+                project.CiPlatform,
+                new string('a', 64));
+            revision.MarkGenerating(now);
+            revision.MarkGenerated(
+                "{}",
+                [],
+                [new RevisionFile("core/infra/main.bicep", new string('b', 64), 10)],
+                [],
+                now.AddSeconds(1));
+            dbContext.Revisions.Add(revision);
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var request = CreateRequest(
+            HttpMethod.Post,
+            $"/v1/projects/{DemoDataSeeder.ShopProjectId.Value:D}/revisions/{revisionId.Value:D}/publications",
+            Guid.NewGuid().ToString("N"));
+        request.Content = JsonContent.Create(new
+        {
+            message = (string?)null,
+            acceptStaleRevision = false,
+            destinationIds = (Guid[]?)null
+        });
+
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        var publication = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Preparing", publication.GetProperty("state").GetString());
+        var target = Assert.Single(publication.GetProperty("targets").EnumerateArray());
+        Assert.Equal("org/shop", target.GetProperty("providerRepositoryId").GetString());
+        Assert.Contains(
+            target.GetProperty("files").EnumerateArray(),
+            file => file.GetProperty("path").GetString() == "core/infra/main.bicep");
     }
 
     [Fact]

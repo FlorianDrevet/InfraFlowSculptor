@@ -22,6 +22,13 @@ public static class EndpointNames
     public const string AcceptInvitation = "AcceptInvitation";
     public const string GetInvitationPreview = "GetInvitationPreview";
     public const string GetFeatures = "GetFeatures";
+    public const string ListGitProviders = "ListGitProviders";
+    public const string ListGitConnections = "ListGitConnections";
+    public const string CreateGitConnection = "CreateGitConnection";
+    public const string TestGitConnection = "TestGitConnection";
+    public const string UpdateGitConnection = "UpdateGitConnection";
+    public const string SetGitConnectionRepositoryAccess = "SetGitConnectionRepositoryAccess";
+    public const string DeleteGitConnection = "DeleteGitConnection";
     public const string GetMyProjectPermissions = "GetMyProjectPermissions";
     public const string GetProjectMemberPermissions = "GetProjectMemberPermissions";
     public const string ListProjects = "ListProjects";
@@ -30,6 +37,8 @@ public static class EndpointNames
     public const string SaveWizardDraft = "SaveWizardDraft";
     public const string DiscardWizardDraft = "DiscardWizardDraft";
     public const string CreateProjectFromWizard = "CreateProjectFromWizard";
+    public const string GetProjectPublishPlan = "GetProjectPublishPlan";
+    public const string SetProjectPublishPlan = "SetProjectPublishPlan";
     public const string PreviewNaming = "PreviewNaming";
     public const string GetProjectNaming = "GetProjectNaming";
     public const string SetProjectNaming = "SetProjectNaming";
@@ -85,6 +94,11 @@ public static class EndpointNames
     public const string ListRevisionFiles = "ListRevisionFiles";
     public const string GetRevisionFile = "GetRevisionFile";
     public const string GetRevisionArchive = "GetRevisionArchive";
+    public const string StartRevisionPublication = "StartRevisionPublication";
+    public const string ListProjectPublications = "ListProjectPublications";
+    public const string GetPublication = "GetPublication";
+    public const string ConfirmPublicationOwnership = "ConfirmPublicationOwnership";
+    public const string StartPublicationWrite = "StartPublicationWrite";
     public const string AcknowledgeFinding = "AcknowledgeFinding";
     public const string ApplyFindingFix = "ApplyFindingFix";
     public const string SaveResourceApplication = "SaveResourceApplication";

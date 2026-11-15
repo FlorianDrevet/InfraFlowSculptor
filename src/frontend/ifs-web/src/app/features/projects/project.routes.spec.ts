@@ -12,6 +12,7 @@ describe('project feature routes', () => {
       'findings',
       'settings',
       'naming',
+      'publishing',
       'members',
       'revisions/:revisionId',
       'revisions',

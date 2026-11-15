@@ -1,5 +1,6 @@
 using InfraFlowSculptor.Domain.Common.Models;
 using InfraFlowSculptor.Domain.Common.Identifiers;
+using InfraFlowSculptor.Domain.GitConnectionAggregate;
 using InfraFlowSculptor.Application.Common.Auditing;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,6 +23,10 @@ public interface IIfsDbContext
     Task<IIfsDbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
 
     Task<bool> LockProjectForUpdateAsync(ProjectId projectId, CancellationToken cancellationToken = default);
+
+    Task<bool> LockGitConnectionForUpdateAsync(
+        GitConnectionId connectionId,
+        CancellationToken cancellationToken = default);
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

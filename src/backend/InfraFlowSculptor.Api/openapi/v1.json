@@ -983,6 +983,493 @@
         ]
       }
     },
+    "/v1/organizations/{organizationId}/git-connections/providers": {
+      "get": {
+        "tags": [
+          "Git connections"
+        ],
+        "operationId": "ListGitProviders",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GitProviderAvailabilityResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/organizations/{organizationId}/git-connections": {
+      "get": {
+        "tags": [
+          "Git connections"
+        ],
+        "summary": "Afficher les connexions Git de l'organisation",
+        "operationId": "ListGitConnections",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GitConnectionResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Git connections"
+        ],
+        "summary": "Tester et ajouter une connexion Git",
+        "operationId": "CreateGitConnection",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGitConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitConnectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/organizations/{organizationId}/git-connections/{connectionId}/test": {
+      "post": {
+        "tags": [
+          "Git connections"
+        ],
+        "summary": "Tester une connexion Git et lire ses dépôts",
+        "operationId": "TestGitConnection",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitConnectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/organizations/{organizationId}/git-connections/{connectionId}": {
+      "put": {
+        "tags": [
+          "Git connections"
+        ],
+        "summary": "Tester et modifier une connexion Git",
+        "operationId": "UpdateGitConnection",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGitConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitConnectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Git connections"
+        ],
+        "summary": "Retirer une connexion Git inutilisée",
+        "operationId": "DeleteGitConnection",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/organizations/{organizationId}/git-connections/{connectionId}/repositories/access": {
+      "put": {
+        "tags": [
+          "Git connections"
+        ],
+        "summary": "Définir les projets autorisés pour un dépôt",
+        "operationId": "SetGitConnectionRepositoryAccess",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetGitConnectionRepositoryAccessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GitConnectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/organizations/{id}/invitations": {
       "get": {
         "tags": [
@@ -2710,6 +3197,139 @@
         ]
       }
     },
+    "/v1/projects/{id}/publish-plan": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Consulter le plan de publication et les dépôts accessibles au projet.",
+        "operationId": "GetProjectPublishPlan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectPublishPlanResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Enregistrer le plan de publication du projet.",
+        "operationId": "SetProjectPublishPlan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetProjectPublishPlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/projects/{id}/environments": {
       "get": {
         "tags": [
@@ -3619,6 +4239,421 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/revisions/{revisionId}/publications": {
+      "post": {
+        "tags": [
+          "Publications"
+        ],
+        "summary": "Préparer la publication d’une révision dans ses dépôts.",
+        "operationId": "StartRevisionPublication",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revisionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartRevisionPublicationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/publications": {
+      "get": {
+        "tags": [
+          "Publications"
+        ],
+        "summary": "Lister les publications d’un projet.",
+        "operationId": "ListProjectPublications",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicationResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/publications/{publicationId}": {
+      "get": {
+        "tags": [
+          "Publications"
+        ],
+        "summary": "Consulter l’état d’une publication et ses changements par dépôt.",
+        "operationId": "GetPublication",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "publicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicationResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/publications/{publicationId}/targets/{targetId}/confirm-ownership": {
+      "post": {
+        "tags": [
+          "Publications"
+        ],
+        "summary": "Confirmer la prise en charge des fichiers en conflit pour un dépôt.",
+        "operationId": "ConfirmPublicationOwnership",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "publicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "targetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicationResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2": [
+              "openid",
+              "profile",
+              "email"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/publications/{publicationId}/publish": {
+      "post": {
+        "tags": [
+          "Publications"
+        ],
+        "summary": "Publier les dépôts préparés dans leurs branches de pull request.",
+        "operationId": "StartPublicationWrite",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "publicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicationResponse"
+                }
+              }
+            }
           },
           "403": {
             "description": "Forbidden",
@@ -10179,6 +11214,52 @@
           }
         }
       },
+      "CreateGitConnectionRequest": {
+        "required": [
+          "providerKind",
+          "name",
+          "organization",
+          "tenantId",
+          "authenticationMode",
+          "personalAccessTokenExpiresAt",
+          "personalAccessToken"
+        ],
+        "type": "object",
+        "properties": {
+          "providerKind": {
+            "$ref": "#/components/schemas/GitProviderKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "organization": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "authenticationMode": {
+            "$ref": "#/components/schemas/GitConnectionAuthenticationMode"
+          },
+          "personalAccessTokenExpiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "personalAccessToken": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "CreateOrganizationRequest": {
         "required": [
           "name"
@@ -10186,6 +11267,26 @@
         "type": "object",
         "properties": {
           "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateProjectFromWizardDestinationRequest": {
+        "required": [
+          "gitConnectionId",
+          "providerRepositoryId",
+          "basePath"
+        ],
+        "type": "object",
+        "properties": {
+          "gitConnectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "providerRepositoryId": {
+            "type": "string"
+          },
+          "basePath": {
             "type": "string"
           }
         }
@@ -10250,6 +11351,16 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "publishingDestination": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CreateProjectFromWizardDestinationRequest"
+              }
             ]
           }
         }
@@ -10809,6 +11920,134 @@
             "format": "date-time"
           }
         }
+      },
+      "GitConnectionAuthenticationMode": {
+        "enum": [
+          "FederatedServicePrincipal",
+          "PersonalAccessToken",
+          "DevelopmentToken"
+        ]
+      },
+      "GitConnectionRepositoryResponse": {
+        "required": [
+          "providerRepositoryId",
+          "name",
+          "defaultBranch",
+          "openToAllProjects",
+          "allowedProjectIds"
+        ],
+        "type": "object",
+        "properties": {
+          "providerRepositoryId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "defaultBranch": {
+            "type": "string"
+          },
+          "openToAllProjects": {
+            "type": "boolean"
+          },
+          "allowedProjectIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "GitConnectionResponse": {
+        "required": [
+          "id",
+          "providerKind",
+          "name",
+          "organization",
+          "tenantId",
+          "authenticationMode",
+          "personalAccessTokenExpiresAt",
+          "version",
+          "repositories",
+          "usedByProjectNames"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "providerKind": {
+            "$ref": "#/components/schemas/GitProviderKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "organization": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "authenticationMode": {
+            "$ref": "#/components/schemas/GitConnectionAuthenticationMode"
+          },
+          "personalAccessTokenExpiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "repositories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GitConnectionRepositoryResponse"
+            }
+          },
+          "usedByProjectNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "GitProviderAvailabilityResponse": {
+        "required": [
+          "kind",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/GitProviderKind"
+          },
+          "displayName": {
+            "type": "string"
+          }
+        }
+      },
+      "GitProviderKind": {
+        "enum": [
+          "AzureRepos",
+          "GitHub",
+          "GitLab",
+          "Gitea"
+        ]
       },
       "HttpValidationProblemDetails": {
         "type": "object",
@@ -12100,8 +13339,7 @@
           "description",
           "infrastructureLanguage",
           "ciPlatform",
-          "moduleSource",
-          "publishingPreset"
+          "moduleSource"
         ],
         "type": "object",
         "properties": {
@@ -12122,12 +13360,6 @@
           },
           "moduleSource": {
             "type": "string"
-          },
-          "publishingPreset": {
-            "type": [
-              "null",
-              "string"
-            ]
           }
         }
       },
@@ -12423,6 +13655,97 @@
           },
           "isPublished": {
             "type": "boolean"
+          }
+        }
+      },
+      "ProjectPublishPlanResponse": {
+        "required": [
+          "projectId",
+          "projectVersion",
+          "preset",
+          "defaultInfrastructureDestinationId",
+          "defaultApplicationsDestinationId",
+          "defaultSourceCodeDestinationId",
+          "destinations",
+          "assignments",
+          "components",
+          "rows",
+          "availableDestinations",
+          "issues"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "preset": {
+            "type": "string"
+          },
+          "defaultInfrastructureDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "defaultApplicationsDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "defaultSourceCodeDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "destinations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanDestinationResponse"
+            }
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanAssignmentResponse"
+            }
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanComponentResponse"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanRowResponse"
+            }
+          },
+          "availableDestinations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanAvailableDestinationResponse"
+            }
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanIssueResponse"
+            }
           }
         }
       },
@@ -12934,6 +14257,495 @@
           "description": {
             "type": "string",
             "default": ""
+          }
+        }
+      },
+      "PublicationResponse": {
+        "required": [
+          "id",
+          "projectId",
+          "revisionId",
+          "revisionNumber",
+          "message",
+          "state",
+          "requestedAt",
+          "preparedAt",
+          "completedAt",
+          "targets"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revisionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revisionNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "preparedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicationTargetResponse"
+            }
+          }
+        }
+      },
+      "PublicationTargetDestinationResponse": {
+        "required": [
+          "id",
+          "basePath"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "basePath": {
+            "type": "string"
+          }
+        }
+      },
+      "PublicationTargetFileResponse": {
+        "required": [
+          "destinationId",
+          "path",
+          "action",
+          "sha256",
+          "existingSha256"
+        ],
+        "type": "object",
+        "properties": {
+          "destinationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "path": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "existingSha256": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "PublicationTargetResponse": {
+        "required": [
+          "id",
+          "gitConnectionId",
+          "providerRepositoryId",
+          "repositoryName",
+          "targetBranch",
+          "sourceBranch",
+          "state",
+          "requiresConfirmation",
+          "ownershipConfirmed",
+          "failureCode",
+          "commitSha",
+          "pullRequestId",
+          "pullRequestUrl",
+          "pullRequestState",
+          "mergeCommitSha",
+          "destinations",
+          "files"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "gitConnectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "providerRepositoryId": {
+            "type": "string"
+          },
+          "repositoryName": {
+            "type": "string"
+          },
+          "targetBranch": {
+            "type": "string"
+          },
+          "sourceBranch": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "requiresConfirmation": {
+            "type": "boolean"
+          },
+          "ownershipConfirmed": {
+            "type": "boolean"
+          },
+          "failureCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "commitSha": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pullRequestId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pullRequestUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pullRequestState": {
+            "type": "string"
+          },
+          "mergeCommitSha": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "destinations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicationTargetDestinationResponse"
+            }
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicationTargetFileResponse"
+            }
+          }
+        }
+      },
+      "PublishPlanAssignmentRequest": {
+        "required": [
+          "componentId",
+          "part",
+          "destinationId"
+        ],
+        "type": "object",
+        "properties": {
+          "componentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "part": {
+            "type": "string"
+          },
+          "destinationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "PublishPlanAssignmentResponse": {
+        "required": [
+          "componentId",
+          "part",
+          "destinationId"
+        ],
+        "type": "object",
+        "properties": {
+          "componentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "part": {
+            "type": "string"
+          },
+          "destinationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "PublishPlanAvailableDestinationResponse": {
+        "required": [
+          "gitConnectionId",
+          "connectionName",
+          "provider",
+          "providerRepositoryId",
+          "repositoryName",
+          "defaultBranch"
+        ],
+        "type": "object",
+        "properties": {
+          "gitConnectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "connectionName": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "providerRepositoryId": {
+            "type": "string"
+          },
+          "repositoryName": {
+            "type": "string"
+          },
+          "defaultBranch": {
+            "type": "string"
+          }
+        }
+      },
+      "PublishPlanComponentResponse": {
+        "required": [
+          "id",
+          "name",
+          "code",
+          "hasApplications",
+          "infrastructureDestinationId",
+          "applicationsDestinationId",
+          "sourceCodeDestinationId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "hasApplications": {
+            "type": "boolean"
+          },
+          "infrastructureDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "applicationsDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "sourceCodeDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "PublishPlanDestinationRequest": {
+        "required": [
+          "id",
+          "gitConnectionId",
+          "providerRepositoryId",
+          "basePath"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "gitConnectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "providerRepositoryId": {
+            "type": "string"
+          },
+          "basePath": {
+            "type": "string"
+          }
+        }
+      },
+      "PublishPlanDestinationResponse": {
+        "required": [
+          "id",
+          "gitConnectionId",
+          "connectionName",
+          "provider",
+          "providerRepositoryId",
+          "repositoryName",
+          "defaultBranch",
+          "basePath",
+          "isAccessible"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "gitConnectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "connectionName": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "providerRepositoryId": {
+            "type": "string"
+          },
+          "repositoryName": {
+            "type": "string"
+          },
+          "defaultBranch": {
+            "type": "string"
+          },
+          "basePath": {
+            "type": "string"
+          },
+          "isAccessible": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PublishPlanIssueResponse": {
+        "required": [
+          "code",
+          "message",
+          "componentId",
+          "part",
+          "destinationId"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "componentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "part": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "destinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "PublishPlanRowResponse": {
+        "required": [
+          "componentId",
+          "componentName",
+          "componentCode",
+          "part",
+          "destinationId",
+          "destinationName",
+          "basePath",
+          "effectiveFolder"
+        ],
+        "type": "object",
+        "properties": {
+          "componentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "componentName": {
+            "type": "string"
+          },
+          "componentCode": {
+            "type": "string"
+          },
+          "part": {
+            "type": "string"
+          },
+          "destinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "destinationName": {
+            "type": "string"
+          },
+          "basePath": {
+            "type": "string"
+          },
+          "effectiveFolder": {
+            "type": "string"
           }
         }
       },
@@ -14878,6 +16690,96 @@
           }
         }
       },
+      "SetGitConnectionRepositoryAccessRequest": {
+        "required": [
+          "expectedVersion",
+          "providerRepositoryId",
+          "openToAllProjects",
+          "projectIds"
+        ],
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "providerRepositoryId": {
+            "type": "string"
+          },
+          "openToAllProjects": {
+            "type": "boolean"
+          },
+          "projectIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "SetProjectPublishPlanRequest": {
+        "required": [
+          "preset",
+          "destinations",
+          "assignments",
+          "defaultInfrastructureDestinationId",
+          "defaultApplicationsDestinationId",
+          "defaultSourceCodeDestinationId",
+          "expectedVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": "string"
+          },
+          "destinations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanDestinationRequest"
+            }
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPlanAssignmentRequest"
+            }
+          },
+          "defaultInfrastructureDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "defaultApplicationsDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "defaultSourceCodeDestinationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "expectedVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "SetProjectTagsRequest": {
         "required": [
           "tags",
@@ -15067,6 +16969,34 @@
           }
         }
       },
+      "StartRevisionPublicationRequest": {
+        "required": [
+          "message",
+          "acceptStaleRevision"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "acceptStaleRevision": {
+            "type": "boolean"
+          },
+          "destinationIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
       "TakeProjectOwnershipRequest": {
         "required": [
           "expectedVersion"
@@ -15200,6 +17130,53 @@
           },
           "release": {
             "$ref": "#/components/schemas/ReleaseDataPlan"
+          }
+        }
+      },
+      "UpdateGitConnectionRequest": {
+        "required": [
+          "expectedVersion",
+          "name",
+          "organization",
+          "tenantId",
+          "personalAccessTokenExpiresAt",
+          "personalAccessToken"
+        ],
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "organization": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "personalAccessTokenExpiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "personalAccessToken": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -15495,6 +17472,9 @@
       "name": "Organizations"
     },
     {
+      "name": "Git connections"
+    },
+    {
       "name": "Projects"
     },
     {
@@ -15502,6 +17482,9 @@
     },
     {
       "name": "Revisions"
+    },
+    {
+      "name": "Publications"
     },
     {
       "name": "Components"

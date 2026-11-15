@@ -1,0 +1,135 @@
+.git-connections__form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ifs-space-4);
+}
+
+.git-connections__field {
+  display: grid;
+  align-content: start;
+  gap: var(--ifs-space-2);
+  color: var(--ifs-text);
+  font-size: var(--ifs-text-body);
+  font-weight: 600;
+}
+
+.git-connections__field input,
+.git-connections__field select {
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-block-size: var(--ifs-control-height);
+  padding: var(--ifs-space-2) var(--ifs-space-3);
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-md);
+  background: var(--ifs-surface-1);
+  color: var(--ifs-text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.git-connections__field input:focus-visible,
+.git-connections__field select:focus-visible {
+  border-color: var(--ifs-signal);
+  outline: 2px solid color-mix(in srgb, var(--ifs-signal) 35%, transparent);
+  outline-offset: 1px;
+}
+
+.git-connections__field small,
+.git-connections__provider-value {
+  color: var(--ifs-text-2);
+  font-size: var(--ifs-text-caption);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.git-connections__provider-value {
+  display: grid;
+  align-content: start;
+  gap: var(--ifs-space-2);
+  margin: 0;
+}
+
+.git-connections__provider-value strong {
+  color: var(--ifs-text);
+  font-size: var(--ifs-text-body);
+  font-weight: 600;
+}
+
+.git-connections__form-actions {
+  justify-content: flex-end;
+}
+
+.git-connections__message {
+  padding: var(--ifs-space-3) var(--ifs-space-4);
+  border: 1px solid currentColor;
+  border-radius: var(--ifs-radius-md);
+  line-height: 1.5;
+}
+
+.git-connections__message--error {
+  color: var(--ifs-danger);
+}
+
+.git-connections__message--success {
+  color: var(--ifs-success);
+}
+
+.git-connections__empty {
+  border-style: dashed;
+  background: var(--ifs-bg);
+}
+
+.git-connections__dialog {
+  inline-size: min(440px, calc(100vw - 2rem));
+  padding: var(--ifs-space-6);
+  border: 1px solid var(--ifs-line-strong);
+  border-radius: var(--ifs-radius-lg);
+  background: var(--ifs-surface-1);
+  color: var(--ifs-text);
+  box-shadow: var(--ifs-shadow-overlay);
+}
+
+.git-connections__dialog::backdrop {
+  background: rgb(5 9 15 / 65%);
+}
+
+.git-connections__dialog h2 {
+  font-size: var(--ifs-text-dialog-title);
+}
+
+.git-connections__dialog p {
+  margin-block: var(--ifs-space-3) var(--ifs-space-6);
+  color: var(--ifs-text-2);
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .git-connections {
+    gap: var(--ifs-space-4);
+    padding-block: var(--ifs-space-4) var(--ifs-space-6);
+  }
+
+  .git-connections__header,
+  .git-connections__card-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .git-connections__header app-ds-button {
+    align-self: flex-start;
+  }
+
+  .git-connections__form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .git-connections__card,
+  .git-connections__form,
+  .git-connections__empty {
+    padding: var(--ifs-space-4);
+  }
+
+  .git-connections__actions {
+    gap: var(--ifs-space-1);
+  }
+}

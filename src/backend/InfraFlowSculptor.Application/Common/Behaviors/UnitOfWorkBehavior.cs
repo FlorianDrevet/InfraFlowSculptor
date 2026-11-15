@@ -17,6 +17,8 @@ public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
     : IPipelineBehavior<TMessage, TResponse>
     where TMessage : IMessage
 {
+    private const string RollbackFailureDataKey = "InfraFlowSculptor.RollbackFailure";
+
     public async ValueTask<TResponse> Handle(
         TMessage message,
         MessageHandlerDelegate<TMessage, TResponse> next,
@@ -34,7 +36,7 @@ public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
             var response = await next(message, cancellationToken);
             if (response is IErrorOr { IsError: true })
             {
-                await transaction.RollbackAsync(cancellationToken);
+                await transaction.RollbackAsync(CancellationToken.None);
 
                 dbContext.ClearDomainEvents();
                 dbContext.ClearTrackedChanges();
@@ -75,9 +77,14 @@ public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
             dbContext.ClearDomainEvents();
             return response;
         }
-        catch (FindingAcknowledgmentConflictException)
+        catch (FindingAcknowledgmentConflictException exception)
         {
-            await transaction.RollbackAsync(CancellationToken.None);
+            if (!await TryRollbackAsync(transaction, exception))
+            {
+                dbContext.ClearDomainEvents();
+                dbContext.ClearTrackedChanges();
+                throw;
+            }
 
             dbContext.ClearDomainEvents();
             dbContext.ClearTrackedChanges();
@@ -88,17 +95,22 @@ public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
                     FindingAcknowledgmentErrors.AlreadyAcknowledgedMessage)
             };
         }
-        catch (ConcurrencyConflictException)
+        catch (ConcurrencyConflictException exception)
         {
-            await transaction.RollbackAsync(CancellationToken.None);
+            if (!await TryRollbackAsync(transaction, exception))
+            {
+                dbContext.ClearDomainEvents();
+                dbContext.ClearTrackedChanges();
+                throw;
+            }
 
             dbContext.ClearDomainEvents();
             dbContext.ClearTrackedChanges();
             return (dynamic)new List<Error> { Error.Conflict("CONFLICT_VERSION") };
         }
-        catch
+        catch (Exception exception)
         {
-            await transaction.RollbackAsync(CancellationToken.None);
+            await TryRollbackAsync(transaction, exception);
 
             dbContext.ClearDomainEvents();
             dbContext.ClearTrackedChanges();
@@ -110,4 +122,20 @@ public sealed class UnitOfWorkBehavior<TMessage, TResponse>(
         typeof(ICommand).IsAssignableFrom(typeof(TMessage))
         || typeof(TMessage).GetInterfaces().Any(@interface =>
             @interface.IsGenericType && @interface.GetGenericTypeDefinition() == typeof(ICommand<>));
+
+    private static async Task<bool> TryRollbackAsync(
+        IIfsDbTransaction transaction,
+        Exception commandException)
+    {
+        try
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            return true;
+        }
+        catch (Exception rollbackException)
+        {
+            commandException.Data[RollbackFailureDataKey] = rollbackException;
+            return false;
+        }
+    }
 }

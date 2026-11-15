@@ -11,4 +11,5 @@ public sealed record CreateProjectFromWizardRequest(
     IReadOnlyList<ProjectWizardEnvironmentRequest> Environments,
     IReadOnlyDictionary<string, string>? Tags = null,
     string? PublishingPreset = null,
-    string? CatalogVersion = null);
+    string? CatalogVersion = null,
+    CreateProjectFromWizardDestinationRequest? PublishingDestination = null);

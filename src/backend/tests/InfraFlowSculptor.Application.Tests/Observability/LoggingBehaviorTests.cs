@@ -1,4 +1,6 @@
 using InfraFlowSculptor.Application.Common.Behaviors;
+using InfraFlowSculptor.Application.GitConnections;
+using InfraFlowSculptor.Domain.GitConnectionAggregate;
 using Mediator;
 using Microsoft.Extensions.Logging;
 
@@ -27,6 +29,31 @@ public sealed class LoggingBehaviorTests
         Assert.DoesNotContain(email, logOutput, StringComparison.Ordinal);
         Assert.DoesNotContain(modelValue, logOutput, StringComparison.Ordinal);
         Assert.Contains(nameof(SensitiveCommand), logOutput, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GitConnectionPersonalAccessTokenNeverAppearsInLogs()
+    {
+        const string token = "test-pat-must-not-enter-db-or-logs";
+        var command = new CreateGitConnectionCommand(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            GitProviderKind.AzureRepos,
+            "Recette",
+            "contoso-test",
+            null,
+            GitConnectionAuthenticationMode.PersonalAccessToken,
+            DateTimeOffset.UtcNow.AddDays(10),
+            token);
+        var logger = new CapturingLogger<LoggingBehavior<CreateGitConnectionCommand, string>>();
+        var behavior = new LoggingBehavior<CreateGitConnectionCommand, string>(logger);
+
+        _ = await behavior.Handle(
+            command,
+            static (_, _) => ValueTask.FromResult("handled"),
+            CancellationToken.None);
+
+        Assert.DoesNotContain(token, string.Join(Environment.NewLine, logger.Values), StringComparison.Ordinal);
     }
 
     private sealed record SensitiveCommand(string CustomerName, string Email, string ModelValue) : IMessage;

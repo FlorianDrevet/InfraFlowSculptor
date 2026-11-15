@@ -20,10 +20,13 @@ public static class IsolationScenarios
     private const string TestMemberId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
     private const string TestInvitationId = "66666666-6666-4666-8666-666666666666";
     private const string TestRevisionId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+    private const string TestPublicationId = "dddddddd-dddd-4ddd-8ddd-eeeeeeeeeeee";
+    private const string TestPublicationTargetId = "eeeeeeee-eeee-4eee-8eee-ffffffffffff";
     private const string TestComponentId = "77777777-7777-4777-8777-777777777777";
     private const string TestResourceGroupId = "88888888-8888-4888-8888-888888888888";
     private const string TestResourceId = "99999999-9999-4999-8999-999999999999";
     private const string TestResourceChildId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    private const string TestGitConnectionId = "dddddddd-2222-4222-8222-222222222222";
     private const string TestInvitationToken = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
     private static readonly string ShopProjectId = DemoDataSeeder.ShopProjectId.Value.ToString("D");
     private static readonly string[] MemberRoles = ["Member"];
@@ -77,6 +80,64 @@ public static class IsolationScenarios
                 "ListOrganizationAuditEvents",
                 HttpMethod.Get,
                 $"/v1/organizations/{ContosoOrganizationId}/audit",
+                HttpStatusCode.NotFound),
+            ["ListGitProviders"] = OrganizationScenario(
+                "ListGitProviders",
+                HttpMethod.Get,
+                $"/v1/organizations/{ContosoOrganizationId}/git-connections/providers",
+                HttpStatusCode.NotFound),
+            ["ListGitConnections"] = OrganizationScenario(
+                "ListGitConnections",
+                HttpMethod.Get,
+                $"/v1/organizations/{ContosoOrganizationId}/git-connections/",
+                HttpStatusCode.NotFound),
+            ["CreateGitConnection"] = OrganizationWriteScenario(
+                "CreateGitConnection",
+                HttpMethod.Post,
+                $"/v1/organizations/{ContosoOrganizationId}/git-connections/",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    providerKind = "AzureRepos",
+                    name = "Isolation",
+                    organization = "isolation",
+                    authenticationMode = "PersonalAccessToken",
+                    personalAccessTokenExpiresAt = DateTimeOffset.UtcNow.AddDays(10),
+                    personalAccessToken = "isolated-test-token"
+                }),
+            ["TestGitConnection"] = OrganizationWriteScenario(
+                "TestGitConnection",
+                HttpMethod.Post,
+                $"/v1/organizations/{ContosoOrganizationId}/git-connections/{TestGitConnectionId}/test",
+                HttpStatusCode.NotFound),
+            ["UpdateGitConnection"] = OrganizationWriteScenario(
+                "UpdateGitConnection",
+                HttpMethod.Put,
+                $"/v1/organizations/{ContosoOrganizationId}/git-connections/{TestGitConnectionId}",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    expectedVersion = 1,
+                    name = "Isolation",
+                    organization = "isolation",
+                    personalAccessTokenExpiresAt = DateTimeOffset.UtcNow.AddDays(10)
+                }),
+            ["SetGitConnectionRepositoryAccess"] = OrganizationWriteScenario(
+                "SetGitConnectionRepositoryAccess",
+                HttpMethod.Put,
+                $"/v1/organizations/{ContosoOrganizationId}/git-connections/{TestGitConnectionId}/repositories/access",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    expectedVersion = 1,
+                    providerRepositoryId = "repo-1",
+                    openToAllProjects = false,
+                    projectIds = new[] { Guid.NewGuid() }
+                }),
+            ["DeleteGitConnection"] = OrganizationWriteScenario(
+                "DeleteGitConnection",
+                HttpMethod.Delete,
+                $"/v1/organizations/{ContosoOrganizationId}/git-connections/{TestGitConnectionId}",
                 HttpStatusCode.NotFound),
             ["ChangeOrganizationMemberRoles"] = OrganizationScenario(
                 "ChangeOrganizationMemberRoles",
@@ -281,6 +342,52 @@ public static class IsolationScenarios
                 "GetProject",
                 HttpMethod.Get,
                 $"/v1/projects/{ShopProjectId}",
+                HttpStatusCode.NotFound),
+            ["GetProjectPublishPlan"] = OrganizationScenario(
+                "GetProjectPublishPlan",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/publish-plan",
+                HttpStatusCode.NotFound),
+            ["SetProjectPublishPlan"] = OrganizationWriteScenario(
+                "SetProjectPublishPlan",
+                HttpMethod.Put,
+                $"/v1/projects/{ShopProjectId}/publish-plan",
+                HttpStatusCode.NotFound,
+                new
+                {
+                    preset = "MonoRepo",
+                    destinations = Array.Empty<object>(),
+                    assignments = Array.Empty<object>(),
+                    defaultInfrastructureDestinationId = (Guid?)null,
+                    defaultApplicationsDestinationId = (Guid?)null,
+                    defaultSourceCodeDestinationId = (Guid?)null,
+                    expectedVersion = 1
+                }),
+            ["StartRevisionPublication"] = OrganizationWriteScenario(
+                "StartRevisionPublication",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/revisions/{TestRevisionId}/publications",
+                HttpStatusCode.NotFound,
+                new { message = "Isolation scenario", acceptStaleRevision = false, destinationIds = Array.Empty<Guid>() }),
+            ["ListProjectPublications"] = OrganizationScenario(
+                "ListProjectPublications",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/publications",
+                HttpStatusCode.NotFound),
+            ["GetPublication"] = OrganizationScenario(
+                "GetPublication",
+                HttpMethod.Get,
+                $"/v1/projects/{ShopProjectId}/publications/{TestPublicationId}",
+                HttpStatusCode.NotFound),
+            ["ConfirmPublicationOwnership"] = OrganizationWriteScenario(
+                "ConfirmPublicationOwnership",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/publications/{TestPublicationId}/targets/{TestPublicationTargetId}/confirm-ownership",
+                HttpStatusCode.NotFound),
+            ["StartPublicationWrite"] = OrganizationWriteScenario(
+                "StartPublicationWrite",
+                HttpMethod.Post,
+                $"/v1/projects/{ShopProjectId}/publications/{TestPublicationId}/publish",
                 HttpStatusCode.NotFound),
             ["GetProjectValidation"] = OrganizationScenario(
                 "GetProjectValidation",
@@ -798,6 +905,16 @@ public static class IsolationScenarios
                 "GetDevelopmentPingJobStatus",
                 HttpMethod.Get,
                 $"/v1/dev/ping-job/{TestJobId}",
+                HttpStatusCode.NotFound),
+            ["EnqueueDevelopmentGitConnectionExpiryAlerts"] = OrganizationWriteScenario(
+                "EnqueueDevelopmentGitConnectionExpiryAlerts",
+                HttpMethod.Post,
+                "/v1/dev/git-connections/expiry-alerts",
+                HttpStatusCode.NotFound),
+            ["GetDevelopmentGitConnectionExpiryAlertsStatus"] = OrganizationScenario(
+                "GetDevelopmentGitConnectionExpiryAlertsStatus",
+                HttpMethod.Get,
+                $"/v1/dev/git-connections/expiry-alerts/{TestJobId}",
                 HttpStatusCode.NotFound)
         };
 

@@ -55,10 +55,22 @@ public sealed class DeploymentPlanJsonSerializerTests
         Assert.Equal(plan.Pins.PowerShellModules["SqlServer"], restored.Pins.PowerShellModules["SqlServer"]);
     }
 
+    [Fact]
+    public void CanonicalSerializationDoesNotIncludePublicationPreset()
+    {
+        var plan = CreatePlan(
+            new Dictionary<string, CatalogModulePin>(StringComparer.Ordinal),
+            new Dictionary<string, string>(StringComparer.Ordinal));
+
+        var json = DeploymentPlanJsonSerializer.Serialize(plan);
+
+        Assert.DoesNotContain("publishingPreset", json, StringComparison.Ordinal);
+    }
+
     private static DeploymentPlan CreatePlan(
         IReadOnlyDictionary<string, CatalogModulePin> modules,
         IReadOnlyDictionary<string, string> powerShellModules) => new(
-        new ProjectInfo("Shop", "shop", "Pilot", "Bicep", "AzureDevOps", "AVM registre public", null),
+        new ProjectInfo("Shop", "shop", "Pilot", "Bicep", "AzureDevOps", "AVM registre public"),
         [],
         new CatalogPins(
             "2026.10-pilot.5",

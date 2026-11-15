@@ -6,5 +6,4 @@ public sealed record ProjectInfo(
     string Description,
     string InfrastructureLanguage,
     string CiPlatform,
-    string ModuleSource,
-    string? PublishingPreset);
+    string ModuleSource);

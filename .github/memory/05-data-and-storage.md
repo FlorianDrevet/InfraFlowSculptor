@@ -7,6 +7,7 @@
 
 - J0-24 ajoute `revisions`, `revision_files`, `revision_findings`, `revision_changes` et `revision_inputs` par la migration `20261113155938_J0_24_Revisions`, sans JSONB. `GenerateRevision` sérialise le snapshot `ifs-project/v1` en JSON canonique, calcule SHA-256 et écrit l'entrée figée, la révision Queued et l'outbox dans la transaction du projet verrouillé; le Worker relit uniquement cette entrée. Les blobs privés sont adressés par `sha256/<2 premiers hex>/<sha256>` et les archives déterministes par identifiant de révision. La purge retire les fichiers des révisions générées non publiées après 90 jours, puis supprime les blobs et archives non référencés après leur période d'inactivité. Recette G1–G6 : ZIP comparé à 80/80 fichiers de référence après normalisation des placeholders prévue par les tests; génération inchangée ne crée pas de nouvelle révision. Suite .NET : 774 tests passés, 1 test Bicep opt-in ignoré.
 - J0-25 : `AzureProjectExportStore` écrit les exports dans le container Blob privé `revisions`, sous le préfixe `exports/`. Le nom blob utilise le SHA-256 du jeton de 256 bits et ne contient pas le jeton brut. Les liens sont valides 15 minutes; les téléchargements inconnus ou expirés renvoient 404 et `ProjectExportCleanupService` supprime les exports expirés. La vérification de traces confirme que le segment secret d'URL est rédigé.
+- J0-26 : `20261114091829_J0_26_GitConnections` ajoute les connexions git, dépôts et permissions de projet sous forme relationnelle. Les PAT Azure DevOps passent par `ISecretStore`, jamais par PostgreSQL ni les journaux; le test d'infrastructure vérifie la redaction. La suppression de connexion retire le secret associé. Le Worker recherche les dates d'expiration et publie les alertes via le canal de notifications.
 - `AddIfsDbContext("ifs")` utilise `ConnectionStrings:ifs` en local/Aspire. En Azure, `PostgresDataSourceFactory` lit
   `Azure:ifs:Endpoint`, `Database` et `Username`, impose TLS et renouvelle un jeton Entra PostgreSQL toutes les
   50 minutes; aucun mot de passe n'est configuré.
@@ -18,6 +19,7 @@
   est `20261005144850_S_06_Socle`.
 - `UnitOfWorkBehavior` enveloppe les commandes d'une transaction, sauvegarde une fois et écrit les événements de
   domaine dans l'outbox dans cette transaction. Les conflits sont renvoyés en `CONFLICT_VERSION`.
+- `TransactionRollbackActions` associe des compensations aux transactions racines et savepoints EF; les compensations ne s'exécutent qu'après un rollback SQL confirmé. En cas d'échec du rollback, l'exception métier initiale reste primaire et le secret temporaire est conservé tant que le résultat du commit est incertain, afin de ne pas casser une référence éventuellement commitée.
 - Les écritures idempotentes sont isolées par tenant, utilisateur et clé cliente. Pour `POST /v1/organizations`, exécuté
   avant toute organisation active, `user_idempotency_keys` applique une contrainte sur les trois colonnes de portée ; la
   migration est `20261027170637_R_04_UserIdempotencyKeys`. Dans une organisation, la clé persistée est dérivée de

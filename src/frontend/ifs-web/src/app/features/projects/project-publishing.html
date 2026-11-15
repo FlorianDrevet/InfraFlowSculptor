@@ -1,0 +1,128 @@
+<section class="project-publishing">
+  <header class="project-publishing__header">
+    <div>
+      <h1>{{ 'project.publicationTitle' | transloco }}</h1>
+      <p>{{ 'project.publicationDescription' | transloco }}</p>
+    </div>
+    <app-ds-button
+      variant="primary"
+      [disabled]="loading() || saving() || !hasChanges()"
+      (click)="save()"
+    >
+      {{ 'project.publicationSave' | transloco }}
+    </app-ds-button>
+  </header>
+
+  @if (loading()) {
+    <p role="status">{{ 'project.loading' | transloco }}</p>
+  } @else if (loadError()) {
+    <p class="project-publishing__error" role="alert">{{ 'project.loadError' | transloco }}</p>
+    <app-ds-button variant="secondary" (click)="retry()">{{ 'project.retry' | transloco }}</app-ds-button>
+  } @else if (plan(); as current) {
+    @if (saveError()) {
+      <p class="project-publishing__error" role="alert">{{ 'project.publicationSaveError' | transloco }}</p>
+    }
+    @if (hasSaved()) {
+      <p class="project-publishing__saved" role="status">{{ 'project.publicationSaved' | transloco }}</p>
+    }
+    @if (current.issues.length > 0) {
+      <app-ds-banner tone="ember" [title]="'project.publicationIssuesTitle' | transloco">
+        @for (issue of current.issues; track $index) {
+          <p><strong>{{ issue.code }}</strong> · {{ issue.message }}</p>
+        }
+      </app-ds-banner>
+    }
+
+    <div class="project-publishing__preset">
+      <span>{{ 'project.publicationPresetApplied' | transloco }}</span>
+      <span class="project-publishing__preset-value">{{ 'project.publicationMonoRepo' | transloco }}</span>
+      <span class="project-publishing__preset-rule">
+        {{
+          'project.publicationNewComponentsRule'
+            | transloco: { repository: selectedDefaultLabel() }
+        }}
+      </span>
+      <label class="project-publishing__default" for="publication-default-repository">
+        <span>{{ 'project.publicationDefaultRepository' | transloco }}</span>
+        <select
+          id="publication-default-repository"
+          [value]="defaultOptionKey()"
+          (change)="chooseDefaultRepository($event)"
+        >
+          <option value="" [selected]="!defaultOptionKey()">{{ 'project.publicationChooseRepository' | transloco }}</option>
+          @for (option of repositoryOptions(); track option.key) {
+            <option [value]="option.key" [selected]="option.key === defaultOptionKey()">{{ option.connectionName }}/{{ option.repositoryName }}</option>
+          }
+        </select>
+      </label>
+      <app-ds-text-field
+        [label]="'project.publicationBasePath' | transloco"
+        name="publicationBasePath"
+        [value]="defaultBasePath()"
+        [mono]="true"
+        (valueChange)="updateDefaultBasePath($event)"
+      />
+    </div>
+
+    @if (current.availableDestinations.length === 0 && current.destinations.length === 0) {
+      <p class="project-publishing__empty">{{ 'project.publicationNoRepositories' | transloco }}</p>
+    }
+
+    <div class="project-publishing__table-scroll">
+      <table class="project-publishing__table">
+        <thead>
+          <tr>
+            <th scope="col">{{ 'project.publicationComponent' | transloco }}</th>
+            <th scope="col">{{ 'project.publicationPart' | transloco }}</th>
+            <th scope="col">{{ 'project.publicationRepository' | transloco }}</th>
+            <th scope="col">{{ 'project.publicationBasePath' | transloco }}</th>
+            <th scope="col">{{ 'project.publicationEffectiveFolder' | transloco }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of current.rows; track row.componentId + row.part) {
+            <tr>
+              <td class="project-publishing__mono">{{ row.componentCode }}</td>
+              <td>{{ partLabel(row.part) | transloco }}</td>
+              <td>
+                <label class="project-publishing__visually-hidden" [for]="'destination-' + row.componentId + '-' + row.part">
+                  {{ 'project.publicationRepository' | transloco }} · {{ row.componentCode }} ·
+                  {{ partLabel(row.part) | transloco }}
+                </label>
+                <select
+                  class="project-publishing__select"
+                  [id]="'destination-' + row.componentId + '-' + row.part"
+                  [value]="rowDestinationSelection(row)"
+                  (change)="chooseRowRepository(row, $event)"
+                >
+                  <option value="" [selected]="!rowDestinationSelection(row)">{{ 'project.publicationChooseRepository' | transloco }}</option>
+                  @for (option of repositoryOptions(); track option.key) {
+                    <option [value]="option.key" [selected]="option.key === rowDestinationSelection(row)">{{ option.connectionName }}/{{ option.repositoryName }}</option>
+                  }
+                </select>
+              </td>
+              <td>
+                @if (row.part === 'SourceCode') {
+                  <span class="project-publishing__mono">—</span>
+                } @else {
+                  <input
+                    class="project-publishing__path st-field-input st-mono"
+                    type="text"
+                    [value]="rowBasePath(row)"
+                    [attr.aria-label]="'project.publicationBasePath' | transloco"
+                    (input)="updateRowBasePathFromEvent(row, $event)"
+                  />
+                }
+              </td>
+              <td class="project-publishing__effective">{{ row.effectiveFolder || '—' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="project-publishing__empty">{{ 'project.publicationNoComponents' | transloco }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

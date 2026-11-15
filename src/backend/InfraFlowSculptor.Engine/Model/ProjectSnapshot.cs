@@ -19,4 +19,5 @@ public sealed record ProjectSnapshot(string Name, string Code, string Descriptio
     public bool SystemTagsEnabled { get; init; } = true;
 
     public string? PublishingPreset { get; init; }
+
 }

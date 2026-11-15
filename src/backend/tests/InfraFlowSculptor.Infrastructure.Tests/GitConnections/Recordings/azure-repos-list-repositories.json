@@ -1,0 +1,15 @@
+{
+  "count": 2,
+  "value": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "name": "shop-infra",
+      "defaultBranch": "refs/heads/main"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "name": "shop-app",
+      "defaultBranch": "refs/heads/trunk"
+    }
+  ]
+}

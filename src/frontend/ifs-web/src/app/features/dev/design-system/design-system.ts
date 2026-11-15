@@ -1,4 +1,7 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { firstValueFrom, interval, filter, switchMap, take, timeout } from 'rxjs';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { DsBadge } from '../../../ds/badge/badge';
 import { DsBanner } from '../../../ds/banner/banner';
 import { DsButton } from '../../../ds/button/button';
@@ -16,6 +19,7 @@ import { DsTable } from '../../../ds/table/table';
 import { DsTabs } from '../../../ds/tabs/tabs';
 import { DsTextField } from '../../../ds/text-field/text-field';
 import { DsToggle } from '../../../ds/toggle/toggle';
+import { Api } from '../../../core/api/generated/api';
 import {
   COLOR_TOKENS,
   RADIUS_TOKENS,
@@ -42,12 +46,17 @@ import {
     DsTabs,
     DsTextField,
     DsToggle,
+    TranslocoPipe,
   ],
   templateUrl: './design-system.html',
   styleUrls: ['./design-system.css', './design-system-components.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DesignSystem {
+  private readonly http = inject(HttpClient);
+  private readonly api = inject(Api);
+  protected readonly gitExpiryJobRunning = signal(false);
+  protected readonly gitExpiryJobMessage = signal('');
   protected readonly colors = COLOR_TOKENS;
   protected readonly typography = TYPE_GROUPS;
   protected readonly spacing = SPACING_TOKENS;
@@ -87,4 +96,38 @@ export class DesignSystem {
     `var(--ifs-${category}-${name})`;
   protected readonly resourceLabel = (type: AzureResourceType): string =>
     RESOURCE_TYPES[type].label;
+
+  protected async triggerGitExpiryAlerts(): Promise<void> {
+    if (this.gitExpiryJobRunning()) {
+      return;
+    }
+
+    this.gitExpiryJobRunning.set(true);
+    this.gitExpiryJobMessage.set('');
+    try {
+      const queued = await firstValueFrom(
+        this.http.post<{ jobId: string }>(
+          `${this.api.rootUrl}/v1/dev/git-connections/expiry-alerts`,
+          {},
+        ),
+      );
+      await firstValueFrom(
+        interval(1000).pipe(
+          switchMap(() =>
+            this.http.get<{ completed: boolean }>(
+              `${this.api.rootUrl}/v1/dev/git-connections/expiry-alerts/${queued.jobId}`,
+            ),
+          ),
+          filter((status) => status.completed),
+          timeout({ first: 30_000 }),
+          take(1),
+        ),
+      );
+      this.gitExpiryJobMessage.set('dev.gitExpiryAlerts.completed');
+    } catch {
+      this.gitExpiryJobMessage.set('dev.gitExpiryAlerts.error');
+    } finally {
+      this.gitExpiryJobRunning.set(false);
+    }
+  }
 }

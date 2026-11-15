@@ -21,7 +21,8 @@ public sealed record CreateProjectFromWizardCommand(
     string ResourceGroupNameTemplate,
     IReadOnlyList<CreateProjectFromWizardEnvironment> Environments,
     IReadOnlyDictionary<string, string> Tags,
-    string? PublishingPreset) : IModelCommand
+    string? PublishingPreset,
+    CreateProjectFromWizardDestination? PublishingDestination = null) : IModelCommand
 {
     public ModelWorkspaceId Workspace => ModelWorkspaceId.Main(new(ProjectId));
 }

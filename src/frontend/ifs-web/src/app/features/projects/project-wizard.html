@@ -396,7 +396,34 @@
                 <strong>{{ 'projectWizard.monoRepoPreset' | transloco }}</strong>
                 <span>{{ 'projectWizard.monoRepoDetails' | transloco }}</span>
               </button>
-              <p class="wizard-hint">{{ 'projectWizard.repositoriesUnavailable' | transloco }}</p>
+              @if (publishingOptions().length > 0) {
+                <label class="wizard-field-label" for="wizard-publishing-repository">
+                  {{ 'projectWizard.repository' | transloco }}
+                </label>
+                <select
+                  class="wizard-select"
+                  id="wizard-publishing-repository"
+                  name="publishingRepository"
+                  [value]="publishingRepositoryKey()"
+                  (change)="updatePublishingRepository($event)"
+                >
+                  <option value="" [selected]="!publishingRepositoryKey()">{{ 'projectWizard.chooseRepository' | transloco }}</option>
+                  @for (option of publishingOptions(); track option.key) {
+                    <option [value]="option.key" [selected]="option.key === publishingRepositoryKey()">{{ option.connectionName }}/{{ option.repositoryName }}</option>
+                  }
+                </select>
+                @if (state().publishingDestination) {
+                  <app-ds-text-field
+                    [label]="'projectWizard.basePath' | transloco"
+                    [name]="'publishingBasePath'"
+                    [value]="state().publishingDestination?.basePath ?? ''"
+                    [mono]="true"
+                    (valueChange)="updatePublishingBasePath($event)"
+                  />
+                }
+              } @else {
+                <p class="wizard-hint">{{ 'projectWizard.repositoriesUnavailable' | transloco }}</p>
+              }
             </section>
           }
           @case (6) {

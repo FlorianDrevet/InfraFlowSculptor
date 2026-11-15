@@ -1,0 +1,323 @@
+<section class="git-connections">
+  <header class="git-connections__header">
+    <div>
+      <h1>{{ 'gitConnections.title' | transloco }}</h1>
+      <p class="git-connections__intro">{{ 'gitConnections.intro' | transloco }}</p>
+    </div>
+    @if (!loading() && providers().length > 0) {
+      <app-ds-button variant="primary" icon="plus" (click)="beginCreate()">
+        {{ 'gitConnections.add' | transloco }}
+      </app-ds-button>
+    }
+  </header>
+
+  @if (loading()) {
+    <p role="status">{{ 'gitConnections.loading' | transloco }}</p>
+  } @else if (loadError()) {
+    <p class="git-connections__message git-connections__message--error" role="alert">
+      {{ 'gitConnections.loadError' | transloco }}
+    </p>
+  } @else {
+    @if (actionError()) {
+      <p class="git-connections__message git-connections__message--error" role="alert">
+        @if (actionError().startsWith('gitConnections.')) {
+          {{ actionError() | transloco }}
+        } @else {
+          {{ actionError() }}
+        }
+      </p>
+    }
+    @if (actionSuccess()) {
+      <p class="git-connections__message git-connections__message--success" role="status">
+        {{ actionSuccess() | transloco }}
+      </p>
+    }
+
+    @if (showForm()) {
+      <form class="git-connections__form" (ngSubmit)="saveConnection()">
+        <h2>
+          {{ (isEditing() ? 'gitConnections.editTitle' : 'gitConnections.addTitle') | transloco }}
+        </h2>
+        <div class="git-connections__form-grid">
+          @if (!isEditing()) {
+            <label class="git-connections__field">
+              <span>{{ 'gitConnections.provider' | transloco }}</span>
+              <select
+                name="providerKind"
+                [ngModel]="formProvider()"
+                (ngModelChange)="providerChanged($event)"
+                required
+              >
+                @for (provider of providers(); track provider.kind) {
+                  <option [value]="provider.kind">{{ provider.displayName }}</option>
+                }
+              </select>
+            </label>
+          } @else {
+            <p class="git-connections__provider-value">
+              {{ 'gitConnections.provider' | transloco }}
+              <strong>{{ providerLabel(formProvider()) }}</strong>
+            </p>
+          }
+
+          <label class="git-connections__field">
+            <span>{{ 'gitConnections.connectionName' | transloco }}</span>
+            <input
+              name="connectionName"
+              type="text"
+              autocomplete="off"
+              maxlength="80"
+              required
+              [ngModel]="formName()"
+              (ngModelChange)="formName.set($event)"
+            />
+          </label>
+
+          <label class="git-connections__field">
+            <span>{{
+              isGitea()
+                ? ('gitConnections.giteaOrganization' | transloco)
+                : ('gitConnections.azureOrganization' | transloco)
+            }}</span>
+            <input
+              name="providerOrganization"
+              type="text"
+              autocomplete="off"
+              maxlength="300"
+              required
+              [ngModel]="formOrganization()"
+              (ngModelChange)="formOrganization.set($event)"
+            />
+          </label>
+
+          @if (!isGitea()) {
+            <label class="git-connections__field">
+              <span>{{ 'gitConnections.authenticationMode' | transloco }}</span>
+              <select
+                name="authenticationMode"
+                [ngModel]="formMode()"
+                (ngModelChange)="authenticationChanged($event)"
+              >
+                <option value="FederatedServicePrincipal">
+                  {{ 'gitConnections.federated' | transloco }}
+                </option>
+                <option value="PersonalAccessToken">
+                  {{ 'gitConnections.personalAccessToken' | transloco }}
+                </option>
+              </select>
+            </label>
+          }
+
+          @if (formMode() === 'FederatedServicePrincipal') {
+            <label class="git-connections__field">
+              <span>{{ 'gitConnections.tenantId' | transloco }}</span>
+              <input
+                name="tenantId"
+                type="text"
+                inputmode="text"
+                autocomplete="off"
+                required
+                [ngModel]="formTenantId()"
+                (ngModelChange)="formTenantId.set($event)"
+              />
+              <small>{{ 'gitConnections.federatedHint' | transloco }}</small>
+            </label>
+          }
+
+          @if (usesPersonalAccessToken()) {
+            <label class="git-connections__field">
+              <span>{{ 'gitConnections.personalAccessToken' | transloco }}</span>
+              <input
+                name="personalAccessToken"
+                type="password"
+                autocomplete="new-password"
+                [required]="!isEditing()"
+                [ngModel]="formToken()"
+                (ngModelChange)="formToken.set($event)"
+              />
+              <small>{{
+                (isEditing() ? 'gitConnections.tokenKeepHint' : 'gitConnections.tokenStorageHint')
+                  | transloco
+              }}</small>
+            </label>
+            <label class="git-connections__field">
+              <span>{{ 'gitConnections.expiresAt' | transloco }}</span>
+              <input
+                name="expiresAt"
+                type="date"
+                required
+                [ngModel]="formExpiresOn()"
+                (ngModelChange)="formExpiresOn.set($event)"
+              />
+            </label>
+          }
+        </div>
+
+        <div class="git-connections__form-actions">
+          <app-ds-button variant="secondary" type="button" (click)="cancelForm()">
+            {{ 'organization.cancel' | transloco }}
+          </app-ds-button>
+          <app-ds-button variant="primary" type="submit" [disabled]="saving()">
+            {{ (saving() ? 'gitConnections.saving' : 'gitConnections.save') | transloco }}
+          </app-ds-button>
+        </div>
+      </form>
+    }
+
+    <section aria-labelledby="git-providers-heading" class="git-connections__list">
+      <h2 id="git-providers-heading">{{ 'gitConnections.providersHeading' | transloco }}</h2>
+      @if (connections().length === 0) {
+        <div class="git-connections__empty" aria-labelledby="git-connections-empty-title">
+          <h3 id="git-connections-empty-title">{{ 'gitConnections.emptyTitle' | transloco }}</h3>
+          <p>{{ 'gitConnections.emptyDescription' | transloco }}</p>
+        </div>
+      } @else {
+        @for (connection of connections(); track connection.id) {
+          <article class="git-connections__card">
+            <div class="git-connections__card-head">
+              <div>
+                <h3>{{ providerLabel(connection.providerKind) }} · {{ connection.name }}</h3>
+                <p>{{ connection.organization }}</p>
+              </div>
+              <span class="git-connections__status">
+                <span aria-hidden="true"></span>{{ 'gitConnections.operational' | transloco }}
+              </span>
+            </div>
+
+            <p class="git-connections__auth-detail">
+              @if (connection.authenticationMode === 'FederatedServicePrincipal') {
+                {{
+                  'gitConnections.federatedDescription'
+                    | transloco: { organization: connection.organization }
+                }}
+              } @else if (connection.authenticationMode === 'PersonalAccessToken') {
+                {{ 'gitConnections.tokenStorageHint' | transloco }}
+              } @else {
+                {{ 'gitConnections.giteaTokenHint' | transloco }}
+              }
+            </p>
+
+            <div class="git-connections__meta">
+              @if (
+                connection.authenticationMode === 'PersonalAccessToken' &&
+                hasExpiryWarning(connection)
+              ) {
+                <span class="git-connections__expiry" role="status">
+                  {{ 'gitConnections.expiresIn' | transloco: { days: expirationDays(connection) } }}
+                </span>
+              }
+              <span>{{
+                'gitConnections.usedByProjects'
+                  | transloco: { count: connection.usedByProjectNames.length }
+              }}</span>
+              @for (projectName of connection.usedByProjectNames; track projectName) {
+                <span class="git-connections__project-name">{{ projectName }}</span>
+              }
+            </div>
+
+            <div class="git-connections__actions">
+              <app-ds-button
+                variant="ghost"
+                size="sm"
+                [disabled]="saving()"
+                (click)="testConnection(connection)"
+              >
+                {{ 'gitConnections.test' | transloco }}
+              </app-ds-button>
+              <app-ds-button
+                variant="ghost"
+                size="sm"
+                [disabled]="saving()"
+                (click)="beginEdit(connection)"
+              >
+                {{ 'gitConnections.edit' | transloco }}
+              </app-ds-button>
+              <app-ds-button
+                variant="danger"
+                size="sm"
+                [disabled]="saving()"
+                (click)="requestRemoval(connection)"
+              >
+                {{ 'gitConnections.remove' | transloco }}
+              </app-ds-button>
+            </div>
+
+            @if (connection.repositories.length > 0) {
+              <section
+                class="git-connections__repositories"
+                [attr.aria-label]="'gitConnections.repositoriesHeading' | transloco"
+              >
+                <h4>{{ 'gitConnections.repositoriesHeading' | transloco }}</h4>
+                @for (
+                  repository of connection.repositories;
+                  track repository.providerRepositoryId
+                ) {
+                  <fieldset class="git-connections__repository">
+                    <legend>{{ repository.name }}</legend>
+                    <label class="git-connections__access-option">
+                      <input
+                        type="checkbox"
+                        [checked]="draftFor(connection, repository).openToAllProjects"
+                        [disabled]="saving()"
+                        (change)="setOpenToAllProjects(connection, repository, $event)"
+                      />
+                      <span>{{ 'gitConnections.allProjects' | transloco }}</span>
+                    </label>
+                    @if (!draftFor(connection, repository).openToAllProjects) {
+                      <div class="git-connections__project-list">
+                        @for (project of projects(); track project.id) {
+                          <label class="git-connections__access-option">
+                            <input
+                              type="checkbox"
+                              [checked]="
+                                draftFor(connection, repository).projectIds.includes(project.id)
+                              "
+                              [disabled]="saving()"
+                              (change)="toggleProject(connection, repository, project.id, $event)"
+                            />
+                            <span [attr.data-project-code]="project.code">{{ project.name }}</span>
+                          </label>
+                        }
+                      </div>
+                    }
+                    <p class="git-connections__access-summary">
+                      {{
+                        accessSummary(connection, repository)
+                          | transloco: { count: draftFor(connection, repository).projectIds.length }
+                      }}
+                    </p>
+                    <app-ds-button
+                      variant="secondary"
+                      size="sm"
+                      [disabled]="saving()"
+                      (click)="saveRepositoryAccess(connection, repository)"
+                    >
+                      {{ 'gitConnections.saveAccess' | transloco }}
+                    </app-ds-button>
+                  </fieldset>
+                }
+              </section>
+            }
+          </article>
+        }
+      }
+    </section>
+  }
+
+  <dialog #removeDialog class="git-connections__dialog" (close)="pendingRemoval.set(null)">
+    <h2>{{ 'gitConnections.removeDialogTitle' | transloco }}</h2>
+    <p>
+      {{
+        'gitConnections.removeDialogDescription' | transloco: { name: pendingRemoval()?.name ?? '' }
+      }}
+    </p>
+    <div class="git-connections__form-actions">
+      <app-ds-button variant="secondary" (click)="cancelRemoval()">
+        {{ 'organization.cancel' | transloco }}
+      </app-ds-button>
+      <app-ds-button variant="danger" [disabled]="saving()" (click)="confirmRemoval()">
+        {{ 'gitConnections.remove' | transloco }}
+      </app-ds-button>
+    </div>
+  </dialog>
+</section>

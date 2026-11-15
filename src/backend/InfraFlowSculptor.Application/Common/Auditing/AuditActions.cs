@@ -16,8 +16,12 @@ public static class AuditActions
     public const string ProjectRoleRemoved = "project.role.removed";
     public const string ProjectOwnershipTaken = "project.ownership.taken";
     public const string ProjectNamingUpdated = "project.naming.updated";
+    public const string ProjectPublicationPlanUpdated = "project.publication.plan_updated";
     public const string ProjectExported = "project.exported";
     public const string RevisionGenerationRequested = "revision.generation.requested";
+    public const string PublicationRequested = "publication.requested";
+    public const string PublicationOwnershipConfirmed = "publication.ownership.confirmed";
+    public const string PublicationWriteRequested = "publication.write.requested";
     public const string ComponentCreated = "component.created";
     public const string ComponentUpdated = "component.updated";
     public const string ComponentDeleted = "component.deleted";

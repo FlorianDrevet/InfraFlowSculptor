@@ -1,5 +1,7 @@
 # 10 — Routes de l'API
 
+- J0-27 ajoute `GET /v1/projects/{projectId}/publish-plan` (`GetProjectPublishPlan`) et `PUT` sur la même route (`SetProjectPublishPlan`). La lecture exige `project.read` et la limite `read`; l'écriture exige `model.edit`, la limite `write`, idempotence et version attendue du modèle. Les deux contrôlent la portée projet et le client Angular est généré depuis OpenAPI.
+
 > S-14 implémenté le 2026-10-06 ; J0-01/J0-02 ajoutent les routes d’organisation, les fonctions et les contrôles d’accès aux membres.
 > Cible : DT-05, DT-06. Chaque étape qui ajoute une route l'inscrit ici (méthode, chemin, nom, permission, portée de débit).
 

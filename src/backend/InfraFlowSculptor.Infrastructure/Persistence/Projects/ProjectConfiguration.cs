@@ -1,4 +1,5 @@
 using InfraFlowSculptor.Domain.OrganizationAggregate;
+using InfraFlowSculptor.Domain.GitConnectionAggregate;
 using InfraFlowSculptor.Domain.ProjectAggregate;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -25,7 +26,7 @@ public sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectAggre
         builder.Property(project => project.NamingPreset).HasMaxLength(16).HasDefaultValue(ProjectNamingPresets.Compact).IsRequired();
         builder.Property(project => project.DefaultNameTemplate).HasMaxLength(200).HasDefaultValue("{abbr}-{project}-{name}-{env}").IsRequired();
         builder.Property(project => project.ResourceGroupNameTemplate).HasMaxLength(200).HasDefaultValue("rg-{project}-{component}-{name}-{env}").IsRequired();
-        builder.Property(project => project.PublishingPreset).HasMaxLength(32);
+        builder.Ignore(project => project.PublishingPreset);
         builder.Property(project => project.SystemTagsEnabled).HasDefaultValue(true).IsRequired();
         builder.Property(project => project.ModelVersion).HasDefaultValue(0).IsRequired();
         builder.Property(project => project.FirstPublishedAt);
@@ -42,6 +43,58 @@ public sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectAggre
             .WithMany()
             .HasForeignKey(project => project.OrganizationId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.OwnsOne(project => project.PublicationPlan, plan =>
+        {
+            plan.Property(value => value.Preset)
+                .HasConversion<string>()
+                .HasColumnName("publishing_preset")
+                .HasMaxLength(32)
+                .HasDefaultValue(PublishPreset.MonoRepo)
+                .IsRequired();
+            plan.Property(value => value.DefaultInfrastructureDestinationId)
+                .HasColumnName("publish_default_infrastructure_destination_id");
+            plan.Property(value => value.DefaultApplicationsDestinationId)
+                .HasColumnName("publish_default_applications_destination_id");
+            plan.Property(value => value.DefaultSourceCodeDestinationId)
+                .HasColumnName("publish_default_source_code_destination_id");
+
+            plan.OwnsMany(value => value.Destinations, destinations =>
+            {
+                destinations.ToTable("publish_plan_destinations");
+                destinations.WithOwner().HasForeignKey("ProjectId");
+                destinations.HasKey("ProjectId", nameof(PublishPlanDestination.Id))
+                    .HasName("pk_publish_plan_destinations");
+                destinations.Property(value => value.Id)
+                    .HasColumnName("destination_id")
+                    .ValueGeneratedNever();
+                destinations.Property(value => value.GitConnectionId).IsRequired();
+                destinations.Property(value => value.ProviderRepositoryId).HasMaxLength(300).IsRequired();
+                destinations.Property(value => value.BasePath).HasMaxLength(200).IsRequired();
+                destinations.HasOne<GitConnectionAggregate>()
+                    .WithMany()
+                    .HasForeignKey(value => value.GitConnectionId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                destinations.HasIndex("ProjectId", nameof(PublishPlanDestination.GitConnectionId),
+                        nameof(PublishPlanDestination.ProviderRepositoryId), nameof(PublishPlanDestination.BasePath))
+                    .IsUnique()
+                    .HasDatabaseName("ux_publish_plan_destinations_repository_path");
+            });
+            plan.Navigation(value => value.Destinations).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            plan.OwnsMany(value => value.Assignments, assignments =>
+            {
+                assignments.ToTable("publish_plan_assignments");
+                assignments.WithOwner().HasForeignKey("ProjectId");
+                assignments.HasKey("ProjectId", nameof(PublishPlanAssignment.ComponentId), nameof(PublishPlanAssignment.Part))
+                    .HasName("pk_publish_plan_assignments");
+                assignments.Property(value => value.ComponentId).HasColumnName("component_id").IsRequired();
+                assignments.Property(value => value.Part).HasConversion<string>().HasMaxLength(32).IsRequired();
+                assignments.Property(value => value.DestinationId).HasColumnName("destination_id").IsRequired();
+            });
+            plan.Navigation(value => value.Assignments).UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+        builder.Navigation(project => project.PublicationPlan).IsRequired();
 
         builder.OwnsMany(project => project.RoleAssignments, assignments =>
         {

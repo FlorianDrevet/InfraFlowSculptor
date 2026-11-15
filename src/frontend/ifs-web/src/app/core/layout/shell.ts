@@ -75,6 +75,28 @@ export class Shell implements OnInit {
     );
   });
 
+  private readonly registerOrganizationConnections = effect((onCleanup) => {
+    const organizationId = this.activeOrganization.organizationId();
+    const organization = this.organizations
+      .organizations()
+      .find((item) => item.id === organizationId);
+    const canManageConnections = organization?.roles.includes('Administrator');
+    if (!organizationId || !canManageConnections) {
+      return;
+    }
+
+    onCleanup(
+      this.navigation.register({
+        id: 'organization-connections',
+        labelKey: 'organization.connectionsLink',
+        path: `/organizations/${organizationId}/connections`,
+        scope: 'organization',
+        featureKey: FEATURES.organizations,
+        iconName: 'branch',
+      }),
+    );
+  });
+
   private readonly registerOrganizationSettings = effect((onCleanup) => {
     const organizationId = this.activeOrganization.organizationId();
     if (!organizationId) {

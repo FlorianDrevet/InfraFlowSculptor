@@ -8,5 +8,4 @@ export interface ProjectInfo {
   infrastructureLanguage: string;
   moduleSource: string;
   name: string;
-  publishingPreset: (string | null);
 }
